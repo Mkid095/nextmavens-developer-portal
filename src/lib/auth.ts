@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
+import { NextRequest } from 'next/server'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'nextmavens-portal-secret'
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'nextmavens-refresh-secret'
@@ -51,4 +52,13 @@ export function generateApiKey(type: 'public' | 'secret' = 'public'): string {
 
 export function hashApiKey(key: string): string {
   return crypto.createHash('sha256').update(key).digest('hex')
+}
+
+export async function authenticateRequest(req: NextRequest): Promise<Developer> {
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('No token provided')
+  }
+  const token = authHeader.substring(7)
+  return verifyAccessToken(token)
 }
