@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
       {
         project: {
           id: project.id,
-          project_name: project.project_name,
+          name: project.project_name,
+          slug: slug,
           tenant_id: project.tenant_id,
           created_at: project.created_at,
         },
@@ -113,7 +114,14 @@ export async function GET(req: NextRequest) {
       [developer.id]
     )
 
-    return NextResponse.json({ projects: result.rows })
+    const projects = result.rows.map(p => ({
+      id: p.id,
+      name: p.project_name,
+      slug: p.tenant_slug,
+      created_at: p.created_at,
+    }))
+
+    return NextResponse.json({ projects })
   } catch (error: any) {
     console.error('[Developer Portal] List projects error:', error)
     return NextResponse.json(

@@ -75,12 +75,13 @@ export async function POST(req: NextRequest) {
 
     // Determine key type from name (for backwards compatibility)
     const keyType = name.toLowerCase().includes('secret') ? 'secret' : 'public'
+    const keyPrefix = keyType === 'secret' ? 'nm_live_sk_' : 'nm_live_pk_'
 
     const result = await pool.query(
       `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash)
        VALUES ($1, $2, $3, $4)
        RETURNING id, key_type, key_prefix, created_at`,
-      [finalProjectId, keyType, publicKey, hashedSecretKey]
+      [finalProjectId, keyType, keyPrefix, hashedSecretKey]
     )
 
     const apiKey = result.rows[0]
