@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'nextmavens-portal-secret'
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'nextmavens-refresh-secret'
