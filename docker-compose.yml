@@ -18,6 +18,7 @@ services:
       - traefik.http.routers.portal-nextmavens.rule=Host(`portal.nextmavens.cloud`)
       - traefik.http.routers.portal-nextmavens.entrypoints=websecure
       - traefik.http.routers.portal-nextmavens.tls.certresolver=letsencrypt
+      - traefik.http.routers.portal-nextmavens.priority=100
       - traefik.http.routers.portal-nextmavens.service=portal-nextmavens-service
       - traefik.http.services.portal-nextmavens-service.loadbalancer.server.port=3000
 
