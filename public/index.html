@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NextMavens - Developer Portal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      margin-bottom: 40px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .nav {
+      display: flex;
+      gap: 20px;
+    }
+    .nav a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    .nav a:hover { color: #fff; }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .card h2 { margin-bottom: 20px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(255,255,255,0.7);
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      font-size: 16px;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .btn {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .hidden { display: none !important; }
+    .error {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .success {
+      background: rgba(34, 197, 94, 0.2);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      color: #86efac;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .api-key-box {
+      background: rgba(0,0,0,0.3);
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 14px;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+    .project-item {
+      background: rgba(255,255,255,0.03);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .project-info h3 { margin-bottom: 5px; }
+    .project-info p { color: rgba(255,255,255,0.5); font-size: 14px; }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.05);
+      border: none;
+      border-radius: 8px;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+    }
+    .tab.active {
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">NextMavens</div>
+      <nav class="nav">
+        <a href="#" onclick="showPage('home')">Home</a>
+        <a href="#" onclick="showPage('docs')">Docs</a>
+      </nav>
+    </div>
+
+    <!-- Auth Page -->
+    <div id="auth-page" class="card">
+      <div class="tabs">
+        <button class="tab active" onclick="showAuthTab('login')">Login</button>
+        <button class="tab" onclick="showAuthTab('signup')">Sign Up</button>
+      </div>
+
+      <div id="login-form">
+        <h2>Welcome Back</h2>
+        <form onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="login-email" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+      </div>
+
+      <div id="signup-form" class="hidden">
+        <h2>Create Account</h2>
+        <form onsubmit="handleSignup(event)">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="signup-name" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="signup-email" required>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="signup-password" required minlength="8">
+          </div>
+          <button type="submit" class="btn btn-primary">Create Account</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dashboard Page -->
+    <div id="dashboard-page" class="hidden">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2>My Projects</h2>
+          <button class="btn btn-primary" onclick="showCreateProject()">+ New Project</button>
+        </div>
+        <div id="projects-list"></div>
+      </div>
+    </div>
+
+    <!-- Create Project Page -->
+    <div id="create-project-page" class="hidden">
+      <div class="card">
+        <h2>Create New Project</h2>
+        <form onsubmit="handleCreateProject(event)">
+          <div class="form-group">
+            <label>Project Name</label>
+            <input type="text" id="project-name" required placeholder="my-awesome-app">
+          </div>
+          <button type="submit" class="btn btn-primary">Create Project</button>
+          <button type="button" class="btn btn-secondary" onclick="showPage('dashboard')">Cancel</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Project Details Page -->
+    <div id="project-details-page" class="hidden">
+      <div class="card">
+        <button class="btn btn-secondary" onclick="showPage('dashboard')" style="margin-bottom: 20px;">← Back</button>
+        <h2 id="project-title">Project</h2>
+        <div id="project-details-content"></div>
+      </div>
+    </div>
+
+    <!-- Home Page -->
+    <div id="home-page" class="hidden">
+      <div class="card" style="text-align: center; padding: 60px 30px;">
+        <h1 style="font-size: 48px; margin-bottom: 20px; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">NextMavens</h1>
+        <p style="font-size: 20px; color: rgba(255,255,255,0.7); margin-bottom: 40px;">Build powerful applications with real-time database, authentication, and storage.</p>
+        <button class="btn btn-primary" onclick="showPage('auth')">Get Started</button>
+      </div>
+
+      <div class="card">
+        <h2>Features</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+          <div>
+            <h3>🔐 Authentication</h3>
+            <p style="color: rgba(255,255,255,0.7);">Secure user authentication with JWT tokens</p>
+          </div>
+          <div>
+            <h3>🗄️ Database</h3>
+            <p style="color: rgba(255,255,255,0.7);">PostgreSQL with auto-generated REST & GraphQL APIs</p>
+          </div>
+          <div>
+            <h3>⚡ Realtime</h3>
+            <p style="color: rgba(255,255,255,0.7);">Live database updates via WebSocket</p>
+          </div>
+          <div>
+            <h3>📁 Storage</h3>
+            <p style="color: rgba(255,255,255,0.7);">File storage via Telegram integration</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="error-message" class="error hidden"></div>
+    <div id="success-message" class="success hidden"></div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let currentUser = null;
+    let currentProject = null;
+
+    // Show page
+    function showPage(page) {
+      document.querySelectorAll('.card, #home-page').forEach(el => el.classList.add('hidden'));
+      document.getElementById('error-message').classList.add('hidden');
+      document.getElementById('success-message').classList.add('hidden');
+
+      if (page === 'auth') {
+        document.getElementById('auth-page').classList.remove('hidden');
+      } else if (page === 'dashboard') {
+        document.getElementById('dashboard-page').classList.remove('hidden');
+        loadProjects();
+      } else if (page === 'create-project') {
+        document.getElementById('create-project-page').classList.remove('hidden');
+      } else if (page === 'project-details') {
+        document.getElementById('project-details-page').classList.remove('hidden');
+      } else if (page === 'home') {
+        document.getElementById('home-page').classList.remove('hidden');
+      }
+    }
+
+    // Show auth tab
+    function showAuthTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (tab === 'login') {
+        document.getElementById('login-form').classList.remove('hidden');
+        document.getElementById('signup-form').classList.add('hidden');
+      } else {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('signup-form').classList.remove('hidden');
+      }
+    }
+
+    // Handle login
+    async function handleLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/developers/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+
+        currentUser = data.developer;
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(currentUser));
+        showPage('dashboard');
+        showMessage('Welcome back!', 'success');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    // Handle signup
+    async function handleSignup(e) {
+      e.preventDefault();
+      const name = document.getElementById('signup-name').value;
+      const email = document.getElementById('signup-email').value;
+      const password = document.getElementById('signup-password').value;
+
+      try {
+        const res = await fetch(`${API_BASE}/api/developers/signup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Signup failed');
+        }
+
+        currentUser = data.developer;
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(currentUser));
+        showPage('dashboard');
+        showMessage('Account created successfully!', 'success');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    // Load projects
+    async function loadProjects() {
+      const token = localStorage.getItem('token');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/projects`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load projects');
+        }
+
+        const list = document.getElementById('projects-list');
+        if (data.projects && data.projects.length > 0) {
+          list.innerHTML = data.projects.map(p => `
+            <div class="project-item">
+              <div class="project-info">
+                <h3>${p.project_name}</h3>
+                <p>Created: ${new Date(p.created_at).toLocaleDateString()}</p>
+              </div>
+              <button class="btn btn-primary" onclick="viewProject('${p.id}')">View</button>
+            </div>
+          `).join('');
+        } else {
+          list.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center; padding: 40px;">No projects yet. Create your first project!</p>';
+        }
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    // Show create project
+    function showCreateProject() {
+      document.getElementById('project-name').value = '';
+      showPage('create-project');
+    }
+
+    // Handle create project
+    async function handleCreateProject(e) {
+      e.preventDefault();
+      const projectName = document.getElementById('project-name').value;
+      const token = localStorage.getItem('token');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/projects`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ project_name: projectName })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to create project');
+        }
+
+        currentProject = data;
+        showPage('project-details');
+        renderProjectDetails(data);
+        showMessage('Project created successfully! Save your API keys now.', 'success');
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    // View project
+    async function viewProject(projectId) {
+      const token = localStorage.getItem('token');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load project');
+        }
+
+        currentProject = data;
+        showPage('project-details');
+        renderProjectDetails(data);
+      } catch (err) {
+        showMessage(err.message, 'error');
+      }
+    }
+
+    // Render project details
+    function renderProjectDetails(project) {
+      document.getElementById('project-title').textContent = project.project_name;
+
+      // Check if this is a newly created project with API keys
+      if (project.api_keys) {
+        document.getElementById('project-details-content').innerHTML = `
+          <div style="margin-bottom: 30px;">
+            <h3>API Keys</h3>
+            <p style="color: rgba(255,255,255,0.5); margin-bottom: 15px;">Save these keys now! You won't see the secret key again.</p>
+
+            <div class="api-key-box">
+              <strong>Public Key:</strong><br>
+              <code id="public-key">${project.api_keys.public_key}</code>
+              <button onclick="copyToClipboard('public-key')" style="float: right; padding: 5px 10px; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: #fff; cursor: pointer;">Copy</button>
+            </div>
+
+            <div class="api-key-box">
+              <strong>Secret Key:</strong><br>
+              <code id="secret-key">${project.api_keys.secret_key}</code>
+              <button onclick="copyToClipboard('secret-key')" style="float: right; padding: 5px 10px; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: #fff; cursor: pointer;">Copy</button>
+            </div>
+          </div>
+
+          <div>
+            <h3>Endpoints</h3>
+            <div class="api-key-box">Gateway: <code>${project.endpoints.gateway}</code></div>
+            <div class="api-key-box">Auth: <code>${project.endpoints.auth}</code></div>
+            <div class="api-key-box">GraphQL: <code>${project.endpoints.graphql}</code></div>
+            <div class="api-key-box">REST: <code>${project.endpoints.rest}</code></div>
+            <div class="api-key-box">Realtime: <code>${project.endpoints.realtime}</code></div>
+            <div class="api-key-box">Storage: <code>${project.endpoints.storage}</code></div>
+          </div>
+        `;
+      } else {
+        document.getElementById('project-details-content').innerHTML = `
+          <div>
+            <h3>Project ID</h3>
+            <div class="api-key-box">${project.id}</div>
+          </div>
+          <div style="margin-top: 20px;">
+            <h3>Tenant ID</h3>
+            <div class="api-key-box">${project.tenant_id}</div>
+          </div>
+          <div style="margin-top: 20px;">
+            <h3>Created</h3>
+            <p>${new Date(project.created_at).toLocaleString()}</p>
+          </div>
+        `;
+      }
+    }
+
+    // Copy to clipboard
+    function copyToClipboard(elementId) {
+      const text = document.getElementById(elementId).textContent;
+      navigator.clipboard.writeText(text);
+      showMessage('Copied to clipboard!', 'success');
+    }
+
+    // Show message
+    function showMessage(msg, type) {
+      const el = document.getElementById(type === 'error' ? 'error-message' : 'success-message');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 5000);
+    }
+
+    // Check for existing session
+    window.onload = function() {
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        showPage('dashboard');
+      } else {
+        showPage('home');
+      }
+    };
+  </script>
+</body>
+</html>

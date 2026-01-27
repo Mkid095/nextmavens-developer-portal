@@ -23,9 +23,14 @@ const pgPool = new Pool({
 });
 
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
 app.use(cors());
 app.use(express.json());
+
+// Serve static files
+app.use(express.static('public'));
 
 // Helper functions
 function generateSlug(name) {
