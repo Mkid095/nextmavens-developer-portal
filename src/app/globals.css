@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-plus-jakarta: 'Plus Jakarta Sans';
+    --font-jetbrains-mono: 'JetBrains Mono';
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+  }
+}
+
+@layer components {
+  .container-custom {
+    @apply max-w-[1180px] mx-auto px-8;
+  }
+
+  .btn-primary {
+    @apply px-6 py-2.5 text-sm font-semibold text-white bg-emerald-600 rounded-lg cursor-pointer transition-all duration-200 shadow-[0_2px_8px_rgba(16,185,129,0.2)] hover:translate-y-[-1px] hover:shadow-[0_4px_12px_rgba(16,185,129,0.3)];
+  }
+
+  .btn-secondary {
+    @apply px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-slate-200;
+  }
+}

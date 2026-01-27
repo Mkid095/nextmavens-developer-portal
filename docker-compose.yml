@@ -3,12 +3,9 @@ services:
     build: .
     container_name: nextmavens-developer-portal
     environment:
-      - PORT=3006
-      - DATABASE_URL=postgresql://nextmavens:Elishiba@95@nextmavens-db-m4sxnf.1.mvuvh68efk7jnvynmv8r2jm2u:5432/nextmavens
-      - JWT_SECRET=nextmavens-portal-secret-key-2024
-      - REFRESH_SECRET=nextmavens-refresh-secret-key-2024
+      - PORT=3000
     ports:
-      - "3006:3006"
+      - "3006:3000"
     restart: unless-stopped
     networks:
       - dokploy-network
@@ -17,7 +14,7 @@ services:
       - traefik.http.routers.developer-portal.rule=Host(`portal.nextmavens.cloud`)
       - traefik.http.routers.developer-portal.entrypoints=websecure
       - traefik.http.routers.developer-portal.tls.certresolver=letsencrypt
-      - traefik.http.services.developer-portal.loadbalancer.server.port=3006
+      - traefik.http.services.developer-portal.loadbalancer.server.port=3000
 
 networks:
   dokploy-network:
