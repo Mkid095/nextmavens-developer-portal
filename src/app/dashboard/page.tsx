@@ -240,7 +240,7 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: projectName.trim() }),
+        body: JSON.stringify({ project_name: projectName.trim() }),
       })
 
       const data = await res.json()

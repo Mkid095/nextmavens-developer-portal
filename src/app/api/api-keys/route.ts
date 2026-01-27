@@ -52,10 +52,16 @@ export async function POST(req: NextRequest) {
     let finalProjectId = projectId
 
     if (projectResult.rows.length === 0 && !projectId) {
+      // Create a tenant first
+      const tenantResult = await pool.query(
+        "INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id",
+        ['Default Project', 'default-project']
+      )
+
       // Create a default project
       const newProject = await pool.query(
-        "INSERT INTO projects (developer_id, name, slug) VALUES ($1, $2, $3) RETURNING id",
-        [developer.id, 'Default Project', 'default']
+        "INSERT INTO projects (developer_id, project_name, tenant_id) VALUES ($1, $2, $3) RETURNING id",
+        [developer.id, 'Default Project', tenantResult.rows[0].id]
       )
       finalProjectId = newProject.rows[0].id
     } else if (!finalProjectId) {
