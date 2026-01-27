@@ -90,7 +90,9 @@ export async function POST(req: NextRequest) {
       apiKey: {
         id: apiKey.id.toString(),
         name: name,
-        public_key: apiKey.key_prefix,
+        key_type: apiKey.key_type,
+        key_prefix: apiKey.key_prefix,
+        public_key: publicKey,
         created_at: apiKey.created_at,
       },
       secretKey,
