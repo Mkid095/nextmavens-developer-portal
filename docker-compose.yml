@@ -15,10 +15,11 @@ services:
       - dokploy-network
     labels:
       - traefik.enable=true
-      - traefik.http.routers.developer-portal.rule=Host(`portal.nextmavens.cloud`)
-      - traefik.http.routers.developer-portal.entrypoints=websecure
-      - traefik.http.routers.developer-portal.tls.certresolver=letsencrypt
-      - traefik.http.services.developer-portal.loadbalancer.server.port=3000
+      - traefik.http.routers.portal-nextmavens.rule=Host(`portal.nextmavens.cloud`)
+      - traefik.http.routers.portal-nextmavens.entrypoints=websecure
+      - traefik.http.routers.portal-nextmavens.tls.certresolver=letsencrypt
+      - traefik.http.routers.portal-nextmavens.service=portal-nextmavens-service
+      - traefik.http.services.portal-nextmavens-service.loadbalancer.server.port=3000
 
 networks:
   dokploy-network:
