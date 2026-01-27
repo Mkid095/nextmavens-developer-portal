@@ -10,6 +10,10 @@
 
     :root {
       --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+      --emerald-50: #ecfdf5;
+      --emerald-100: #d1fae5;
+      --emerald-200: #a7f3d0;
+      --emerald-400: #34d399;
       --emerald-500: #10b981;
       --emerald-600: #059669;
       --emerald-700: #047857;
@@ -31,22 +35,28 @@
       background: var(--slate-50);
       min-height: 100vh;
       color: var(--slate-900);
-    }
-
-    .nav {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 32px;
-      max-width: 1180px;
-      margin: 0 auto;
-      border-bottom: 1px solid var(--slate-200);
     }
 
-    .logo-container {
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: white;
+      border-right: 1px solid var(--slate-200);
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-logo {
+      padding: 20px 24px;
       display: flex;
       align-items: center;
       gap: 12px;
+      border-bottom: 1px solid var(--slate-200);
     }
 
     .logo-icon {
@@ -66,20 +76,105 @@
       color: var(--slate-900);
     }
 
-    .user-menu {
+    .sidebar-nav {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: 24px;
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--slate-400);
+      padding: 0 12px 8px;
+    }
+
+    .nav-item {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: var(--slate-600);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover {
+      background: var(--slate-100);
+      color: var(--slate-900);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, var(--emerald-50), var(--emerald-100));
+      color: var(--emerald-700);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    .sidebar-user {
+      padding: 16px;
+      border-top: 1px solid var(--slate-200);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--emerald-600), var(--emerald-700));
+      color: white;
+      display: grid;
+      place-items:;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .user-details {
+      flex: 1;
+      min-width: 0;
     }
 
     .user-name {
       font-size: 14px;
-      color: var(--slate-600);
+      font-weight: 600;
+      color: var(--slate-900);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-email {
+      font-size: 12px;
+      color: var(--slate-500);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .btn-logout {
-      padding: 8px 16px;
-      font-size: 14px;
+      width: 100%;
+      padding: 8px;
+      font-size: 13px;
       color: var(--slate-600);
       background: var(--slate-100);
       border: none;
@@ -90,54 +185,104 @@
 
     .btn-logout:hover { background: var(--slate-200); }
 
-    .container {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 32px;
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      margin-left: 260px;
+      min-height: 100vh;
     }
 
-    .header {
+    .top-bar {
+      background: white;
+      border-bottom: 1px solid var(--slate-200);
+      padding: 16px 32px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 32px;
     }
 
-    .header h1 {
-      font-size: 32px;
+    .page-title {
+      font-size: 24px;
       font-weight: 700;
       color: var(--slate-900);
     }
 
-    .btn-primary {
-      padding: 12px 24px;
-      font-size: 14px;
-      font-weight: 600;
-      color: white;
-      background: linear-gradient(135deg, var(--emerald-600), var(--emerald-700));
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
-      transition: all 0.2s;
+    .content {
+      padding: 32px;
+      max-width: 1200px;
     }
 
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-
-    .projects-grid {
+    /* Stats Grid */
+    .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 20px;
+      margin-bottom: 32px;
     }
 
-    .project-card {
+    .stat-card {
       background: white;
       border: 1px solid var(--slate-200);
       border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--slate-500);
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+
+    .stat-change {
+      font-size: 12px;
+      color: var(--emerald-600);
+      margin-top: 4px;
+    }
+
+    /* Section */
+    .section {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--slate-900);
+    }
+
+    .section-content {
       padding: 24px;
+    }
+
+    /* Projects Grid */
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .project-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 20px;
       transition: all 0.2s;
     }
 
@@ -147,10 +292,17 @@
     }
 
     .project-name {
-      font-size: 18px;
-      font-weight: 700;
+      font-size: 16px;
+      font-weight: 600;
       color: var(--slate-900);
-      margin-bottom: 8px;
+      margin-bottom: 4px;
+    }
+
+    .project-id {
+      font-size: 12px;
+      color: var(--slate-400);
+      font-family: monospace;
+      margin-bottom: 12px;
     }
 
     .project-meta {
@@ -164,38 +316,164 @@
       gap: 8px;
     }
 
-    .btn-view {
+    .btn {
       padding: 8px 16px;
       font-size: 13px;
       font-weight: 500;
-      color: var(--slate-700);
-      background: var(--slate-100);
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
 
-    .btn-view:hover { background: var(--slate-200); }
-
-    .empty-state {
-      text-align: center;
-      padding: 64px 32px;
-      background: white;
-      border: 1px dashed var(--slate-300);
-      border-radius: 16px;
+    .btn-primary {
+      background: linear-gradient(135deg, var(--emerald-600), var(--emerald-700));
+      color: white;
     }
 
-    .empty-state h3 {
-      font-size: 20px;
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-secondary {
+      background: var(--slate-100);
+      color: var(--slate-700);
+    }
+
+    .btn-secondary:hover { background: var(--slate-200); }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Services Grid */
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .service-card {
+      border: 1px solid var(--slate-200);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.2s;
+    }
+
+    .service-card:hover {
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      border-color: var(--emerald-300);
+    }
+
+    .service-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .service-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--emerald-100), var(--emerald-200));
+      display: grid;
+      place-items: center;
+    }
+
+    .service-icon svg {
+      width: 20px;
+      height: 20px;
+      stroke: var(--emerald-700);
+      stroke-width: 2;
+    }
+
+    .service-name {
+      font-size: 16px;
       font-weight: 600;
       color: var(--slate-900);
-      margin-bottom: 8px;
     }
 
-    .empty-state p {
+    .service-description {
+      font-size: 13px;
       color: var(--slate-500);
-      margin-bottom: 24px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    .service-features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .feature-tag {
+      font-size: 11px;
+      padding: 4px 8px;
+      background: var(--slate-100);
+      color: var(--slate-600);
+      border-radius: 4px;
+    }
+
+    .service-endpoint {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--slate-500);
+      background: var(--slate-50);
+      padding: 8px;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+
+    /* API Keys List */
+    .keys-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .key-item {
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .key-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .key-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--slate-900);
+      margin-bottom: 4px;
+    }
+
+    .key-preview {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--slate-500);
+      background: var(--slate-100);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .key-meta {
+      font-size: 12px;
+      color: var(--slate-400);
+      margin-top: 4px;
+    }
+
+    .key-actions {
+      display: flex;
+      gap: 8px;
     }
 
     /* Modal */
@@ -218,8 +496,10 @@
       border-radius: 16px;
       padding: 32px;
       width: 100%;
-      max-width: 450px;
+      max-width: 500px;
       box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal h2 {
@@ -239,7 +519,7 @@
       margin-bottom: 8px;
     }
 
-    .form-group input {
+    .form-group input, .form-group select {
       width: 100%;
       padding: 12px 16px;
       border: 1px solid var(--slate-200);
@@ -248,16 +528,10 @@
       font-family: var(--font-sans);
     }
 
-    .form-group input:focus {
+    .form-group input:focus, .form-group select:focus {
       outline: none;
       border-color: var(--emerald-500);
       box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    }
-
-    .form-hint {
-      font-size: 12px;
-      color: var(--slate-400);
-      margin-top: 4px;
     }
 
     .modal-buttons {
@@ -266,31 +540,17 @@
       margin-top: 24px;
     }
 
-    .btn-secondary {
-      flex: 1;
-      padding: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--slate-700);
-      background: var(--slate-100);
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
+    .modal-buttons .btn { flex: 1; }
 
-    .btn-secondary:hover { background: var(--slate-200); }
-
-    /* Project Detail Modal */
-    .detail-modal { max-width: 600px; }
-
-    .api-key-section {
+    /* API Key Display */
+    .api-key-display {
       background: var(--slate-50);
       padding: 16px;
       border-radius: 10px;
       margin-bottom: 16px;
     }
 
-    .api-key-section h4 {
+    .api-key-display h4 {
       font-size: 13px;
       font-weight: 600;
       color: var(--slate-700);
@@ -315,48 +575,6 @@
       word-break: break-all;
     }
 
-    .btn-copy {
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--slate-700);
-      background: var(--slate-100);
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-
-    .btn-copy:hover { background: var(--slate-200); }
-
-    .endpoints-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 16px;
-    }
-
-    .endpoint-item {
-      background: var(--slate-50);
-      padding: 12px;
-      border-radius: 8px;
-    }
-
-    .endpoint-item label {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--slate-500);
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .endpoint-item code {
-      font-size: 12px;
-      font-family: monospace;
-      color: var(--slate-700);
-    }
-
     .warning-box {
       background: #fef3c7;
       border: 1px solid #fcd34d;
@@ -364,6 +582,30 @@
       padding: 12px;
       border-radius: 8px;
       font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 32px;
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      stroke: var(--slate-300);
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--slate-900);
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      color: var(--slate-500);
       margin-bottom: 20px;
     }
 
@@ -378,11 +620,39 @@
       font-size: 14px;
       margin-bottom: 16px;
     }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--slate-400);
+    }
+
+    .loading::after {
+      content: '';
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--slate-200);
+      border-top-color: var(--emerald-600);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 12px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* View switching */
+    .view { display: none; }
+    .view.active { display: block; }
   </style>
 </head>
 <body>
-  <nav class="nav">
-    <div class="logo-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
       <div class="logo-icon">
         <svg viewBox="0 0 24 24">
           <path d="M4 12c5 0 4-8 10-8 0 3 6 3 6 8s-6 5-6 8c-6 0-5-8-10-8Z"/>
@@ -390,54 +660,197 @@
       </div>
       <span class="logo-text">nextmavens</span>
     </div>
-    <div class="user-menu">
-      <span class="user-name" id="user-name">Loading...</span>
-      <button class="btn-logout" onclick="logout()">Logout</button>
-    </div>
-  </nav>
 
-  <div class="container">
-    <div class="header">
-      <h1>My Projects</h1>
-      <button class="btn-primary" onclick="openCreateModal()">+ New Project</button>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">Overview</div>
+        <a class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          Dashboard
+        </a>
+        <a class="nav-item" data-view="projects" onclick="switchView('projects')">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          Projects
+        </a>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Services</div>
+        <a class="nav-item" data-view="services" onclick="switchView('services')">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+          All Services
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="user-info">
+        <div class="user-avatar" id="user-avatar">U</div>
+        <div class="user-details">
+          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-email" id="user-email"></div>
+        </div>
+      </div>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="top-bar">
+      <h1 class="page-title" id="page-title">Dashboard</h1>
     </div>
 
-    <div id="projects-container" class="projects-grid"></div>
-  </div>
+    <div class="content">
+      <!-- Dashboard View -->
+      <div id="view-dashboard" class="view active">
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Projects</div>
+            <div class="stat-value" id="stat-projects">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Active API Keys</div>
+            <div class="stat-value" id="stat-keys">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Requests (30d)</div>
+            <div class="stat-value" id="stat-requests">-</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Services Active</div>
+            <div class="stat-value">5</div>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Recent Projects</h2>
+            <button class="btn btn-primary btn-sm" onclick="openCreateProjectModal()">+ New Project</button>
+          </div>
+          <div class="section-content">
+            <div class="projects-grid" id="recent-projects"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Projects View -->
+      <div id="view-projects" class="view">
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">My Projects</h2>
+            <button class="btn btn-primary btn-sm" onclick="openCreateProjectModal()">+ New Project</button>
+          </div>
+          <div class="section-content">
+            <div class="projects-grid" id="all-projects"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Services View -->
+      <div id="view-services" class="view">
+        <div class="services-grid" id="services-grid"></div>
+      </div>
+
+      <!-- Project Detail View -->
+      <div id="view-project-detail" class="view">
+        <button class="btn btn-secondary btn-sm" onclick="switchView('projects')" style="margin-bottom: 16px;">← Back to Projects</button>
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title" id="detail-project-name">Project</h2>
+          </div>
+          <div class="section-content" id="project-detail-content"></div>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <!-- Create Project Modal -->
-  <div class="modal-overlay" id="create-modal">
+  <div class="modal-overlay" id="create-project-modal">
     <div class="modal">
       <h2>Create New Project</h2>
-      <div id="create-error" class="error-message hidden"></div>
+      <div id="create-project-error" class="error-message hidden"></div>
       <form onsubmit="handleCreateProject(event)">
         <div class="form-group">
           <label>Project Name</label>
           <input type="text" id="project-name" required placeholder="my-awesome-app">
-          <div class="form-hint">Only lowercase letters, numbers, and hyphens</div>
         </div>
         <div class="modal-buttons">
-          <button type="button" class="btn-secondary" onclick="closeModals()">Cancel</button>
-          <button type="submit" class="btn-primary">Create Project</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Project</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Project Detail Modal -->
-  <div class="modal-overlay" id="detail-modal">
-    <div class="modal detail-modal">
-      <h2 id="detail-title">Project</h2>
-      <div id="detail-content"></div>
+  <!-- Create API Key Modal -->
+  <div class="modal-overlay" id="create-key-modal">
+    <div class="modal">
+      <h2>Create API Key</h2>
+      <div id="create-key-error" class="error-message hidden"></div>
+      <form onsubmit="handleCreateKey(event)">
+        <input type="hidden" id="key-project-id">
+        <div class="form-group">
+          <label>Service</label>
+          <select id="key-service" required>
+            <option value="general">General (All Services)</option>
+            <option value="database">Database</option>
+            <option value="auth">Authentication</option>
+            <option value="realtime">Realtime</option>
+            <option value="storage">Storage</option>
+            <option value="mcp">MCP Server</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Key Type</label>
+          <select id="key-type" required>
+            <option value="public">Public (Client-side)</option>
+            <option value="secret">Secret (Server-side)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Name (Optional)</label>
+          <input type="text" id="key-name" placeholder="Production key">
+        </div>
+        <div class="modal-buttons">
+          <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Key</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Show New Key Modal -->
+  <div class="modal-overlay" id="show-key-modal">
+    <div class="modal">
+      <h2>Your API Key</h2>
+      <div class="warning-box">
+        <strong>Important:</strong> Save this API key now! You won't be able to see it again after closing this modal.
+      </div>
+      <div class="api-key-display">
+        <h4>API Key</h4>
+        <div class="api-key-box">
+          <code id="new-key-value"></code>
+          <button class="btn btn-secondary btn-sm" onclick="copyNewKey()">Copy</button>
+        </div>
+      </div>
       <div class="modal-buttons">
-        <button type="button" class="btn-secondary" onclick="closeModals()">Close</button>
+        <button type="button" class="btn btn-primary" onclick="closeKeyModal()">I've Saved It</button>
       </div>
     </div>
   </div>
 
   <script>
     const API_BASE = window.location.origin;
-    let currentProject = null;
 
     // Check auth
     function checkAuth() {
@@ -453,12 +866,61 @@
     function loadUser() {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       document.getElementById('user-name').textContent = user.name || 'Developer';
+      document.getElementById('user-email').textContent = user.email || '';
+      document.getElementById('user-avatar').textContent = (user.name || 'D')[0].toUpperCase();
+    }
+
+    // Switch views
+    function switchView(view) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+      document.getElementById('view-' + view)?.classList.add('active');
+      document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
+
+      // Update page title
+      const titles = {
+        dashboard: 'Dashboard',
+        projects: 'Projects',
+        services: 'Services',
+        'project-detail': 'Project Details'
+      };
+      document.getElementById('page-title').textContent = titles[view] || 'Dashboard';
+
+      // Load data
+      if (view === 'dashboard') loadDashboard();
+      else if (view === 'projects') loadProjects();
+      else if (view === 'services') loadServices();
+    }
+
+    // Load dashboard
+    async function loadDashboard() {
+      const token = localStorage.getItem('token');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/developer/dashboard`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Failed to load dashboard');
+
+        const stats = data.dashboard;
+        document.getElementById('stat-projects').textContent = stats.total_projects || 0;
+        document.getElementById('stat-keys').textContent = stats.active_api_keys || 0;
+        document.getElementById('stat-requests').textContent = (stats.total_requests_30d || 0).toLocaleString();
+
+        // Load recent projects
+        loadProjects(true);
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     // Load projects
-    async function loadProjects() {
+    async function loadProjects(recent = false) {
       const token = localStorage.getItem('token');
-      const container = document.getElementById('projects-container');
 
       try {
         const res = await fetch(`${API_BASE}/api/projects`, {
@@ -467,45 +929,186 @@
 
         const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to load projects');
-        }
+        if (!res.ok) throw new Error(data.error || 'Failed to load projects');
 
-        if (data.projects && data.projects.length > 0) {
-          container.innerHTML = data.projects.map(p => `
+        const projects = data.projects || [];
+        const containerId = recent ? 'recent-projects' : 'all-projects';
+        const container = document.getElementById(containerId);
+
+        if (projects.length > 0) {
+          container.innerHTML = projects.slice(0, recent ? 3 : undefined).map(p => `
             <div class="project-card">
               <div class="project-name">${escapeHtml(p.project_name)}</div>
+              <div class="project-id">${escapeHtml(p.id.substring(0, 8))}</div>
               <div class="project-meta">
                 Created: ${new Date(p.created_at).toLocaleDateString()}
               </div>
               <div class="project-actions">
-                <button class="btn-view" onclick="viewProject('${p.id}')">View Details</button>
+                <button class="btn btn-secondary btn-sm" onclick="viewProject('${p.id}')">Manage</button>
               </div>
             </div>
           `).join('');
         } else {
           container.innerHTML = `
             <div class="empty-state" style="grid-column: 1 / -1;">
-              <h3>No projects yet</h3>
-              <p>Create your first project to get started</p>
-              <button class="btn-primary" onclick="openCreateModal()">+ Create Project</button>
+              <p>No projects yet. Create your first project!</p>
             </div>
           `;
         }
       } catch (err) {
-        container.innerHTML = `
-          <div class="empty-state" style="grid-column: 1 / -1;">
-            <p style="color: #dc2626;">${escapeHtml(err.message)}</p>
-          </div>
-        `;
+        console.error(err);
       }
     }
 
-    // Open create modal
-    function openCreateModal() {
+    // Load services
+    async function loadServices() {
+      const token = localStorage.getItem('token');
+      const container = document.getElementById('services-grid');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/services`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Failed to load services');
+
+        const services = data.services || [];
+        container.innerHTML = services.map(s => `
+          <div class="service-card">
+            <div class="service-header">
+              <div class="service-icon">
+                ${getServiceIcon(s.id)}
+              </div>
+              <div class="service-name">${s.name}</div>
+            </div>
+            <div class="service-description">${s.description}</div>
+            <div class="service-features">
+              ${s.features.map(f => `<span class="feature-tag">${f}</span>`).join('')}
+            </div>
+            <div class="service-endpoint">
+              ${Object.entries(s.endpoints).map(([k, v]) => `<div>${k}: ${v}</div>`).join('')}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="error-message">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    // Get service icon
+    function getServiceIcon(serviceId) {
+      const icons = {
+        database: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>`,
+        auth: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>`,
+        realtime: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
+        storage: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>`,
+        mcp: `<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>`
+      };
+      return icons[serviceId] || icons.database;
+    }
+
+    // View project detail
+    async function viewProject(projectId) {
+      const token = localStorage.getItem('token');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/projects/${projectId}/service-keys`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Failed to load project');
+
+        document.getElementById('detail-project-name').textContent = data.project.project_name;
+
+        const content = document.getElementById('project-detail-content');
+        content.innerHTML = `
+          <div style="margin-bottom: 24px;">
+            <h3 style="font-size: 14px; color: var(--slate-500); margin-bottom: 8px;">Project ID</h3>
+            <code style="font-size: 13px; background: var(--slate-100); padding: 8px 12px; border-radius: 6px;">${escapeHtml(data.project.id)}</code>
+          </div>
+
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h3 style="font-size: 16px; font-weight: 600;">API Keys</h3>
+              <button class="btn btn-primary btn-sm" onclick="openCreateKeyModal('${projectId}')">+ Create Key</button>
+            </div>
+            <div class="keys-list">
+              ${renderKeysByService(data.keys)}
+            </div>
+          </div>
+
+          <div>
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">Endpoints</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+              <div class="service-endpoint">Gateway: https://api.nextmavens.cloud</div>
+              <div class="service-endpoint">Auth: https://auth.nextmavens.cloud</div>
+              <div class="service-endpoint">GraphQL: https://graphql.nextmavens.cloud</div>
+              <div class="service-endpoint">Realtime: wss://realtime.nextmavens.cloud</div>
+              <div class="service-endpoint">Storage: https://telegram.nextmavens.cloud</div>
+              <div class="service-endpoint">MCP: github.com/Mkid095/nextmavens-mcp-server</div>
+            </div>
+          </div>
+        `;
+
+        switchView('project-detail');
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+
+    // Render keys by service
+    function renderKeysByService(keys) {
+      const serviceNames = {
+        database: 'Database',
+        auth: 'Authentication',
+        realtime: 'Realtime',
+        storage: 'Storage',
+        mcp: 'MCP Server',
+        general: 'General'
+      };
+
+      const hasKeys = Object.values(keys).some(k => k.length > 0);
+
+      if (!hasKeys) {
+        return `
+          <div class="empty-state">
+            <p>No API keys yet. Create your first key to get started!</p>
+          </div>
+        `;
+      }
+
+      return Object.entries(keys).map(([service, serviceKeys]) => {
+        if (serviceKeys.length === 0) return '';
+
+        return `
+          <div style="margin-bottom: 16px;">
+            <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--slate-700);">${serviceNames[service] || service}</h4>
+            ${serviceKeys.map(k => `
+              <div class="key-item">
+                <div class="key-info">
+                  <div class="key-name">${escapeHtml(k.name || `${k.key_type} key`)}</div>
+                  <div class="key-preview">${k.key_prefix}•••••••••••••••••••••••</div>
+                  <div class="key-meta">Created: ${new Date(k.created_at).toLocaleString()}</div>
+                </div>
+                <div class="key-actions">
+                  <button class="btn btn-secondary btn-sm" onclick="revokeKey('${k.id}')">Revoke</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Open create project modal
+    function openCreateProjectModal() {
       document.getElementById('project-name').value = '';
-      document.getElementById('create-error').classList.add('hidden');
-      document.getElementById('create-modal').classList.add('active');
+      document.getElementById('create-project-error').classList.add('hidden');
+      document.getElementById('create-project-modal').classList.add('active');
     }
 
     // Handle create project
@@ -526,125 +1129,110 @@
 
         const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to create project');
-        }
+        if (!res.ok) throw new Error(data.error || 'Failed to create project');
 
-        currentProject = data;
         closeModals();
-        showProjectDetails(data);
+        loadDashboard();
         loadProjects();
+
+        // Show success with keys
+        showNewKey(data.api_keys.public_key, 'Public Key');
       } catch (err) {
-        const errorEl = document.getElementById('create-error');
+        const errorEl = document.getElementById('create-project-error');
         errorEl.textContent = err.message;
         errorEl.classList.remove('hidden');
       }
     }
 
-    // View project
-    async function viewProject(projectId) {
+    // Open create key modal
+    function openCreateKeyModal(projectId) {
+      document.getElementById('key-project-id').value = projectId;
+      document.getElementById('key-service').value = 'general';
+      document.getElementById('key-type').value = 'public';
+      document.getElementById('key-name').value = '';
+      document.getElementById('create-key-error').classList.add('hidden');
+      document.getElementById('create-key-modal').classList.add('active');
+    }
+
+    // Handle create key
+    async function handleCreateKey(e) {
+      e.preventDefault();
+      const projectId = document.getElementById('key-project-id').value;
+      const service = document.getElementById('key-service').value;
+      const keyType = document.getElementById('key-type').value;
+      const name = document.getElementById('key-name').value;
       const token = localStorage.getItem('token');
 
       try {
-        const res = await fetch(`${API_BASE}/api/projects/${projectId}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        const res = await fetch(`${API_BASE}/api/projects/${projectId}/service-keys`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            service,
+            key_type: keyType,
+            name: name || undefined
+          })
         });
 
         const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.error || 'Failed to load project');
-        }
+        if (!res.ok) throw new Error(data.error || 'Failed to create API key');
 
-        showProjectDetails(data);
+        closeModals();
+        showNewKey(data.api_key.key);
+        viewProject(projectId);
       } catch (err) {
-        alert(err.message);
+        const errorEl = document.getElementById('create-key-error');
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
       }
     }
 
-    // Show project details
-    function showProjectDetails(project) {
-      document.getElementById('detail-title').textContent = project.project_name;
-
-      if (project.api_keys) {
-        document.getElementById('detail-content').innerHTML = `
-          <div class="warning-box">
-            <strong>Save your API keys now!</strong> You won't be able to see the secret key again after closing this modal.
-          </div>
-
-          <div class="api-key-section">
-            <h4>Public Key (Client-side)</h4>
-            <div class="api-key-box">
-              <code id="public-key">${escapeHtml(project.api_keys.public_key)}</code>
-              <button class="btn-copy" onclick="copyToClipboard('public-key')">Copy</button>
-            </div>
-          </div>
-
-          <div class="api-key-section">
-            <h4>Secret Key (Server-side)</h4>
-            <div class="api-key-box">
-              <code id="secret-key">${escapeHtml(project.api_keys.secret_key)}</code>
-              <button class="btn-copy" onclick="copyToClipboard('secret-key')">Copy</button>
-            </div>
-          </div>
-
-          <h4>API Endpoints</h4>
-          <div class="endpoints-grid">
-            <div class="endpoint-item">
-              <label>Gateway</label>
-              <code>${escapeHtml(project.endpoints.gateway)}</code>
-            </div>
-            <div class="endpoint-item">
-              <label>Auth</label>
-              <code>${escapeHtml(project.endpoints.auth)}</code>
-            </div>
-            <div class="endpoint-item">
-              <label>GraphQL</label>
-              <code>${escapeHtml(project.endpoints.graphql)}</code>
-            </div>
-            <div class="endpoint-item">
-              <label>REST API</label>
-              <code>${escapeHtml(project.endpoints.rest)}</code>
-            </div>
-            <div class="endpoint-item">
-              <label>Realtime</label>
-              <code>${escapeHtml(project.endpoints.realtime)}</code>
-            </div>
-            <div class="endpoint-item">
-              <label>Storage</label>
-              <code>${escapeHtml(project.endpoints.storage)}</code>
-            </div>
-          </div>
-        `;
-      } else {
-        document.getElementById('detail-content').innerHTML = `
-          <div class="api-key-section">
-            <h4>Project ID</h4>
-            <div class="api-key-box"><code>${escapeHtml(project.id)}</code></div>
-          </div>
-          <div class="api-key-section">
-            <h4>Tenant ID</h4>
-            <div class="api-key-box"><code>${escapeHtml(project.tenant_id)}</code></div>
-          </div>
-          <div class="api-key-section">
-            <h4>Created</h4>
-            <p>${new Date(project.created_at).toLocaleString()}</p>
-          </div>
-        `;
-      }
-
-      document.getElementById('detail-modal').classList.add('active');
+    // Show new key
+    function showNewKey(key, label = 'API Key') {
+      document.getElementById('new-key-value').textContent = key;
+      document.getElementById('show-key-modal').classList.add('active');
     }
 
-    // Copy to clipboard
-    function copyToClipboard(elementId) {
-      const text = document.getElementById(elementId).textContent;
-      navigator.clipboard.writeText(text).then(() => {
+    // Copy new key
+    function copyNewKey() {
+      const key = document.getElementById('new-key-value').textContent;
+      navigator.clipboard.writeText(key).then(() => {
         const btn = event.target;
         const originalText = btn.textContent;
         btn.textContent = 'Copied!';
         setTimeout(() => btn.textContent = originalText, 2000);
       });
+    }
+
+    // Close key modal
+    function closeKeyModal() {
+      document.getElementById('show-key-modal').classList.remove('active');
+    }
+
+    // Revoke key
+    async function revokeKey(keyId) {
+      if (!confirm('Are you sure you want to revoke this API key? This action cannot be undone.')) return;
+
+      const token = localStorage.getItem('token');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/keys/${keyId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error('Failed to revoke API key');
+
+        // Reload current view
+        const projectId = document.getElementById('key-project-id').value;
+        if (projectId) viewProject(projectId);
+      } catch (err) {
+        alert(err.message);
+      }
     }
 
     // Close modals
@@ -681,7 +1269,7 @@
     // Init
     if (checkAuth()) {
       loadUser();
-      loadProjects();
+      loadDashboard();
     }
   </script>
 </body>

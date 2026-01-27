@@ -619,6 +619,243 @@ app.get('/api/projects/:id/schema', authenticateDeveloper, async (req, res) => {
   }
 });
 
+// ============ SERVICES MANAGEMENT ============
+
+// Get available services
+app.get('/api/services', authenticateDeveloper, async (req, res) => {
+  try {
+    const services = [
+      {
+        id: 'database',
+        name: 'Database',
+        description: 'PostgreSQL database with auto-generated REST & GraphQL APIs',
+        icon: 'database',
+        status: 'active',
+        features: ['PostgREST API', 'GraphQL API', 'Row-Level Security', 'Multi-tenant'],
+        endpoints: {
+          rest: 'https://api.nextmavens.cloud',
+          graphql: 'https://graphql.nextmavens.cloud'
+        }
+      },
+      {
+        id: 'auth',
+        name: 'Authentication',
+        description: 'JWT-based authentication with user management',
+        icon: 'shield',
+        status: 'active',
+        features: ['JWT Tokens', 'User Registration', 'Password Reset', 'Social Auth'],
+        endpoints: {
+          auth: 'https://auth.nextmavens.cloud'
+        }
+      },
+      {
+        id: 'realtime',
+        name: 'Realtime',
+        description: 'WebSocket subscriptions for live database updates',
+        icon: 'zap',
+        status: 'active',
+        features: ['WebSocket', 'Live Updates', 'Event Filtering', 'Auto-reconnect'],
+        endpoints: {
+          websocket: 'wss://realtime.nextmavens.cloud'
+        }
+      },
+      {
+        id: 'storage',
+        name: 'Storage',
+        description: 'File storage via Telegram integration',
+        icon: 'folder',
+        status: 'active',
+        features: ['File Upload', 'CDN', 'Telegram Integration', 'Multiple File Types'],
+        endpoints: {
+          storage: 'https://telegram.nextmavens.cloud'
+        }
+      },
+      {
+        id: 'mcp',
+        name: 'MCP Server',
+        description: 'Model Context Protocol server for AI/IDE integration',
+        icon: 'cpu',
+        status: 'active',
+        features: ['Claude Integration', 'ChatGPT Integration', 'Database Tools', 'Auth Tools'],
+        endpoints: {
+          npm: 'https://github.com/Mkid095/nextmavens-mcp-server'
+        }
+      }
+    ];
+
+    res.json({ services });
+  } catch (error) {
+    console.error('[Developer Portal] Services error:', error);
+    res.status(500).json({ error: 'Failed to get services' });
+  }
+});
+
+// Get service-specific API keys for a project
+app.get('/api/projects/:id/service-keys', authenticateDeveloper, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Verify project ownership
+    const project = await pgPool.query(
+      'SELECT id, project_name, tenant_id FROM projects WHERE id = $1 AND developer_id = $2',
+      [id, req.developer.id]
+    );
+
+    if (project.rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Get API keys grouped by service
+    const keys = await pgPool.query(`
+      SELECT
+        id,
+        key_type,
+        key_prefix,
+        scopes,
+        created_at,
+        last_used_at,
+        revoked_at
+      FROM api_keys
+      WHERE project_id = $1
+        AND revoked_at IS NULL
+      ORDER BY created_at DESC
+    `, [id]);
+
+    // Group keys by type
+    const groupedKeys = {
+      database: keys.rows.filter(k => k.scopes.includes('database')),
+      auth: keys.rows.filter(k => k.scopes.includes('auth')),
+      realtime: keys.rows.filter(k => k.scopes.includes('realtime')),
+      storage: keys.rows.filter(k => k.scopes.includes('storage')),
+      mcp: keys.rows.filter(k => k.scopes.includes('mcp')),
+      general: keys.rows.filter(k => !k.scopes.some(s => ['database', 'auth', 'realtime', 'storage', 'mcp'].includes(s)))
+    };
+
+    res.json({
+      project: project.rows[0],
+      keys: groupedKeys,
+      total_keys: keys.rows.length
+    });
+  } catch (error) {
+    console.error('[Developer Portal] Service keys error:', error);
+    res.status(500).json({ error: 'Failed to get service keys' });
+  }
+});
+
+// Create service-specific API key
+app.post('/api/projects/:id/service-keys', authenticateDeveloper, [
+  body('service').isIn(['database', 'auth', 'realtime', 'storage', 'mcp', 'general']),
+  body('key_type').isIn(['public', 'secret']),
+  body('name').optional().trim().isLength({ max: 100 })
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { id } = req.params;
+  const { service, key_type, name } = req.body;
+
+  try {
+    // Verify project ownership
+    const project = await pgPool.query(
+      'SELECT id FROM projects WHERE id = $1 AND developer_id = $2',
+      [id, req.developer.id]
+    );
+
+    if (project.rows.length === 0) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Generate API key
+    const servicePrefix = service === 'general' ? 'nm_live' : `nm_${service.substring(0, 2)}_`;
+    const keyPrefix = `${servicePrefix}_${key_type === 'public' ? 'pk' : 'sk'}_`;
+    const keyValue = crypto.randomBytes(32).toString('hex');
+    const fullKey = `${keyPrefix}${keyValue}`;
+
+    // Determine scopes based on service
+    const scopes = service === 'general'
+      ? (key_type === 'public' ? ['read'] : ['read', 'write'])
+      : [service, key_type === 'secret' ? 'write' : 'read'];
+
+    const result = await pgPool.query(`
+      INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, scopes, name)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, key_type, key_prefix, scopes, name, created_at
+    `, [id, key_type, keyPrefix, hashApiKey(fullKey), scopes, name || `${service} ${key_type} key`]);
+
+    res.status(201).json({
+      api_key: {
+        ...result.rows[0],
+        key: fullKey, // Only show once!
+        service
+      },
+      warning: 'Save this API key now! You won\'t be able to see it again.'
+    });
+  } catch (error) {
+    console.error('[Developer Portal] Create service key error:', error);
+    res.status(500).json({ error: 'Failed to create API key' });
+  }
+});
+
+// Revoke API key
+app.delete('/api/keys/:keyId', authenticateDeveloper, async (req, res) => {
+  const { keyId } = req.params;
+
+  try {
+    // Verify key belongs to developer's project
+    const result = await pgPool.query(`
+      UPDATE api_keys
+      SET revoked_at = NOW()
+      WHERE id = $1
+        AND project_id IN (SELECT id FROM projects WHERE developer_id = $2)
+      RETURNING id
+    `, [keyId, req.developer.id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'API key not found' });
+    }
+
+    res.json({ revoked: true });
+  } catch (error) {
+    console.error('[Developer Portal] Revoke key error:', error);
+    res.status(500).json({ error: 'Failed to revoke API key' });
+  }
+});
+
+// Get service usage stats
+app.get('/api/projects/:id/service-stats', authenticateDeveloper, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Get request breakdown by service
+    const byService = await pgPool.query(`
+      SELECT
+        CASE
+          WHEN path LIKE '/api/auth%' THEN 'auth'
+          WHEN path LIKE '/api/files%' THEN 'storage'
+          WHEN path ~ '^/api/[^/]+$' THEN 'database'
+          ELSE 'other'
+        END as service,
+        COUNT(*) as requests,
+        AVG(duration_ms) as avg_duration
+      FROM gateway_logs
+      WHERE project_id = $1
+        AND created_at > NOW() - INTERVAL '30 days'
+      GROUP BY service
+      ORDER BY requests DESC
+    `, [id]);
+
+    res.json({
+      stats: byService.rows,
+      period: '30 days'
+    });
+  } catch (error) {
+    console.error('[Developer Portal] Service stats error:', error);
+    res.status(500).json({ error: 'Failed to get service stats' });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`
