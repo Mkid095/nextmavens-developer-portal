@@ -1,0 +1,225 @@
+{
+  "project": "Audit Logs Viewer",
+  "branchName": "flow/audit-logs-viewer",
+  "description": "Comprehensive audit log viewer UI for filtering, searching, and exporting audit activity in the NextMavens Developer Portal",
+
+  "relatedPRDs": [
+    {
+      "prd": "prd-abuse-controls.json",
+      "type": "depended_by",
+      "status": "incomplete",
+      "reason": "Abuse controls feature consumes audit logs for monitoring and alerting",
+      "integration": "Audit log data for abuse detection patterns, suspicious activity monitoring"
+    }
+  ],
+
+  "consolidatedMemory": "",
+
+  "lessonsLearned": "# Lessons Learned from Codebase Analysis\n\n## Tech Stack\n- Framework: Next.js 14 with App Router for server and client components\n- Language: TypeScript with strict mode enabled\n- Styling: Tailwind CSS with emerald/slate color scheme\n- State: React hooks (useState, useEffect, useCallback) for local state\n- Database: PostgreSQL via @nextmavens/audit-logs-database package\n- Auth: JWT tokens stored in localStorage (see security notes)\n- UI Libraries: Framer Motion for animations, Lucide React for icons\n\n## Architecture\n- Feature-based architecture: `src/features/audit-logs/` for feature code\n- Shared types: `src/lib/types/audit.types.ts` for type definitions\n- API integration: Direct fetch calls to external audit API\n- Path aliases: `@/*` maps to `./src/*` for clean imports\n\n## Security Considerations\n- Input sanitization critical for XSS prevention\n- All metadata deeply sanitized before display\n- User agent strings sanitized to remove dangerous content\n- CSV export protected against CSV injection attacks\n- localStorage token storage has XSS implications (documented in code)\n- Filter validation against allowlists (ACTION_TYPES, TARGET_TYPES)\n- ISO date validation for date range filters\n\n## Integration Patterns\n- External audit API: NEXT_PUBLIC_AUDIT_API_URL environment variable\n- Authentication: Bearer token from localStorage\n- Error handling: 401 responses trigger token clear and redirect to login\n- Pagination: offset-based with configurable RESULTS_PER_PAGE (50)\n\n## Common Patterns\n- Client components marked with 'use client' directive\n- AnimatePresence from Framer Motion for expandable content\n- Async/await with try/catch for error handling\n- Type-safe API responses with TypeScript interfaces\n- Color-coded badges for action types (emerald/amber/red/blue)\n\n## Known Issues/Tech Debt\n- localStorage token storage vulnerable to XSS (httpOnly cookies recommended)\n- No token refresh mechanism implemented\n- Content-Security-Policy headers not configured",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create audit log type definitions",
+      "description": "As a developer, I need TypeScript type definitions for audit logs to ensure type safety across the application.",
+      "acceptanceCriteria": [
+        "Create AuditLogEntry interface matching API response structure",
+        "Create AuditLogApiResponse interface with pagination metadata",
+        "Create AuditLogQueryParams interface for API requests",
+        "Create AuditLogFilters interface for UI filter state",
+        "Define ACTION_TYPES constant array with all audit actions",
+        "Define TARGET_TYPES constant array with all target types",
+        "Define ACTOR_TYPE_LABELS mapping for display",
+        "Import types from @nextmavens/audit-logs-database package",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 5],
+      "mcpTools": {},
+      "priority": 1,
+      "passes": true,
+      "notes": "File: src/lib/types/audit.types.ts - COMPLETED"
+    },
+    {
+      "id": "US-002",
+      "title": "Create audit log data fetching hook",
+      "description": "As a developer, I need a React hook to fetch audit logs from the API with authentication and error handling.",
+      "acceptanceCriteria": [
+        "Create useAuditLogs hook with state management",
+        "Implement fetchAuditLogs function with pagination",
+        "Implement fetchDeveloperData for user info",
+        "Implement handleApplyFilters for filter application",
+        "Implement handleClearFilters for resetting filters",
+        "Implement handlePageChange for pagination navigation",
+        "Add 401 authentication error handling with redirect",
+        "Validate filter inputs against allowlists",
+        "Validate ISO date formats for date range filters",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 5],
+      "mcpTools": {},
+      "priority": 2,
+      "passes": true,
+      "notes": "File: src/features/audit-logs/useAuditLogs.ts - COMPLETED"
+    },
+    {
+      "id": "US-003",
+      "title": "Create audit log table component",
+      "description": "As a user, I need a table display of audit logs with expandable rows for detailed metadata viewing.",
+      "acceptanceCriteria": [
+        "Create AuditLogTable component with logs, expandedRows, onToggleRow props",
+        "Display timestamp, action, target, actor, details columns",
+        "Implement color-coded action badges (created=emerald, deleted=red, etc.)",
+        "Implement expandable row animation with Framer Motion",
+        "Sanitize metadata for safe display (prevent XSS)",
+        "Sanitize user agent strings for safe display",
+        "Display metadata in code block with syntax highlighting",
+        "Handle empty state with helpful message",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 3, 5, 6],
+      "mcpTools": {},
+      "priority": 3,
+      "passes": true,
+      "notes": "File: src/features/audit-logs/AuditLogTable.tsx - COMPLETED"
+    },
+    {
+      "id": "US-004",
+      "title": "Create audit log filters component",
+      "description": "As a user, I need filters to narrow down audit logs by action, target type, and date range.",
+      "acceptanceCriteria": [
+        "Create AuditFilters component with collapsible UI",
+        "Implement action dropdown with all ACTION_TYPES options",
+        "Implement target type dropdown with all TARGET_TYPES options",
+        "Implement start date and end date inputs",
+        "Show 'Active' badge when filters are applied",
+        "Implement apply and clear filter buttons",
+        "Use Framer Motion for smooth expand/collapse",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 3, 5, 6],
+      "mcpTools": {},
+      "priority": 4,
+      "passes": true,
+      "notes": "File: src/features/audit-logs/AuditFilters.tsx - COMPLETED"
+    },
+    {
+      "id": "US-005",
+      "title": "Create pagination component",
+      "description": "As a user, I need pagination controls to navigate through large sets of audit logs.",
+      "acceptanceCriteria": [
+        "Create Pagination component with total, limit, offset, hasMore props",
+        "Display current page and total pages",
+        "Display showing X to Y of Z entries",
+        "Implement first, previous, next, last page buttons",
+        "Disable buttons when at boundaries",
+        "Hide pagination when only one page",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 3, 5, 6],
+      "mcpTools": {},
+      "priority": 5,
+      "passes": true,
+      "notes": "File: src/features/audit-logs/Pagination.tsx - COMPLETED"
+    },
+    {
+      "id": "US-006",
+      "title": "Create CSV export utility",
+      "description": "As a user, I need to export audit logs to CSV for offline analysis and reporting.",
+      "acceptanceCriteria": [
+        "Create exportAuditLogsToCSV utility function",
+        "Generate CSV with headers: Timestamp, Actor, Actor Type, Action, etc.",
+        "Prevent CSV injection attacks on cell values",
+        "Escape quotes and wrap cells in quotes",
+        "Generate filename with current date",
+        "Trigger browser download",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 5, 10],
+      "mcpTools": {},
+      "priority": 6,
+      "passes": true,
+      "notes": "File: src/features/audit-logs/exportToCsv.ts - COMPLETED"
+    },
+    {
+      "id": "US-007",
+      "title": "Create navigation component",
+      "description": "As a user, I need navigation to access the dashboard and logout from the audit logs page.",
+      "acceptanceCriteria": [
+        "Create AuditNav component with developer name prop",
+        "Display NextMavens logo and branding",
+        "Add link to dashboard",
+        "Display developer name",
+        "Implement logout button that clears localStorage",
+        "Redirect to home page after logout",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 3, 5, 6],
+      "mcpTools": {},
+      "priority": 7,
+      "passes": true,
+      "notes": "File: src/features/audit-logs/AuditNav.tsx - COMPLETED"
+    },
+    {
+      "id": "US-008",
+      "title": "Create feature barrel export",
+      "description": "As a developer, I need a centralized export file for all audit log feature components.",
+      "acceptanceCriteria": [
+        "Create index.ts in src/features/audit-logs/",
+        "Export AuditFilters component",
+        "Export AuditLogTable component",
+        "Export Pagination component",
+        "Export exportAuditLogsToCSV utility",
+        "Export AuditNav component",
+        "Export useAuditLogs hook",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 5],
+      "mcpTools": {},
+      "priority": 8,
+      "passes": true,
+      "notes": "File: src/features/audit-logs/index.ts - COMPLETED"
+    },
+    {
+      "id": "US-009",
+      "title": "Create audit log viewer page",
+      "description": "As a user, I need a dedicated page to view, filter, and export audit logs with proper authentication.",
+      "acceptanceCriteria": [
+        "Create /dashboard/audit page route",
+        "Import and use useAuditLogs hook for data fetching",
+        "Display page title and description",
+        "Display Export CSV button in header",
+        "Render AuditFilters component",
+        "Display error state with alert when API fails",
+        "Display loading state with spinner",
+        "Render AuditLogTable with data",
+        "Render Pagination controls",
+        "Implement row expansion toggle",
+        "Add security documentation comments about localStorage",
+        "Apply smooth animations with Framer Motion",
+        "Use Plus Jakarta Sans font",
+        "Handle authentication redirects",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [1, 3, 5, 6, 10],
+      "mcpTools": {},
+      "priority": 9,
+      "passes": true,
+      "notes": "File: src/app/dashboard/audit/page.tsx - COMPLETED"
+    },
+    {
+      "id": "US-010",
+      "title": "Add audit API URL environment variable",
+      "description": "As a developer, I need configurable audit API URL for different environments.",
+      "acceptanceCriteria": [
+        "Add NEXT_PUBLIC_AUDIT_API_URL to .env.example",
+        "Set default value to http://localhost:8080/api/audit",
+        "Document the variable in environment example",
+        "Use environment variable in useAuditLogs hook"
+      ],
+      "mavenSteps": [1],
+      "mcpTools": {},
+      "priority": 10,
+      "passes": true,
+      "notes": "File: .env.example - COMPLETED"
+    }
+  ]
+}
