@@ -68,3 +68,41 @@ export interface QuotaViolation {
   cap_limit: number
   exceeded_at: Date
 }
+
+/**
+ * Rate limit identifier types
+ */
+export enum RateLimitIdentifierType {
+  /** Organization-based rate limiting */
+  ORG = 'org',
+  /** IP-based rate limiting */
+  IP = 'ip',
+}
+
+/**
+ * Rate limit identifier
+ */
+export interface RateLimitIdentifier {
+  type: RateLimitIdentifierType
+  value: string
+}
+
+/**
+ * Rate limit check result
+ */
+export interface RateLimitResult {
+  allowed: boolean
+  remainingAttempts: number
+  resetAt: Date
+}
+
+/**
+ * Rate limit error details
+ */
+export interface RateLimitError {
+  identifier: RateLimitIdentifier
+  limit: number
+  windowMs: number
+  retryAfterSeconds: number
+  resetAt: Date
+}

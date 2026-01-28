@@ -9,9 +9,12 @@ export type {
   HardCapConfig,
   ProjectUsage,
   QuotaViolation,
+  RateLimitIdentifier,
+  RateLimitResult,
+  RateLimitError,
 } from './types'
 
-export { HardCapType, DEFAULT_HARD_CAPS } from './types'
+export { HardCapType, DEFAULT_HARD_CAPS, RateLimitIdentifierType } from './types'
 
 // Quota management
 export {
@@ -62,3 +65,12 @@ export {
   getCurrentUsage,
   type QuotaCheckResult,
 } from './lib/enforcement'
+
+// Rate Limiting
+export {
+  checkRateLimit,
+  recordRateLimitAttempt,
+  getRetryAfterSeconds,
+  createRateLimitError,
+  extractClientIP,
+} from './lib/rate-limiter'

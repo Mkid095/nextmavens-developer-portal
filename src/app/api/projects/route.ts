@@ -3,10 +3,95 @@ import { getPool } from '@/lib/db'
 import { authenticateRequest } from '@/lib/middleware'
 import { generateApiKey, generateSlug, hashApiKey } from '@/lib/auth'
 import { applyDefaultQuotas } from '@/features/abuse-controls/lib/quotas'
+import {
+  checkRateLimit,
+  extractClientIP,
+  createRateLimitError,
+  getRetryAfterSeconds,
+  RateLimitIdentifierType,
+  type RateLimitIdentifier,
+} from '@/features/abuse-controls/lib/rate-limiter'
+
+// Rate limiting configuration
+const PROJECTS_PER_HOUR_PER_ORG = 3
+const PROJECTS_PER_HOUR_PER_IP = 5
+const ONE_HOUR_MS = 60 * 60 * 1000
 
 export async function POST(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
+    const clientIP = extractClientIP(req)
+
+    // Extract rate limit identifiers
+    const orgIdentifier: RateLimitIdentifier = {
+      type: RateLimitIdentifierType.ORG,
+      value: developer.id,
+    }
+
+    const ipIdentifier: RateLimitIdentifier = {
+      type: RateLimitIdentifierType.IP,
+      value: clientIP,
+    }
+
+    // Check org-based rate limit
+    const orgRateLimitResult = await checkRateLimit(
+      orgIdentifier,
+      PROJECTS_PER_HOUR_PER_ORG,
+      ONE_HOUR_MS
+    )
+
+    if (!orgRateLimitResult.allowed) {
+      const retryAfter = await getRetryAfterSeconds(
+        orgIdentifier,
+        ONE_HOUR_MS
+      )
+
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `You can create only ${PROJECTS_PER_HOUR_PER_ORG} projects per hour. Please try again later.`,
+          retry_after: retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_ORG.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': orgRateLimitResult.resetAt.toISOString(),
+          },
+        }
+      )
+    }
+
+    // Check IP-based rate limit
+    const ipRateLimitResult = await checkRateLimit(
+      ipIdentifier,
+      PROJECTS_PER_HOUR_PER_IP,
+      ONE_HOUR_MS
+    )
+
+    if (!ipRateLimitResult.allowed) {
+      const retryAfter = await getRetryAfterSeconds(ipIdentifier, ONE_HOUR_MS)
+
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded',
+          message: `Too many project creation attempts from your location. Please try again later.`,
+          retry_after: retryAfter,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_IP.toString(),
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': ipRateLimitResult.resetAt.toISOString(),
+          },
+        }
+      )
+    }
+
     const body = await req.json()
     const { project_name, webhook_url, allowed_origins } = body
 
@@ -87,7 +172,14 @@ export async function POST(req: NextRequest) {
         database_url: `postgresql://nextmavens:Elishiba@95@nextmavens-db-m4sxnf.1.mvuvh68efk7jnvynmv8r2jm2u:5432/nextmavens?options=--search_path=tenant_${slug}`,
         warning: "Save your API keys now! You won't be able to see the secret key again.",
       },
-      { status: 201 }
+      {
+        status: 201,
+        headers: {
+          'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_ORG.toString(),
+          'X-RateLimit-Remaining': orgRateLimitResult.remainingAttempts.toString(),
+          'X-RateLimit-Reset': orgRateLimitResult.resetAt.toISOString(),
+        },
+      }
     )
   } catch (error: any) {
     console.error('[Developer Portal] Create project error:', error)
