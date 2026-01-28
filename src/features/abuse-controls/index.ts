@@ -34,6 +34,10 @@ export type {
   NotificationRecipient,
   SuspensionNotificationTemplate,
   NotificationDeliveryResult,
+  ManualOverrideRequest,
+  ManualOverrideResult,
+  OverrideRecord,
+  PreviousStateSnapshot,
 } from './types'
 
 export {
@@ -51,6 +55,7 @@ export {
   NotificationPriority,
   NotificationStatus,
   NotificationChannel,
+  ManualOverrideAction,
 } from './types'
 
 // Quota management
@@ -144,6 +149,7 @@ export {
   PatternDetectionManager,
   NotificationManager,
   NotificationPreferencesManager,
+  OverrideManager,
 } from './lib/data-layer'
 
 // Enforcement
@@ -247,3 +253,14 @@ export {
   type NotificationPreference,
   type NotificationPreferenceInput,
 } from './lib/notification-preferences'
+
+// Manual Overrides
+export {
+  performManualOverride,
+  getOverrideHistory,
+  getProjectOverrides,
+  getAllOverrides,
+  getOverrideStatistics,
+  getOverrideById,
+  validateManualOverrideRequest,
+} from './lib/manual-overrides'

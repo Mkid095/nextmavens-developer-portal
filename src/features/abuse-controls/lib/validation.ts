@@ -201,6 +201,62 @@ export const emailSchema = z
   .max(255, 'Email is too long')
 
 /**
+ * Manual override action validation schema
+ * - Must be a valid ManualOverrideAction enum value
+ */
+export const manualOverrideActionSchema = z.enum([
+  'unsuspend',
+  'increase_caps',
+  'both'], {
+  message: 'Invalid action type. Must be one of: unsuspend, increase_caps, both',
+})
+
+/**
+ * Manual override reason validation schema
+ * - Required field
+ * - Must be a string with max length
+ */
+export const manualOverrideReasonSchema = z
+  .string({
+    message: 'Reason is required for manual override',
+  })
+  .min(1, 'Reason cannot be empty')
+  .max(1000, 'Reason cannot exceed 1000 characters')
+
+/**
+ * Manual override notes validation schema
+ * - notes field is optional
+ * - If provided, must be a string with max length
+ */
+export const manualOverrideNotesSchema = z
+  .string()
+  .max(2000, 'Override notes cannot exceed 2000 characters')
+  .optional()
+
+/**
+ * Manual override caps validation schema
+ * - Optional field for new cap values
+ * - Must be a record of HardCapType to number
+ */
+export const manualOverrideCapsSchema = z
+  .record(
+    hardCapTypeSchema,
+    quotaValueSchema
+  )
+  .optional()
+
+/**
+ * Manual override request validation schema
+ * Validates the request body for manual override operations
+ */
+export const manualOverrideRequestSchema = z.object({
+  action: manualOverrideActionSchema,
+  reason: manualOverrideReasonSchema,
+  newCaps: manualOverrideCapsSchema,
+  notes: manualOverrideNotesSchema,
+})
+
+/**
  * Type exports for inference
  */
 export type ManualSuspensionInput = z.infer<typeof manualSuspensionSchema>
@@ -209,3 +265,4 @@ export type QuotaUpdateInput = z.infer<typeof quotaUpdateSchema>
 export type BulkQuotaUpdateInput = z.infer<typeof bulkQuotaUpdateSchema>
 export type PaginationQuery = z.infer<typeof paginationQuerySchema>
 export type SortingQuery = z.infer<typeof sortingQuerySchema>
+export type ManualOverrideRequestInput = z.infer<typeof manualOverrideRequestSchema>
