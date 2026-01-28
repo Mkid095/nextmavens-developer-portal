@@ -15,6 +15,11 @@ export type {
   SuspensionReason,
   SuspensionRecord,
   SuspensionHistoryEntry,
+  UsageSpikeDetection,
+  UsageStatistics,
+  SpikeDetectionConfig,
+  SpikeDetectionResult,
+  UsageMetric,
 } from './types'
 
 export {
@@ -22,6 +27,8 @@ export {
   DEFAULT_HARD_CAPS,
   RateLimitIdentifierType,
   ProjectStatus,
+  SpikeAction,
+  SpikeSeverity,
 } from './types'
 
 // Quota management
@@ -47,6 +54,15 @@ export {
   MAX_HARD_CAPS,
   validateCapValue,
   getCapValidationError,
+  SPIKE_THRESHOLD,
+  SPIKE_DETECTION_WINDOW_MS,
+  SPIKE_BASELINE_PERIOD_MS,
+  MIN_USAGE_FOR_SPIKE_DETECTION,
+  DEFAULT_SPIKE_ACTION_THRESHOLDS,
+  DEFAULT_SPIKE_SEVERITY_THRESHOLDS,
+  determineSpikeSeverity,
+  type SpikeActionThreshold,
+  type SpikeSeverityThreshold,
 } from './lib/config'
 
 // Migrations
@@ -105,3 +121,13 @@ export {
   getSuspensionSummary,
   type BackgroundJobResult,
 } from './lib/background-job'
+
+// Spike Detection
+export {
+  runSpikeDetection,
+  checkAllProjectsForSpikes,
+  checkProjectSpikeStatus,
+  getSpikeDetectionHistory,
+  getSpikeDetectionConfig,
+  type SpikeDetectionJobResult,
+} from './lib/spike-detection'
