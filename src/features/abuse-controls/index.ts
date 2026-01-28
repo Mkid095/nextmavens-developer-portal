@@ -20,6 +20,9 @@ export type {
   SpikeDetectionConfig,
   SpikeDetectionResult,
   UsageMetric,
+  ErrorRateDetectionResult,
+  ErrorRateDetectionConfig,
+  ErrorMetric,
 } from './types'
 
 export {
@@ -29,6 +32,8 @@ export {
   ProjectStatus,
   SpikeAction,
   SpikeSeverity,
+  ErrorRateSeverity,
+  ErrorRateAction,
 } from './types'
 
 // Quota management
@@ -82,6 +87,11 @@ export {
   withQuotaCheck,
   QuotaExceededError,
   createQuotaChecker,
+  SuspensionManager,
+  withSuspensionCheck,
+  ProjectSuspendedError,
+  SpikeDetectionManager,
+  ErrorRateDetectionManager,
 } from './lib/data-layer'
 
 // Enforcement
@@ -131,3 +141,18 @@ export {
   getSpikeDetectionConfig,
   type SpikeDetectionJobResult,
 } from './lib/spike-detection'
+
+// Error Rate Detection
+export {
+  calculateErrorRate,
+  detectHighErrorRate,
+  checkProjectForHighErrorRate,
+  checkAllProjectsForHighErrorRates,
+  runErrorRateDetection,
+  getErrorRateDetectionConfig,
+  getErrorRateDetectionHistory,
+  checkProjectErrorRateStatus,
+  recordErrorMetrics,
+  getErrorRateDetectionSummary,
+  type ErrorRateDetectionJobResult,
+} from './lib/error-rate-detection'
