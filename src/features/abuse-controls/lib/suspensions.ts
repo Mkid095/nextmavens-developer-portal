@@ -11,6 +11,7 @@ import type { SuspensionReason, SuspensionRecord } from '../types'
 import { getCurrentUsage, checkQuota } from './enforcement'
 import { getProjectQuota } from './quotas'
 import { sendSuspensionNotification } from './notifications'
+import { logProjectAction } from '@nextmavens/audit-logs-database'
 
 /**
  * Suspend a project due to cap violation
@@ -93,6 +94,23 @@ export async function suspendProject(
       console.log(
         `[Suspensions] Suspended project ${projectId} for exceeding ${reason.cap_type}`
       )
+
+      // Log to audit logs (non-blocking)
+      logProjectAction.autoSuspended(
+        projectId,
+        `Auto-suspended for exceeding ${reason.cap_type}`,
+        true,
+        {
+          metadata: {
+            cap_type: reason.cap_type,
+            current_value: reason.current_value,
+            limit_exceeded: reason.limit_exceeded,
+            details: reason.details,
+          },
+        }
+      ).catch((error) => {
+        console.error('[Suspensions] Failed to log to audit logs:', error)
+      })
 
       // Send suspension notification (non-blocking)
       sendSuspensionNotification(projectId, projectName, orgName, reason, new Date())

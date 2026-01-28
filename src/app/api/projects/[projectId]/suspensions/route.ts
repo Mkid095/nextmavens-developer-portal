@@ -7,13 +7,12 @@ import type { SuspensionReason } from '@/features/abuse-controls/types'
 import { projectIdSchema, manualSuspensionSchema, manualUnsuspensionSchema } from '@/features/abuse-controls/lib/validation'
 import { requireOperatorOrAdmin, preventOwnerUnsuspend, AuthorizationError } from '@/features/abuse-controls/lib/authorization'
 import {
-  logSuspension,
-  logUnsuspension,
   logAuthFailure,
   logValidationFailure,
   extractClientIP,
   extractUserAgent,
 } from '@/features/abuse-controls/lib/audit-logger'
+import { logProjectAction, ActorType } from '@nextmavens/audit-logs-database'
 import { ZodError, z } from 'zod'
 
 /**
@@ -226,17 +225,21 @@ export async function POST(
       validatedData.notes || 'Manual suspension'
     )
 
-    // Log the suspension action
-    await logSuspension(
+    // Log the suspension action to audit logs
+    await logProjectAction.suspended(
+      { id: authorizedDeveloper.id, type: ActorType.USER },
       projectId,
-      authorizedDeveloper.id,
       `Manual suspension: ${reason.cap_type} exceeded`,
       {
-        cap_type: reason.cap_type,
-        current_value: reason.current_value,
-        limit_exceeded: reason.limit_exceeded,
-        ip_address: clientIP,
-        user_agent: userAgent,
+        request: {
+          ip: clientIP,
+          userAgent,
+        },
+        metadata: {
+          cap_type: reason.cap_type,
+          current_value: reason.current_value,
+          limit_exceeded: reason.limit_exceeded,
+        },
       }
     )
 
@@ -382,15 +385,19 @@ export async function DELETE(
       notes || 'Manual unsuspension'
     )
 
-    // Log the unsuspension action
-    await logUnsuspension(
+    // Log the unsuspension action to audit logs
+    await logProjectAction.updated(
+      { id: authorizedDeveloper.id, type: ActorType.USER },
       projectId,
-      authorizedDeveloper.id,
-      'Manual unsuspension by operator/admin',
+      { action: 'unsuspended', reason: notes || 'Manual unsuspension' },
       {
-        previous_suspension: existingSuspension.reason,
-        ip_address: clientIP,
-        user_agent: userAgent,
+        request: {
+          ip: clientIP,
+          userAgent,
+        },
+        metadata: {
+          previous_suspension: existingSuspension.reason,
+        },
       }
     )
 
