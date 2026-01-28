@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
+  ChevronRight,
   Database,
   Shield,
   HardDrive,
@@ -202,7 +203,7 @@ export default function ProjectDetailPage() {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <h3 className="font-medium text-slate-900">Quick Links</h3>
-                  <a href={`https://studio.nextmavens.cloud/?project=${project.slug}`} target="_blank" rel="noopener noreferrer"
+                  <Link href={`/studio/${project.slug}`}
                     className="block p-4 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition">
                     <div className="flex items-center gap-3">
                       <Database className="w-5 h-5 text-emerald-700" />
@@ -210,8 +211,9 @@ export default function ProjectDetailPage() {
                         <p className="font-medium text-emerald-900">Open Studio Console</p>
                         <p className="text-sm text-emerald-700">Manage database, auth, and storage</p>
                       </div>
+                      <ChevronRight className="w-5 h-5 text-emerald-700 ml-auto" />
                     </div>
-                  </a>
+                  </Link>
                 </div>
                 <div className="space-y-4">
                   <h3 className="font-medium text-slate-900">Project Details</h3>
