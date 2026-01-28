@@ -20,7 +20,9 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  LucideIcon,
 } from 'lucide-react'
+import SuspensionBanner from '@/components/SuspensionBanner'
 
 interface Project {
   id: string
@@ -44,9 +46,15 @@ interface NewKeyResponse {
   secretKey?: string
 }
 
+interface TabConfig {
+  id: Tab
+  label: string
+  icon: LucideIcon
+}
+
 type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys'
 
-const tabs: { id: Tab; label: string; icon: any }[] = [
+const tabs: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Settings },
   { id: 'database', label: 'Database', icon: Database },
   { id: 'auth', label: 'Auth', icon: Shield },
@@ -55,6 +63,38 @@ const tabs: { id: Tab; label: string; icon: any }[] = [
   { id: 'graphql', label: 'GraphQL', icon: Code2 },
   { id: 'api-keys', label: 'API Keys', icon: Key },
 ]
+
+/**
+ * Suspension reason interface
+ */
+interface SuspensionReason {
+  cap_type: string
+  current_value: number
+  limit_exceeded: number
+  details?: string
+}
+
+/**
+ * Suspension record interface
+ */
+interface SuspensionRecord {
+  id: string
+  project_id: string
+  reason: SuspensionReason
+  cap_exceeded: string
+  suspended_at: string
+  resolved_at: string | null
+  notes?: string
+}
+
+/**
+ * Suspension status API response
+ */
+interface SuspensionStatusResponse {
+  suspended: boolean
+  suspension?: SuspensionRecord
+  message?: string
+}
 
 export default function ProjectDetailPage() {
   const params = useParams()
@@ -67,6 +107,14 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [showSecret, setShowSecret] = useState<Record<string, boolean>>({})
+  const [suspensionStatus, setSuspensionStatus] = useState<SuspensionRecord | null>(null)
+  const [suspensionLoading, setSuspensionLoading] = useState(true)
+
+  useEffect(() => {
+    if (project) {
+      fetchSuspensionStatus()
+    }
+  }, [project])
 
   useEffect(() => {
     fetchProject()
@@ -110,6 +158,31 @@ export default function ProjectDetailPage() {
       }
     } catch (err) {
       console.error('Failed to fetch API keys:', err)
+    }
+  }
+
+  const fetchSuspensionStatus = async () => {
+    if (!project) return
+
+    setSuspensionLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/projects/${project.id}/suspensions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (res.ok) {
+        const data: SuspensionStatusResponse = await res.json()
+        if (data.suspended && data.suspension) {
+          setSuspensionStatus(data.suspension)
+        } else {
+          setSuspensionStatus(null)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch suspension status:', err)
+    } finally {
+      setSuspensionLoading(false)
     }
   }
 
@@ -174,6 +247,16 @@ export default function ProjectDetailPage() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Suspension Banner */}
+        {suspensionStatus && (
+          <SuspensionBanner
+            suspension={suspensionStatus}
+            onRequestReview={() => {
+              window.location.href = 'mailto:support@nextmavens.cloud?subject=Project Suspension Review Request'
+            }}
+          />
+        )}
+
         <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
           {tabs.map((tab) => (
             <button
