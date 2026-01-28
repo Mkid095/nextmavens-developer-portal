@@ -718,3 +718,77 @@ export interface NotificationDeliveryResult {
   /** Number of attempts made */
   attempts: number
 }
+
+/**
+ * Suspension notification type
+ * Distinguishes between actual suspensions and warning notifications
+ */
+export enum SuspensionNotificationType {
+  /** Project has been suspended */
+  SUSPENSION = 'suspension',
+  /** Warning about approaching limits */
+  WARNING = 'warning',
+}
+
+/**
+ * Suspension notification delivery status
+ */
+export enum SuspensionNotificationStatus {
+  /** Notification is pending delivery */
+  PENDING = 'pending',
+  /** Notification has been sent */
+  SENT = 'sent',
+  /** Notification delivery failed */
+  FAILED = 'failed',
+}
+
+/**
+ * Suspension notification record
+ * Tracks suspension notifications sent to project owners
+ */
+export interface SuspensionNotification {
+  /** Unique identifier for the notification */
+  id: string
+  /** Project ID that was suspended */
+  project_id: string
+  /** Recipient email addresses */
+  recipient_emails: string[]
+  /** Reason for suspension */
+  reason: string
+  /** Which hard cap was exceeded */
+  cap_exceeded: string
+  /** Current usage value */
+  current_usage: number
+  /** The limit that was exceeded */
+  limit: number
+  /** Support contact information */
+  support_contact: string
+  /** Current delivery status */
+  status: SuspensionNotificationStatus
+  /** When the notification was sent */
+  sent_at: Date | null
+  /** Error message if delivery failed */
+  error: string | null
+  /** When the notification was created */
+  created_at: Date
+}
+
+/**
+ * Parameters for sending a suspension notification
+ */
+export interface SuspensionNotificationParams {
+  /** Project ID that was suspended */
+  projectId: string
+  /** Recipient email addresses */
+  recipientEmails: string[]
+  /** Reason for suspension */
+  reason: string
+  /** Which hard cap was exceeded */
+  capExceeded: string
+  /** Current usage value */
+  currentUsage: number
+  /** The limit that was exceeded */
+  limit: number
+  /** Support contact information */
+  supportContact: string
+}
