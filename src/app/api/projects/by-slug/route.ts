@@ -44,9 +44,10 @@ export async function GET(req: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Developer Portal] Get project by slug error:', error)
+    const status = error.message === 'No token provided' || error.message === 'Invalid token' ? 401 : 500
     return NextResponse.json(
       { error: error.message || 'Failed to fetch project' },
-      { status: error.message === 'No token provided' ? 401 : 500 }
+      { status }
     )
   }
 }

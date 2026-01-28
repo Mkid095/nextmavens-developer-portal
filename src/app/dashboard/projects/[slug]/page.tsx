@@ -38,6 +38,11 @@ interface ApiKey {
   created_at: string
 }
 
+interface NewKeyResponse {
+  apiKey: ApiKey
+  secretKey?: string
+}
+
 type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys'
 
 const tabs: { id: Tab; label: string; icon: any }[] = [
@@ -56,6 +61,7 @@ export default function ProjectDetailPage() {
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [project, setProject] = useState<Project | null>(null)
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
+  const [newKey, setNewKey] = useState<NewKeyResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
@@ -272,7 +278,12 @@ export default function ProjectDetailPage() {
                           Authorization: `Bearer ${localStorage.getItem('token')}`,
                         },
                         body: JSON.stringify({ name }),
-                      }).then(() => fetchApiKeys())
+                      })
+                      .then(res => res.json())
+                      .then(data => {
+                        setNewKey(data)
+                        fetchApiKeys()
+                      })
                     }
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition"
@@ -281,6 +292,51 @@ export default function ProjectDetailPage() {
                   <span className="text-sm font-medium">Create Key</span>
                 </button>
               </div>
+
+              {newKey && (
+                <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-emerald-900">New API Key Created</h3>
+                      <p className="text-sm text-emerald-700">Copy these keys now. You won't see the secret key again.</p>
+                    </div>
+                    <button
+                      onClick={() => setNewKey(null)}
+                      className="text-emerald-600 hover:text-emerald-800"
+                    >
+                      Close
+                    </button>
+                  </div>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Public Key</label>
+                      <div className="flex gap-2">
+                        <code className="flex-1 text-sm bg-white px-3 py-2 rounded border border-slate-200 break-all">{newKey.apiKey.public_key}</code>
+                        <button
+                          onClick={() => handleCopy(newKey.apiKey.public_key, 'new-public')}
+                          className="px-3 py-2 bg-white border border-slate-200 rounded hover:bg-slate-50"
+                        >
+                          {copied === 'new-public' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600" />}
+                        </button>
+                      </div>
+                    </div>
+                    {newKey.secretKey && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Secret Key</label>
+                        <div className="flex gap-2">
+                          <code className="flex-1 text-sm bg-white px-3 py-2 rounded border border-slate-200 break-all">{newKey.secretKey}</code>
+                          <button
+                            onClick={() => handleCopy(newKey.secretKey!, 'new-secret')}
+                            className="px-3 py-2 bg-white border border-slate-200 rounded hover:bg-slate-50"
+                          >
+                            {copied === 'new-secret' ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600" />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {apiKeys.length === 0 ? (
                 <div className="text-center py-12">
@@ -297,7 +353,12 @@ export default function ProjectDetailPage() {
                             Authorization: `Bearer ${localStorage.getItem('token')}`,
                           },
                           body: JSON.stringify({ name }),
-                        }).then(() => fetchApiKeys())
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                          setNewKey(data)
+                          fetchApiKeys()
+                        })
                       }
                     }}
                     className="mt-4 text-emerald-700 hover:text-emerald-800 font-medium"
@@ -307,26 +368,37 @@ export default function ProjectDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {apiKeys.map((key) => (
+                  {apiKeys.map((key) => {
+                    // Use newKey values if this is the newly created key
+                    const isNewKey = newKey && newKey.apiKey.id === key.id
+                    const displayKey = isNewKey ? newKey.apiKey : key
+                    const hasFullKey = isNewKey || (key.public_key && key.public_key.length > 20)
+
+                    return (
                     <div key={key.id} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="font-medium text-slate-900">{key.name}</span>
+                            <span className="font-medium text-slate-900">{displayKey.name}</span>
                             <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-xs rounded-full">
-                              {key.key_type}
+                              {displayKey.key_type}
                             </span>
+                            {isNewKey && (
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                                New
+                              </span>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <code className="text-sm text-slate-600 bg-white px-2 py-1 rounded">
-                                {key.key_type === 'secret' && !showSecret[key.id]
-                                  ? `${key.key_prefix}••••••••`
-                                  : key.public_key && key.public_key.length > 20
-                                  ? key.public_key
-                                  : `${key.key_prefix}•••••••• (recreate)`}
+                                {displayKey.key_type === 'secret' && !showSecret[key.id]
+                                  ? `${displayKey.key_prefix}••••••••`
+                                  : hasFullKey
+                                  ? displayKey.public_key
+                                  : `${displayKey.key_prefix}•••••••• (recreate)`}
                               </code>
-                              {key.key_type === 'secret' && key.public_key && key.public_key.length > 20 && (
+                              {displayKey.key_type === 'secret' && hasFullKey && (
                                 <button
                                   onClick={() => setShowSecret({ ...showSecret, [key.id]: !showSecret[key.id] })}
                                   className="p-1 hover:bg-slate-200 rounded"
@@ -335,7 +407,7 @@ export default function ProjectDetailPage() {
                                 </button>
                               )}
                               <button
-                                onClick={() => handleCopy(key.public_key && key.public_key.length > 20 ? key.public_key : key.key_prefix, `key-${key.id}`)}
+                                onClick={() => handleCopy(hasFullKey ? displayKey.public_key : displayKey.key_prefix, `key-${key.id}`)}
                                 className="p-1 hover:bg-slate-200 rounded"
                               >
                                 {copied === `key-${key.id}` ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600" />}
@@ -343,7 +415,7 @@ export default function ProjectDetailPage() {
                             </div>
                             <p className="text-xs text-slate-500">
                               Created {new Date(key.created_at).toLocaleString()}
-                              {(!key.public_key || key.public_key.length <= 20) && (
+                              {!hasFullKey && (
                                 <span className="text-amber-600 ml-2"> • Only prefix stored - recreate key</span>
                               )}
                             </p>
