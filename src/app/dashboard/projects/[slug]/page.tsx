@@ -74,7 +74,7 @@ export default function ProjectDetailPage() {
 
   const fetchProject = async () => {
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('accessToken')
       const res = await fetch(`/api/projects/by-slug?slug=${params.slug}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -99,7 +99,7 @@ export default function ProjectDetailPage() {
 
   const fetchApiKeys = async () => {
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('accessToken')
       const res = await fetch('/api/api-keys', {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -275,7 +275,7 @@ export default function ProjectDetailPage() {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
-                          Authorization: `Bearer ${localStorage.getItem('token')}`,
+                          Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
                         },
                         body: JSON.stringify({ name }),
                       })
@@ -350,7 +350,7 @@ export default function ProjectDetailPage() {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',
-                            Authorization: `Bearer ${localStorage.getItem('token')}`,
+                            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
                           },
                           body: JSON.stringify({ name }),
                         })
@@ -426,7 +426,7 @@ export default function ProjectDetailPage() {
                             if (confirm('Delete this API key?')) {
                               fetch(`/api/api-keys?id=${key.id}`, {
                                 method: 'DELETE',
-                                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
                               }).then(() => fetchApiKeys())
                             }
                           }}
