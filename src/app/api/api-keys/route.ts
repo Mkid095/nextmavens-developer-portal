@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
     const pool = getPool()
     const result = await pool.query(
-      `SELECT id, key_type, key_prefix, created_at, last_used
+      `SELECT id, key_type, key_prefix, created_at, last_used, name
        FROM api_keys
        WHERE project_id IN (SELECT id FROM projects WHERE developer_id = $1)
        ORDER BY created_at DESC`,
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     // Format the response to match expected structure
     const apiKeys = result.rows.map(key => ({
       id: key.id.toString(),
-      name: `${key.key_type} key`,
+      name: key.name || `${key.key_type} key`,
       key_type: key.key_type,
       key_prefix: key.key_prefix,
       public_key: key.key_prefix, // Old keys only have prefix stored
@@ -44,6 +44,15 @@ export async function POST(req: NextRequest) {
 
     // Get or create a default project for the developer
     const pool = getPool()
+
+    // Ensure name column exists (auto-migrate)
+    try {
+      await pool.query(`
+        ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS name VARCHAR(255)
+      `)
+    } catch {
+      // Column might already exist, ignore error
+    }
 
     // First check if developer has a default project
     let projectResult = await pool.query(
@@ -80,10 +89,10 @@ export async function POST(req: NextRequest) {
     const keyPrefix = keyType === 'secret' ? 'nm_live_sk_' : 'nm_live_pk_'
 
     const result = await pool.query(
-      `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, name)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id, key_type, key_prefix, created_at`,
-      [finalProjectId, keyType, keyPrefix, hashedSecretKey]
+      [finalProjectId, keyType, keyPrefix, hashedSecretKey, name]
     )
 
     const apiKey = result.rows[0]
