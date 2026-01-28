@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@nextmavens/audit-logs-database':
+        specifier: file:../database
+        version: file:../database
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -360,6 +363,9 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
+
+  '@nextmavens/audit-logs-database@file:../database':
+    resolution: {directory: ../database, type: directory}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -2400,6 +2406,12 @@ snapshots:
 
   '@next/swc-win32-x64-msvc@14.2.33':
     optional: true
+
+  '@nextmavens/audit-logs-database@file:../database':
+    dependencies:
+      pg: 8.17.2
+    transitivePeerDependencies:
+      - pg-native
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

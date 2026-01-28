@@ -11,6 +11,7 @@ import {
   RateLimitIdentifierType,
   type RateLimitIdentifier,
 } from '@/features/abuse-controls/lib/rate-limiter'
+import { logProjectAction, userActor } from '@nextmavens/audit-logs-database'
 
 // Rate limiting configuration
 const PROJECTS_PER_HOUR_PER_ORG = 3
@@ -147,6 +148,24 @@ export async function POST(req: NextRequest) {
 
     // Apply default quotas to the new project
     await applyDefaultQuotas(project.id)
+
+    // Log project creation
+    await logProjectAction.created(
+      userActor(developer.id),
+      project.id,
+      {
+        metadata: {
+          project_name: project.project_name,
+          tenant_id: tenantId,
+          webhook_url,
+          allowed_origins,
+        },
+        request: {
+          ip: clientIP || undefined,
+          userAgent: req.headers.get('user-agent') || undefined,
+        },
+      }
+    )
 
     return NextResponse.json(
       {

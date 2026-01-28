@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest, generateApiKey, hashApiKey } from '@/lib/auth'
+import { logApiKeyAction, userActor } from '@nextmavens/audit-logs-database'
 
 export async function GET(req: NextRequest) {
   try {
@@ -107,6 +108,25 @@ export async function POST(req: NextRequest) {
 
     const apiKey = result.rows[0]
 
+    // Log API key creation
+    try {
+      await logApiKeyAction.created(
+        userActor(developer.id),
+        apiKey.id.toString(),
+        apiKey.key_type,
+        [], // scopes - will be populated when scopes are implemented
+        {
+          request: {
+            ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+            userAgent: req.headers.get('user-agent') || undefined,
+          },
+        }
+      )
+    } catch (auditError) {
+      // Don't fail the request if audit logging fails
+      console.error('[Developer Portal] Failed to log API key creation:', auditError)
+    }
+
     return NextResponse.json({
       apiKey: {
         id: apiKey.id.toString(),
@@ -136,12 +156,42 @@ export async function DELETE(req: NextRequest) {
 
     const pool = getPool()
 
+    // First, get the key details for audit logging before deletion
+    const keyDetails = await pool.query(
+      `SELECT key_type FROM api_keys
+       WHERE id = $1
+         AND project_id IN (SELECT id FROM projects WHERE developer_id = $2)`,
+      [keyId, developer.id]
+    )
+
+    if (keyDetails.rows.length === 0) {
+      return NextResponse.json({ error: 'API key not found' }, { status: 404 })
+    }
+
     await pool.query(
       `DELETE FROM api_keys
        WHERE id = $1
          AND project_id IN (SELECT id FROM projects WHERE developer_id = $2)`,
       [keyId, developer.id]
     )
+
+    // Log API key revocation
+    try {
+      await logApiKeyAction.revoked(
+        userActor(developer.id),
+        keyId,
+        'User requested deletion',
+        {
+          request: {
+            ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+            userAgent: req.headers.get('user-agent') || undefined,
+          },
+        }
+      )
+    } catch (auditError) {
+      // Don't fail the request if audit logging fails
+      console.error('[Developer Portal] Failed to log API key revocation:', auditError)
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

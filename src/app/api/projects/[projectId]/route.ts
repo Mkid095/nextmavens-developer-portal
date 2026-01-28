@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest } from '@/lib/middleware'
 import { SuspensionManager } from '@/features/abuse-controls/lib/data-layer'
+import { logProjectAction, userActor } from '@nextmavens/audit-logs-database'
 
 /**
  * GET /api/projects/[projectId]
@@ -176,6 +177,23 @@ export async function PATCH(
 
     const updatedProject = updateResult.rows[0]
 
+    // Log project update
+    await logProjectAction.updated(
+      userActor(developer.id),
+      projectId,
+      {
+        webhook_url: webhook_url !== undefined ? webhook_url : updatedProject.webhook_url,
+        allowed_origins: allowed_origins !== undefined ? allowed_origins : updatedProject.allowed_origins,
+        rate_limit: rate_limit !== undefined ? rate_limit : updatedProject.rate_limit,
+      },
+      {
+        request: {
+          ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+          userAgent: req.headers.get('user-agent') || undefined,
+        },
+      }
+    )
+
     return NextResponse.json({
       message: 'Project updated successfully',
       project: {
@@ -251,6 +269,21 @@ export async function DELETE(
 
     // Delete project (cascade will handle related records)
     await pool.query('DELETE FROM projects WHERE id = $1', [projectId])
+
+    // Log project deletion
+    await logProjectAction.deleted(
+      userActor(developer.id),
+      projectId,
+      {
+        metadata: {
+          project_name: project.project_name,
+        },
+        request: {
+          ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+          userAgent: req.headers.get('user-agent') || undefined,
+        },
+      }
+    )
 
     return NextResponse.json({
       message: 'Project deleted successfully',
