@@ -52,6 +52,35 @@ import {
   recordErrorMetrics,
   getErrorRateDetectionSummary,
 } from './error-rate-detection'
+import {
+  checkProjectForMaliciousPatterns,
+  checkAllProjectsForMaliciousPatterns,
+  runPatternDetection,
+  getPatternDetectionConfig,
+  getPatternDetectionSummary,
+} from './pattern-detection'
+import { logPatternDetection, getPatternDetections, getPatternDetectionStatistics } from '../migrations/create-pattern-detections-table'
+import { getPatternDetectionConfig as getPatternDetectionConfigFromDb } from '../migrations/create-pattern-detection-config-table'
+import {
+  sendSuspensionNotification,
+  getNotificationRecipients,
+  createSuspensionNotificationTemplate,
+  formatSuspensionNotificationEmail,
+  createNotification,
+  getNotification,
+  getProjectNotifications,
+  retryFailedNotifications,
+} from './notifications'
+import {
+  getNotificationPreferences,
+  getNotificationPreference,
+  upsertNotificationPreference,
+  deleteNotificationPreference,
+  getDefaultNotificationPreferences,
+  applyDefaultNotificationPreferences,
+  shouldReceiveNotification,
+  getEnabledChannels,
+} from './notification-preferences'
 import { HardCapType, SpikeSeverity } from '../types'
 import type {
   SuspensionRecord,
@@ -59,7 +88,12 @@ import type {
   SpikeDetectionResult,
   SpikeDetectionJobResult,
   ErrorRateDetectionResult,
-  ErrorRateDetectionJobResult
+  ErrorRateDetectionJobResult,
+  PatternDetectionResult,
+  PatternDetectionJobResult,
+  Notification,
+  NotificationRecipient,
+  NotificationDeliveryResult,
 } from '../types'
 
 /**
@@ -519,5 +553,373 @@ export class ErrorRateDetectionManager {
    */
   static async checkCurrentStatus(projectId: string): Promise<ErrorRateDetectionResult | null> {
     return checkProjectErrorRateStatus(projectId)
+  }
+}
+
+/**
+ * Pattern Detection Manager - Main interface for malicious pattern detection operations
+ */
+export class PatternDetectionManager {
+  /**
+   * Check a single project for all malicious patterns
+   */
+  static async checkProject(projectId: string): Promise<PatternDetectionResult[]> {
+    return checkProjectForMaliciousPatterns(projectId)
+  }
+
+  /**
+   * Check all projects for malicious patterns
+   */
+  static async checkAllProjects(): Promise<PatternDetectionResult[]> {
+    return checkAllProjectsForMaliciousPatterns()
+  }
+
+  /**
+   * Run the pattern detection background job
+   */
+  static async runBackgroundJob(): Promise<PatternDetectionJobResult> {
+    return runPatternDetection()
+  }
+
+  /**
+   * Get pattern detection configuration
+   */
+  static async getConfig(): Promise<{
+    sql_injection: {
+      enabled: boolean
+      min_occurrences: number
+      detection_window_ms: number
+      suspend_on_detection: boolean
+    }
+    auth_brute_force: {
+      enabled: boolean
+      min_failed_attempts: number
+      detection_window_ms: number
+      suspend_on_detection: boolean
+    }
+    rapid_key_creation: {
+      enabled: boolean
+      min_keys_created: number
+      detection_window_ms: number
+      suspend_on_detection: boolean
+    }
+  }> {
+    return getPatternDetectionConfig()
+  }
+
+  /**
+   * Get pattern detection history for a project
+   */
+  static async getHistory(
+    projectId: string,
+    hours: number = 24
+  ): Promise<PatternDetectionResult[]> {
+    const now = new Date()
+    const startTime = new Date(now.getTime() - hours * 60 * 60 * 1000)
+
+    const result = await getPatternDetections(projectId, startTime, now)
+
+    if (!result.success || !result.data) {
+      return []
+    }
+
+    return result.data.map((row) => ({
+      project_id: row.project_id,
+      pattern_type: row.pattern_type as any,
+      severity: row.severity as any,
+      occurrence_count: row.occurrence_count,
+      detection_window_ms: row.detection_window_ms,
+      detected_at: row.detected_at,
+      description: row.description,
+      evidence: row.evidence || undefined,
+      action_taken: row.action_taken as any,
+    }))
+  }
+
+  /**
+   * Get pattern detection statistics for a project
+   */
+  static async getStatistics(
+    projectId: string,
+    hours: number = 24
+  ): Promise<{
+    total_detections: number
+    by_pattern_type: {
+      sql_injection: number
+      auth_brute_force: number
+      rapid_key_creation: number
+    }
+    by_severity: { warning: number; critical: number; severe: number }
+    by_action: { none: number; warning: number; suspension: number }
+  } | null> {
+    const now = new Date()
+    const startTime = new Date(now.getTime() - hours * 60 * 60 * 1000)
+
+    const result = await getPatternDetectionStatistics(projectId, startTime, now)
+
+    if (!result.success || !result.data) {
+      return null
+    }
+
+    return result.data
+  }
+
+  /**
+   * Record a pattern detection result
+   */
+  static async recordDetection(
+    projectId: string,
+    patternType: string,
+    severity: string,
+    occurrenceCount: number,
+    detectionWindowMs: number,
+    description: string,
+    evidence: string[] | undefined,
+    actionTaken: string
+  ): Promise<boolean> {
+    const result = await logPatternDetection(
+      projectId,
+      patternType,
+      severity,
+      occurrenceCount,
+      detectionWindowMs,
+      description,
+      evidence,
+      actionTaken
+    )
+
+    return result.success
+  }
+
+  /**
+   * Get pattern detection summary across all projects
+   */
+  static async getSummary(): Promise<{
+    total_projects: number
+    active_detections: number
+    recent_suspensions: number
+    by_pattern_type: {
+      sql_injection: number
+      auth_brute_force: number
+      rapid_key_creation: number
+    }
+    by_severity: Record<string, number>
+  }> {
+    return getPatternDetectionSummary()
+  }
+
+  /**
+   * Check a specific project's current pattern status
+   */
+  static async checkCurrentStatus(projectId: string): Promise<PatternDetectionResult[]> {
+    return checkProjectForMaliciousPatterns(projectId)
+  }
+
+  /**
+   * Get project's pattern detection configuration from database
+   */
+  static async getProjectConfig(projectId: string): Promise<{
+    success: boolean
+    data: {
+      id: string
+      project_id: string
+      sql_injection_enabled: boolean
+      sql_injection_min_occurrences: number
+      sql_injection_window_ms: number
+      sql_injection_suspend_on_detection: boolean
+      auth_brute_force_enabled: boolean
+      auth_brute_force_min_attempts: number
+      auth_brute_force_window_ms: number
+      auth_brute_force_suspend_on_detection: boolean
+      rapid_key_creation_enabled: boolean
+      rapid_key_creation_min_keys: number
+      rapid_key_creation_window_ms: number
+      rapid_key_creation_suspend_on_detection: boolean
+      enabled: boolean
+      created_at: Date
+      updated_at: Date
+    } | null
+    error?: unknown
+  }> {
+    return getPatternDetectionConfigFromDb(projectId)
+  }
+}
+
+/**
+ * Notification Manager - Main interface for notification operations
+ */
+export class NotificationManager {
+  /**
+   * Send suspension notification to project stakeholders
+   */
+  static async sendSuspensionNotification(
+    projectId: string,
+    projectName: string,
+    orgName: string,
+    reason: SuspensionReason,
+    suspendedAt: Date
+  ): Promise<NotificationDeliveryResult[]> {
+    return sendSuspensionNotification(projectId, projectName, orgName, reason, suspendedAt)
+  }
+
+  /**
+   * Get notification recipients for a project
+   */
+  static async getRecipients(projectId: string): Promise<NotificationRecipient[]> {
+    return getNotificationRecipients(projectId)
+  }
+
+  /**
+   * Create suspension notification template
+   */
+  static createSuspensionTemplate(
+    projectName: string,
+    orgName: string,
+    reason: SuspensionReason,
+    suspendedAt: Date
+  ) {
+    return createSuspensionNotificationTemplate(projectName, orgName, reason, suspendedAt)
+  }
+
+  /**
+   * Format suspension notification email
+   */
+  static formatSuspensionEmail(template: ReturnType<typeof createSuspensionNotificationTemplate>) {
+    return formatSuspensionNotificationEmail(template)
+  }
+
+  /**
+   * Create a notification record
+   */
+  static async create(
+    projectId: string,
+    type: string,
+    priority: string,
+    subject: string,
+    body: string,
+    data: Record<string, unknown>,
+    channels: string[]
+  ): Promise<string> {
+    return createNotification(
+      projectId,
+      type as any,
+      priority as any,
+      subject,
+      body,
+      data,
+      channels as any[]
+    )
+  }
+
+  /**
+   * Get notification by ID
+   */
+  static async get(notificationId: string): Promise<Notification | null> {
+    return getNotification(notificationId)
+  }
+
+  /**
+   * Get notifications for a project
+   */
+  static async getProjectNotifications(projectId: string, limit?: number): Promise<Notification[]> {
+    return getProjectNotifications(projectId, limit)
+  }
+
+  /**
+   * Retry failed notifications
+   */
+  static async retryFailed(maxAttempts?: number): Promise<number> {
+    return retryFailedNotifications(maxAttempts)
+  }
+}
+
+/**
+ * Notification Preferences Manager - Manages user notification preferences
+ */
+export class NotificationPreferencesManager {
+  /**
+   * Get all notification preferences for a user
+   */
+  static async getAll(userId: string, projectId?: string) {
+    return getNotificationPreferences(userId, projectId)
+  }
+
+  /**
+   * Get a specific notification preference
+   */
+  static async get(userId: string, notificationType: string, projectId?: string) {
+    return getNotificationPreference(userId, notificationType as any, projectId)
+  }
+
+  /**
+   * Create or update a notification preference
+   */
+  static async set(
+    userId: string,
+    notificationType: string,
+    enabled: boolean,
+    channels: string[],
+    projectId?: string
+  ): Promise<string> {
+    return upsertNotificationPreference(userId, notificationType as any, enabled, channels as any[], projectId)
+  }
+
+  /**
+   * Set multiple preferences at once
+   */
+  static async setMany(userId: string, preferences: Array<{
+    notification_type: string
+    enabled: boolean
+    channels: string[]
+  }>, projectId?: string): Promise<string[]> {
+    const ids: string[] = []
+
+    for (const preference of preferences) {
+      const id = await upsertNotificationPreference(
+        userId,
+        preference.notification_type as any,
+        preference.enabled,
+        preference.channels as any[],
+        projectId
+      )
+      ids.push(id)
+    }
+
+    return ids
+  }
+
+  /**
+   * Delete a notification preference
+   */
+  static async delete(userId: string, notificationType: string, projectId?: string): Promise<boolean> {
+    return deleteNotificationPreference(userId, notificationType as any, projectId)
+  }
+
+  /**
+   * Check if user should receive notification
+   */
+  static async shouldReceive(userId: string, notificationType: string, projectId?: string): Promise<boolean> {
+    return shouldReceiveNotification(userId, notificationType as any, projectId)
+  }
+
+  /**
+   * Get enabled channels for a notification type
+   */
+  static async getChannels(userId: string, notificationType: string, projectId?: string) {
+    return getEnabledChannels(userId, notificationType as any, projectId)
+  }
+
+  /**
+   * Apply default preferences for a new user
+   */
+  static async applyDefaults(userId: string): Promise<boolean> {
+    return applyDefaultNotificationPreferences(userId)
+  }
+
+  /**
+   * Get default preferences template
+   */
+  static getDefaults() {
+    return getDefaultNotificationPreferences()
   }
 }

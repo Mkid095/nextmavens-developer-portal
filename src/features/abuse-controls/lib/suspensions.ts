@@ -10,6 +10,7 @@ import { HardCapType } from '../types'
 import type { SuspensionReason, SuspensionRecord } from '../types'
 import { getCurrentUsage, checkQuota } from './enforcement'
 import { getProjectQuota } from './quotas'
+import { sendSuspensionNotification } from './notifications'
 
 /**
  * Suspend a project due to cap violation
@@ -30,6 +31,20 @@ export async function suspendProject(
     await pool.query('BEGIN')
 
     try {
+      // Get project and organization details for notification
+      const projectResult = await pool.query(
+        `
+        SELECT p.project_name, o.name as org_name
+        FROM projects p
+        JOIN organizations o ON p.org_id = o.id
+        WHERE p.id = $1
+        `,
+        [projectId]
+      )
+
+      const projectName = projectResult.rows[0]?.project_name || 'Unknown Project'
+      const orgName = projectResult.rows[0]?.org_name || 'Unknown Organization'
+
       // Check if project is already suspended
       const existingSuspension = await pool.query(
         `
@@ -78,6 +93,21 @@ export async function suspendProject(
       console.log(
         `[Suspensions] Suspended project ${projectId} for exceeding ${reason.cap_type}`
       )
+
+      // Send suspension notification (non-blocking)
+      sendSuspensionNotification(projectId, projectName, orgName, reason, new Date())
+        .then((results) => {
+          const successful = results.filter((r) => r.success).length
+          console.log(
+            `[Suspensions] Sent ${successful}/${results.length} suspension notifications for project ${projectId}`
+          )
+        })
+        .catch((error) => {
+          console.error(
+            `[Suspensions] Failed to send suspension notification for project ${projectId}:`,
+            error
+          )
+        })
     } catch (error) {
       await pool.query('ROLLBACK')
       throw error

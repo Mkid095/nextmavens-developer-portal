@@ -23,6 +23,17 @@ export type {
   ErrorRateDetectionResult,
   ErrorRateDetectionConfig,
   ErrorMetric,
+  PatternDetectionResult,
+  PatternDetectionConfig,
+  PatternMatchResult,
+  PatternDetectionJobResult,
+  SQLInjectionPatternConfig,
+  AuthBruteForcePatternConfig,
+  RapidKeyCreationPatternConfig,
+  Notification,
+  NotificationRecipient,
+  SuspensionNotificationTemplate,
+  NotificationDeliveryResult,
 } from './types'
 
 export {
@@ -34,6 +45,12 @@ export {
   SpikeSeverity,
   ErrorRateSeverity,
   ErrorRateAction,
+  MaliciousPatternType,
+  PatternSeverity,
+  NotificationType,
+  NotificationPriority,
+  NotificationStatus,
+  NotificationChannel,
 } from './types'
 
 // Quota management
@@ -81,6 +98,38 @@ export {
   addProjectStatusColumn,
 } from './migrations/create-suspensions-table'
 
+export {
+  createPatternDetectionsTable,
+  logPatternDetection,
+  getPatternDetections,
+  getRecentPatternDetections,
+  getPatternDetectionStatistics,
+  cleanupOldPatternDetections,
+} from './migrations/create-pattern-detections-table'
+
+export {
+  createPatternDetectionConfigTable,
+  getPatternDetectionConfig as getPatternDetectionConfigFromDb,
+  upsertPatternDetectionConfig,
+  deletePatternDetectionConfig,
+  getAllPatternDetectionConfigs,
+} from './migrations/create-pattern-detection-config-table'
+
+export {
+  createNotificationsTable,
+  getNotificationStatistics,
+  getPendingNotifications,
+} from './migrations/create-notifications-table'
+
+export {
+  createNotificationPreferencesTable,
+  getNotificationPreferences as getNotificationPreferencesFromDb,
+  upsertNotificationPreference as upsertNotificationPreferenceToDb,
+  deleteNotificationPreference as deleteNotificationPreferenceFromDb,
+  getDefaultNotificationPreferences,
+  applyDefaultNotificationPreferences,
+} from './migrations/create-notification-preferences-table'
+
 // Data Layer
 export {
   QuotaManager,
@@ -92,6 +141,9 @@ export {
   ProjectSuspendedError,
   SpikeDetectionManager,
   ErrorRateDetectionManager,
+  PatternDetectionManager,
+  NotificationManager,
+  NotificationPreferencesManager,
 } from './lib/data-layer'
 
 // Enforcement
@@ -156,3 +208,42 @@ export {
   getErrorRateDetectionSummary,
   type ErrorRateDetectionJobResult,
 } from './lib/error-rate-detection'
+
+// Pattern Detection
+export {
+  checkProjectForMaliciousPatterns,
+  checkAllProjectsForMaliciousPatterns,
+  runPatternDetection,
+  getPatternDetectionConfig,
+  getPatternDetectionSummary,
+  checkProjectPatternStatus,
+  detectSQLInjection,
+} from './lib/pattern-detection'
+
+// Notifications
+export {
+  getNotificationRecipients,
+  createSuspensionNotificationTemplate,
+  formatSuspensionNotificationEmail,
+  createNotification,
+  sendEmailNotification,
+  sendSuspensionNotification,
+  updateNotificationDeliveryStatus,
+  getNotification,
+  getProjectNotifications,
+  retryFailedNotifications,
+} from './lib/notifications'
+
+// Notification Preferences
+export {
+  getNotificationPreferences,
+  getNotificationPreference,
+  upsertNotificationPreference,
+  deleteNotificationPreference,
+  getDefaultNotificationPreferences as getDefaultNotificationPrefs,
+  applyDefaultNotificationPreferences as applyDefaultNotificationPrefs,
+  shouldReceiveNotification,
+  getEnabledChannels,
+  type NotificationPreference,
+  type NotificationPreferenceInput,
+} from './lib/notification-preferences'

@@ -427,3 +427,294 @@ export interface ErrorMetric {
   /** When the metric was recorded */
   recorded_at: Date
 }
+
+/**
+ * Malicious pattern types that can be detected
+ */
+export enum MaliciousPatternType {
+  /** SQL injection attempts in queries */
+  SQL_INJECTION = 'sql_injection',
+  /** Authentication brute force attacks */
+  AUTH_BRUTE_FORCE = 'auth_brute_force',
+  /** Rapid sequential API key creation */
+  RAPID_KEY_CREATION = 'rapid_key_creation',
+}
+
+/**
+ * Malicious pattern severity levels
+ */
+export enum PatternSeverity {
+  /** Warning level - pattern detected but may be legitimate */
+  WARNING = 'warning',
+  /** Critical level - highly suspicious activity */
+  CRITICAL = 'critical',
+  /** Severe level - clear malicious intent */
+  SEVERE = 'severe',
+}
+
+/**
+ * Malicious pattern detection result
+ */
+export interface PatternDetectionResult {
+  /** Project ID where pattern was detected */
+  project_id: string
+  /** Type of malicious pattern detected */
+  pattern_type: MaliciousPatternType
+  /** Severity level of the detected pattern */
+  severity: PatternSeverity
+  /** Number of pattern occurrences detected */
+  occurrence_count: number
+  /** Time window in which pattern was detected */
+  detection_window_ms: number
+  /** When the pattern was detected */
+  detected_at: Date
+  /** Description of what was detected */
+  description: string
+  /** Evidence/context of the pattern detection */
+  evidence?: string[]
+  /** Whether action was taken (warning/suspension) */
+  action_taken: 'warning' | 'suspension' | 'none'
+}
+
+/**
+ * SQL injection pattern configuration
+ */
+export interface SQLInjectionPatternConfig {
+  /** Whether SQL injection detection is enabled */
+  enabled: boolean
+  /** Minimum number of suspicious queries to trigger detection */
+  min_occurrences: number
+  /** Time window for detection in milliseconds */
+  detection_window_ms: number
+  /** Whether to trigger suspension on detection */
+  suspend_on_detection: boolean
+}
+
+/**
+ * Auth brute force pattern configuration
+ */
+export interface AuthBruteForcePatternConfig {
+  /** Whether brute force detection is enabled */
+  enabled: boolean
+  /** Minimum number of failed auth attempts to trigger detection */
+  min_failed_attempts: number
+  /** Time window for detection in milliseconds */
+  detection_window_ms: number
+  /** Whether to trigger suspension on detection */
+  suspend_on_detection: boolean
+}
+
+/**
+ * Rapid key creation pattern configuration
+ */
+export interface RapidKeyCreationPatternConfig {
+  /** Whether rapid key creation detection is enabled */
+  enabled: boolean
+  /** Minimum number of keys created to trigger detection */
+  min_keys_created: number
+  /** Time window for detection in milliseconds */
+  detection_window_ms: number
+  /** Whether to trigger suspension on detection */
+  suspend_on_detection: boolean
+}
+
+/**
+ * Malicious pattern detection configuration
+ */
+export interface PatternDetectionConfig {
+  /** SQL injection pattern configuration */
+  sql_injection: SQLInjectionPatternConfig
+  /** Auth brute force pattern configuration */
+  auth_brute_force: AuthBruteForcePatternConfig
+  /** Rapid key creation pattern configuration */
+  rapid_key_creation: RapidKeyCreationPatternConfig
+}
+
+/**
+ * Pattern detection background job result
+ */
+export interface PatternDetectionJobResult {
+  /** Whether the job completed successfully */
+  success: boolean
+  /** Timestamp when the job started */
+  started_at: Date
+  /** Timestamp when the job completed */
+  completed_at: Date
+  /** Duration in milliseconds */
+  duration_ms: number
+  /** Number of projects checked */
+  projects_checked: number
+  /** Number of patterns detected */
+  patterns_detected: number
+  /** Details of detected patterns */
+  detected_patterns: PatternDetectionResult[]
+  /** Breakdown by pattern type */
+  patterns_by_type: {
+    sql_injection: number
+    auth_brute_force: number
+    rapid_key_creation: number
+  }
+  /** Breakdown by action type */
+  actions_taken: {
+    warnings: number
+    suspensions: number
+  }
+  /** Error message if job failed */
+  error?: string
+}
+
+/**
+ * Pattern match result for individual checks
+ */
+export interface PatternMatchResult {
+  /** Whether the pattern was matched */
+  matched: boolean
+  /** Confidence score (0-1) of the match */
+  confidence: number
+  /** Details about what was matched */
+  details?: string
+  /** Evidence of the pattern match */
+  evidence?: string[]
+}
+
+/**
+ * Notification types for system events
+ */
+export enum NotificationType {
+  /** Project suspended notification */
+  PROJECT_SUSPENDED = 'project_suspended',
+  /** Project unsuspended notification */
+  PROJECT_UNSUSPENDED = 'project_unsuspended',
+  /** Quota warning notification */
+  QUOTA_WARNING = 'quota_warning',
+  /** Usage spike detected notification */
+  USAGE_SPIKE_DETECTED = 'usage_spike_detected',
+  /** Error rate detected notification */
+  ERROR_RATE_DETECTED = 'error_rate_detected',
+  /** Malicious pattern detected notification */
+  MALICIOUS_PATTERN_DETECTED = 'malicious_pattern_detected',
+}
+
+/**
+ * Notification priority levels
+ */
+export enum NotificationPriority {
+  /** Low priority - informational */
+  LOW = 'low',
+  /** Medium priority - requires attention */
+  MEDIUM = 'medium',
+  /** High priority - immediate action required */
+  HIGH = 'high',
+  /** Critical priority - service impacting */
+  CRITICAL = 'critical',
+}
+
+/**
+ * Notification delivery status
+ */
+export enum NotificationStatus {
+  /** Notification is pending delivery */
+  PENDING = 'pending',
+  /** Notification was successfully delivered */
+  DELIVERED = 'delivered',
+  /** Notification delivery failed */
+  FAILED = 'failed',
+  /** Notification is being retried */
+  RETRYING = 'retrying',
+}
+
+/**
+ * Notification delivery channels
+ */
+export enum NotificationChannel {
+  /** Email notification */
+  EMAIL = 'email',
+  /** In-app notification */
+  IN_APP = 'in_app',
+  /** SMS notification */
+  SMS = 'sms',
+  /** Webhook notification */
+  WEBHOOK = 'webhook',
+}
+
+/**
+ * Notification recipient information
+ */
+export interface NotificationRecipient {
+  /** Recipient ID (user or org member ID) */
+  id: string
+  /** Recipient email address */
+  email: string
+  /** Recipient name */
+  name?: string
+  /** Recipient role in the organization */
+  role?: string
+}
+
+/**
+ * Notification record for database storage
+ */
+export interface Notification {
+  /** Unique identifier for the notification */
+  id: string
+  /** Project ID associated with the notification */
+  project_id: string
+  /** Type of notification */
+  notification_type: NotificationType
+  /** Priority level of the notification */
+  priority: NotificationPriority
+  /** Notification subject/title */
+  subject: string
+  /** Notification body content */
+  body: string
+  /** Additional data associated with the notification */
+  data: Record<string, unknown>
+  /** Delivery channels to use */
+  channels: NotificationChannel[]
+  /** Current delivery status */
+  status: NotificationStatus
+  /** Number of delivery attempts made */
+  attempts: number
+  /** Timestamp when the notification was created */
+  created_at: Date
+  /** Timestamp when the notification was delivered */
+  delivered_at?: Date
+  /** Error message if delivery failed */
+  error_message?: string
+}
+
+/**
+ * Notification template for suspension notifications
+ */
+export interface SuspensionNotificationTemplate {
+  /** Project name */
+  project_name: string
+  /** Organization name */
+  org_name: string
+  /** Suspension reason */
+  reason: SuspensionReason
+  /** When the suspension occurred */
+  suspended_at: Date
+  /** Support contact information */
+  support_contact: string
+  /** Resolution steps */
+  resolution_steps: string[]
+}
+
+/**
+ * Notification delivery result
+ */
+export interface NotificationDeliveryResult {
+  /** Whether the delivery was successful */
+  success: boolean
+  /** Notification ID */
+  notification_id: string
+  /** Delivery channel used */
+  channel: NotificationChannel
+  /** Timestamp of delivery attempt */
+  delivered_at: Date
+  /** Error message if delivery failed */
+  error?: string
+  /** Number of attempts made */
+  attempts: number
+}
