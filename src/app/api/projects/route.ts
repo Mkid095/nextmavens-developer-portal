@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest } from '@/lib/middleware'
 import { generateApiKey, generateSlug, hashApiKey } from '@/lib/auth'
+import { applyDefaultQuotas } from '@/features/abuse-controls/lib/quotas'
 
 export async function POST(req: NextRequest) {
   try {
@@ -58,6 +59,9 @@ export async function POST(req: NextRequest) {
        VALUES ($1, 'secret', $2, $3, $4)`,
       [project.id, 'nm_live_sk_', hashApiKey(secretKey), ['read', 'write']]
     )
+
+    // Apply default quotas to the new project
+    await applyDefaultQuotas(project.id)
 
     return NextResponse.json(
       {
