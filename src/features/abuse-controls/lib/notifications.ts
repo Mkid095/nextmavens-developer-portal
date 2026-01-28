@@ -25,6 +25,7 @@ import {
 } from '../types'
 import { sendPlainTextEmail, type EmailSendResult } from './email-service'
 import { shouldReceiveNotification } from './notification-preferences'
+import { logAuditEntry, AuditLogType, AuditLogLevel } from './audit-logger'
 
 /**
  * Get notification recipients for a project
@@ -258,8 +259,25 @@ export async function createNotification(
       ]
     )
 
-    console.log(`[Notifications] Created notification ${result.rows[0].id}`)
-    return result.rows[0].id
+    const notificationId = result.rows[0].id
+    console.log(`[Notifications] Created notification ${notificationId}`)
+
+    // Log notification creation to audit log
+    await logAuditEntry({
+      log_type: 'notification' as any,
+      severity: AuditLogLevel.INFO,
+      project_id: projectId,
+      action: 'Notification created',
+      details: {
+        notification_id: notificationId,
+        notification_type: notificationType,
+        priority,
+        channels,
+      },
+      occurred_at: new Date(),
+    })
+
+    return notificationId
   } catch (error) {
     console.error('[Notifications] Error creating notification:', error)
     throw new Error('Failed to create notification')
@@ -335,6 +353,10 @@ export async function sendSuspensionNotification(
   reason: SuspensionReason,
   suspendedAt: Date
 ): Promise<NotificationDeliveryResult[]> {
+  const startTime = new Date()
+  let success = false
+  let deliveryCount = 0
+
   try {
     console.log(
       `[Notifications] Sending suspension notification for project ${projectId}`
@@ -397,6 +419,9 @@ export async function sendSuspensionNotification(
     }
 
     const successfulDeliveries = deliveryResults.filter((r) => r.success).length
+    deliveryCount = successfulDeliveries
+    success = successfulDeliveries > 0
+
     console.log(
       `[Notifications] Sent suspension notification to ${successfulDeliveries}/${recipients.length} recipients`
     )
@@ -404,7 +429,40 @@ export async function sendSuspensionNotification(
     return deliveryResults
   } catch (error) {
     console.error('[Notifications] Error sending suspension notification:', error)
+
+    // Log notification failure to audit log
+    await logAuditEntry({
+      log_type: 'notification' as any,
+      severity: AuditLogLevel.ERROR,
+      project_id: projectId,
+      action: 'Suspension notification failed',
+      details: {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        duration_ms: new Date().getTime() - startTime.getTime(),
+      },
+      occurred_at: new Date(),
+    }).catch((auditError) => {
+      console.error('[Notifications] Failed to log audit entry:', auditError)
+    })
+
     throw new Error('Failed to send suspension notification')
+  } finally {
+    // Log notification attempt to audit log
+    await logAuditEntry({
+      log_type: 'notification' as any,
+      severity: success ? AuditLogLevel.INFO : AuditLogLevel.WARNING,
+      project_id: projectId,
+      action: 'Suspension notification sent',
+      details: {
+        success,
+        delivery_count: deliveryCount,
+        reason: reason.cap_type,
+        duration_ms: new Date().getTime() - startTime.getTime(),
+      },
+      occurred_at: new Date(),
+    }).catch((auditError) => {
+      console.error('[Notifications] Failed to log audit entry:', auditError)
+    })
   }
 }
 
