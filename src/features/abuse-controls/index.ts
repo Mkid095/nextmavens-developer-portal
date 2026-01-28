@@ -12,9 +12,17 @@ export type {
   RateLimitIdentifier,
   RateLimitResult,
   RateLimitError,
+  SuspensionReason,
+  SuspensionRecord,
+  SuspensionHistoryEntry,
 } from './types'
 
-export { HardCapType, DEFAULT_HARD_CAPS, RateLimitIdentifierType } from './types'
+export {
+  HardCapType,
+  DEFAULT_HARD_CAPS,
+  RateLimitIdentifierType,
+  ProjectStatus,
+} from './types'
 
 // Quota management
 export {
@@ -47,6 +55,11 @@ export {
   applyDefaultQuotas as migrationApplyDefaultQuotas,
 } from './migrations/create-quotas-table'
 
+export {
+  createSuspensionsTable,
+  addProjectStatusColumn,
+} from './migrations/create-suspensions-table'
+
 // Data Layer
 export {
   QuotaManager,
@@ -74,3 +87,21 @@ export {
   createRateLimitError,
   extractClientIP,
 } from './lib/rate-limiter'
+
+// Suspensions
+export {
+  suspendProject,
+  unsuspendProject,
+  getSuspensionStatus,
+  isCapExceeded,
+  checkAllProjectsForSuspension,
+  getAllActiveSuspensions,
+  getSuspensionHistory,
+} from './lib/suspensions'
+
+// Background Job
+export {
+  runSuspensionCheck,
+  getSuspensionSummary,
+  type BackgroundJobResult,
+} from './lib/background-job'
