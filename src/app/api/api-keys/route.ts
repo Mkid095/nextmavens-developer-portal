@@ -7,8 +7,17 @@ export async function GET(req: NextRequest) {
     const developer = await authenticateRequest(req)
 
     const pool = getPool()
+
+    // Ensure name column exists (auto-migrate)
+    try {
+      await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS name VARCHAR(255)`)
+    } catch {
+      // Ignore if column exists or migration fails
+    }
+
     const result = await pool.query(
-      `SELECT id, key_type, key_prefix, created_at, last_used, name
+      `SELECT id, key_type, key_prefix, created_at, last_used,
+              COALESCE(name, key_type || ' key') as name
        FROM api_keys
        WHERE project_id IN (SELECT id FROM projects WHERE developer_id = $1)
        ORDER BY created_at DESC`,
@@ -28,7 +37,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ apiKeys })
   } catch (error: any) {
     console.error('[Developer Portal] Fetch API keys error:', error)
-    return NextResponse.json({ error: error.message || 'Failed to fetch API keys' }, { status: 401 })
+    const status = error.message === 'No token provided' || error.message === 'Invalid token' ? 401 : 500
+    return NextResponse.json({ error: error.message || 'Failed to fetch API keys' }, { status })
   }
 }
 
