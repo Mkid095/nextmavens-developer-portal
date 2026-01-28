@@ -24,8 +24,9 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ developer: result.rows[0] })
-  } catch (error) {
+  } catch (error: any) {
     console.error('[Developer Portal] Get developer error:', error)
-    return NextResponse.json({ error: 'Failed to get developer' }, { status: 500 })
+    const status = error.message === 'No token provided' || error.message === 'Invalid token' ? 401 : 500
+    return NextResponse.json({ error: error.message || 'Failed to get developer' }, { status })
   }
 }
