@@ -631,7 +631,12 @@ export default function DashboardPage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="font-medium text-slate-900 mb-1">{key.name}</div>
-                          <code className="text-sm text-slate-600 block break-all">{key.public_key}</code>
+                          <code className="text-sm text-slate-600 block break-all">
+                            {key.public_key && key.public_key.length > 20 ? key.public_key : `${key.public_key}•••• (incomplete)`}
+                          </code>
+                          {(!key.public_key || key.public_key.length <= 20) && (
+                            <p className="text-xs text-amber-600 mt-1">Only prefix stored - recreate this key</p>
+                          )}
                         </div>
                         <button
                           onClick={() => handleCopy(key.public_key, key.id)}

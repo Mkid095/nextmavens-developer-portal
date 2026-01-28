@@ -57,6 +57,7 @@ export default function ProjectDetailPage() {
   const [project, setProject] = useState<Project | null>(null)
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [showSecret, setShowSecret] = useState<Record<string, boolean>>({})
 
@@ -76,14 +77,15 @@ export default function ProjectDetailPage() {
         return
       }
       if (!res.ok) {
-        router.push('/dashboard')
+        const data = await res.json().catch(() => ({ error: 'Unknown error' }))
+        setError(data.error || 'Failed to load project')
         return
       }
       const data = await res.json()
       setProject(data.project)
     } catch (err) {
       console.error('Failed to fetch project:', err)
-      router.push('/dashboard')
+      setError('Failed to load project')
     } finally {
       setLoading(false)
     }
@@ -125,7 +127,8 @@ export default function ProjectDetailPage() {
     return (
       <div className="min-h-screen bg-[#F3F5F7] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-600 mb-4">Project not found</p>
+          <p className="text-slate-600 mb-2">Project not found</p>
+          {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
           <Link href="/dashboard" className="text-emerald-700 hover:text-emerald-800">
             Back to Dashboard
           </Link>
@@ -319,9 +322,11 @@ export default function ProjectDetailPage() {
                               <code className="text-sm text-slate-600 bg-white px-2 py-1 rounded">
                                 {key.key_type === 'secret' && !showSecret[key.id]
                                   ? `${key.key_prefix}••••••••`
-                                  : key.public_key || key.key_prefix}
+                                  : key.public_key && key.public_key.length > 20
+                                  ? key.public_key
+                                  : `${key.key_prefix}•••••••• (recreate)`}
                               </code>
-                              {key.key_type === 'secret' && (
+                              {key.key_type === 'secret' && key.public_key && key.public_key.length > 20 && (
                                 <button
                                   onClick={() => setShowSecret({ ...showSecret, [key.id]: !showSecret[key.id] })}
                                   className="p-1 hover:bg-slate-200 rounded"
@@ -330,13 +335,18 @@ export default function ProjectDetailPage() {
                                 </button>
                               )}
                               <button
-                                onClick={() => handleCopy(key.public_key || key.key_prefix, `key-${key.id}`)}
+                                onClick={() => handleCopy(key.public_key && key.public_key.length > 20 ? key.public_key : key.key_prefix, `key-${key.id}`)}
                                 className="p-1 hover:bg-slate-200 rounded"
                               >
                                 {copied === `key-${key.id}` ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-600" />}
                               </button>
                             </div>
-                            <p className="text-xs text-slate-500">Created {new Date(key.created_at).toLocaleString()}</p>
+                            <p className="text-xs text-slate-500">
+                              Created {new Date(key.created_at).toLocaleString()}
+                              {(!key.public_key || key.public_key.length <= 20) && (
+                                <span className="text-amber-600 ml-2"> • Only prefix stored - recreate key</span>
+                              )}
+                            </p>
                           </div>
                         </div>
                         <button

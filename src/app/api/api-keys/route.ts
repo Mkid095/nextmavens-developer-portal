@@ -19,7 +19,9 @@ export async function GET(req: NextRequest) {
     const apiKeys = result.rows.map(key => ({
       id: key.id.toString(),
       name: `${key.key_type} key`,
-      public_key: key.key_prefix,
+      key_type: key.key_type,
+      key_prefix: key.key_prefix,
+      public_key: key.key_prefix, // Old keys only have prefix stored
       created_at: key.created_at,
     }))
 
