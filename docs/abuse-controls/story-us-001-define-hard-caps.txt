@@ -1,0 +1,165 @@
+STORY MEMORY: US-001 - Define Hard Caps
+=========================================================
+
+COMPLETED: 2026-01-28
+
+STORY DETAILS:
+- ID: US-001
+- Title: Define Hard Caps
+- Priority: 1
+- Maven Steps: [1, 2, 7]
+- Status: Complete
+
+IMPLEMENTATION SUMMARY:
+Implemented a comprehensive quota management system for abuse prevention with hard caps for four resource types: DB queries/day (10,000), Realtime connections (100), Storage uploads/day (1,000), and Function invocations/day (5,000). The system includes a PostgreSQL-based quotas table, a complete quota management API, enforcement layer with quota checking, HTTP API endpoints for quota management, and automatic integration with project creation. All quotas are configurable per project with sensible defaults.
+
+FILES CREATED (12):
+- src/features/abuse-controls/types/index.ts (70 lines) - TypeScript types and enums for hard caps, quotas, usage, and violations
+- src/features/abuse-controls/lib/config.ts (99 lines) - Configuration constants with display names, descriptions, and validation functions
+- src/features/abuse-controls/lib/quotas.ts (249 lines) - Core quota management API with CRUD operations for project quotas
+- src/features/abuse-controls/lib/enforcement.ts (144 lines) - Quota checking and enforcement logic with usage tracking placeholders
+- src/features/abuse-controls/lib/data-layer.ts (163 lines) - Centralized QuotaManager class and middleware helpers for integration
+- src/features/abuse-controls/lib/verification.ts (249 lines) - Database verification utilities and integration testing helpers
+- src/features/abuse-controls/migrations/create-quotas-table.ts (133 lines) - Database migration for project_quotas table
+- src/features/abuse-controls/index.ts (64 lines) - Public API exports for the entire feature
+- src/features/abuse-controls/README.md (327 lines) - Comprehensive documentation with usage examples
+- src/features/abuse-controls/API-REFERENCE.md (279 lines) - Complete API reference documentation
+- src/app/api/quotas/[projectId]/route.ts (185 lines) - HTTP API endpoints for GET/PUT/DELETE quota operations
+- .eslintrc.json (3 lines) - ESLint configuration
+
+FILES MODIFIED (3):
+- src/app/api/projects/route.ts - Added automatic default quota application when creating new projects (line 5 import, line 64 call)
+- package.json - Dependency updates
+- pnpm-lock.yaml - Lock file updates
+
+KEY DECISIONS:
+1. PostgreSQL as quota storage backend
+   - Rationale: Existing infrastructure uses PostgreSQL via pg library; keeps data centralized and consistent
+   - Impact: Quotas are persistent, queryable, and can join with projects table; enables future analytics
+
+2. Upsert pattern for quota management (ON CONFLICT DO UPDATE)
+   - Rationale: Allows setProjectQuota() to handle both create and update operations atomically
+   - Impact: Simplifies API surface; prevents race conditions; ensures data consistency
+
+3. Fallback to defaults for missing quotas
+   - Rationale: New projects should have limits immediately; manual configuration not required
+   - Impact: All projects are protected by default; ops teams can customize as needed
+
+4. Separate enforcement layer with usage tracking placeholders
+   - Rationale: Actual usage metrics require integration with monitoring/metrics systems (Redis, etc.)
+   - Impact: System is ready for enforcement; current implementation allows all operations (usage returns 0); future stories can connect real metrics
+
+5. QuotaManager class for centralized access
+   - Rationale: Provides clean API surface for other features to integrate with quota system
+   - Impact: Easy integration for auto-suspension, notifications, dashboard features
+
+INTEGRATION POINTS:
+- Project Creation (src/app/api/projects/route.ts): Automatically applies default quotas when new projects are created via applyDefaultQuotas()
+- Database (@/lib/db): Uses existing PostgreSQL connection pool for all quota operations
+- Future - Auto-Suspension: QuotaManager.isAllowed() can be called to check if project should be suspended
+- Future - Notifications: QuotaManager.getViolations() provides data for alerting
+- Future - Abuse Dashboard: QuotaManager.getQuotas() and getStats() supply dashboard data
+
+CHALLENGES RESOLVED:
+1. No existing usage tracking infrastructure
+   - Problem: Quota enforcement requires current usage metrics, but no monitoring system exists
+   - Solution: Created placeholder getCurrentUsage() function that returns 0; added TODO comments for Redis/metrics integration
+   - Lesson: Build the quota system first with placeholders; real usage tracking can be added in separate story (US-005 likely)
+
+2. Balancing flexibility with safety
+   - Problem: Projects need configurable quotas but must have default protection
+   - Solution: DEFAULT_HARD_CAPS constant provides defaults; custom quotas override per-project via database
+   - Lesson: Always provide safe defaults; allow customization without breaking safety
+
+3. Database constraint design
+   - Problem: Need to prevent duplicate quota entries for same project+cap_type
+   - Solution: Added unique constraint on (project_id, cap_type) in migration
+   - Lesson: Use database constraints for data integrity; don't rely solely on application logic
+
+LESSONS LEARNED:
+1. Maven workflow works well for foundational features - Steps 1, 2, 7 provided clear progression from types to database to integration
+2. Separating concerns (quotas.ts vs enforcement.ts vs data-layer.ts) makes the system more maintainable and testable
+3. Placeholder functions are acceptable for cross-cutting concerns (usage tracking) that will be implemented separately
+4. Documentation (README.md and API-REFERENCE.md) is valuable for future developers integrating with the system
+5. Feature-based folder structure (src/features/abuse-controls/) keeps related code organized and easy to find
+
+CODE PATTERNS ESTABLISHED:
+
+Pattern 1: Database Query with Error Handling
+```typescript
+export async function getProjectQuotas(projectId: string): Promise<ProjectQuota[]> {
+  const pool = getPool()
+  try {
+    const result = await pool.query(
+      `SELECT id, project_id, cap_type, cap_value, created_at, updated_at
+       FROM project_quotas
+       WHERE project_id = $1
+       ORDER BY cap_type`,
+      [projectId]
+    )
+    return result.rows
+  } catch (error) {
+    console.error('[Quotas] Error fetching project quotas:', error)
+    throw new Error('Failed to fetch project quotas')
+  }
+}
+```
+- Usage: All database operations should use this pattern
+- Benefits: Consistent error handling, clear logging, typed return values
+
+Pattern 2: Upsert for Idempotent Operations
+```typescript
+const result = await pool.query(
+  `INSERT INTO project_quotas (project_id, cap_type, cap_value)
+   VALUES ($1, $2, $3)
+   ON CONFLICT (project_id, cap_type)
+   DO UPDATE SET cap_value = EXCLUDED.cap_value, updated_at = NOW()
+   RETURNING *`,
+  [projectId, capType, capValue]
+)
+```
+- Usage: When creating or updating records based on unique constraints
+- Benefits: Atomic operation, prevents race conditions, simplifies API
+
+Pattern 3: Default Fallback Pattern
+```typescript
+const quota = await getProjectQuota(projectId, capType)
+const limit = quota?.cap_value ?? DEFAULT_HARD_CAPS[capType]
+```
+- Usage: When custom values should override defaults
+- Benefits: Ensures values always exist, allows customization, safe defaults
+
+Pattern 4: Manager Class for Feature Integration
+```typescript
+export class QuotaManager {
+  static async initializeProject(projectId: string): Promise<void> {
+    await applyDefaultQuotas(projectId)
+  }
+  static async isAllowed(projectId: string, operationType: HardCapType): Promise<boolean> {
+    return canPerformOperation(projectId, operationType)
+  }
+}
+```
+- Usage: For features that need centralized API surface for other modules
+- Benefits: Clean integration point, encapsulates complexity, easy to mock for testing
+
+ACCEPTANCE CRITERIA:
+- Hard caps defined in quotas table - VERIFIED: project_quotas table created with cap_type and cap_value columns
+- DB queries/day: 10,000 - VERIFIED: DEFAULT_HARD_CAPS.DB_QUERIES_PER_DAY = 10,000 in types/index.ts:24
+- Realtime connections: 100 - VERIFIED: DEFAULT_HARD_CAPS.REALTIME_CONNECTIONS = 100 in types/index.ts:25
+- Storage uploads/day: 1,000 - VERIFIED: DEFAULT_HARD_CAPS.STORAGE_UPLOADS_PER_DAY = 1,000 in types/index.ts:26
+- Function invocations/day: 5,000 - VERIFIED: DEFAULT_HARD_CAPS.FUNCTION_INVOCATIONS_PER_DAY = 5,000 in types/index.ts:27
+- Configurable per project - VERIFIED: setProjectQuota() allows per-project customization via quotas.ts:57-83
+- Typecheck passes - VERIFIED: pnpm run typecheck completed with no errors
+
+NEXT STORY DEPENDENCIES:
+- US-002 (Auto-Suspend Exceeded Projects) will use QuotaManager.isAllowed() and getViolations()
+- US-003 (Abuse Dashboard) will use QuotaManager.getQuotas() and getStats()
+- US-004 (Usage Notifications) will use QuotaManager.checkWithDetails() for threshold alerts
+- US-005 (Track Actual Usage) will implement real getCurrentUsage() and recordUsage() functions
+
+ARCHITECTURAL NOTES:
+- Quota system is designed to be feature-agnostic - can be used for API rate limiting, database queries, storage, functions
+- Usage tracking is intentionally decoupled - can be implemented with Redis, Prometheus, or custom metrics
+- All quota operations are async and return proper TypeScript types
+- System assumes project_id is the primary identifier for quota associations
