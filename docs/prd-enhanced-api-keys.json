@@ -214,8 +214,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Service role key creation already implemented via US-004. DEFAULT_SCOPES for service_role includes all scopes: db:select/insert/update/delete, storage:read/write, auth:manage, graphql:execute, realtime:subscribe/publish. Added extra warning message: 'WARNING: This is a service role key that bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code. Only use this key in trusted server-side environments for admin operations.' Typecheck passes."
     },
     {
       "id": "US-008",
