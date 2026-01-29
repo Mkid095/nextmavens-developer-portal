@@ -30,6 +30,10 @@ COMMANDS:
   functions list            List deployed functions
   functions logs <name>     View function logs
 
+  secrets set <key> <value>   Set a secret for the linked project
+  secrets list                List all secret names (values hidden)
+  secrets delete <key>        Delete a secret
+
   hello       Say hello to the world
 
 OPTIONS:
@@ -76,6 +80,9 @@ async function main() {
       break;
     case 'functions':
       await handleFunctionsCommand(args.slice(1));
+      break;
+    case 'secrets':
+      await handleSecretsCommand(args.slice(1));
       break;
     default:
       console.log(`Unknown command: ${command}`);
@@ -163,6 +170,34 @@ async function handleFunctionsCommand(args: string[]) {
     default:
       console.error(`Unknown functions command: ${subcommand}`);
       console.error('Available functions commands: deploy, list, logs');
+      console.error('Run "nextmavens --help" for more information.');
+      process.exit(1);
+  }
+}
+
+async function handleSecretsCommand(args: string[]) {
+  const subcommand = args[0];
+
+  if (!subcommand) {
+    console.error('Error: secrets command requires a subcommand');
+    console.error('Usage: nextmavens secrets <set|list|delete> [options]');
+    console.error('Run "nextmavens --help" for more information.');
+    process.exit(1);
+  }
+
+  switch (subcommand) {
+    case 'set':
+      await (await import('./commands/secrets/set')).secretsSet(args[1], args[2]);
+      break;
+    case 'list':
+      await (await import('./commands/secrets/list')).secretsList();
+      break;
+    case 'delete':
+      await (await import('./commands/secrets/delete')).secretsDelete(args[1]);
+      break;
+    default:
+      console.error(`Unknown secrets command: ${subcommand}`);
+      console.error('Available secrets commands: set, list, delete');
       console.error('Run "nextmavens --help" for more information.');
       process.exit(1);
   }

@@ -237,8 +237,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented secrets commands (set, list, delete) in cli/src/commands/secrets/. set command sets a secret for the linked project with key and value. list command displays all secret names with values hidden (masked as ••••••••••••), includes created/updated dates. delete command removes a secret with confirmation prompt. Added API client methods: setSecret, listSecrets, deleteSecret. Added TypeScript types: SecretInfo, SecretsListResponse, SecretSetResponse, SecretDeleteResponse. Updated CLI help text. Typecheck passes."
     },
     {
       "id": "US-007",
