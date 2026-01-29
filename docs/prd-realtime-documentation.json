@@ -24,8 +24,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created /docs/realtime page at src/app/docs/realtime/page.tsx with comprehensive realtime overview. Includes: Overview section explaining DB-driven realtime and CDC, 'How It Works' section with DB-Driven Realtime (subscriptions follow table structure), Change Data Capture (Postgres logical replication), and WebSocket Transport (persistent connections), Limits & Quotas section documenting max 50 connections per project and message rate 100/sec, Usage Examples section with subscribe/SQL filter/event handling examples, Event Types reference table (INSERT, UPDATE, DELETE, *), and Resources section. Updated /docs main page to include realtime chapter. Typecheck passes."
     },
     {
       "id": "US-002",

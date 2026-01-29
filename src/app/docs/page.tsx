@@ -127,7 +127,7 @@ export default function DocsPage() {
           </div>
           <p className="text-xl text-slate-600">
             Complete guide to integrating NextMavens services into your applications.
-            Learn how to use Database, Authentication, Storage, GraphQL, Backups, Infrastructure, and MCP tools.
+            Learn how to use Database, Authentication, Storage, GraphQL, Backups, Infrastructure, Realtime, and MCP tools.
           </p>
         </div>
 
