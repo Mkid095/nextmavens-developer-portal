@@ -132,8 +132,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added provisioning_enabled flag check to src/app/api/projects/route.ts POST endpoint. Returns 503 with clear message explaining provisioning is disabled and existing projects are unaffected. Uses checkFeature() helper with caching. Applied before authentication to minimize resource usage. Typecheck passes."
     },
     {
       "id": "US-006",

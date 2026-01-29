@@ -137,8 +137,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added idempotency middleware to DELETE /api/api-keys endpoint (src/app/api/api-keys/route.ts). Idempotency key format: revoke:{key_id} with TTL of 1 year (31536000s) - effectively permanent since revocation is permanent. Uses getIdempotencyKey() to check Idempotency-Key header or use key_id from query params, wraps key deletion logic in withIdempotency() helper. Duplicate requests return same cached response without errors. Typecheck passes."
     },
     {
       "id": "US-006",

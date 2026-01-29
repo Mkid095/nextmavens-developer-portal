@@ -231,50 +231,72 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const keyId = searchParams.get('id')
 
+    // Validation errors should not be cached
     if (!keyId) {
       return NextResponse.json({ error: 'Key ID is required' }, { status: 400 })
     }
 
-    const pool = getPool()
+    // Generate idempotency key: revoke:{key_id}
+    const idempotencyKey = getIdempotencyKey('revoke', req.headers, keyId)
 
-    // First, get the key details for audit logging before deletion
-    const keyDetails = await pool.query(
-      `SELECT key_type FROM api_keys
-       WHERE id = $1
-         AND project_id IN (SELECT id FROM projects WHERE developer_id = $2)`,
-      [keyId, developer.id]
-    )
+    // Execute with idempotency (TTL: 1 year - effectively permanent since revocation is permanent)
+    const result = await withIdempotency(
+      idempotencyKey,
+      async (): Promise<IdempotencyResponse> => {
+        const pool = getPool()
 
-    if (keyDetails.rows.length === 0) {
-      return NextResponse.json({ error: 'API key not found' }, { status: 404 })
-    }
+        // First, get the key details for audit logging before deletion
+        const keyDetails = await pool.query(
+          `SELECT key_type FROM api_keys
+           WHERE id = $1
+             AND project_id IN (SELECT id FROM projects WHERE developer_id = $2)`,
+          [keyId, developer.id]
+        )
 
-    await pool.query(
-      `DELETE FROM api_keys
-       WHERE id = $1
-         AND project_id IN (SELECT id FROM projects WHERE developer_id = $2)`,
-      [keyId, developer.id]
-    )
-
-    // Log API key revocation
-    try {
-      await logApiKeyAction.revoked(
-        userActor(developer.id),
-        keyId,
-        'User requested deletion',
-        {
-          request: {
-            ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
-            userAgent: req.headers.get('user-agent') || undefined,
-          },
+        if (keyDetails.rows.length === 0) {
+          return {
+            status: 404,
+            headers: {},
+            body: { error: 'API key not found' }
+          }
         }
-      )
-    } catch (auditError) {
-      // Don't fail the request if audit logging fails
-      console.error('[Developer Portal] Failed to log API key revocation:', auditError)
-    }
 
-    return NextResponse.json({ success: true })
+        await pool.query(
+          `DELETE FROM api_keys
+           WHERE id = $1
+             AND project_id IN (SELECT id FROM projects WHERE developer_id = $2)`,
+          [keyId, developer.id]
+        )
+
+        // Log API key revocation
+        try {
+          await logApiKeyAction.revoked(
+            userActor(developer.id),
+            keyId,
+            'User requested deletion',
+            {
+              request: {
+                ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+                userAgent: req.headers.get('user-agent') || undefined,
+              },
+            }
+          )
+        } catch (auditError) {
+          // Don't fail the request if audit logging fails
+          console.error('[Developer Portal] Failed to log API key revocation:', auditError)
+        }
+
+        return {
+          status: 200,
+          headers: {},
+          body: { success: true }
+        }
+      },
+      { ttl: 31536000 } // 1 year TTL (revocation is permanent)
+    )
+
+    // Return the response with the appropriate status code
+    return NextResponse.json(result.body, { status: result.status })
   } catch (error: any) {
     console.error('[Developer Portal] Delete API key error:', error)
     return NextResponse.json({ error: error.message || 'Failed to delete API key' }, { status: 401 })
