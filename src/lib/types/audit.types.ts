@@ -37,6 +37,7 @@ export interface AuditLogEntry {
   metadata: Record<string, unknown>;
   ip_address: string | null;
   user_agent: string | null;
+  request_id: string | null;
   created_at: string; // ISO 8601 date string
 }
 
@@ -46,6 +47,7 @@ export interface AuditLogEntry {
 export interface AuditLogQueryParams {
   action?: string;
   target_type?: string;
+  request_id?: string;
   start_date?: string; // ISO 8601 date string
   end_date?: string; // ISO 8601 date string
   limit?: number;
@@ -58,6 +60,7 @@ export interface AuditLogQueryParams {
 export interface AuditLogFilters {
   action: string;
   targetType: string;
+  requestId: string;
   startDate: string;
   endDate: string;
 }

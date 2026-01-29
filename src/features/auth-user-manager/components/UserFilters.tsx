@@ -3,27 +3,34 @@
 import { AnimatePresence } from 'framer-motion'
 import { motion } from 'framer-motion'
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react'
-import type { AuditLogFilters } from '@/lib/types/audit.types'
-import { ACTION_TYPES, TARGET_TYPES } from '@/lib/types/audit.types'
+import type { UserFilters } from '@/lib/types/user.types'
+import { USER_STATUS, AUTH_PROVIDERS } from '@/lib/types/user.types'
 
-interface AuditFiltersProps {
-  filters: AuditLogFilters
-  onFiltersChange: (filters: AuditLogFilters) => void
+interface UserFiltersProps {
+  filters: UserFilters
+  onFiltersChange: (filters: UserFilters) => void
   onApply: () => void
   onClear: () => void
   showFilters: boolean
   onToggle: () => void
 }
 
-export function AuditFilters({
+export function UserFilters({
   filters,
   onFiltersChange,
   onApply,
   onClear,
   showFilters,
   onToggle,
-}: AuditFiltersProps) {
-  const hasActiveFilters = filters.action || filters.targetType || filters.requestId || filters.startDate || filters.endDate
+}: UserFiltersProps) {
+  const hasActiveFilters =
+    filters.search ||
+    filters.status ||
+    filters.authProvider ||
+    filters.createdAfter ||
+    filters.createdBefore ||
+    filters.lastSignInAfter ||
+    filters.lastSignInBefore
 
   return (
     <div className="bg-white rounded-xl border border-slate-200">
@@ -57,74 +64,98 @@ export function AuditFilters({
             className="overflow-hidden"
           >
             <div className="px-6 pb-6 border-t border-slate-200 pt-6">
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Action
-                  </label>
-                  <select
-                    value={filters.action}
-                    onChange={(e) => onFiltersChange({ ...filters, action: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
-                  >
-                    {ACTION_TYPES.map(type => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Target Type
-                  </label>
-                  <select
-                    value={filters.targetType}
-                    onChange={(e) => onFiltersChange({ ...filters, targetType: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
-                  >
-                    {TARGET_TYPES.map(type => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Request ID
+                    Search
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter correlation ID"
-                    value={filters.requestId}
-                    onChange={(e) => onFiltersChange({ ...filters, requestId: e.target.value })}
+                    value={filters.search}
+                    onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+                    placeholder="Search by email or name"
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Start Date
+                    Status
+                  </label>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => onFiltersChange({ ...filters, status: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
+                  >
+                    {USER_STATUS.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Auth Provider
+                  </label>
+                  <select
+                    value={filters.authProvider}
+                    onChange={(e) => onFiltersChange({ ...filters, authProvider: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
+                  >
+                    {AUTH_PROVIDERS.map((provider) => (
+                      <option key={provider.value} value={provider.value}>
+                        {provider.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Created After
                   </label>
                   <input
                     type="date"
-                    value={filters.startDate}
-                    onChange={(e) => onFiltersChange({ ...filters, startDate: e.target.value })}
+                    value={filters.createdAfter}
+                    onChange={(e) => onFiltersChange({ ...filters, createdAfter: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    End Date
+                    Created Before
                   </label>
                   <input
                     type="date"
-                    value={filters.endDate}
-                    onChange={(e) => onFiltersChange({ ...filters, endDate: e.target.value })}
+                    value={filters.createdBefore}
+                    onChange={(e) => onFiltersChange({ ...filters, createdBefore: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Last Sign In After
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.lastSignInAfter}
+                    onChange={(e) => onFiltersChange({ ...filters, lastSignInAfter: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Last Sign In Before
+                  </label>
+                  <input
+                    type="date"
+                    value={filters.lastSignInBefore}
+                    onChange={(e) => onFiltersChange({ ...filters, lastSignInBefore: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
                   />
                 </div>

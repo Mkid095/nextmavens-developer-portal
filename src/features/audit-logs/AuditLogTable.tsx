@@ -171,14 +171,35 @@ export function AuditLogTable({ logs, expandedRows, onToggleRow }: AuditLogTable
                   className="overflow-hidden border-t border-slate-100"
                 >
                   <div className="px-6 py-4 bg-slate-50">
-                    <h4 className="text-sm font-semibold text-slate-900 mb-3">Metadata</h4>
-                    <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
-                      <pre className="text-xs text-emerald-400">
-                        {sanitizeMetadata(log.metadata)}
-                      </pre>
-                    </div>
+                    <h4 className="text-sm font-semibold text-slate-900 mb-3">Details</h4>
+
+                    {log.request_id && (
+                      <div className="mb-3">
+                        <span className="text-xs font-medium text-slate-700">Request ID:</span>
+                        <p className="text-xs text-slate-600 mt-1 break-all font-mono">{log.request_id}</p>
+                      </div>
+                    )}
+
+                    {log.ip_address && (
+                      <div className="mb-3">
+                        <span className="text-xs font-medium text-slate-700">IP Address:</span>
+                        <p className="text-xs text-slate-600 mt-1">{log.ip_address}</p>
+                      </div>
+                    )}
+
+                    {Object.keys(log.metadata).length > 0 && (
+                      <div className="mb-3">
+                        <h4 className="text-xs font-semibold text-slate-900 mb-2">Metadata</h4>
+                        <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                          <pre className="text-xs text-emerald-400">
+                            {sanitizeMetadata(log.metadata)}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
+
                     {log.user_agent && (
-                      <div className="mt-3">
+                      <div>
                         <span className="text-xs font-medium text-slate-700">User Agent:</span>
                         <p className="text-xs text-slate-600 mt-1 break-all">{sanitizeUserAgent(log.user_agent)}</p>
                       </div>

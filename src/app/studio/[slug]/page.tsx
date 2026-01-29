@@ -15,22 +15,10 @@ import {
   Shield,
   HardDrive,
   Activity,
+  Users,
 } from 'lucide-react'
-
-interface TableColumn {
-  name: string
-  type: string
-  nullable: boolean
-  default: string | null
-}
-
-interface TableData {
-  columns: TableColumn[]
-  rows: Record<string, any>[]
-  total: number
-  limit: number
-  offset: number
-}
+import { TablesView, type TableData } from '@/features/studio/components/TablesView'
+import { UsersList, type User } from '@/features/studio/components/UsersList'
 
 interface DatabaseTable {
   name: string
@@ -39,6 +27,7 @@ interface DatabaseTable {
 
 const navItems = [
   { id: 'tables', label: 'Tables', icon: Table },
+  { id: 'users', label: 'Users', icon: Users },
   { id: 'api-keys', label: 'API Keys', icon: Shield },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
@@ -52,6 +41,8 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(true)
   const [activeNav, setActiveNav] = useState('tables')
   const [searchQuery, setSearchQuery] = useState('')
+  const [users, setUsers] = useState<User[]>([])
+  const [usersLoading, setUsersLoading] = useState(false)
 
   useEffect(() => {
     fetchTables()
@@ -62,6 +53,12 @@ export default function StudioPage() {
       fetchTableData(selectedTable)
     }
   }, [selectedTable, params.slug])
+
+  useEffect(() => {
+    if (activeNav === 'users') {
+      fetchUsers()
+    }
+  }, [activeNav, params.slug])
 
   const fetchTables = async () => {
     try {
@@ -96,6 +93,28 @@ export default function StudioPage() {
       }
     } catch (err) {
       console.error('Failed to fetch table data:', err)
+    }
+  }
+
+  const fetchUsers = async () => {
+    setUsersLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/auth/users?project=${params.slug}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.status === 401) {
+        router.push('/login')
+        return
+      }
+      if (res.ok) {
+        const data = await res.json()
+        setUsers(data.users || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch users:', err)
+    } finally {
+      setUsersLoading(false)
     }
   }
 
@@ -187,11 +206,16 @@ export default function StudioPage() {
               </Link>
               <div>
                 <h1 className="text-lg font-semibold text-slate-900">
-                  {selectedTable || 'Select a table'}
+                  {activeNav === 'users' ? 'Users' : selectedTable || 'Select a table'}
                 </h1>
-                {tableData && (
+                {tableData && activeNav === 'tables' && (
                   <p className="text-sm text-slate-500">
                     {tableData.total} rows • {tableData.columns.length} columns
+                  </p>
+                )}
+                {activeNav === 'users' && (
+                  <p className="text-sm text-slate-500">
+                    {users.length} users
                   </p>
                 )}
               </div>
@@ -205,93 +229,16 @@ export default function StudioPage() {
           </div>
         </header>
 
-        {/* Table Data */}
+        {/* Main Content Area */}
         <div className="flex-1 overflow-auto p-6">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="w-6 h-6 border-2 border-emerald-700 border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : !selectedTable ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <Table className="w-16 h-16 text-slate-300 mb-4" />
-              <h2 className="text-lg font-semibold text-slate-900 mb-2">Select a table</h2>
-              <p className="text-slate-600">Choose a table from the sidebar to view its data</p>
-            </div>
-          ) : !tableData ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="w-6 h-6 border-2 border-emerald-700 border-t-transparent rounded-full animate-spin" />
-            </div>
+          {activeNav === 'users' ? (
+            <UsersList users={users} loading={usersLoading} />
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              {/* Table Header */}
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700 w-10">
-                        <input type="checkbox" className="rounded border-slate-300" />
-                      </th>
-                      {tableData.columns.map((col) => (
-                        <th
-                          key={col.name}
-                          className="px-4 py-3 text-left text-xs font-semibold text-slate-700"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span>{col.name}</span>
-                            <span className="text-slate-400 font-normal">({col.type})</span>
-                          </div>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {tableData.rows.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="px-4 py-3">
-                          <input type="checkbox" className="rounded border-slate-300" />
-                        </td>
-                        {tableData.columns.map((col) => (
-                          <td key={col.name} className="px-4 py-3 text-sm text-slate-900">
-                            {row[col.name] === null ? (
-                              <span className="text-slate-400 italic">null</span>
-                            ) : col.type === 'boolean' ? (
-                              row[col.name] ? 'true' : 'false'
-                            ) : typeof row[col.name] === 'object' ? (
-                              <code className="text-xs bg-slate-100 px-2 py-1 rounded">
-                                {JSON.stringify(row[col.name])}
-                              </code>
-                            ) : (
-                              String(row[col.name])
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              <div className="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
-                <p className="text-sm text-slate-600">
-                  Showing {tableData.offset + 1} to {Math.min(tableData.offset + tableData.limit, tableData.total)} of {tableData.total} rows
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={tableData.offset === 0}
-                    className="px-3 py-1 text-sm border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    disabled={tableData.offset + tableData.limit >= tableData.total}
-                    className="px-3 py-1 text-sm border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            </div>
+            <TablesView
+              selectedTable={selectedTable}
+              tableData={tableData}
+              loading={loading}
+            />
           )}
         </div>
       </main>

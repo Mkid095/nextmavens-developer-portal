@@ -1,0 +1,45 @@
+# Audit Logs Viewer - Flow Progress
+
+Feature: Audit Logs Viewer
+Branch: flow/audit-logs-viewer
+Created: 2026-01-28
+
+## Status: COMPLETE
+
+All user stories have been implemented and marked as passing.
+
+## Stories Completed: 10/10
+
+- [x] US-001: Create audit log type definitions
+- [x] US-002: Create audit log data fetching hook
+- [x] US-003: Create audit log table component
+- [x] US-004: Create audit log filters component
+- [x] US-005: Create pagination component
+- [x] US-006: Create CSV export utility
+- [x] US-007: Create navigation component
+- [x] US-008: Create feature barrel export
+- [x] US-009: Create audit log viewer page
+- [x] US-010: Add audit API URL environment variable
+
+## Files Created/Modified:
+
+1. src/lib/types/audit.types.ts
+2. src/features/audit-logs/useAuditLogs.ts
+3. src/features/audit-logs/AuditLogTable.tsx
+4. src/features/audit-logs/AuditFilters.tsx
+5. src/features/audit-logs/Pagination.tsx
+6. src/features/audit-logs/exportToCsv.ts
+7. src/features/audit-logs/AuditNav.tsx
+8. src/features/audit-logs/index.ts
+9. src/app/dashboard/audit/page.tsx
+10. .env.example (added NEXT_PUBLIC_AUDIT_API_URL)
+
+## Next Steps:
+
+None - feature is complete.
+
+## Notes:
+
+- Feature depends on external audit API at NEXT_PUBLIC_AUDIT_API_URL
+- Related to abuse-controls feature (prd-abuse-controls.json)
+- All security considerations documented in code comments

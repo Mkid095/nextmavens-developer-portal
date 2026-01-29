@@ -44,6 +44,7 @@ export function useAuditLogs() {
   const [filters, setFilters] = useState<AuditLogFilters>({
     action: '',
     targetType: '',
+    requestId: '',
     startDate: '',
     endDate: '',
   })
@@ -107,6 +108,9 @@ export function useAuditLogs() {
       if (filters.targetType && validTargetTypes.has(filters.targetType)) {
         params.target_type = filters.targetType
       }
+      if (filters.requestId && filters.requestId.trim()) {
+        params.request_id = filters.requestId.trim()
+      }
       if (filters.startDate && isValidISODate(filters.startDate)) {
         params.start_date = filters.startDate
       }
@@ -164,6 +168,7 @@ export function useAuditLogs() {
     setFilters({
       action: '',
       targetType: '',
+      requestId: '',
       startDate: '',
       endDate: '',
     })
