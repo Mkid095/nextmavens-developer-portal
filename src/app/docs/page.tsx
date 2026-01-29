@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server } from 'lucide-react'
 
 const chapters = [
   {
@@ -46,6 +46,15 @@ const chapters = [
     color: 'blue',
     tools: ['export', 'restore', 'retention'],
     path: '/docs/backups',
+  },
+  {
+    id: 'infrastructure',
+    title: 'Infrastructure',
+    description: 'Current deployment architecture, scaling roadmap, and operational procedures',
+    icon: Server,
+    color: 'slate',
+    tools: ['deployment', 'scaling', 'architecture'],
+    path: '/docs/infrastructure',
   },
   {
     id: 'mcp',
@@ -115,6 +124,7 @@ export default function DocsPage() {
                 orange: 'bg-orange-100 text-orange-700',
                 emerald: 'bg-emerald-100 text-emerald-700',
                 teal: 'bg-teal-100 text-teal-700',
+                slate: 'bg-slate-100 text-slate-700',
               }[chapter.color]
 
               return (
