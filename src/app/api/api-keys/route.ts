@@ -167,9 +167,11 @@ export async function POST(req: NextRequest) {
       console.error('[Developer Portal] Failed to log API key creation:', auditError)
     }
 
-    // Add warning for public keys about client-side exposure
+    // Add warnings based on key type
     const warning = validatedKeyType === 'public'
       ? 'This key is intended for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code. Never use secret keys in client-side applications.'
+      : validatedKeyType === 'secret' || validatedKeyType === 'service_role'
+      ? 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments where it cannot be accessed by users.'
       : undefined
 
     return NextResponse.json({

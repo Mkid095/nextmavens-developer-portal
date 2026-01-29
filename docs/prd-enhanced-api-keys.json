@@ -160,8 +160,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Secret key creation already implemented via US-004. DEFAULT_SCOPES for secret keys includes full scopes: db:select/insert/update/delete, storage:read/write, auth:manage, graphql:execute. Added warning message in API response: 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments where it cannot be accessed by users.' Same warning also applies to service_role keys. Typecheck passes."
     },
     {
       "id": "US-012",
