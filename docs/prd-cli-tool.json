@@ -91,8 +91,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented project commands (create, list, link). `nextmavens project create <name>` creates a project via Control Plane API and automatically links it to current directory. `nextmavens project list` lists all projects with linked indicator. `nextmavens project link [id/slug]` links current directory to a project with interactive selection if no ID provided. Local config stored in .nextmavens/config.json with project_id, project_name, and slug. Typecheck passes."
     },
     {
       "id": "US-008",

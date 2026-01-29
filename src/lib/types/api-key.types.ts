@@ -38,6 +38,11 @@ export type ApiKeyScope =
   | 'graphql:execute'
 
 /**
+ * Service type for grouping scopes.
+ */
+export type ApiKeyService = 'db' | 'storage' | 'auth' | 'realtime' | 'graphql'
+
+/**
  * API Key interface representing a key in the database.
  */
 export interface ApiKey {
@@ -50,6 +55,52 @@ export interface ApiKey {
   environment?: ApiKeyEnvironment
   created_at: string
   last_used?: string
+}
+
+/**
+ * Scopes grouped by service for easier validation and display.
+ */
+export const SCOPES_BY_SERVICE: Record<ApiKeyService, ApiKeyScope[]> = {
+  db: ['db:select', 'db:insert', 'db:update', 'db:delete'],
+  storage: ['storage:read', 'storage:write'],
+  auth: ['auth:signin', 'auth:signup', 'auth:manage'],
+  realtime: ['realtime:subscribe', 'realtime:publish'],
+  graphql: ['graphql:execute'],
+}
+
+/**
+ * Get all scopes for a specific service.
+ */
+export function getScopesForService(service: ApiKeyService): ApiKeyScope[] {
+  return SCOPES_BY_SERVICE[service]
+}
+
+/**
+ * Check if a scope string is valid.
+ */
+export function isValidScope(scope: string): scope is ApiKeyScope {
+  return Object.values(SCOPES_BY_SERVICE).flat().includes(scope as ApiKeyScope)
+}
+
+/**
+ * Extract service from a scope string.
+ */
+export function getServiceFromScope(scope: ApiKeyScope): ApiKeyService {
+  return scope.split(':')[0] as ApiKeyService
+}
+
+/**
+ * Check if a key has permission for a specific scope.
+ */
+export function hasScope(key: ApiKey, requiredScope: ApiKeyScope): boolean {
+  return key.scopes?.includes(requiredScope) ?? false
+}
+
+/**
+ * Check if a key has any of the required scopes.
+ */
+export function hasAnyScope(key: ApiKey, requiredScopes: ApiKeyScope[]): boolean {
+  return requiredScopes.some(scope => hasScope(key, scope))
 }
 
 /**

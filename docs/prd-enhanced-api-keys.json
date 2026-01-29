@@ -78,8 +78,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: ApiKeyScope type defined in src/lib/types/api-key.types.ts with all service scopes (db:select/insert/update/delete, storage:read/write, auth:signin/signup/manage, realtime:subscribe/publish, graphql:execute). Added helper utilities: SCOPES_BY_SERVICE, getScopesForService, isValidScope, getServiceFromScope, hasScope, hasAnyScope. Scopes stored as JSONB in database (from US-001 migration). Typecheck passes."
     },
     {
       "id": "US-004",
