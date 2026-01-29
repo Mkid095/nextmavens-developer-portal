@@ -184,8 +184,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created realtime check endpoint at src/app/api/realtime/check/route.ts with realtime_enabled flag check. GET/POST /api/realtime/check validates if new WebSocket connections should be allowed. Returns 503 with clear message explaining realtime is disabled and existing connections will be allowed to close gracefully. Uses checkFeature() helper with caching. Typecheck passes."
     },
     {
       "id": "US-008",

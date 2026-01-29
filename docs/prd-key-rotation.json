@@ -80,8 +80,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created DELETE /api/keys/[id]/revoke endpoint at src/app/api/keys/[id]/revoke/route.ts. Adds status column to api_keys table (enum: active, revoked, expired) with default 'active'. Sets key status to 'revoked' immediately on revoke. Returns revoked key info (id, name, key_type, key_prefix, status). Includes idempotency support (1 year TTL). Audit logging integrated. Returns 404 if key not found, 403 if not owner, 200 if already revoked (idempotent). Typecheck passes."
     },
     {
       "id": "US-004",

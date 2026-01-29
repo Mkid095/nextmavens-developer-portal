@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio } from 'lucide-react'
 
 const chapters = [
   {
@@ -64,6 +64,15 @@ const chapters = [
     color: 'slate',
     tools: ['deployment', 'scaling', 'architecture'],
     path: '/docs/infrastructure',
+  },
+  {
+    id: 'realtime',
+    title: 'Realtime',
+    description: 'Database-driven realtime subscriptions using Postgres CDC',
+    icon: Radio,
+    color: 'emerald',
+    tools: ['subscribe', 'CDC', 'WebSocket'],
+    path: '/docs/realtime',
   },
   {
     id: 'mcp',
