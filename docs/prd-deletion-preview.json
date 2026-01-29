@@ -1,0 +1,328 @@
+{
+  "project": "Deletion with Preview",
+  "branchName": "flow/deletion-preview",
+  "description": "Deletion is the hardest feature. Users need to understand: what will be deleted? What depends on what? Is this recoverable? Soft delete with preview builds trust by showing exactly what will happen before it happens.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add Deletion Columns to Projects",
+      "description": "As a platform engineer, I want deletion tracking columns so that I can implement soft delete.",
+      "acceptanceCriteria": [
+        "Projects table updated with: deleted_at, deletion_scheduled_at, grace_period_ends_at",
+        "All nullable TIMESTAMPTZ columns",
+        "Migration script created",
+        "Existing projects have NULL values",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Deletion Preview API",
+      "description": "As a developer, I want to preview what will be deleted so that I understand the impact before confirming.",
+      "acceptanceCriteria": [
+        "GET /api/projects/:id/deletion-preview endpoint",
+        "Returns project details",
+        "Returns will_be_deleted counts: schemas, tables, api_keys, webhooks, edge_functions, storage_buckets, secrets",
+        "Returns dependencies array: type, target, impact",
+        "Returns recoverable_until date",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Calculate Schema Dependencies",
+      "description": "As a developer, I want to know how many database schemas will be deleted so that I understand data impact.",
+      "acceptanceCriteria": [
+        "Deletion preview queries information_schema",
+        "Counts tables in tenant_{slug} schema",
+        "Counts rows per table",
+        "Includes in will_be_deleted",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Calculate API Key Dependencies",
+      "description": "As a developer, I want to know how many API keys will be deleted so that I understand credential impact.",
+      "acceptanceCriteria": [
+        "Deletion preview queries api_keys table",
+        "Counts keys for project",
+        "Groups by key_type",
+        "Includes in will_be_deleted",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Calculate Webhook Dependencies",
+      "description": "As a developer, I want to know which webhooks will be deleted so that I understand integration impact.",
+      "acceptanceCriteria": [
+        "Deletion preview queries webhooks table",
+        "Lists all webhook URLs",
+        "Adds to dependencies: \"webhook\", \"url\", \"Will stop receiving events\"",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Calculate Storage Dependencies",
+      "description": "As a developer, I want to know which storage buckets will be deleted so that I understand file impact.",
+      "acceptanceCriteria": [
+        "Deletion preview queries storage_buckets table",
+        "Lists all buckets",
+        "Counts files per bucket",
+        "Adds to dependencies: \"storage\", \"bucket\", \"Files will be deleted\"",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Soft Delete",
+      "description": "As a developer, I want deletion to be soft initially so that I have time to recover if needed.",
+      "acceptanceCriteria": [
+        "DELETE /api/projects/:id sets deletion_scheduled_at = NOW()",
+        "Sets grace_period_ends_at = NOW() + 30 days",
+        "Sets project status = DELETED",
+        "Returns recoverable_until date",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement 30-Day Grace Period",
+      "description": "As a platform operator, I want projects to be retained for 30 days so that users can recover from accidental deletion.",
+      "acceptanceCriteria": [
+        "Grace period set to 30 days",
+        "Background job checks for expired grace periods",
+        "Hard delete after grace period ends",
+        "Notification sent 7 days before hard delete",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Restore During Grace Period",
+      "description": "As a developer, I want to restore deleted projects during grace period so that I can recover from accidental deletion.",
+      "acceptanceCriteria": [
+        "POST /api/projects/:id/restore endpoint",
+        "Clears deletion columns",
+        "Sets status back to ACTIVE",
+        "Works only if grace_period_ends_at > NOW()",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Deletion Preview UI",
+      "description": "As a developer, I want to see deletion preview in the UI so that I can understand impact before deleting.",
+      "acceptanceCriteria": [
+        "Deletion preview modal created",
+        "Shows what will be deleted (counts)",
+        "Shows dependencies and their impact",
+        "Shows recoverable_until date",
+        "Shows clear warning",
+        "Confirm delete button",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Implement Hard Delete After Grace Period",
+      "description": "As a platform operator, I want projects hard deleted after grace period so that resources are freed up.",
+      "acceptanceCriteria": [
+        "Background job runs daily",
+        "Finds projects where grace_period_ends_at < NOW()",
+        "Drops tenant schema",
+        "Deletes all related records",
+        "Deletes project row",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Show Deleted Projects in List",
+      "description": "As a developer, I want to see deleted projects in a separate list so that I can restore them if needed.",
+      "acceptanceCriteria": [
+        "Deleted projects section in dashboard",
+        "Shows project name, deleted_at, recoverable_until",
+        "Restore button for each",
+        "Filter for active vs deleted",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Deletion with Preview.md"
+}

@@ -1,0 +1,329 @@
+{
+  "project": "Enhanced API Key System",
+  "branchName": "flow/enhanced-api-keys",
+  "description": "Key types, scopes, environments. Public keys for browser/mobile SDK. Secret keys for server-side. Service role keys for admin tasks. MCP tokens for AI tools. Scopes enforce what each key can do.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add Key Type and Scopes to API Keys Table",
+      "description": "As a platform engineer, I want enhanced API key tracking so that I can enforce granular permissions.",
+      "acceptanceCriteria": [
+        "api_keys table updated with: key_type, scopes (JSONB), environment",
+        "key_type enum: public, secret, service_role, mcp",
+        "Migration script created",
+        "Existing keys migrated to appropriate types",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Define Key Type Prefixes",
+      "description": "As a developer, I want to identify key types by prefix so that I know how to use each key.",
+      "acceptanceCriteria": [
+        "Public keys: pk_live_, pk_test_, pk_dev_",
+        "Secret keys: sk_live_, sk_test_, sk_dev_",
+        "Service role: sr_live_, sr_test_, sr_dev_",
+        "MCP tokens: mcp_ro_, mcp_rw_, mcp_admin_",
+        "Prefix set based on key_type and environment",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Define Scope Per Service",
+      "description": "As a platform engineer, I want scopes defined per service so that I can enforce service-level permissions.",
+      "acceptanceCriteria": [
+        "db scopes: select, insert, update, delete",
+        "storage scopes: read, write",
+        "auth scopes: signin, signup, manage",
+        "realtime scopes: subscribe, publish",
+        "graphql scopes: execute",
+        "Scopes stored as JSONB array",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Create Key with Type",
+      "description": "As a developer, I want to select key type when creating so that I get the right key for my use case.",
+      "acceptanceCriteria": [
+        "POST /api/keys accepts key_type parameter",
+        "Key type validated",
+        "Default scopes set based on key_type",
+        "Key prefix set based on key_type and environment",
+        "Returns key (show once)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Public Key Creation",
+      "description": "As a developer, I want public keys for client-side apps so that I can safely use NextMavens in browsers.",
+      "acceptanceCriteria": [
+        "Public key has read-only scopes",
+        "Can be exposed in browser code",
+        "Limited to: db:select, storage:read, auth:signin, realtime:subscribe",
+        "Warning shown about client-side exposure",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Secret Key Creation",
+      "description": "As a developer, I want secret keys for server-side apps so that I can perform full CRUD operations.",
+      "acceptanceCriteria": [
+        "Secret key has full scopes",
+        "Must not be exposed in client code",
+        "Includes: db:select/insert/update/delete, storage:read/write, auth:manage, graphql:execute",
+        "Warning shown about server-side only",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Enforce Scopes at Gateway",
+      "description": "As a platform engineer, I want scopes enforced at the gateway so that keys can't exceed their permissions.",
+      "acceptanceCriteria": [
+        "Gateway checks key scopes before forwarding",
+        "Scopes checked per service",
+        "Returns PERMISSION_DENIED if scope missing",
+        "Scope required logged",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Service Role Key Creation",
+      "description": "As a developer, I want service role keys for admin tasks so that I can bypass RLS and perform management operations.",
+      "acceptanceCriteria": [
+        "Service role key has all scopes",
+        "Bypasses row-level security",
+        "Used for server-side admin operations",
+        "Extra warning about bypassing RLS",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Environment Selector",
+      "description": "As a developer, I want to select environment when creating keys so that I can have separate keys for dev/staging/prod.",
+      "acceptanceCriteria": [
+        "Environment dropdown in key creation form",
+        "Options: Production, Development, Staging",
+        "Key prefix includes environment",
+        "Key only works for matching project environment",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Track Key Usage",
+      "description": "As a developer, I want to see key usage stats so that I know which keys are being used.",
+      "acceptanceCriteria": [
+        "last_used column updated on each use",
+        "usage_stats table tracks request count",
+        "Request count per key (7 day, 30 day)",
+        "Success vs error rate",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Key Type Documentation",
+      "description": "As a developer, I want documentation explaining when to use each key type so that I choose correctly.",
+      "acceptanceCriteria": [
+        "Key types documentation page created",
+        "Explains each key type",
+        "Shows use cases for each type",
+        "Shows which scopes each type has",
+        "Shows example usage code",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create Enhanced Key Creation UI",
+      "description": "As a developer, I want an improved key creation UI so that I can easily create the right type of key.",
+      "acceptanceCriteria": [
+        "Key type selector (cards with descriptions)",
+        "Environment selector",
+        "Scope checkboxes (pre-populated based on type)",
+        "Warning for service role keys",
+        "Usage examples shown after creation",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Enhanced API Key System.md"
+}

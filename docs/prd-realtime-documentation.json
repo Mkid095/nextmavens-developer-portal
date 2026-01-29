@@ -1,0 +1,248 @@
+{
+  "project": "Realtime Documentation",
+  "branchName": "flow/realtime-documentation",
+  "description": "Complete realtime guide. WebSocket connection guide. Subscription examples. Event types. Lifecycle management. Developers can implement realtime features confidently.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Realtime Overview",
+      "description": "As a documentation reader, I want a realtime overview so that I understand what the service does.",
+      "acceptanceCriteria": [
+        "Overview page created",
+        "Explains: PostgreSQL CDC → WebSocket",
+        "Explains: use cases",
+        "Explains: how it works",
+        "Diagram of flow",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Document WebSocket Connection",
+      "description": "As a developer, I want WebSocket connection documented so that I can connect to realtime service.",
+      "acceptanceCriteria": [
+        "Connection section created",
+        "WebSocket URL format",
+        "Authentication via JWT",
+        "Connection examples (JavaScript, Python)",
+        "Error handling",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Document Subscriptions",
+      "description": "As a developer, I want subscription syntax documented so that I can subscribe to data changes.",
+      "acceptanceCriteria": [
+        "Subscription section created",
+        "Channel format: project_id:table_name",
+        "Subscribe examples",
+        "Filter examples",
+        "Unsubscribe examples",
+        "Code examples",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Document Event Types",
+      "description": "As a developer, I want event types documented so that I know what events to expect.",
+      "acceptanceCriteria": [
+        "Event types section created",
+        "Events: INSERT, UPDATE, DELETE, TRUNCATE",
+        "Event payload format documented",
+        "Examples for each event type",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Document Lifecycle Management",
+      "description": "As a developer, I want connection lifecycle documented so that I can manage connections properly.",
+      "acceptanceCriteria": [
+        "Lifecycle section created",
+        "Connection states: connecting, open, closing, closed",
+        "Reconnection logic",
+        "Heartbeat/keepalive",
+        "Graceful shutdown",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Document Channel Prefixing",
+      "description": "As a developer, I want channel prefixing documented so that I understand isolation.",
+      "acceptanceCriteria": [
+        "Explains project_id: prefix",
+        "Explains table_name suffix",
+        "Shows valid/invalid channel names",
+        "Cross-project access returns 403",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Document Presence Feature",
+      "description": "As a developer, I want presence features documented so that I can track online users.",
+      "acceptanceCriteria": [
+        "Presence section created",
+        "Track online status",
+        "Track user state",
+        "Join/leave channels",
+        "Presence examples",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Document Broadcast Feature",
+      "description": "As a developer, I want broadcast documented so that I can send messages to all subscribers.",
+      "acceptanceCriteria": [
+        "Broadcast section created",
+        "Server-side broadcast API",
+        "Client broadcast examples",
+        "Use cases: notifications, announcements",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add Troubleshooting Section",
+      "description": "As a developer, I want troubleshooting guide so that I can resolve common issues.",
+      "acceptanceCriteria": [
+        "Troubleshooting section created",
+        "Common issues: connection failures, subscription errors",
+        "Solutions for each issue",
+        "Debug logging tips",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Add Realtime Examples",
+      "description": "As a developer, I want working examples so that I can see realtime in action.",
+      "acceptanceCriteria": [
+        "Example apps linked",
+        "Live demo if available",
+        "Code examples for common patterns",
+        "Collaborative editing example",
+        "Live notifications example",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Realtime Documentation.md"
+}

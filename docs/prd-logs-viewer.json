@@ -1,0 +1,273 @@
+{
+  "project": "Real-time Logs Viewer",
+  "branchName": "flow/logs-viewer",
+  "description": "Streaming logs with filtering. Logs page in project dashboard. Real-time log stream. Filter by service (db, auth, realtime, storage) and level (info, warn, error). Search functionality. Download logs.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Logs Page",
+      "description": "As a developer, I want a logs page so that I can view project logs.",
+      "acceptanceCriteria": [
+        "Logs page created at /dashboard/projects/[slug]/logs",
+        "Shows log stream",
+        "Filter controls",
+        "Search box",
+        "Download button",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Logs WebSocket Endpoint",
+      "description": "As a developer, I want real-time log streaming so that I can see logs as they happen.",
+      "acceptanceCriteria": [
+        "WebSocket endpoint at /api/logs/stream",
+        "Accepts project_id parameter",
+        "Streams new logs as they arrive",
+        "Sends log entries as JSON",
+        "Authenticates via token",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement Log Filtering",
+      "description": "As a developer, I want to filter logs so that I can find relevant entries.",
+      "acceptanceCriteria": [
+        "Filter by service: db, auth, realtime, storage, graphql",
+        "Filter by level: info, warn, error",
+        "Filter by date range",
+        "Filters update query",
+        "Results update in real-time",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Log Search",
+      "description": "As a developer, I want to search logs so that I can find specific entries.",
+      "acceptanceCriteria": [
+        "Search box in logs page",
+        "Full-text search across message and metadata",
+        "Search results highlighted",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Log Pagination",
+      "description": "As a developer, I want paginated logs so that I can browse large log volumes.",
+      "acceptanceCriteria": [
+        "Logs loaded in pages (100 per page)",
+        "Load more button",
+        "Auto-loads older logs when scrolling",
+        "Shows log count",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Log Download",
+      "description": "As a developer, I want to download logs so that I can analyze them externally.",
+      "acceptanceCriteria": [
+        "Download logs button",
+        "Exports to JSON or text",
+        "Respects current filters",
+        "Date range limited to 7 days max",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Color Code Log Levels",
+      "description": "As a developer, I want color-coded log levels so that I can quickly identify issues.",
+      "acceptanceCriteria": [
+        "Info: gray",
+        "Warn: yellow",
+        "Error: red",
+        "Background color applied to log entry",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Show Log Details",
+      "description": "As a developer, I want to see log details so that I can understand log entries.",
+      "acceptanceCriteria": [
+        "Expandable log entries",
+        "Shows: timestamp, service, level, message",
+        "Shows metadata (JSON formatted)",
+        "Shows request_id for tracing",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Log Retention",
+      "description": "As a platform operator, I want log retention so that logs don't grow indefinitely.",
+      "acceptanceCriteria": [
+        "Logs retained for 30 days",
+        "Background job deletes old logs",
+        "Job runs daily",
+        "Logs archived to long-term storage (optional)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Add Log Charts",
+      "description": "As a developer, I want log charts so that I can visualize log trends.",
+      "acceptanceCriteria": [
+        "Log volume chart over time",
+        "Grouped by level",
+        "Grouped by service",
+        "Interactive chart",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Real-time Logs Viewer.md"
+}

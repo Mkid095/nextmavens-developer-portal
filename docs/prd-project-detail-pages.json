@@ -1,0 +1,278 @@
+{
+  "project": "Project Detail Pages Enhancement",
+  "branchName": "flow/project-detail-pages",
+  "description": "Current tabs show connection strings but NO guidance. Each service tab needs: \"What is this?\", \"When to use it?\", Quick integration code, SDK installation, Connection details. This reduces friction and helps developers understand each service.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Service Tab Template",
+      "description": "As a UI developer, I want a reusable service tab template so that all service tabs have consistent structure.",
+      "acceptanceCriteria": [
+        "ServiceTab component created",
+        "Sections: Overview, Quick Start, Connection Details, Docs Link",
+        "Consistent layout across all tabs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Enhance Database Tab",
+      "description": "As a developer, I want database tab guidance so that I understand how to use the database service.",
+      "acceptanceCriteria": [
+        "\"What is the Database Service?\" section",
+        "PostgreSQL-powered data with auto-generated REST & GraphQL APIs",
+        "\"When to use it\" section",
+        "Quick integration: npm install nextmavens-js",
+        "Code example: client initialization and query",
+        "Connection details: database URL",
+        "Link to full docs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Enhance Auth Tab",
+      "description": "As a developer, I want auth tab guidance so that I understand how to implement authentication.",
+      "acceptanceCriteria": [
+        "\"What is the Auth Service?\" section",
+        "User authentication with JWT tokens",
+        "\"When to use it\" section",
+        "Quick integration code",
+        "Link to user management UI",
+        "Auth endpoint details",
+        "Link to full docs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Enhance Storage Tab",
+      "description": "As a developer, I want storage tab guidance so that I understand how storage abstraction works.",
+      "acceptanceCriteria": [
+        "\"What is the Storage Service?\" section",
+        "Transparent: Telegram for raw files, Cloudinary for optimized",
+        "\"When to use it\" section",
+        "Quick integration code",
+        "Bucket management section",
+        "Storage endpoint details",
+        "Link to full docs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Enhance Realtime Tab",
+      "description": "As a developer, I want realtime tab guidance so that I understand how to use WebSocket subscriptions.",
+      "acceptanceCriteria": [
+        "\"What is the Realtime Service?\" section",
+        "PostgreSQL-change-data-capture → WebSocket subscriptions",
+        "\"When to use it\" section",
+        "WebSocket connection example",
+        "Subscription code example",
+        "Realtime endpoint details",
+        "Link to full docs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Enhance GraphQL Tab",
+      "description": "As a developer, I want GraphQL tab guidance so that I understand how to use GraphQL API.",
+      "acceptanceCriteria": [
+        "\"What is the GraphQL Service?\" section",
+        "Auto-generated GraphQL from database schema",
+        "\"When to use it\" section",
+        "Query examples",
+        "Mutation examples",
+        "GraphQL endpoint details",
+        "Link to full docs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Enhance API Keys Tab",
+      "description": "As a developer, I want API keys tab guidance so that I understand which key type to use.",
+      "acceptanceCriteria": [
+        "Key type explanations",
+        "When to use each type",
+        "Security warnings for each type",
+        "Scope explanations",
+        "Environment selector",
+        "Quick integration code for each type",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Copy Buttons to Code Examples",
+      "description": "As a developer, I want copy buttons on code examples so that I can quickly copy integration code.",
+      "acceptanceCriteria": [
+        "Copy button on each code block",
+        "Copies code to clipboard",
+        "Feedback on successful copy",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add Language Selector for Examples",
+      "description": "As a developer, I want to choose example language so that I see relevant code for my stack.",
+      "acceptanceCriteria": [
+        "Language selector dropdown",
+        "Options: JavaScript, Python, Go, cURL",
+        "Code examples update based on selection",
+        "Preference saved in localStorage",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Add Service Status Indicators",
+      "description": "As a developer, I want to see service status so that I know if a service is enabled.",
+      "acceptanceCriteria": [
+        "Status indicator on each service tab",
+        "Shows: Enabled, Disabled, Provisioning",
+        "Click to enable/disable service",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Add Quick Actions",
+      "description": "As a developer, I want quick action buttons so that I can perform common tasks without navigating away.",
+      "acceptanceCriteria": [
+        "\"Open Studio\" button on database tab",
+        "\"View Users\" button on auth tab",
+        "\"Create Bucket\" button on storage tab",
+        "\"Open GraphQL Playground\" button on GraphQL tab",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Project Detail Pages Enhancement.md"
+}

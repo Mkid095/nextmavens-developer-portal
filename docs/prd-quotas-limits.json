@@ -1,0 +1,253 @@
+{
+  "project": "Quotas vs Limits",
+  "branchName": "flow/quotas-limits",
+  "description": "Clear distinction between monthly allowances (business logic) and hard caps (abuse prevention). Quotas = \"you've used 80% of your monthly database quota.\" Hard caps = \"project temporarily suspended due to excessive usage.\" Rate limits = \"too many requests, slow down.\"",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Quotas Table",
+      "description": "As a platform engineer, I want a quotas table so that I can define monthly resource allowances per project.",
+      "acceptanceCriteria": [
+        "quotas table created in control_plane schema",
+        "Columns: project_id, service, monthly_limit, hard_cap, reset_at",
+        "Composite primary key on (project_id, service)",
+        "Services: db_queries, storage_mb, realtime_connections, function_invocations, auth_users",
+        "Index on project_id for efficient queries",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Usage Snapshots Table",
+      "description": "As a platform engineer, I want a usage_snapshots table so that I can track actual resource consumption.",
+      "acceptanceCriteria": [
+        "usage_snapshots table created in control_plane schema",
+        "Columns: project_id, service, metric_type, amount, recorded_at",
+        "Index on (project_id, service, recorded_at) for efficient aggregation",
+        "metric_type: db_query, storage_upload, realtime_message, function_call, auth_signup",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Quota Checking API",
+      "description": "As a data plane service, I want to check if an operation is within quota so that I can enforce limits.",
+      "acceptanceCriteria": [
+        "POST /api/usage/check endpoint created",
+        "Request body: project_id, service, amount",
+        "Returns: allowed (boolean), usage_percentage, reset_at",
+        "Returns 429 if over rate limit",
+        "Returns 403 if over hard cap",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Usage Tracking",
+      "description": "As a data plane service, I want to track usage so that quotas are enforced accurately.",
+      "acceptanceCriteria": [
+        "POST /api/usage/track endpoint created",
+        "Request body: project_id, service, metric_type, amount",
+        "Records usage in usage_snapshots table",
+        "Idempotent (deduplicates based on request_id)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Auto-Suspend on Hard Cap",
+      "description": "As a platform operator, I want projects to be automatically suspended when hard cap is exceeded so that abuse is prevented.",
+      "acceptanceCriteria": [
+        "Background job checks for hard cap violations",
+        "Project status set to SUSPENDED",
+        "Notification sent to project owner",
+        "All API requests return 403 while suspended",
+        "Reason included in error response",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Quota Warnings",
+      "description": "As a developer, I want to receive warnings when approaching quota limits so that I can plan accordingly.",
+      "acceptanceCriteria": [
+        "Warning sent at 80% of quota",
+        "Warning sent at 90% of quota",
+        "Notification sent via email",
+        "Warning also shown in dashboard",
+        "Warning message clear and actionable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create Usage Dashboard",
+      "description": "As a developer, I want to see my current usage so that I can understand my resource consumption.",
+      "acceptanceCriteria": [
+        "Usage dashboard page created",
+        "Shows current usage per service",
+        "Shows percentage of quota used",
+        "Shows reset date for quotas",
+        "Visual indicators (progress bars)",
+        "Historical usage chart",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement Quota Reset",
+      "description": "As a platform operator, I want quotas to reset monthly so that developers get a fresh allowance each period.",
+      "acceptanceCriteria": [
+        "Quota reset_at column set to next month",
+        "Background job resets quotas monthly",
+        "Usage snapshots older than reset period archived",
+        "Notifications sent when quota resets",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Define Clear Error Messages",
+      "description": "As a developer, I want clear error messages so that I understand the difference between quota exceeded, rate limited, and hard cap.",
+      "acceptanceCriteria": [
+        "Quota exceeded: \"You've used 80% of your monthly database quota\"",
+        "Rate limited: \"Too many requests. Slow down.\"",
+        "Hard cap: \"Project temporarily suspended due to excessive usage\"",
+        "Messages include actionable guidance",
+        "Messages include reset information",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Quotas vs Limits.md"
+}

@@ -1,0 +1,348 @@
+{
+  "project": "Background Jobs & Task Queue",
+  "branchName": "flow/background-jobs",
+  "description": "Async operations happen everywhere in a PaaS: provisioning, key rotation, webhooks, backups, suspension. Jobs make the platform deterministic under chaos by providing reliable retry logic and state tracking.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Jobs Database Table",
+      "description": "As a platform engineer, I want a jobs table to track async operations so that I can monitor and retry failed jobs.",
+      "acceptanceCriteria": [
+        "Jobs table created in control_plane schema",
+        "Columns: id, type, payload, status, attempts, max_attempts, last_error, scheduled_at, started_at, completed_at, created_at",
+        "Status enum: pending, running, failed, completed",
+        "Index on status for efficient querying",
+        "Index on scheduled_at for job scheduling",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Job Queue System",
+      "description": "As a platform engineer, I want a job queue system so that I can enqueue jobs for background processing.",
+      "acceptanceCriteria": [
+        "Job queue class created at src/lib/jobs/queue.ts",
+        "enqueueJob(type, payload, options) function",
+        "Returns job ID",
+        "Supports scheduling with delay",
+        "Supports max_attempts configuration",
+        "Job priority support",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Job Worker",
+      "description": "As a platform engineer, I want a job worker process so that background jobs are processed reliably.",
+      "acceptanceCriteria": [
+        "Worker created at src/lib/jobs/worker.ts",
+        "Polls for pending jobs",
+        "Updates job status to running when processing",
+        "Executes job handler based on job type",
+        "Updates job status to completed or failed",
+        "Implements exponential backoff for retries",
+        "Handles worker graceful shutdown",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Provision Project Job",
+      "description": "As a platform operator, I want project provisioning to run as a background job so that failures can be retried automatically.",
+      "acceptanceCriteria": [
+        "provision_project job handler implemented",
+        "Creates tenant database",
+        "Creates tenant schema",
+        "Registers with services (auth, realtime, storage)",
+        "Generates API keys",
+        "Retries on failure every 5 minutes",
+        "Max 3 attempts",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Rotate Key Job",
+      "description": "As a platform operator, I want key rotation to run as a background job so that old keys are expired after grace period.",
+      "acceptanceCriteria": [
+        "rotate_key job handler implemented",
+        "Creates new key version",
+        "Marks old key as expired after 24h",
+        "One-shot job (no retry)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Deliver Webhook Job",
+      "description": "As a platform operator, I want webhook delivery to run as a background job so that failed webhooks are retried automatically.",
+      "acceptanceCriteria": [
+        "deliver_webhook job handler implemented",
+        "POSTs payload to webhook URL",
+        "Retries 5x with exponential backoff",
+        "Records delivery status",
+        "Marks webhook as disabled after 5 consecutive failures",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Export Backup Job",
+      "description": "As a platform operator, I want backup exports to run as background jobs so that large exports don't block requests.",
+      "acceptanceCriteria": [
+        "export_backup job handler implemented",
+        "Generates SQL dump of project schema",
+        "Uploads to Telegram storage",
+        "Retries on failure",
+        "Sends notification when complete",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement Check Usage Limits Job",
+      "description": "As a platform operator, I want usage limit checks to run as scheduled jobs so that quotas are enforced automatically.",
+      "acceptanceCriteria": [
+        "check_usage_limits job handler implemented",
+        "Runs hourly via scheduler",
+        "Checks all projects against quotas",
+        "Suspends projects exceeding hard caps",
+        "Sends warnings at 80% and 90%",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Auto Suspend Job",
+      "description": "As a platform operator, I want auto-suspend to run as a background job so that abuse is detected and stopped automatically.",
+      "acceptanceCriteria": [
+        "auto_suspend job handler implemented",
+        "Detects abuse patterns (excessive usage, error spikes)",
+        "Suspends project when abuse detected",
+        "Sends notification to project owner",
+        "One-shot job triggered by monitoring",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Job Status API",
+      "description": "As a developer, I want to query job status via API so that I can monitor async operations.",
+      "acceptanceCriteria": [
+        "GET /api/jobs/:id endpoint created",
+        "Returns job status and details",
+        "Returns last_error if failed",
+        "Includes created_at and completed_at timestamps",
+        "Requires authentication",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create Job Retry API",
+      "description": "As a platform operator, I want to retry failed jobs via API so that I can recover from transient failures.",
+      "acceptanceCriteria": [
+        "POST /api/jobs/:id/retry endpoint created",
+        "Resets job status to pending",
+        "Increments attempt count",
+        "Checks max_attempts limit",
+        "Requires authentication",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create Job Progress UI",
+      "description": "As a developer, I want to see job progress in the UI so that I can monitor long-running operations like provisioning.",
+      "acceptanceCriteria": [
+        "Job progress component created",
+        "Shows current job status",
+        "Shows progress bar for multi-step jobs",
+        "Shows estimated time remaining",
+        "Auto-refreshes status",
+        "Shows error if job failed",
+        "Retry button for failed jobs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": "Step 10 completed: Security audit passed (9/10). One platform-wide critical issue identified: JWT tokens stored in localStorage instead of httpOnly cookies. This affects entire authentication system, not just job progress UI. Recommendation: Create separate story to fix token storage platform-wide. All job progress UI security checks passed: error handling, input validation, XSS prevention, type safety, information leakage prevention, API security, component security, rate limiting considerations."
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Background Jobs & Task Queue.md"
+}

@@ -1,0 +1,269 @@
+{
+  "project": "NextMavens",
+  "branchName": "flow/control-plane-snapshot",
+  "description": "Data plane services need an authoritative, cached view of control plane state to enforce governance without hitting the control database directly. This creates the critical source-of-truth contract between control plane and data plane.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Snapshot Endpoint",
+      "description": "As a data plane service, I want to fetch a snapshot of control plane state so that I can enforce governance rules without querying the control database.",
+      "acceptanceCriteria": [
+        "GET /internal/snapshot?project_id=xxx endpoint created",
+        "Returns complete project state in JSON format",
+        "Response includes: version, project (id, status, environment), services (enabled/config per service), limits, quotas",
+        "No authentication required (internal endpoint)",
+        "Typecheck passes",
+        "Response time < 100ms"
+      ],
+      "mavenSteps": [
+        1,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Implement Snapshot Caching",
+      "description": "As a platform operator, I want the snapshot to be cached so that data plane services don't overwhelm the control plane with requests.",
+      "acceptanceCriteria": [
+        "Snapshots cached with 30-60s TTL",
+        "Cache key includes project_id",
+        "Cache invalidation on project changes",
+        "Version field increments on cache invalidation",
+        "Cached responses returned until TTL expires",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement Fail-Closed Behavior",
+      "description": "As a platform operator, I want data plane services to deny requests when the snapshot is unavailable so that security is never compromised.",
+      "acceptanceCriteria": [
+        "Returns 503 Service Unavailable when snapshot fetch fails",
+        "Error message indicates control plane unavailable",
+        "Data plane services block all requests on 503",
+        "Retry-after header included",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Update Auth Service to Consume Snapshot",
+      "description": "As the auth service, I want to consume the snapshot API so that I can check project status and enabled services without hitting the control database.",
+      "acceptanceCriteria": [
+        "Auth service fetches snapshot on startup",
+        "Snapshot cached locally with TTL",
+        "Project status checked before auth operations",
+        "Service enablement checked before operations",
+        "Fails closed if snapshot unavailable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        4,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step4": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Update API Gateway to Consume Snapshot",
+      "description": "As the API gateway, I want to consume the snapshot API so that I can enforce rate limits and service enablement without hitting the control database.",
+      "acceptanceCriteria": [
+        "Gateway fetches snapshot per request",
+        "Snapshot cached with 30s TTL",
+        "Project status validated on each request",
+        "Rate limits enforced from snapshot",
+        "Service enablement checked before routing",
+        "Fails closed if snapshot unavailable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        4,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step4": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create Snapshot Response Schema",
+      "description": "As a data plane service, I want the snapshot response to have a well-defined schema so that I can reliably parse and use the data.",
+      "acceptanceCriteria": [
+        "Schema defined in TypeScript",
+        "Schema includes: version (string), project (object), services (object), limits (object), quotas (object)",
+        "Schema validation on response",
+        "Documentation of schema format",
+        "Version increment logic defined",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Update GraphQL Service to Consume Snapshot",
+      "description": "As the GraphQL service, I want to consume the snapshot API so that I can check project status and service enablement.",
+      "acceptanceCriteria": [
+        "GraphQL service fetches snapshot on request",
+        "Snapshot cached with 30s TTL",
+        "Project status validated before query execution",
+        "GraphQL service enablement checked",
+        "Fails closed if snapshot unavailable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        4,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step4": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Update Realtime Service to Consume Snapshot",
+      "description": "As the realtime service, I want to consume the snapshot API so that I can validate project status before accepting WebSocket connections.",
+      "acceptanceCriteria": [
+        "Realtime service fetches snapshot on connection",
+        "Snapshot cached with 30s TTL",
+        "Project status validated on connection",
+        "Realtime service enablement checked",
+        "Connection limit enforced from snapshot",
+        "Fails closed if snapshot unavailable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        4,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step4": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Update Storage Service to Consume Snapshot",
+      "description": "As the storage service, I want to consume the snapshot API so that I can validate project status and storage quotas.",
+      "acceptanceCriteria": [
+        "Storage service fetches snapshot on request",
+        "Snapshot cached with 30s TTL",
+        "Project status validated before operations",
+        "Storage quota checked from snapshot",
+        "Storage service enablement checked",
+        "Fails closed if snapshot unavailable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        4,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step4": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Implement Snapshot Versioning",
+      "description": "As a platform operator, I want snapshots to be versioned so that data plane services can detect and invalidate stale cached data.",
+      "acceptanceCriteria": [
+        "Version field included in all snapshot responses",
+        "Version increments on project changes",
+        "Version increments on quota changes",
+        "Version increments on service enablement changes",
+        "Data plane services compare version on cache refresh",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/NextMavens.md"
+}

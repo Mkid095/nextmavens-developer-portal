@@ -1,0 +1,278 @@
+{
+  "project": "Schema Browser",
+  "branchName": "flow/schema-browser",
+  "description": "Visual schema exploration. Tables list. Column details with types. Indexes viewer. Foreign keys display. Developers can understand database structure without writing queries.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Schema Browser Component",
+      "description": "As a developer, I want a schema browser in Studio so that I can explore my database structure.",
+      "acceptanceCriteria": [
+        "Schema browser component created",
+        "Tree structure for navigation",
+        "Tables list",
+        "Expandable columns",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Fetch Tables List",
+      "description": "As a developer, I want to see all tables so that I know what's in my database.",
+      "acceptanceCriteria": [
+        "GET /api/studio/:projectId/tables endpoint",
+        "Queries information_schema.tables",
+        "Filters for tenant_{slug} schema",
+        "Returns: table_name, created_at",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Fetch Column Details",
+      "description": "As a developer, I want to see column details so that I understand table structure.",
+      "acceptanceCriteria": [
+        "GET /api/studio/:projectId/tables/:table/columns endpoint",
+        "Queries information_schema.columns",
+        "Returns: column_name, data_type, is_nullable, column_default",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Display Column Types",
+      "description": "As a developer, I want column types shown so that I know what data each column holds.",
+      "acceptanceCriteria": [
+        "Column list in schema browser",
+        "Shows: column name, type, nullable, default",
+        "Color-coded for data types",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Fetch Indexes",
+      "description": "As a developer, I want to see indexes so that I understand query optimization.",
+      "acceptanceCriteria": [
+        "GET /api/studio/:projectId/tables/:table/indexes endpoint",
+        "Queries pg_indexes",
+        "Returns: index_name, index_def, is_unique, is_primary",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Display Indexes",
+      "description": "As a developer, I want indexes displayed so that I can see what's indexed.",
+      "acceptanceCriteria": [
+        "Indexes section in table detail",
+        "Shows: index name, columns, unique, primary",
+        "Icon for unique/primary",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Fetch Foreign Keys",
+      "description": "As a developer, I want to see foreign keys so that I understand relationships.",
+      "acceptanceCriteria": [
+        "GET /api/studio/:projectId/tables/:table/foreign-keys endpoint",
+        "Queries information_schema.table_constraints",
+        "Queries information_schema.key_column_usage",
+        "Returns: constraint_name, column_name, foreign_table, foreign_column",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Display Foreign Keys",
+      "description": "As a developer, I want foreign keys displayed so that I can see table relationships.",
+      "acceptanceCriteria": [
+        "Foreign keys section in table detail",
+        "Shows: column, references table.column",
+        "Visual line connecting related tables",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Search Tables",
+      "description": "As a developer, I want to search tables so that I can find specific tables quickly.",
+      "acceptanceCriteria": [
+        "Search box in schema browser",
+        "Filters tables by name",
+        "Real-time search",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Show Row Count",
+      "description": "As a developer, I want to see row counts so that I know table sizes.",
+      "acceptanceCriteria": [
+        "COUNT(*) query for each table",
+        "Displayed next to table name",
+        "Async to not block UI",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Visual Schema Diagram",
+      "description": "As a developer, I want a visual schema diagram so that I can see relationships visually.",
+      "acceptanceCriteria": [
+        "Canvas-based schema diagram",
+        "Tables as boxes",
+        "Foreign keys as lines",
+        "Draggable boxes",
+        "Zoom/pan",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Schema Browser.md"
+}

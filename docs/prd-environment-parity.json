@@ -1,0 +1,271 @@
+{
+  "project": "Environment Parity",
+  "branchName": "flow/environment-parity",
+  "description": "Dev is for experimentation. Prod is for stability. Different rules = fewer support headaches. Environment-aware behavior ensures developers can experiment freely in dev while production remains stable and secure.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add Environment Field to Projects",
+      "description": "As a platform engineer, I want projects to have an environment field so that I can apply different rules based on environment.",
+      "acceptanceCriteria": [
+        "projects table updated with environment column",
+        "Environment enum: prod, dev, staging",
+        "Default value: prod",
+        "Migration script created",
+        "Existing projects set to prod",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Add Environment Field to API Keys",
+      "description": "As a developer, I want API keys to be scoped to environments so that dev keys don't work in production.",
+      "acceptanceCriteria": [
+        "api_keys table updated with environment column",
+        "Environment enum: prod, dev, staging",
+        "Key must match project environment to work",
+        "Migration script created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Environment Config Helper",
+      "description": "As a platform engineer, I want a getEnvironmentConfig() helper so that I can easily get environment-specific behavior.",
+      "acceptanceCriteria": [
+        "Helper created at src/lib/environment.ts",
+        "Takes environment as parameter",
+        "Returns config object with: rate_limit_multiplier, auto_suspend_enabled, log_level, max_webhook_retries",
+        "Prod: rate_limit_multiplier=1, auto_suspend=true, log_level=info, retries=3",
+        "Dev: rate_limit_multiplier=10, auto_suspend=false, log_level=debug, retries=infinite",
+        "Staging: rate_limit_multiplier=5, auto_suspend=false, log_level=debug, retries=5",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Different Rate Limits per Environment",
+      "description": "As a developer, I want higher rate limits in dev so that I can test without hitting limits.",
+      "acceptanceCriteria": [
+        "Rate limit checking uses environment config",
+        "Dev environment gets 10x rate limit",
+        "Staging gets 5x rate limit",
+        "Prod gets standard rate limit",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Disable Auto-Suspend in Dev",
+      "description": "As a developer, I want auto-suspend disabled in dev so that my testing doesn't get interrupted.",
+      "acceptanceCriteria": [
+        "Auto-suspend job checks environment config",
+        "Dev and staging environments skip auto-suspend",
+        "Only prod environment auto-suspends",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Verbose Logging in Dev",
+      "description": "As a developer, I want verbose logging in dev so that I can debug issues easily.",
+      "acceptanceCriteria": [
+        "Log level set from environment config",
+        "Dev and staging use debug level",
+        "Prod uses info level (or sampled)",
+        "Debug logs include full request/response bodies",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Infinite Webhook Retries in Dev",
+      "description": "As a developer, I want infinite webhook retries in dev so that testing webhooks is reliable.",
+      "acceptanceCriteria": [
+        "Webhook retry logic uses environment config",
+        "Dev environment retries indefinitely",
+        "Staging retries 5 times",
+        "Prod retries 3 times",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Environment Selector in UI",
+      "description": "As a developer, I want to select environment when creating projects so that I can set up dev/staging/proj environments.",
+      "acceptanceCriteria": [
+        "Environment dropdown in project creation form",
+        "Options: Production, Development, Staging",
+        "Default: Production",
+        "Help text explaining differences",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Show Environment Indicators in UI",
+      "description": "As a developer, I want to see environment indicators so that I know which environment I'm working with.",
+      "acceptanceCriteria": [
+        "Environment badge shown on project detail page",
+        "Color-coded: Prod (green), Dev (blue), Staging (yellow)",
+        "Environment shown in project list",
+        "Warning when working in prod environment",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Environment-Specific API Key Prefixes",
+      "description": "As a developer, I want API keys to have environment-specific prefixes so that I can easily identify key environment.",
+      "acceptanceCriteria": [
+        "Prod keys: nm_live_pk_, nm_live_sk_",
+        "Dev keys: nm_dev_pk_, nm_dev_sk_",
+        "Staging keys: nm_staging_pk_, nm_staging_sk_",
+        "Prefix set based on project environment",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Environment Parity.md"
+}

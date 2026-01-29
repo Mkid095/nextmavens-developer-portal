@@ -1,0 +1,229 @@
+{
+  "project": "Idempotency & Safety Nets",
+  "branchName": "flow/idempotency",
+  "description": "Duplicate requests happen: double-click, network glitches, retry storms. Idempotency keeps the platform calm under chaos by ensuring that duplicate operations don't create duplicate side effects.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Idempotency Keys Table",
+      "description": "As a platform engineer, I want an idempotency keys table so that I can store and retrieve operation results.",
+      "acceptanceCriteria": [
+        "idempotency_keys table created in control_plane schema",
+        "Columns: key (VARCHAR(255) PRIMARY KEY), response (JSONB), expires_at (TIMESTAMPTZ), created_at (TIMESTAMPTZ)",
+        "Index on expires_at for cleanup",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Idempotency Middleware",
+      "description": "As a platform engineer, I want idempotency middleware so that I can easily add idempotency to any endpoint.",
+      "acceptanceCriteria": [
+        "Middleware created at src/lib/idempotency.ts",
+        "withIdempotency(key, fn) helper function",
+        "Checks for existing response",
+        "Returns cached response if exists",
+        "Executes function if not exists",
+        "Stores result with TTL",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Add Idempotency to Provision Project",
+      "description": "As a developer, I want project creation to be idempotent so that accidental double-click doesn't create duplicate projects.",
+      "acceptanceCriteria": [
+        "Provision project endpoint uses idempotency middleware",
+        "Idempotency key format: provision:{project_id}",
+        "TTL: 1 hour",
+        "Duplicate requests return same response",
+        "No duplicate projects created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add Idempotency to Create API Key",
+      "description": "As a developer, I want API key creation to be idempotent so that retry requests don't create multiple keys.",
+      "acceptanceCriteria": [
+        "Create key endpoint uses idempotency middleware",
+        "Idempotency key format: create_key:{request_id}",
+        "TTL: 5 minutes",
+        "Duplicate requests return same key",
+        "No duplicate keys created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Add Idempotency to Revoke Key",
+      "description": "As a developer, I want key revocation to be idempotent so that retry requests don't cause errors.",
+      "acceptanceCriteria": [
+        "Revoke key endpoint uses idempotency middleware",
+        "Idempotency key format: revoke:{key_id}",
+        "TTL: Immediate (revocation is permanent)",
+        "Duplicate requests return same response",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add Idempotency to Send Webhook",
+      "description": "As a platform operator, I want webhook delivery to be idempotent so that retry requests don't cause duplicate webhook deliveries.",
+      "acceptanceCriteria": [
+        "Webhook delivery uses idempotency middleware",
+        "Idempotency key format: webhook:{event_id}",
+        "TTL: 24 hours",
+        "Duplicate requests return same response",
+        "Webhook delivered only once",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Idempotency Key Cleanup",
+      "description": "As a platform operator, I want expired idempotency keys to be automatically cleaned up so that the table doesn't grow indefinitely.",
+      "acceptanceCriteria": [
+        "Cleanup job runs hourly",
+        "Deletes keys where expires_at < NOW()",
+        "Job logged in audit log",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Idempotency Key to Request Headers",
+      "description": "As a developer, I want to pass idempotency keys via HTTP header so that I can ensure idempotency for my requests.",
+      "acceptanceCriteria": [
+        "Middleware checks Idempotency-Key header",
+        "If not provided, generates UUID for key",
+        "Returns idempotency key in response header",
+        "Documentation updated with header usage",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Idempotency & Safety Nets.md"
+}

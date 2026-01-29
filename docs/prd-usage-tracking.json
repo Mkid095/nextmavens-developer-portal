@@ -1,0 +1,252 @@
+{
+  "project": "Usage Tracking",
+  "branchName": "flow/usage-tracking",
+  "description": "Collect metrics for billing and quotas. Track per service: db queries, rows read, rows written, realtime messages, connections, storage uploads/downloads, bytes transferred, auth signups/signins, function invocations. Aggregation API, usage dashboard.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Usage Metrics Table",
+      "description": "As a platform engineer, I want a usage_metrics table so that I can track resource consumption.",
+      "acceptanceCriteria": [
+        "usage_metrics table created in control_plane schema",
+        "Columns: id, project_id, service, metric_type, quantity, recorded_at",
+        "Index on (project_id, service, recorded_at) for aggregation",
+        "Metric types: db_query, db_row_read, db_row_written, realtime_message, realtime_connection, storage_upload, storage_download, storage_bytes, auth_signup, auth_signin, function_invocation",
+        "Migration script created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Track Database Usage",
+      "description": "As a platform operator, I want to track database usage so that I can enforce quotas.",
+      "acceptanceCriteria": [
+        "API gateway logs db_query count",
+        "Logs db_row_read count",
+        "Logs db_row_written count",
+        "Records to usage_metrics table",
+        "Async to not block requests",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Track Realtime Usage",
+      "description": "As a platform operator, I want to track realtime usage so that I can enforce connection limits.",
+      "acceptanceCriteria": [
+        "Realtime service logs message count",
+        "Logs connection count",
+        "Records to usage_metrics table",
+        "Connection count tracked per hour",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Track Storage Usage",
+      "description": "As a platform operator, I want to track storage usage so that I can enforce storage quotas.",
+      "acceptanceCriteria": [
+        "Storage service logs upload count",
+        "Logs download count",
+        "Logs bytes transferred",
+        "Records to usage_metrics table",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create Usage Aggregation API",
+      "description": "As a developer, I want to query aggregated usage so that I can see my consumption.",
+      "acceptanceCriteria": [
+        "GET /api/usage/:projectId endpoint",
+        "Query params: service, metric_type, start_date, end_date, aggregation (day/week/month)",
+        "Returns aggregated usage",
+        "Returns usage percentage vs quota",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Track Auth Usage",
+      "description": "As a platform operator, I want to track auth usage so that I can understand user growth.",
+      "acceptanceCriteria": [
+        "Auth service logs signup count",
+        "Logs signin count",
+        "Records to usage_metrics table",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create Usage Dashboard",
+      "description": "As a developer, I want a usage dashboard so that I can see my resource consumption.",
+      "acceptanceCriteria": [
+        "Usage dashboard page created",
+        "Shows current usage per service",
+        "Shows percentage of quota used",
+        "Shows reset date",
+        "Visual indicators (progress bars, color coding)",
+        "Historical usage chart",
+        "Breakdown by metric type",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Export Usage Data",
+      "description": "As a developer, I want to export usage data so that I can analyze consumption externally.",
+      "acceptanceCriteria": [
+        "Export button on usage dashboard",
+        "Exports to CSV",
+        "Includes: date, service, metric_type, quantity",
+        "Date range selector",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Usage Sampling",
+      "description": "As a platform operator, I want usage sampling in production so that tracking overhead is minimal.",
+      "acceptanceCriteria": [
+        "Sample rate configurable per environment",
+        "Prod: 10% sampling",
+        "Dev: 100% tracking",
+        "Extrapolates from sample",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Usage Tracking.md"
+}

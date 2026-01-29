@@ -1,0 +1,264 @@
+{
+  "project": "Support Escape Hatch",
+  "branchName": "flow/support-escape-hatch",
+  "description": "Request support with context. Support button per project auto-attaches: project ID, recent logs, error context. Pre-fills support form. Shows incident status. Incident status page shows all systems operational/degraded.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Support Requests Table",
+      "description": "As a platform engineer, I want a support_requests table so that I can track support tickets.",
+      "acceptanceCriteria": [
+        "support_requests table created in control_plane schema",
+        "Columns: id, project_id, user_id, subject, description, context (JSONB), status, created_at, resolved_at",
+        "Status enum: open, in_progress, resolved, closed",
+        "Index on project_id and status",
+        "Migration script created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Support Request API",
+      "description": "As a developer, I want to create support requests so that I can get help when I need it.",
+      "acceptanceCriteria": [
+        "POST /api/support/request endpoint",
+        "Request: project_id, subject, description",
+        "Auto-attaches context",
+        "Returns support request ID",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Auto-Attach Request Context",
+      "description": "As a support agent, I want context auto-attached so that I can understand the issue quickly.",
+      "acceptanceCriteria": [
+        "Context includes: project_id, project_name, project_status",
+        "Context includes: recent errors (last 10)",
+        "Context includes: current usage metrics",
+        "Context includes: logs snippet (last 20 lines)",
+        "Context formatted as JSON",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add Support Button to UI",
+      "description": "As a developer, I want a support button so that I can easily request help.",
+      "acceptanceCriteria": [
+        "Support button in project header",
+        "Always visible",
+        "Opens support request modal",
+        "Pre-fills project info",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Support Request Modal",
+      "description": "As a developer, I want a support request form so that I can describe my issue.",
+      "acceptanceCriteria": [
+        "Modal with subject and description fields",
+        "Shows what context will be attached",
+        "Submit button creates request",
+        "Returns request ID",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create Support Request List UI",
+      "description": "As a developer, I want to see my support requests so that I can track progress.",
+      "acceptanceCriteria": [
+        "Support requests page in project settings",
+        "Lists all requests for project",
+        "Shows: subject, status, created_at, resolved_at",
+        "Filter by status",
+        "Click to view details",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create Incident Status Page",
+      "description": "As a developer, I want to see system status so that I know if there are ongoing issues.",
+      "acceptanceCriteria": [
+        "Status page at /status",
+        "Shows all services: API Gateway, Auth, Realtime, GraphQL, Storage, Control Plane",
+        "Status: Operational, Degraded, Outage",
+        "Shows incident history",
+        "Auto-refreshes every 60 seconds",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Send Support Notifications",
+      "description": "As a developer, I want notifications about my support requests so that I know when they're resolved.",
+      "acceptanceCriteria": [
+        "Email sent on support request creation",
+        "Email sent when status changes",
+        "Email includes: request_id, subject, status, link to view",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Update Incident Status",
+      "description": "As a platform operator, I want to update incident status so that users are informed.",
+      "acceptanceCriteria": [
+        "Admin API to update service status",
+        "Status changes logged",
+        "Incident history tracked",
+        "Show incident details: description, start time, updates",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Admin Support UI",
+      "description": "As a support agent, I want an admin UI so that I can manage support requests.",
+      "acceptanceCriteria": [
+        "Admin support dashboard",
+        "Lists all open requests",
+        "Filter by status, project",
+        "View request details with context",
+        "Update status",
+        "Add notes",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Support Escape Hatch.md"
+}

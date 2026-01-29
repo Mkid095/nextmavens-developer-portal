@@ -1,0 +1,265 @@
+{
+  "project": "SQL Editor",
+  "branchName": "flow/sql-editor",
+  "description": "Run queries from UI. Monaco-based SQL editor. Run query button. Results table below. Query history. Transaction mode (read-only default). Developers can execute SQL directly from Studio.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create SQL Editor Component",
+      "description": "As a developer, I want a SQL editor in Studio so that I can run queries without leaving the browser.",
+      "acceptanceCriteria": [
+        "Monaco editor component created",
+        "SQL syntax highlighting",
+        "Line numbers",
+        "Auto-indentation",
+        "Query shortcut (Ctrl+Enter)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Execute Query API",
+      "description": "As a developer, I want to execute SQL queries via API so that the SQL editor can run queries.",
+      "acceptanceCriteria": [
+        "POST /api/studio/:projectId/query endpoint",
+        "Request: query, readonly (boolean)",
+        "Validates query (prevent destructive in readonly mode)",
+        "Executes query on tenant_{slug} schema",
+        "Returns results as JSON",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Results Table Component",
+      "description": "As a developer, I want results displayed in a table so that I can read query output.",
+      "acceptanceCriteria": [
+        "Results table component created",
+        "Columns from query results",
+        "Rows from query results",
+        "Pagination for large result sets",
+        "Export to CSV button",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Read-Only Mode",
+      "description": "As a developer, I want read-only mode by default so that I don't accidentally modify data.",
+      "acceptanceCriteria": [
+        "Read-only checkbox in editor",
+        "Checked by default",
+        "Prevents: INSERT, UPDATE, DELETE, DROP, etc.",
+        "Shows warning if trying to execute write in read-only",
+        "Must uncheck to run writes",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Enforce RBAC for Writes",
+      "description": "As a platform operator, I want RBAC enforced so that viewers can't execute writes.",
+      "acceptanceCriteria": [
+        "Query API checks user permissions",
+        "Viewers can only SELECT",
+        "Developers and above can write",
+        "Returns PERMISSION_DENIED for unauthorized writes",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Query History",
+      "description": "As a developer, I want query history so that I can revisit previous queries.",
+      "acceptanceCriteria": [
+        "Query history stored in localStorage",
+        "Last 50 queries saved",
+        "History panel shows previous queries",
+        "Click to load query into editor",
+        "Clear history button",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Add Query Timeout",
+      "description": "As a platform operator, I want query timeout so that long-running queries don't hang the system.",
+      "acceptanceCriteria": [
+        "Query timeout: 30 seconds",
+        "Timeout enforced at API level",
+        "Returns error with timeout message",
+        "Configurable per project",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Show Query Stats",
+      "description": "As a developer, I want query statistics so that I can understand query performance.",
+      "acceptanceCriteria": [
+        "Shows: execution time",
+        "Shows: rows returned",
+        "Shows: rows affected (for writes)",
+        "Shows: query plan (optional)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Format SQL",
+      "description": "As a developer, I want SQL formatting so that my queries are readable.",
+      "acceptanceCriteria": [
+        "Format SQL button",
+        "Uses SQL formatter library",
+        "Formats query in editor",
+        "Shortcut: Ctrl+Shift+F",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Save Queries",
+      "description": "As a developer, I want to save queries so that I can reuse them later.",
+      "acceptanceCriteria": [
+        "Save query button",
+        "Prompts for query name",
+        "Saves to localStorage (or server)",
+        "Saved queries panel",
+        "Click to load saved query",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/SQL Editor.md"
+}

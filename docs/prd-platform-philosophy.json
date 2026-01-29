@@ -1,0 +1,230 @@
+{
+  "project": "Platform Philosophy",
+  "branchName": "flow/platform-philosophy",
+  "description": "Opinionated stance document. Postgres-native approach. Realtime is DB-driven. Storage abstraction strategy. JWT-first authentication. Multi-tenant by default. Attracts the right developers.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Document Postgres-Native Approach",
+      "description": "As a documentation reader, I want the platform's Postgres-first philosophy documented so that I understand the technical foundation.",
+      "acceptanceCriteria": [
+        "Postgres-native section created",
+        "Explains: SQL-first, not ORM-first",
+        "Explains: direct database access",
+        "Explains: benefits (portability, power, familiarity)",
+        "Examples showing Postgres features",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Document Realtime DB-Driven Philosophy",
+      "description": "",
+      "acceptanceCriteria": [
+        "Realtime philosophy section created",
+        "Explains: subscriptions follow table structure",
+        "Explains: CDC-based, not custom protocol",
+        "Explains: benefits (schema-driven, automatic)",
+        "Comparison to alternatives",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Document Storage Abstraction Strategy",
+      "description": "",
+      "acceptanceCriteria": [
+        "Storage philosophy section created",
+        "Explains: Telegram for raw, Cloudinary for optimized",
+        "Explains: transparent abstraction",
+        "Explains: benefits (cost, performance, simplicity)",
+        "Shows when to use which",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Document JWT-First Authentication",
+      "description": "",
+      "acceptanceCriteria": [
+        "Auth philosophy section created",
+        "Explains: JWT-first, not sessions",
+        "Explains: stateless benefits",
+        "Explains: token-based auth flow",
+        "Comparison to session-based auth",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Document Multi-Tenant by Default",
+      "description": "",
+      "acceptanceCriteria": [
+        "Multi-tenant section created",
+        "Explains: every project is isolated",
+        "Explains: tenant schemas",
+        "Explains: isolation enforcement",
+        "Benefits: security, scalability",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Document Security Principles",
+      "description": "",
+      "acceptanceCriteria": [
+        "Security principles section created",
+        "Explains: fail closed, not open",
+        "Explains: explicit over implicit",
+        "Explains: audit everything",
+        "Explains: zero trust by default",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Document Operational Simplicity",
+      "description": "",
+      "acceptanceCriteria": [
+        "Operations section created",
+        "Explains: boring technology",
+        "Explains: minimal dependencies",
+        "Explains: observable by default",
+        "Explains: automated operations",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Add Comparison to Alternatives",
+      "description": "",
+      "acceptanceCriteria": [
+        "Comparison section created",
+        "Compares to: Supabase, Firebase, AWS Amplify",
+        "Shows: similarities and differences",
+        "Shows: when to choose NextMavens",
+        "Honest assessment of trade-offs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Document API-First Design",
+      "description": "",
+      "acceptanceCriteria": [
+        "API-first section created",
+        "Explains: CLI, automation, CI/CD first-class",
+        "Explains: UI consumes same APIs",
+        "Benefits: automation, integration, testing",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Document Developer Experience Principles",
+      "description": "",
+      "acceptanceCriteria": [
+        "DX principles section created",
+        "Explains: predictable errors",
+        "Explains: comprehensive docs",
+        "Explains: tooling (CLI, SDK)",
+        "Explains: fast feedback loops",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Platform Philosophy.md"
+}

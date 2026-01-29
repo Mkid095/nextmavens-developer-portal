@@ -1,0 +1,301 @@
+{
+  "project": "Feature Flags (Kill Switches)",
+  "branchName": "flow/feature-flags",
+  "description": "Disable signups, pause provisioning, roll out features safely - every real platform has this. Feature flags provide operational control for rollouts and incident response, enabling gradual rollouts and instant kill switches.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Feature Flags Table",
+      "description": "As a platform engineer, I want a feature_flags table so that I can dynamically control platform features.",
+      "acceptanceCriteria": [
+        "feature_flags table created in control_plane schema",
+        "Columns: name (VARCHAR(100) PRIMARY KEY), enabled (BOOLEAN DEFAULT TRUE), scope (VARCHAR(20) DEFAULT 'global'), metadata (JSONB)",
+        "Scope enum: global, project, org",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Feature Flag Helper",
+      "description": "As a platform engineer, I want a checkFeature() helper so that I can easily check if a feature is enabled.",
+      "acceptanceCriteria": [
+        "Helper created at src/lib/features.ts",
+        "checkFeature(name, scope, scopeId) function",
+        "Checks global flag first",
+        "Checks scope-specific flag if provided",
+        "Returns boolean",
+        "Results cached with 60s TTL",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement Core Feature Flags",
+      "description": "As a platform operator, I want core feature flags so that I can disable critical platform functions during incidents.",
+      "acceptanceCriteria": [
+        "signups_enabled flag created (global, default: true)",
+        "provisioning_enabled flag created (global, default: true)",
+        "storage_enabled flag created (global, default: true)",
+        "realtime_enabled flag created (global, default: true)",
+        "Flags seeded in database",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Apply Signups Flag",
+      "description": "As a platform operator, I want to disable new user signups so that I can control registration during incidents.",
+      "acceptanceCriteria": [
+        "Registration endpoint checks signups_enabled flag",
+        "Returns error message when disabled",
+        "Error message explains signups are temporarily disabled",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Apply Provisioning Flag",
+      "description": "As a platform operator, I want to pause project provisioning so that I can stop new project creation during incidents.",
+      "acceptanceCriteria": [
+        "Project creation endpoint checks provisioning_enabled flag",
+        "Returns error message when disabled",
+        "Existing projects unaffected",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Apply Storage Flag",
+      "description": "As a platform operator, I want to disable storage temporarily so that I can respond to storage-related incidents.",
+      "acceptanceCriteria": [
+        "Storage service checks storage_enabled flag",
+        "Uploads rejected when disabled",
+        "Downloads still work (read-only mode)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Apply Realtime Flag",
+      "description": "As a platform operator, I want to disable realtime so that I can respond to realtime-related incidents.",
+      "acceptanceCriteria": [
+        "Realtime service checks realtime_enabled flag",
+        "New WebSocket connections rejected when disabled",
+        "Existing connections allowed to close gracefully",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Create Admin Feature Flag UI",
+      "description": "As a platform operator, I want an admin UI for managing feature flags so that I can toggle flags without database access.",
+      "acceptanceCriteria": [
+        "Admin feature flags page created at /admin/feature-flags",
+        "Lists all feature flags",
+        "Toggle switch for each flag",
+        "Shows current state (enabled/disabled)",
+        "Shows scope (global/project/org)",
+        "Requires admin role",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Feature Flag Caching",
+      "description": "As a platform engineer, I want feature flags cached so that flag checks don't hit the database on every request.",
+      "acceptanceCriteria": [
+        "Flag values cached with 60s TTL",
+        "Cache invalidated on flag change",
+        "Cache key includes name and scope",
+        "Falls back to DB if cache miss",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Audit Feature Flag Changes",
+      "description": "As a platform operator, I want all feature flag changes logged so that I have an audit trail of feature toggles.",
+      "acceptanceCriteria": [
+        "Flag changes logged to audit_logs",
+        "Action: feature_flag.enabled or feature_flag.disabled",
+        "Actor captured from authenticated user",
+        "Metadata includes flag name, old value, new value",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Support Project-Level Flags",
+      "description": "As a platform operator, I want to enable/disable features for specific projects so that I can gradually roll out features.",
+      "acceptanceCriteria": [
+        "Flags can be set at project scope",
+        "Project flags override global flags",
+        "checkFeature() checks project flag first",
+        "UI to manage project-specific flags",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Feature Flags (Kill Switches).md"
+}

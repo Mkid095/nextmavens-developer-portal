@@ -1,0 +1,229 @@
+{
+  "project": "Infrastructure Documentation",
+  "branchName": "flow/infrastructure-docs",
+  "description": "Scaling roadmap. Current single-region deployment. Scaling phases. Regional data isolation. Disaster recovery plans. Transparent about current state and future plans.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Document Current Deployment",
+      "description": "",
+      "acceptanceCriteria": [
+        "Current state section created",
+        "Shows: single VPS deployment",
+        "Shows: services co-located",
+        "Shows: database location",
+        "Diagram of current architecture",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Define Scaling Phases",
+      "description": "",
+      "acceptanceCriteria": [
+        "Scaling phases section created",
+        "Phase 1: Single VPS with horizontal scaling",
+        "Phase 2: Multiple regions (US, EU, Asia)",
+        "Phase 3: Auto-scaling based on load",
+        "Timeline estimates",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Document Regional Data Isolation",
+      "description": "",
+      "acceptanceCriteria": [
+        "Regional isolation section created",
+        "Explains: data stays in selected region",
+        "Explains: cross-region replication (future)",
+        "Explains: compliance implications",
+        "Shows: region selector (future)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Document Disaster Recovery",
+      "description": "",
+      "acceptanceCriteria": [
+        "DR section created",
+        "Current: daily backups to Telegram",
+        "Future: multi-region replication",
+        "RTO/RPO targets",
+        "Recovery procedures",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Document Monitoring Approach",
+      "description": "",
+      "acceptanceCriteria": [
+        "Monitoring section created",
+        "Health endpoints",
+        "Metrics collection",
+        "Alerting",
+        "Status page",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Document Service Dependencies",
+      "description": "",
+      "acceptanceCriteria": [
+        "Dependency diagram created",
+        "Shows: Control Plane -> Data Plane",
+        "Shows: Services requiring DB, Redis, etc.",
+        "Shows: Service health dependencies",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Document Current Limitations",
+      "description": "",
+      "acceptanceCriteria": [
+        "Limitations section created",
+        "Single region limitation",
+        "No auto-scaling yet",
+        "Manual backups required",
+        "Transparent about what's coming",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Document Security Architecture",
+      "description": "",
+      "acceptanceCriteria": [
+        "Security section created",
+        "Network isolation",
+        "TLS everywhere",
+        "JWT authentication",
+        "Data encryption at rest",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add Infrastructure FAQ",
+      "description": "",
+      "acceptanceCriteria": [
+        "FAQ section created",
+        "Questions: region support, scaling, backups, SLAs",
+        "Clear answers",
+        "Links to detailed docs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Document SLA Targets",
+      "description": "",
+      "acceptanceCriteria": [
+        "SLA section created",
+        "Current: best effort (no formal SLA)",
+        "Future targets: 99.9% uptime",
+        "Exclusions: maintenance, force majeure",
+        "Credit policy for outages (future)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Infrastructure Documentation.md"
+}

@@ -1,0 +1,340 @@
+{
+  "project": "Break Glass Mode",
+  "branchName": "flow/break-glass",
+  "description": "Stuff will break: keys locked, projects misconfigured, data plane unreachable. You need emergency access path. Break glass mode provides super-admin powers for emergency situations with aggressive audit logging.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Admin Sessions Table",
+      "description": "As a platform engineer, I want an admin_sessions table so that I can track break glass access.",
+      "acceptanceCriteria": [
+        "admin_sessions table created in control_plane schema",
+        "Columns: id, admin_id, reason, access_method, granted_by, expires_at, created_at",
+        "access_method enum: hardware_key, otp, emergency_code",
+        "Session must be referenced by admin_actions",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Admin Actions Table",
+      "description": "As a platform engineer, I want an admin_actions table so that I can track all break glass actions with full context.",
+      "acceptanceCriteria": [
+        "admin_actions table created in control_plane schema",
+        "Columns: id, session_id, action, target_type, target_id, before_state (JSONB), after_state (JSONB), created_at",
+        "References admin_sessions",
+        "Before/after states capture full system state",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement Break Glass Authentication",
+      "description": "As a platform engineer, I want separate break glass authentication so that emergency access requires explicit approval.",
+      "acceptanceCriteria": [
+        "Break glass auth at /api/admin/break-glass",
+        "Requires TOTP code or hardware key",
+        "Requires reason for access",
+        "Creates admin_sessions record",
+        "Session expires after 1 hour",
+        "Returns temporary break glass token",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Unlock Project Power",
+      "description": "As a platform operator, I want to unlock suspended projects so that I can recover from false positive suspensions.",
+      "acceptanceCriteria": [
+        "POST /api/admin/projects/:id/unlock endpoint",
+        "Requires break glass token",
+        "Sets project status to ACTIVE regardless of suspension reason",
+        "Logs action with before/after states",
+        "Returns unlocked project",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Override Suspension Power",
+      "description": "As a platform operator, I want to override auto-suspension so that legitimate high-usage projects aren't blocked.",
+      "acceptanceCriteria": [
+        "POST /api/admin/projects/:id/override-suspension endpoint",
+        "Requires break glass token",
+        "Clears suspension flags",
+        "Increases hard caps if needed",
+        "Logs action with before/after states",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Implement Session Expiration",
+      "description": "As a platform engineer, I want break glass sessions to expire after 1 hour so that emergency access is time-limited.",
+      "acceptanceCriteria": [
+        "Sessions expire after 1 hour",
+        "Expired sessions rejected",
+        "Session expiration checked on every request",
+        "Warning shown 5 minutes before expiration",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Implement Aggressive Audit Logging",
+      "description": "As a platform engineer, I want all break glass actions aggressively logged so that emergency access is fully auditable.",
+      "acceptanceCriteria": [
+        "Every action logged to admin_actions",
+        "Before/after states captured",
+        "Linked to admin_sessions",
+        "Include admin_id, session_id, action, target",
+        "Logged to standard audit_logs too",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Force Delete Power",
+      "description": "As a platform operator, I want to force delete projects immediately so that I can handle emergency situations.",
+      "acceptanceCriteria": [
+        "DELETE /api/admin/projects/:id/force endpoint",
+        "Requires break glass token",
+        "Deletes project immediately (no grace period)",
+        "Cleans up all resources",
+        "Logs action with before/after states",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Regenerate System Keys Power",
+      "description": "As a platform operator, I want to regenerate system keys so that I can recover from key compromise.",
+      "acceptanceCriteria": [
+        "POST /api/admin/projects/:id/regenerate-keys endpoint",
+        "Requires break glass token",
+        "Invalidates all existing keys",
+        "Generates new service_role keys",
+        "Logs action with before/after states",
+        "Returns new keys (show once)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement Access Any Project Power",
+      "description": "As a platform operator, I want to access any project so that I can investigate issues.",
+      "acceptanceCriteria": [
+        "GET /api/admin/projects/:id endpoint",
+        "Requires break glass token",
+        "Returns full project details",
+        "Bypasses normal ownership checks",
+        "Logs access",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create Break Glass UI",
+      "description": "As a platform operator, I want a break glass UI so that I can initiate emergency access.",
+      "acceptanceCriteria": [
+        "Break glass page at /admin/break-glass",
+        "Requires 2FA/TOTP",
+        "Prompts for reason",
+        "Shows session expiration countdown",
+        "Lists available powers",
+        "Each power shows warning before execution",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Add Break Glass Notifications",
+      "description": "As a platform owner, I want to be notified when break glass is used so that I'm aware of emergency access.",
+      "acceptanceCriteria": [
+        "Email sent when break glass session created",
+        "Includes admin, reason, expiration",
+        "Email sent for each action taken",
+        "Includes action, target, before/after states",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Break Glass Mode.md"
+}

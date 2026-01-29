@@ -1,0 +1,284 @@
+{
+  "project": "NextMavens",
+  "branchName": "flow/platform-invariants",
+  "description": "Internal architectural rules document that prevents drift and ensures all contributors understand the core principles of the NextMavens platform. This is NOT user documentation - it's for platform engineers and contributors.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Platform Invariants Document",
+      "description": "As a platform engineer, I want a comprehensive invariants document so that all contributors understand the core architectural principles.",
+      "acceptanceCriteria": [
+        "Document created at /home/ken/PLATFORM_INVARIANTS.md",
+        "10 core principles documented",
+        "Each principle has clear explanation",
+        "Examples provided for each principle",
+        "Markdown format with good structure",
+        "Document reviewed for clarity",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Document Control Plane Source of Truth Principle",
+      "description": "As a platform engineer, I want the invariants document to state that the control plane database is the authoritative source of truth so that there's no ambiguity about governance.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "Control plane database defined as authoritative",
+        "Data plane services prohibited from mutating governance state",
+        "Data plane services required to read via snapshot API only",
+        "Examples of correct and incorrect patterns",
+        "Rationale explained",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Document Idempotent Destructive Actions Principle",
+      "description": "As a platform engineer, I want the invariants document to require idempotent destructive operations so that the platform remains stable under retry conditions.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "Idempotency defined for destructive operations",
+        "Examples: deleting project twice = same result, rotating key twice = same result",
+        "No partial failure states permitted",
+        "Implementation patterns provided",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Document Request Attribution Principle",
+      "description": "As a platform engineer, I want the invariants document to require that every request is attributable to a project so that we have complete observability and accountability.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "API requests must have project_id in JWT",
+        "Log entries must have project_id",
+        "Audit entries must have actor_id and project_id",
+        "No anonymous requests allowed (except auth)",
+        "Enforcement mechanisms described",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Document No Direct Control DB Access Principle",
+      "description": "As a platform engineer, I want the invariants document to prohibit data plane services from talking directly to the control database so that architectural boundaries are maintained.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "Data plane must use Control Plane API",
+        "Data plane must use snapshot API for reads",
+        "Direct DB connections prohibited",
+        "Violation examples provided",
+        "Rationale explained (separation of concerns)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Document Isolation Enforcement Principle",
+      "description": "As a platform engineer, I want the invariants document to require explicit isolation enforcement so that cross-project access is impossible.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "All database queries scoped to tenant_{project_id}",
+        "All realtime channels prefixed with project_id:",
+        "All storage paths prefixed with project_id:/",
+        "Cross-project access returns 403 (never 404)",
+        "Isolation enforced, not implied",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Document Universal Observability Principle",
+      "description": "As a platform engineer, I want the invariants document to require correlation IDs everywhere so that we can trace requests across all services.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "Every request has x-request-id",
+        "Every log entry has request_id",
+        "Every audit entry has request_id",
+        "Correlation always possible across services",
+        "Implementation patterns provided",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Document Fail Closed Security Principle",
+      "description": "As a platform engineer, I want the invariants document to require fail-closed behavior so that security is never compromised for availability.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "Control plane unreachable = deny all requests",
+        "Snapshot unavailable = deny all requests",
+        "Service health unknown = deny all requests",
+        "Security > availability always",
+        "Examples of fail-closed implementation",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Document Secrets Never Logged Principle",
+      "description": "As a platform engineer, I want the invariants document to prohibit logging secret values so that credentials are never exposed.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "Secret values never in logs",
+        "Secret values never in error messages",
+        "Secret values never in audit logs (only refs)",
+        "Secret redaction patterns provided",
+        "Violation examples",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Document MCP Read-Only Default Principle",
+      "description": "As a platform engineer, I want the invariants document to require MCP tokens to be read-only by default so that AI tools have safe default behavior.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "MCP tokens start with read-only access",
+        "Write access requires explicit opt-in",
+        "Write access requires warnings",
+        "MCP actions heavily audited",
+        "Scope documentation required",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Document Soft Delete First Principle",
+      "description": "As a platform engineer, I want the invariants document to require soft delete before hard delete so that users have grace periods for recovery.",
+      "acceptanceCriteria": [
+        "Principle clearly stated",
+        "All deletions start with 30-day grace period",
+        "Preview shows exactly what will be deleted",
+        "Dependencies called out explicitly",
+        "Hard delete only after grace period",
+        "Restore capability during grace period",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create Symlink in Developer Portal",
+      "description": "As a developer, I want easy access to the platform invariants document from the developer portal directory so that I can reference it while working.",
+      "acceptanceCriteria": [
+        "Symlink created at /home/ken/developer-portal/PLATFORM_INVARIANTS.md",
+        "Symlink points to /home/ken/PLATFORM_INVARIANTS.md",
+        "Symlink accessible from developer portal directory",
+        "Symlink tested and working",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/NextMavens.md"
+}

@@ -1,0 +1,216 @@
+{
+  "project": "Migration Strategy",
+  "branchName": "flow/migration-strategy",
+  "description": "Migrations will happen. You need rollback capability and version tracking. Breaking changes should be marked explicitly. A solid migration strategy prevents deployment disasters and enables safe schema evolution.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Schema Migrations Table",
+      "description": "As a platform engineer, I want a schema_migrations table so that I can track which database migrations have been applied.",
+      "acceptanceCriteria": [
+        "schema_migrations table created in control_plane schema",
+        "Columns: version (VARCHAR(50) PRIMARY KEY), description (TEXT), applied_at (TIMESTAMPTZ DEFAULT NOW()), rollback_sql (TEXT), breaking (BOOLEAN DEFAULT FALSE)",
+        "Index on applied_at for sorting",
+        "Migration script created to create this table first",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Migration Runner Script",
+      "description": "As a platform engineer, I want a migration runner script so that I can apply database migrations programmatically.",
+      "acceptanceCriteria": [
+        "Migration runner created at src/lib/migrations.ts",
+        "runMigrations() function applies pending migrations",
+        "Migrations in /migrations directory",
+        "Migrations numbered: 001_initial.sql, 002_add_columns.sql, etc.",
+        "Checks schema_migrations table before running",
+        "Records each migration in schema_migrations",
+        "Transaction per migration (rollback on failure)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement Rollback Support",
+      "description": "As a platform engineer, I want rollback support so that I can revert bad migrations.",
+      "acceptanceCriteria": [
+        "rollbackMigration(version) function",
+        "Executes rollback_sql from schema_migrations",
+        "Removes migration record from schema_migrations",
+        "Verifies rollback succeeded",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create Migrations Directory Structure",
+      "description": "As a platform engineer, I want a standard migrations directory so that migrations are organized and discoverable.",
+      "acceptanceCriteria": [
+        "/migrations directory created",
+        "Naming convention: NNN_description.sql",
+        "README in directory explaining conventions",
+        "Each migration file includes: up SQL, rollback SQL, breaking flag, description",
+        "Template migration file provided",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1
+      ],
+      "mcpTools": {
+        "step1": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Breaking Change Tracking",
+      "description": "As a platform engineer, I want to mark breaking changes so that I know which migrations require special attention.",
+      "acceptanceCriteria": [
+        "breaking column in schema_migrations",
+        "Set to TRUE for breaking changes",
+        "Migration runner warns before applying breaking migrations",
+        "Requires confirmation for breaking migrations in production",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Migration Status Command",
+      "description": "As a platform engineer, I want to see migration status so that I know which migrations have been applied.",
+      "acceptanceCriteria": [
+        "migrationStatus() function",
+        "Lists all migrations",
+        "Shows status: applied, pending",
+        "Shows applied_at for applied migrations",
+        "Shows breaking flag",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Test Migrations on Staging",
+      "description": "As a platform engineer, I want to test migrations on staging before production so that I catch issues early.",
+      "acceptanceCriteria": [
+        "Process documented for testing migrations",
+        "Migration runner supports --dry-run flag",
+        "Dry-run shows what would be applied",
+        "Staging environment available",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        3
+      ],
+      "mcpTools": {
+        "step3": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Migration Locking",
+      "description": "As a platform engineer, I want migration locking so that concurrent migrations don't cause conflicts.",
+      "acceptanceCriteria": [
+        "Migration lock table created",
+        "Runner acquires lock before running",
+        "Waits if lock held by another process",
+        "Releases lock after migration completes",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Migration Strategy.md"
+}

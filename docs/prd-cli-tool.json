@@ -1,0 +1,323 @@
+{
+  "project": "CLI Tool",
+  "branchName": "flow/cli-tool",
+  "description": "Standalone CLI tool that provides terminal-based workflows for developers who prefer command-line interfaces over UI. Serious developers don't click UI for everything - CLI is essential for team adoption and CI/CD integration.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create CLI Project Structure",
+      "description": "As a platform engineer, I want to create the CLI project structure so that we have a foundation for adding CLI commands.",
+      "acceptanceCriteria": [
+        "Node.js project created at /home/ken/nextmavens-cli/",
+        "CLI framework configured (oclif or yargs)",
+        "package.json with bin entry point",
+        "TypeScript configuration",
+        "Build scripts configured",
+        "Can run `nextmavens --version`",
+        "Can run `nextmavens --help`",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Implement Authentication Commands",
+      "description": "As a developer, I want to login and logout via CLI so that I can authenticate my terminal session.",
+      "acceptanceCriteria": [
+        "`nextmavens login` command implemented",
+        "Prompts for email and password",
+        "Stores access token locally",
+        "Token stored in ~/.nextmavens/config.json",
+        "`nextmavens logout` command implemented",
+        "Logout removes stored token",
+        "`nextmavens whoami` shows current user",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement Project Commands",
+      "description": "As a developer, I want to create and link projects via CLI so that I can set up projects without using the web UI.",
+      "acceptanceCriteria": [
+        "`nextmavens project create <name>` command",
+        "Creates project via Control Plane API",
+        "Returns project details and API keys",
+        "`nextmavens project link` command",
+        "Links current directory to existing project",
+        "Creates .nextmavens/config.json with project_id",
+        "`nextmavens project list` command",
+        "Lists all projects for authenticated user",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement API Client Library",
+      "description": "As a CLI developer, I want a reusable API client library so that all CLI commands can communicate with the Control Plane API.",
+      "acceptanceCriteria": [
+        "API client created at src/lib/api-client.ts",
+        "Handles authentication with stored token",
+        "Handles request/response formatting",
+        "Handles error responses",
+        "Retries on 429 with exponential backoff",
+        "TypeScript types for all API responses",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Config Management",
+      "description": "As a CLI developer, I want config management so that the CLI can store authentication tokens and project links locally.",
+      "acceptanceCriteria": [
+        "Config stored in ~/.nextmavens/config.json",
+        "Config stores: auth_token, default_project_id, api_base_url",
+        "Config class with get/set methods",
+        "Config directory created if doesn't exist",
+        "Config file created with defaults if doesn't exist",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Database Commands",
+      "description": "As a developer, I want to push schema changes and run migrations via CLI so that I can manage database schema from the terminal.",
+      "acceptanceCriteria": [
+        "`nextmavens db push` command",
+        "Reads schema from local file",
+        "Pushes schema to project database",
+        "`nextmavens db diff` command",
+        "Shows diff between local and remote schema",
+        "`nextmavens db reset` command",
+        "Resets database to initial state (dev only)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Functions Commands",
+      "description": "As a developer, I want to deploy edge functions via CLI so that I can deploy serverless code from my terminal.",
+      "acceptanceCriteria": [
+        "`nextmavens functions deploy` command",
+        "Deploys functions from /functions directory",
+        "Shows deployment progress",
+        "`nextmavens functions list` command",
+        "Lists deployed functions",
+        "`nextmavens functions logs <name>` command",
+        "Shows function logs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Secrets Commands",
+      "description": "As a developer, I want to manage project secrets via CLI so that I can set environment variables without using the web UI.",
+      "acceptanceCriteria": [
+        "`nextmavens secrets set <key> <value>` command",
+        "Sets secret for linked project",
+        "`nextmavens secrets list` command",
+        "Lists all secret names (values hidden)",
+        "`nextmavens secrets delete <key>` command",
+        "Deletes a secret",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Status Command",
+      "description": "As a developer, I want to check project status via CLI so that I can see the current state of my project.",
+      "acceptanceCriteria": [
+        "`nextmavens status` command implemented",
+        "Shows linked project information",
+        "Shows project status (active, suspended, etc.)",
+        "Shows enabled services",
+        "Shows current usage metrics",
+        "Shows any issues or warnings",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Publish to NPM",
+      "description": "As a developer, I want to install the CLI via npm so that I can easily get started.",
+      "acceptanceCriteria": [
+        "Package published to npm as `nextmavens-cli`",
+        "Can install with `npm install -g nextmavens-cli`",
+        "Package version follows semantic versioning",
+        "Package includes all dependencies",
+        "Installation tested on fresh system",
+        "README with installation instructions",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        9
+      ],
+      "mcpTools": {
+        "step9": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create Documentation",
+      "description": "As a developer, I want comprehensive CLI documentation so that I can understand how to use all commands.",
+      "acceptanceCriteria": [
+        "README with overview and installation",
+        "Command reference with examples",
+        "Usage guide for common workflows",
+        "CONTRIBUTING guide for CLI development",
+        "Docs included in npm package",
+        "Docs available online",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/CLI Tool.md"
+}

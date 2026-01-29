@@ -1,0 +1,236 @@
+{
+  "project": "Collapsible Sidebar Docs",
+  "branchName": "flow/collapsible-sidebar-docs",
+  "description": "Better documentation navigation. Collapsible sidebar layout. Toggle button. Smooth transitions. Mobile-responsive with hamburger menu. Active section highlighting. Better UX for reading docs.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Collapsible Sidebar Layout",
+      "description": "As a documentation reader, I want a collapsible sidebar so that I can maximize reading space.",
+      "acceptanceCriteria": [
+        "Docs layout component created",
+        "Sidebar collapses/expanded",
+        "Toggle button in header",
+        "Smooth CSS transitions",
+        "State persists in localStorage",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Implement Mobile Menu",
+      "description": "As a mobile user, I want a hamburger menu so that I can access docs navigation on small screens.",
+      "acceptanceCriteria": [
+        "Hamburger menu on mobile (<768px)",
+        "Menu opens sidebar as overlay",
+        "Click outside to close",
+        "Backdrop blur effect",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Highlight Active Section",
+      "description": "As a documentation reader, I want the active section highlighted so that I know where I am.",
+      "acceptanceCriteria": [
+        "Active route highlighted in sidebar",
+        "Different background color",
+        "Bold text",
+        "Scrolled into view if needed",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Define Sidebar Structure",
+      "description": "As a documentation reader, I want organized sidebar sections so that I can find topics easily.",
+      "acceptanceCriteria": [
+        "Sidebar sections: Getting Started, Database, Authentication, Realtime, Storage, GraphQL, SDK, MCP Integration",
+        "Nested items where appropriate",
+        "Collapsible sections",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Add Smooth Transitions",
+      "description": "As a documentation reader, I want smooth transitions so that the UI feels polished.",
+      "acceptanceCriteria": [
+        "CSS transition on sidebar width",
+        "Duration: 300ms",
+        "Easing function",
+        "Content area adjusts smoothly",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Persist Sidebar State",
+      "description": "As a documentation reader, I want sidebar state remembered so that it stays how I left it.",
+      "acceptanceCriteria": [
+        "State saved to localStorage",
+        "State restored on page load",
+        "Default: expanded on desktop, collapsed on mobile",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Table of Contents",
+      "description": "As a documentation reader, I want a table of contents on the right so that I can navigate long pages.",
+      "acceptanceCriteria": [
+        "TOC on right side of content",
+        "Generated from headings",
+        "Smooth scroll to section",
+        "Highlight current section",
+        "Hidden on mobile",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Breadcrumb Navigation",
+      "description": "As a documentation reader, I want breadcrumbs so that I can navigate back up the hierarchy.",
+      "acceptanceCriteria": [
+        "Breadcrumb at top of content",
+        "Shows: Docs > Section > Page",
+        "Click to navigate",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Copy Code Button",
+      "description": "As a documentation reader, I want copy buttons on code blocks so that I can quickly copy examples.",
+      "acceptanceCriteria": [
+        "Copy button on each code block",
+        "Copies code to clipboard",
+        "Feedback: \"Copied!\"",
+        "Auto-hides after copy",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Add Keyboard Shortcut",
+      "description": "As a documentation reader, I want a keyboard shortcut to toggle sidebar so that I can work faster.",
+      "acceptanceCriteria": [
+        "Cmd/Ctrl + B toggles sidebar",
+        "Shortcut shown in tooltip",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Collapsible Sidebar Docs.md"
+}

@@ -1,0 +1,260 @@
+{
+  "project": "Key Rotation & Revocation",
+  "branchName": "flow/key-rotation",
+  "description": "Key hygiene operations. Rotate key API with 24h overlap. Revoke key API for immediate invalidation. Usage stats per key. Last used tracking. Developers can manage key lifecycle.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Add Key Lifecycle Columns",
+      "description": "As a platform engineer, I want key lifecycle tracking so that I can manage key rotation.",
+      "acceptanceCriteria": [
+        "api_keys table updated with: expires_at, rotated_to, last_used, usage_count",
+        "expires_at for automatic expiration",
+        "rotated_to references new key after rotation",
+        "Migration script created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Implement Rotate Key API",
+      "description": "As a developer, I want to rotate keys so that I can maintain security hygiene.",
+      "acceptanceCriteria": [
+        "POST /api/keys/:id/rotate endpoint",
+        "Creates new key version",
+        "Links old key.rotated_to = new key.id",
+        "Sets old key.expires_at = NOW() + 24 hours",
+        "Returns new key (show once)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement Revoke Key API",
+      "description": "As a developer, I want to revoke keys immediately so that I can respond to key compromise.",
+      "acceptanceCriteria": [
+        "DELETE /api/keys/:id/revoke endpoint",
+        "Sets key status to revoked",
+        "Key immediately invalid",
+        "Returns revoked key info",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Update Key Usage on Each Request",
+      "description": "As a platform engineer, I want key usage tracked so that I know which keys are active.",
+      "acceptanceCriteria": [
+        "Gateway updates last_used on each request",
+        "Increments usage_count",
+        "Async update to not block requests",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Key Usage API",
+      "description": "As a developer, I want to see key usage stats so that I know which keys are being used.",
+      "acceptanceCriteria": [
+        "GET /api/keys/:id/usage endpoint",
+        "Returns: usage_count, last_used, created_at",
+        "Returns request count by time period (7d, 30d)",
+        "Returns success/error rate",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Show Usage Stats in UI",
+      "description": "As a developer, I want to see key usage in the UI so that I can identify inactive keys.",
+      "acceptanceCriteria": [
+        "Usage stats shown in key list",
+        "Shows: last used, usage count",
+        "Visual indicator for inactive keys (>30 days)",
+        "Success/error rate shown",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Automatic Key Expiration",
+      "description": "As a platform engineer, I want rotated keys to expire automatically so that old keys don't stay active.",
+      "acceptanceCriteria": [
+        "Background job checks for expired keys",
+        "Revokes keys where expires_at < NOW()",
+        "Job runs hourly",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Rotation Warning",
+      "description": "As a developer, I want warning when rotating keys so that I understand the impact.",
+      "acceptanceCriteria": [
+        "Warning modal on rotate",
+        "Explains 24h grace period",
+        "Shows which services use this key",
+        "Confirm to proceed",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Rotate Button in UI",
+      "description": "As a developer, I want a rotate button in the UI so that I can easily rotate keys.",
+      "acceptanceCriteria": [
+        "Rotate button for each key in list",
+        "Rotate button in key detail view",
+        "Shows confirmation modal",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Revoke Button in UI",
+      "description": "As a developer, I want a revoke button in the UI so that I can immediately invalidate keys.",
+      "acceptanceCriteria": [
+        "Revoke button for each key in list",
+        "Revoke button in key detail view",
+        "Shows confirmation modal with warning",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Key Rotation & Revocation.md"
+}

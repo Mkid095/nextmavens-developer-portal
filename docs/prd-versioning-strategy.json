@@ -1,0 +1,225 @@
+{
+  "project": "Versioning Strategy",
+  "branchName": "flow/versioning-strategy",
+  "description": "API/SDK evolution policy. API versioning (/v1/, /v2/). SDK semantic versioning. Deprecation timeline. Breaking change policy. Migration guides. Developers can plan for upgrades.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Document API Versioning",
+      "description": "As a developer, I want API versioning documented so that I can understand how APIs evolve.",
+      "acceptanceCriteria": [
+        "API versioning section created",
+        "Explains: /v1/, /v2/ prefix approach",
+        "Explains: version in headers",
+        "Explains: when versions change",
+        "Examples of versioned requests",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Document SDK Semantic Versioning",
+      "description": "As a developer, I want SDK versioning explained so that I can manage dependencies.",
+      "acceptanceCriteria": [
+        "SDK versioning section created",
+        "Explains: semver (major.minor.patch)",
+        "Explains: what constitutes major/minor/patch change",
+        "Explains: compatibility guarantees",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Define Deprecation Timeline",
+      "description": "As a developer, I want deprecation timeline defined so that I know how long I have to migrate.",
+      "acceptanceCriteria": [
+        "Deprecation policy section created",
+        "6 months notice for breaking changes",
+        "3 months notice for deprecations",
+        "Deprecated endpoints marked in headers",
+        "Examples of deprecation warnings",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Document Breaking Change Policy",
+      "description": "",
+      "acceptanceCriteria": [
+        "Breaking changes section created",
+        "Examples: removed endpoints, changed schemas, renamed fields",
+        "Examples of non-breaking changes",
+        "Process for introducing breaking changes",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Create Migration Guides",
+      "description": "As a developer, I want migration guides so that I can upgrade between versions.",
+      "acceptanceCriteria": [
+        "Migration guide for v1 to v2",
+        "Step-by-step instructions",
+        "Code examples showing changes",
+        "Common issues and solutions",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Document Version Discovery",
+      "description": "",
+      "acceptanceCriteria": [
+        "Version discovery section created",
+        "GET /versions endpoint",
+        "Returns available versions",
+        "Shows current version",
+        "Shows deprecation status",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Add Version Headers",
+      "description": "As a developer, I want version headers documented so that I can identify API versions.",
+      "acceptanceCriteria": [
+        "Header documentation created",
+        "X-API-Version header",
+        "API-Version header in responses",
+        "Deprecation header",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Document Client Compatibility",
+      "description": "",
+      "acceptanceCriteria": [
+        "Compatibility matrix created",
+        "Shows SDK version vs API version",
+        "Highlights incompatibilities",
+        "Recommended versions",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Add Version Changelog",
+      "description": "As a developer, I want a changelog so that I can see what changed between versions.",
+      "acceptanceCriteria": [
+        "Changelog page created",
+        "Organized by version",
+        "Shows: added, changed, deprecated, removed, fixed",
+        "Links to relevant PRs/issues",
+        "RSS feed available",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Document Sunset Policy",
+      "description": "",
+      "acceptanceCriteria": [
+        "Sunset policy section created",
+        "Old versions supported for 1 year after next release",
+        "Emergency security patches only for sunset versions",
+        "Communication timeline",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Versioning Strategy.md"
+}

@@ -1,0 +1,323 @@
+{
+  "project": "RBAC System",
+  "branchName": "flow/rbac-system",
+  "description": "Right now: Any logged-in user can do too much. Need: Explicit permissions based on role. RBAC enforces permission checks before actions and updates UI based on user capabilities.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Define Permissions",
+      "description": "As a platform engineer, I want permissions defined so that I can enforce role-based access control.",
+      "acceptanceCriteria": [
+        "Permissions enum defined",
+        "Permissions: projects.delete, projects.manage_services, projects.manage_keys, projects.manage_users, projects.view_logs, projects.use_services, database.write, database.read",
+        "Documented in code",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Define Role Permissions",
+      "description": "As a platform engineer, I want role-permission mappings defined so that I can check permissions efficiently.",
+      "acceptanceCriteria": [
+        "Role permissions constant created",
+        "Owner: all permissions",
+        "Admin: all except projects.delete",
+        "Developer: projects.view_logs, projects.use_services, database.read",
+        "Viewer: projects.view_logs, database.read",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create Permission Checker",
+      "description": "As a platform engineer, I want a permission checker function so that I can enforce permissions.",
+      "acceptanceCriteria": [
+        "hasPermission(user, role, permission) function created at src/lib/rbac.ts",
+        "Checks user's role in organization",
+        "Looks up permissions for role",
+        "Returns boolean",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Create Permission Middleware",
+      "description": "As a platform engineer, I want permission middleware so that I can easily protect routes.",
+      "acceptanceCriteria": [
+        "requirePermission(permission) middleware created",
+        "Checks user permission",
+        "Returns 403 if not permitted",
+        "Works with Express/Next.js",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Apply Permissions to Project Deletion",
+      "description": "As a platform operator, I want only owners to delete projects so that team members can't accidentally delete shared projects.",
+      "acceptanceCriteria": [
+        "DELETE /api/projects/:id checks permission",
+        "Only organization owners or project owners can delete",
+        "Returns 403 for non-owners",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Apply Permissions to Service Management",
+      "description": "As a platform operator, I want only admins and owners to manage services so that developers can't disable critical services.",
+      "acceptanceCriteria": [
+        "Service enable/disable endpoints check permission",
+        "Only admins and owners can manage",
+        "Returns 403 for developers/viewers",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Apply Permissions to Key Management",
+      "description": "As a platform operator, I want only admins and owners to manage API keys so that developers can't create credentials.",
+      "acceptanceCriteria": [
+        "Key create/delete/revoke endpoints check permission",
+        "Only admins and owners can manage keys",
+        "Returns 403 for developers/viewers",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Apply Permissions to User Management",
+      "description": "As a platform operator, I want only owners to manage users so that admins can't add other admins.",
+      "acceptanceCriteria": [
+        "User invite/remove endpoints check permission",
+        "Only owners can manage users",
+        "Returns 403 for admins and below",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Update UI Based on Permissions",
+      "description": "As a developer, I want the UI to show only actions I can perform so that I don't see buttons I can't use.",
+      "acceptanceCriteria": [
+        "Permission check in UI components",
+        "Delete project button: owners only",
+        "Manage services button: admins/owners only",
+        "Manage keys button: admins/owners only",
+        "Manage users button: owners only",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Enforce Database Write Permissions",
+      "description": "As a platform operator, I want database writes restricted so that viewers can't modify data.",
+      "acceptanceCriteria": [
+        "API gateway checks permission for writes",
+        "Viewers rejected for INSERT/UPDATE/DELETE",
+        "Returns 403 with clear message",
+        "Developers and admins can write",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Enforce Studio Permissions",
+      "description": "As a platform operator, I want Studio to respect permissions so that viewers can't execute destructive SQL.",
+      "acceptanceCriteria": [
+        "Studio checks permission before SQL execution",
+        "Viewers can only SELECT",
+        "Developers can SELECT/INSERT/UPDATE",
+        "Admins/owners have full access",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create Permission Denied Error",
+      "description": "As a developer, I want clear permission denied errors so that I understand why I can't perform an action.",
+      "acceptanceCriteria": [
+        "PERMISSION_DENIED error code defined",
+        "Error message explains what permission is needed",
+        "Error message explains who to contact",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/RBAC System.md"
+}

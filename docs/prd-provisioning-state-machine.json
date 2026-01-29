@@ -1,0 +1,280 @@
+{
+  "project": "Provisioning State Machine",
+  "branchName": "flow/provisioning-state-machine",
+  "description": "Real-world failure modes: Step 3 fails after step 2 succeeds, partial resources exist, retrying blindly causes duplicates. Step-aware provisioning enables safe retry from failure and better UX.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Provisioning Steps Table",
+      "description": "As a platform engineer, I want a provisioning_steps table so that I can track each provisioning step separately.",
+      "acceptanceCriteria": [
+        "provisioning_steps table created in control_plane schema",
+        "Columns: id, project_id, step_name, status, started_at, completed_at, error_message, error_details (JSONB), retry_count, created_at",
+        "Unique constraint on (project_id, step_name)",
+        "Index on project_id for efficient queries",
+        "Status enum: pending, running, success, failed, skipped",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Define Provisioning Steps",
+      "description": "As a platform engineer, I want ordered provisioning steps defined so that provisioning follows a consistent sequence.",
+      "acceptanceCriteria": [
+        "Steps defined in order:",
+        "Each step has handler function",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement State Machine Logic",
+      "description": "As a platform engineer, I want state machine logic so that provisioning steps transition through states correctly.",
+      "acceptanceCriteria": [
+        "State machine created at src/lib/provisioning/state-machine.ts",
+        "runProvisioningStep(project_id, step_name) function",
+        "Transitions: PENDING → RUNNING → SUCCESS/FAILED",
+        "RUNNING status set when step starts",
+        "SUCCESS/FAILED set based on outcome",
+        "Timestamps recorded for started_at and completed_at",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Step Retry Logic",
+      "description": "As a platform engineer, I want retry from failed step so that provisioning can recover from failures.",
+      "acceptanceCriteria": [
+        "retryProvisioningStep(project_id, step_name) function",
+        "Resets status to PENDING",
+        "Increments retry_count",
+        "Re-runs step handler",
+        "Skips already successful steps",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Error Capture",
+      "description": "As a platform engineer, I want errors captured in detail so that I can diagnose provisioning failures.",
+      "acceptanceCriteria": [
+        "Error message captured in error_message column",
+        "Error details captured in error_details JSONB",
+        "Error details include: error_type, stack_trace, context",
+        "Failed step shows error in UI",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Handle Partial Failures",
+      "description": "As a platform engineer, I want to handle partial failures so that some steps succeeding doesn't leave system in undefined state.",
+      "acceptanceCriteria": [
+        "Failed step doesn't prevent retry of subsequent steps",
+        "Success steps marked as success (not re-run on retry)",
+        "No duplicate resources created on retry",
+        "System always in known state",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Update Provisioning API",
+      "description": "As a platform engineer, I want the provisioning API to use the state machine so that all provisioning is tracked.",
+      "acceptanceCriteria": [
+        "POST /api/projects/:id/provision uses state machine",
+        "Creates all provisioning steps as PENDING",
+        "Runs steps in order",
+        "Returns job ID for tracking",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Create Provisioning Progress API",
+      "description": "As a developer, I want to query provisioning progress so that I can monitor setup status.",
+      "acceptanceCriteria": [
+        "GET /api/projects/:id/provisioning endpoint",
+        "Returns all provisioning steps for project",
+        "Shows step name, status, started_at, completed_at",
+        "Shows error if failed",
+        "Shows overall progress percentage",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Create Provisioning Progress UI",
+      "description": "As a developer, I want to see provisioning progress in the UI so that I know what's happening during setup.",
+      "acceptanceCriteria": [
+        "Progress bar component created",
+        "Shows overall progress",
+        "Shows each step with status (pending, running, success, failed)",
+        "Auto-refreshes status every 2 seconds",
+        "Shows error message if step failed",
+        "Retry button for failed steps",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement Verify Services Step",
+      "description": "As a platform engineer, I want to verify all services are ready so that the project is fully operational after provisioning.",
+      "acceptanceCriteria": [
+        "verify_services step handler",
+        "Pings each service endpoint",
+        "Checks service health status",
+        "Marks step success only if all services ready",
+        "Fails step if any service unavailable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Provisioning State Machine.md"
+}

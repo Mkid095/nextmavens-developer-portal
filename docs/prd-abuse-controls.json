@@ -1,0 +1,276 @@
+{
+  "project": "Abuse Controls",
+  "branchName": "flow/abuse-controls",
+  "description": "Per-project hard caps. Signup rate limiting. Auto-suspend triggers. Suspension notifications. Hard caps enforced: DB queries/day, realtime connections, storage uploads/day, function invocations/day.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Define Hard Caps",
+      "description": "As a platform operator, I want hard caps defined so that abuse is prevented automatically.",
+      "acceptanceCriteria": [
+        "Hard caps defined in quotas table",
+        "DB queries/day: 10,000",
+        "Realtime connections: 100",
+        "Storage uploads/day: 1,000",
+        "Function invocations/day: 5,000",
+        "Configurable per project",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Implement Signup Rate Limiting",
+      "description": "As a platform operator, I want signup rate limiting so that abuse prevention starts at registration.",
+      "acceptanceCriteria": [
+        "Signup endpoint rate limited",
+        "3 projects per hour per org",
+        "5 projects per hour per IP",
+        "Returns 429 with retry-after",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement Auto-Suspend on Hard Cap",
+      "description": "As a platform operator, I want auto-suspend on hard cap so that abuse is stopped immediately.",
+      "acceptanceCriteria": [
+        "Background job checks hard caps",
+        "Runs hourly",
+        "Suspends projects exceeding caps",
+        "Sets status to SUSPENDED",
+        "Reason includes which cap exceeded",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Send Suspension Notifications",
+      "description": "As a project owner, I want notification when my project is suspended so that I understand what happened.",
+      "acceptanceCriteria": [
+        "Email sent on suspension",
+        "Includes: reason, which cap exceeded, how to resolve",
+        "Includes support contact",
+        "Sent to project owner and org members",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Detect Usage Spikes",
+      "description": "As a platform operator, I want usage spike detection so that anomalous behavior is caught.",
+      "acceptanceCriteria": [
+        "Job calculates average usage per project",
+        "Detects 3x average for 1 hour",
+        "Triggers warning or suspension",
+        "Threshold configurable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Detect Error Rate Spikes",
+      "description": "As a platform operator, I want error rate detection so that abuse patterns are identified.",
+      "acceptanceCriteria": [
+        "Job calculates error rate per project",
+        "Detects >50% error rate",
+        "May indicate abuse or DDoS",
+        "Triggers investigation",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": "Completed: error-rate-detection.ts (522 lines), error_metrics table migration (222 lines), admin API endpoint with rate limiting and authorization. Security review passed with 9/10 score. Typecheck passes. Deploy-ready."
+    },
+    {
+      "id": "US-006",
+      "title": "Detect Malicious Patterns",
+      "description": "As a platform operator, I want malicious pattern detection so that sophisticated abuse is caught.",
+      "acceptanceCriteria": [
+        "Detects: SQL injection attempts",
+        "Detects: auth brute force",
+        "Detects: rapid sequential key creation",
+        "Triggers suspension",
+        "Patterns configurable",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": "Completed: pattern-detection.ts (817 lines), pattern_detections table migration (491 lines), pattern_detection_config table migration (346 lines), admin API endpoint (256 lines) with rate limiting and authorization. Security review passed with 10/10 score. Typecheck passes. Deploy-ready."
+    },
+    {
+      "id": "US-008",
+      "title": "Create Suspension UI",
+      "description": "As a developer, I want to see suspension details so that I can resolve the issue.",
+      "acceptanceCriteria": [
+        "Suspension banner in project dashboard",
+        "Shows reason and details",
+        "Shows which limit exceeded",
+        "Shows how to resolve",
+        "Request review button",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": "Completed: SuspensionBanner.tsx (282 lines), integrated into project dashboard. Shows suspension details, cap exceeded with progress bar, resolution steps, and request review button. Typecheck passes. Security review passed with 10/12 score (83%). Deploy-ready."
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Manual Override",
+      "description": "As a platform operator, I want manual override capability so that I can handle edge cases.",
+      "acceptanceCriteria": [
+        "Admin can override auto-suspend",
+        "Requires reason",
+        "Logged to audit",
+        "Can increase caps if needed",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Abuse Dashboard",
+      "description": "As a platform operator, I want an abuse dashboard so that I can monitor platform abuse.",
+      "acceptanceCriteria": [
+        "Dashboard shows: suspensions, rate limit hits, cap violations",
+        "Shows: projects approaching caps",
+        "Shows: suspicious patterns",
+        "Filterable by time range",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": true,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Abuse Controls.md"
+}

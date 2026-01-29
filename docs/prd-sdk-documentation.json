@@ -1,0 +1,253 @@
+{
+  "project": "SDK Documentation",
+  "branchName": "flow/sdk-docs",
+  "description": "Integrated SDK docs. Copy content from nextmavens-js/README.md. Installation guide. Client initialization. Database, auth, realtime, storage examples. Error handling guide.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Copy SDK README",
+      "description": "As a documentation reader, I want SDK documentation integrated so that I don't have to leave the docs site.",
+      "acceptanceCriteria": [
+        "Copy content from nextmavens-js/README.md",
+        "Format for docs site",
+        "Organize into sections",
+        "Add to docs navigation",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Document Installation",
+      "description": "As a developer, I want installation instructions so that I can add the SDK to my project.",
+      "acceptanceCriteria": [
+        "Installation section created",
+        "Shows npm install command",
+        "Shows yarn install command",
+        "Shows pnpm install command",
+        "Copy buttons on each command",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Document Client Initialization",
+      "description": "As a developer, I want client initialization documented so that I can set up the SDK.",
+      "acceptanceCriteria": [
+        "Initialization section created",
+        "Shows code examples",
+        "Explains API key configuration",
+        "Shows environment options",
+        "Copy buttons",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Document Database Usage",
+      "description": "As a developer, I want database usage documented so that I can query data.",
+      "acceptanceCriteria": [
+        "Database section created",
+        "Query examples: select, insert, update, delete",
+        "Filter examples",
+        "Join examples",
+        "Code examples with syntax highlighting",
+        "Copy buttons",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Document Auth Methods",
+      "description": "As a developer, I want auth methods documented so that I can implement authentication.",
+      "acceptanceCriteria": [
+        "Auth section created",
+        "Examples: signUp, signIn, signOut",
+        "Session management",
+        "User retrieval",
+        "Code examples with syntax highlighting",
+        "Copy buttons",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Document Realtime Subscriptions",
+      "description": "As a developer, I want realtime subscriptions documented so that I can use WebSocket features.",
+      "acceptanceCriteria": [
+        "Realtime section created",
+        "Subscribe examples",
+        "Unsubscribe examples",
+        "Channel examples",
+        "Filter examples",
+        "Code examples with syntax highlighting",
+        "Copy buttons",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Document Storage Operations",
+      "description": "As a developer, I want storage operations documented so that I can upload and download files.",
+      "acceptanceCriteria": [
+        "Storage section created",
+        "Upload example",
+        "Download example",
+        "List files example",
+        "Delete file example",
+        "Code examples with syntax highlighting",
+        "Copy buttons",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Document Error Handling",
+      "description": "As a developer, I want error handling documented so that I can handle failures gracefully.",
+      "acceptanceCriteria": [
+        "Error handling section created",
+        "Try/catch examples",
+        "Error code explanations",
+        "Retry logic examples",
+        "Best practices",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add TypeScript Examples",
+      "description": "As a TypeScript developer, I want TypeScript examples so that I have type-safe code.",
+      "acceptanceCriteria": [
+        "TypeScript examples alongside JavaScript",
+        "Type definitions shown",
+        "Generic usage examples",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Link to SDK Repo",
+      "description": "As a developer, I want links to the SDK repo so that I can report issues and contribute.",
+      "acceptanceCriteria": [
+        "Link to GitHub repo in each section",
+        "\"Report an issue\" link",
+        "\"View source\" link",
+        "\"Contributing\" link",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/SDK Documentation.md"
+}

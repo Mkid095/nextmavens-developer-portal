@@ -1,0 +1,328 @@
+{
+  "project": "Organizations & Teams",
+  "branchName": "flow/organizations-teams",
+  "description": "Right now: 1 developer = 1 project. Reality: Production teams have multiple members, roles, client handoffs. Organizations enable multi-member projects with role-based access control.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Organizations Table",
+      "description": "As a platform engineer, I want an organizations table so that I can support multi-tenant team structures.",
+      "acceptanceCriteria": [
+        "organizations table created in control_plane schema",
+        "Columns: id, name, slug, owner_id (REFERENCES developers(id)), created_at",
+        "slug is unique",
+        "Index on owner_id",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Create Organization Members Table",
+      "description": "As a platform engineer, I want an organization_members table so that I can track team membership.",
+      "acceptanceCriteria": [
+        "organization_members table created in control_plane schema",
+        "Columns: org_id (REFERENCES organizations(id)), user_id (REFERENCES developers(id)), role, invited_by, joined_at",
+        "Composite primary key on (org_id, user_id)",
+        "Role enum: owner, admin, developer, viewer",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Add Organization to Projects",
+      "description": "As a platform engineer, I want projects to belong to organizations so that teams can share projects.",
+      "acceptanceCriteria": [
+        "projects table updated with organization_id column",
+        "Foreign key to organizations table",
+        "Nullable (personal projects have NULL)",
+        "Migration script created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Define Permission Matrix",
+      "description": "As a platform engineer, I want a permission matrix defined so that roles have clear capabilities.",
+      "acceptanceCriteria": [
+        "Permissions defined per role",
+        "Owner: delete projects, manage services, manage keys, manage users, use services",
+        "Admin: manage services, manage keys, view logs, use services",
+        "Developer: view logs, use services",
+        "Viewer: view logs, read-only access",
+        "Documented in code",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Create Organization",
+      "description": "As a developer, I want to create an organization so that my team can collaborate on projects.",
+      "acceptanceCriteria": [
+        "POST /api/organizations endpoint",
+        "Request: name, slug",
+        "Creates organization with authenticated user as owner",
+        "Returns organization details",
+        "Generates unique slug if not provided",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Invite Member",
+      "description": "",
+      "acceptanceCriteria": [
+        "POST /api/organizations/:id/members endpoint",
+        "Request: email, role",
+        "Sends invitation email",
+        "Creates pending membership",
+        "Only owners/admins can invite",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement Accept Invitation",
+      "description": "As a developer, I want to accept organization invitations so that I can join teams.",
+      "acceptanceCriteria": [
+        "POST /api/organizations/:id/accept endpoint",
+        "Requires invitation token",
+        "Sets membership to active",
+        "Sets joined_at timestamp",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement Remove Member",
+      "description": "",
+      "acceptanceCriteria": [
+        "DELETE /api/organizations/:id/members/:userId endpoint",
+        "Only owners/admins can remove",
+        "Cannot remove owner",
+        "Revokes access to organization projects",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Implement Update Member Role",
+      "description": "",
+      "acceptanceCriteria": [
+        "PUT /api/organizations/:id/members/:userId endpoint",
+        "Request: role",
+        "Only owners can update roles",
+        "Cannot change owner role",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Organizations List UI",
+      "description": "As a developer, I want to see my organizations so that I can switch between teams.",
+      "acceptanceCriteria": [
+        "Organizations page created at /dashboard/organizations",
+        "Lists all organizations",
+        "Shows name, member count, project count",
+        "Create organization button",
+        "Organization detail view",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Create Team Management UI",
+      "description": "",
+      "acceptanceCriteria": [
+        "Team management page in organization settings",
+        "Lists all members with roles",
+        "Shows member status (active/pending)",
+        "Invite member form",
+        "Change role dropdown",
+        "Remove member button",
+        "Resend invitation button",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Enforce Organization Scoping",
+      "description": "As a platform engineer, I want organization projects scoped so that members only see their org's projects.",
+      "acceptanceCriteria": [
+        "Project list filtered by organization membership",
+        "Personal projects (org_id = NULL) only visible to owner",
+        "Org projects visible to all org members",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Organizations & Teams.md"
+}

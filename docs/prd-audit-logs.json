@@ -1,225 +1,292 @@
 {
-  "project": "Audit Logs Viewer",
-  "branchName": "flow/audit-logs-viewer",
-  "description": "Comprehensive audit log viewer UI for filtering, searching, and exporting audit activity in the NextMavens Developer Portal",
-
-  "relatedPRDs": [
-    {
-      "prd": "prd-abuse-controls.json",
-      "type": "depended_by",
-      "status": "incomplete",
-      "reason": "Abuse controls feature consumes audit logs for monitoring and alerting",
-      "integration": "Audit log data for abuse detection patterns, suspicious activity monitoring"
-    }
-  ],
-
-  "consolidatedMemory": "",
-
-  "lessonsLearned": "# Lessons Learned from Codebase Analysis\n\n## Tech Stack\n- Framework: Next.js 14 with App Router for server and client components\n- Language: TypeScript with strict mode enabled\n- Styling: Tailwind CSS with emerald/slate color scheme\n- State: React hooks (useState, useEffect, useCallback) for local state\n- Database: PostgreSQL via @nextmavens/audit-logs-database package\n- Auth: JWT tokens stored in localStorage (see security notes)\n- UI Libraries: Framer Motion for animations, Lucide React for icons\n\n## Architecture\n- Feature-based architecture: `src/features/audit-logs/` for feature code\n- Shared types: `src/lib/types/audit.types.ts` for type definitions\n- API integration: Direct fetch calls to external audit API\n- Path aliases: `@/*` maps to `./src/*` for clean imports\n\n## Security Considerations\n- Input sanitization critical for XSS prevention\n- All metadata deeply sanitized before display\n- User agent strings sanitized to remove dangerous content\n- CSV export protected against CSV injection attacks\n- localStorage token storage has XSS implications (documented in code)\n- Filter validation against allowlists (ACTION_TYPES, TARGET_TYPES)\n- ISO date validation for date range filters\n\n## Integration Patterns\n- External audit API: NEXT_PUBLIC_AUDIT_API_URL environment variable\n- Authentication: Bearer token from localStorage\n- Error handling: 401 responses trigger token clear and redirect to login\n- Pagination: offset-based with configurable RESULTS_PER_PAGE (50)\n\n## Common Patterns\n- Client components marked with 'use client' directive\n- AnimatePresence from Framer Motion for expandable content\n- Async/await with try/catch for error handling\n- Type-safe API responses with TypeScript interfaces\n- Color-coded badges for action types (emerald/amber/red/blue)\n\n## Known Issues/Tech Debt\n- localStorage token storage vulnerable to XSS (httpOnly cookies recommended)\n- No token refresh mechanism implemented\n- Content-Security-Policy headers not configured",
+  "project": "Audit Logs",
+  "branchName": "flow/audit-logs",
+  "description": "Logs show what happened (technical). Audit logs show who did what, when, from where (compliance, forensics). Essential for enterprise-grade trust and security incident investigation.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Create audit log type definitions",
-      "description": "As a developer, I need TypeScript type definitions for audit logs to ensure type safety across the application.",
+      "title": "Create Audit Logs Table",
+      "description": "As a platform engineer, I want an audit logs table so that I can track all governance operations.",
       "acceptanceCriteria": [
-        "Create AuditLogEntry interface matching API response structure",
-        "Create AuditLogApiResponse interface with pagination metadata",
-        "Create AuditLogQueryParams interface for API requests",
-        "Create AuditLogFilters interface for UI filter state",
-        "Define ACTION_TYPES constant array with all audit actions",
-        "Define TARGET_TYPES constant array with all target types",
-        "Define ACTOR_TYPE_LABELS mapping for display",
-        "Import types from @nextmavens/audit-logs-database package",
+        "audit_logs table created in control_plane schema",
+        "Columns: id, actor_id, actor_type (user/system/api_key), action, target_type, target_id, metadata (JSONB), ip_address, user_agent, created_at",
+        "Index on actor_id for querying by user",
+        "Index on target_id for querying by resource",
+        "Index on created_at for date range queries",
+        "Migration script created and tested",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 5],
-      "mcpTools": {},
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
       "priority": 1,
       "passes": true,
-      "notes": "File: src/lib/types/audit.types.ts - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-002",
-      "title": "Create audit log data fetching hook",
-      "description": "As a developer, I need a React hook to fetch audit logs from the API with authentication and error handling.",
+      "title": "Create Audit Logging Function",
+      "description": "As a platform engineer, I want an audit logging function so that I can easily log actions from anywhere in the codebase.",
       "acceptanceCriteria": [
-        "Create useAuditLogs hook with state management",
-        "Implement fetchAuditLogs function with pagination",
-        "Implement fetchDeveloperData for user info",
-        "Implement handleApplyFilters for filter application",
-        "Implement handleClearFilters for resetting filters",
-        "Implement handlePageChange for pagination navigation",
-        "Add 401 authentication error handling with redirect",
-        "Validate filter inputs against allowlists",
-        "Validate ISO date formats for date range filters",
+        "logAction() function created at src/lib/audit.ts",
+        "Parameters: actor_id, actor_type, action, target_type, target_id, metadata, req (for ip/user_agent)",
+        "Automatically extracts IP and user agent from request",
+        "Stores action in audit_logs table",
+        "Returns audit log entry",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 5],
-      "mcpTools": {},
-      "priority": 2,
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
       "passes": true,
-      "notes": "File: src/features/audit-logs/useAuditLogs.ts - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Create audit log table component",
-      "description": "As a user, I need a table display of audit logs with expandable rows for detailed metadata viewing.",
+      "title": "Audit Project CRUD Operations",
+      "description": "As a platform operator, I want all project create/update/delete operations logged so that I can investigate project lifecycle changes.",
       "acceptanceCriteria": [
-        "Create AuditLogTable component with logs, expandedRows, onToggleRow props",
-        "Display timestamp, action, target, actor, details columns",
-        "Implement color-coded action badges (created=emerald, deleted=red, etc.)",
-        "Implement expandable row animation with Framer Motion",
-        "Sanitize metadata for safe display (prevent XSS)",
-        "Sanitize user agent strings for safe display",
-        "Display metadata in code block with syntax highlighting",
-        "Handle empty state with helpful message",
+        "Project creation logged with action: project.created",
+        "Project updates logged with action: project.updated",
+        "Project deletion logged with action: project.deleted",
+        "Actor captured from authenticated user",
+        "Target is project_id",
+        "Metadata includes changes made",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 3, 5, 6],
-      "mcpTools": {},
-      "priority": 3,
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
       "passes": true,
-      "notes": "File: src/features/audit-logs/AuditLogTable.tsx - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Create audit log filters component",
-      "description": "As a user, I need filters to narrow down audit logs by action, target type, and date range.",
+      "title": "Audit API Key Operations",
+      "description": "As a platform operator, I want all API key create/rotate/revoke operations logged so that I can track credential changes.",
       "acceptanceCriteria": [
-        "Create AuditFilters component with collapsible UI",
-        "Implement action dropdown with all ACTION_TYPES options",
-        "Implement target type dropdown with all TARGET_TYPES options",
-        "Implement start date and end date inputs",
-        "Show 'Active' badge when filters are applied",
-        "Implement apply and clear filter buttons",
-        "Use Framer Motion for smooth expand/collapse",
+        "Key creation logged with action: key.created",
+        "Key rotation logged with action: key.rotated",
+        "Key revocation logged with action: key.revoked",
+        "Actor captured from authenticated user",
+        "Target is key_id",
+        "Metadata includes key_type and scopes (not key value)",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 3, 5, 6],
-      "mcpTools": {},
-      "priority": 4,
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
       "passes": true,
-      "notes": "File: src/features/audit-logs/AuditFilters.tsx - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Create pagination component",
-      "description": "As a user, I need pagination controls to navigate through large sets of audit logs.",
+      "title": "Audit User Management Operations",
+      "description": "As a platform operator, I want all user invite/remove operations logged so that I can track team membership changes.",
       "acceptanceCriteria": [
-        "Create Pagination component with total, limit, offset, hasMore props",
-        "Display current page and total pages",
-        "Display showing X to Y of Z entries",
-        "Implement first, previous, next, last page buttons",
-        "Disable buttons when at boundaries",
-        "Hide pagination when only one page",
+        "User invites logged with action: user.invited",
+        "User removals logged with action: user.removed",
+        "Role changes logged with action: user.role_changed",
+        "Actor captured from authenticated user",
+        "Target is user_id",
+        "Metadata includes role and organization",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 3, 5, 6],
-      "mcpTools": {},
-      "priority": 5,
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
       "passes": true,
-      "notes": "File: src/features/audit-logs/Pagination.tsx - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-006",
-      "title": "Create CSV export utility",
-      "description": "As a user, I need to export audit logs to CSV for offline analysis and reporting.",
+      "title": "Audit Project Suspensions",
+      "description": "As a platform operator, I want all project suspensions logged so that I can understand why projects were suspended.",
       "acceptanceCriteria": [
-        "Create exportAuditLogsToCSV utility function",
-        "Generate CSV with headers: Timestamp, Actor, Actor Type, Action, etc.",
-        "Prevent CSV injection attacks on cell values",
-        "Escape quotes and wrap cells in quotes",
-        "Generate filename with current date",
-        "Trigger browser download",
+        "Manual suspensions logged with action: project.suspended",
+        "Auto-suspensions logged with action: project.auto_suspended",
+        "Actor captured (or 'system' for auto)",
+        "Target is project_id",
+        "Metadata includes reason and hard_cap_exceeded",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 5, 10],
-      "mcpTools": {},
-      "priority": 6,
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
       "passes": true,
-      "notes": "File: src/features/audit-logs/exportToCsv.ts - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-007",
-      "title": "Create navigation component",
-      "description": "As a user, I need navigation to access the dashboard and logout from the audit logs page.",
+      "title": "Audit Secret Access",
+      "description": "As a platform operator, I want all secret access logged so that I can detect unauthorized access attempts.",
       "acceptanceCriteria": [
-        "Create AuditNav component with developer name prop",
-        "Display NextMavens logo and branding",
-        "Add link to dashboard",
-        "Display developer name",
-        "Implement logout button that clears localStorage",
-        "Redirect to home page after logout",
+        "Secret creation logged with action: secret.created",
+        "Secret access logged with action: secret.accessed",
+        "Secret rotation logged with action: secret.rotated",
+        "Actor captured from authenticated user",
+        "Target is secret_id (not secret value)",
+        "Metadata includes secret_name",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 3, 5, 6],
-      "mcpTools": {},
-      "priority": 7,
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
       "passes": true,
-      "notes": "File: src/features/audit-logs/AuditNav.tsx - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-008",
-      "title": "Create feature barrel export",
-      "description": "As a developer, I need a centralized export file for all audit log feature components.",
+      "title": "Create Audit Log API Endpoint",
+      "description": "As a platform operator, I want to query audit logs via API so that I can investigate actions programmatically.",
       "acceptanceCriteria": [
-        "Create index.ts in src/features/audit-logs/",
-        "Export AuditFilters component",
-        "Export AuditLogTable component",
-        "Export Pagination component",
-        "Export exportAuditLogsToCSV utility",
-        "Export AuditNav component",
-        "Export useAuditLogs hook",
+        "GET /api/audit endpoint created",
+        "Query parameters: actor_id, action, target_type, target_id, start_date, end_date",
+        "Returns paginated results",
+        "Filters applied securely (SQL injection protected)",
+        "Requires authentication",
+        "Results sorted by created_at DESC",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 5],
-      "mcpTools": {},
-      "priority": 8,
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
       "passes": true,
-      "notes": "File: src/features/audit-logs/index.ts - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-009",
-      "title": "Create audit log viewer page",
-      "description": "As a user, I need a dedicated page to view, filter, and export audit logs with proper authentication.",
+      "title": "Create Audit Log Viewer UI",
+      "description": "As a platform operator, I want a UI to view audit logs so that I can investigate actions without writing queries.",
       "acceptanceCriteria": [
-        "Create /dashboard/audit page route",
-        "Import and use useAuditLogs hook for data fetching",
-        "Display page title and description",
-        "Display Export CSV button in header",
-        "Render AuditFilters component",
-        "Display error state with alert when API fails",
-        "Display loading state with spinner",
-        "Render AuditLogTable with data",
-        "Render Pagination controls",
-        "Implement row expansion toggle",
-        "Add security documentation comments about localStorage",
-        "Apply smooth animations with Framer Motion",
-        "Use Plus Jakarta Sans font",
-        "Handle authentication redirects",
+        "Audit log viewer page created",
+        "Filter by actor, action, target type",
+        "Date range picker",
+        "Paginated results table",
+        "Shows: timestamp, actor, action, target, details",
+        "Expandable metadata view",
+        "Export to CSV button",
         "Typecheck passes"
       ],
-      "mavenSteps": [1, 3, 5, 6, 10],
-      "mcpTools": {},
-      "priority": 9,
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
       "passes": true,
-      "notes": "File: src/app/dashboard/audit/page.tsx - COMPLETED"
+      "notes": ""
     },
     {
       "id": "US-010",
-      "title": "Add audit API URL environment variable",
-      "description": "As a developer, I need configurable audit API URL for different environments.",
+      "title": "Add Correlation ID to Audit Logs",
+      "description": "As a platform operator, I want audit logs to include correlation IDs so that I can trace requests across services.",
       "acceptanceCriteria": [
-        "Add NEXT_PUBLIC_AUDIT_API_URL to .env.example",
-        "Set default value to http://localhost:8080/api/audit",
-        "Document the variable in environment example",
-        "Use environment variable in useAuditLogs hook"
+        "audit_logs table updated with request_id column",
+        "Correlation ID captured from x-request-id header",
+        "Links audit entries to specific requests",
+        "Can view all audit entries for a request",
+        "Typecheck passes"
       ],
-      "mavenSteps": [1],
-      "mcpTools": {},
-      "priority": 10,
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
       "passes": true,
-      "notes": "File: .env.example - COMPLETED"
+      "notes": ""
     }
-  ]
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Audit Logs.md"
 }

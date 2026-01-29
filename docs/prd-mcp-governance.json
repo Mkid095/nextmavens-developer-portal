@@ -1,0 +1,332 @@
+{
+  "project": "MCP & AI Access Governance",
+  "branchName": "flow/mcp-governance",
+  "description": "AI is powerful — and dangerous without guardrails. MCP tokens need governance: read-only by default, explicit opt-in for destructive actions, heavy audit logging. Scope documentation must be clear.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Define MCP Token Types",
+      "description": "As a platform engineer, I want MCP token types defined so that AI tools have appropriate default permissions.",
+      "acceptanceCriteria": [
+        "MCP token types defined: mcp_ro_, mcp_rw_, mcp_admin_",
+        "Prefix stored in api_keys.key_prefix",
+        "Type column distinguishes MCP from other keys",
+        "Documentation of each type",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Define MCP Default Scopes",
+      "description": "As a platform engineer, I want MCP tokens to default to read-only so that AI tools have safe default behavior.",
+      "acceptanceCriteria": [
+        "Default scopes defined for MCP tokens",
+        "db: [select]",
+        "storage: [read]",
+        "auth: []",
+        "realtime: [subscribe]",
+        "graphql: []",
+        "Scopes stored in api_keys.scopes",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Implement MCP Read-Only Token",
+      "description": "As a developer, I want to create read-only MCP tokens so that AI assistants can read but not modify data.",
+      "acceptanceCriteria": [
+        "Create API key with type=mcp, scope=mcp_ro_",
+        "Key prefix: mcp_ro_",
+        "Scopes limited to read operations",
+        "Documented use cases: AI assistants, codegen",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add Explicit Opt-In for Write Access",
+      "description": "As a developer, I want explicit warnings when granting write access so that I understand the risks.",
+      "acceptanceCriteria": [
+        "Warning modal when creating write-enabled MCP token",
+        "Warning text: \"This AI can modify your data. Only grant to trusted systems.\"",
+        "Checkbox to confirm understanding",
+        "Confirmation required before creation",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement MCP Scope Enforcement",
+      "description": "As a platform engineer, I want MCP scopes enforced at the gateway so that tokens can't exceed their permissions.",
+      "acceptanceCriteria": [
+        "Gateway checks key type and scopes",
+        "MCP tokens limited to their scopes",
+        "Read-only tokens rejected for write operations",
+        "Returns PERMISSION_DENIED with clear message",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Implement MCP Audit Logging",
+      "description": "As a platform operator, I want all MCP actions heavily audited so that I can detect AI tool abuse.",
+      "acceptanceCriteria": [
+        "All MCP requests logged to audit_logs",
+        "actor_type = 'mcp_token'",
+        "Full payload captured (for forensics)",
+        "AI/IDE identified from user_agent",
+        "Project_id captured",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement MCP Write Token",
+      "description": "As a developer, I want to create write-enabled MCP tokens so that trusted AI tools can modify data.",
+      "acceptanceCriteria": [
+        "Create API key with type=mcp, scope=mcp_rw_",
+        "Key prefix: mcp_rw_",
+        "Additional scopes: db:insert, db:update, storage:write",
+        "Requires explicit opt-in with warning",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement MCP Admin Token",
+      "description": "As a platform operator, I want to create admin MCP tokens so that trusted AI ops tools have full access.",
+      "acceptanceCriteria": [
+        "Create API key with type=mcp, scope=mcp_admin_",
+        "Key prefix: mcp_admin_",
+        "Full scopes: db:delete, secrets:read, etc.",
+        "Requires extra confirmation",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Create MCP Documentation",
+      "description": "As a developer, I want clear MCP scope documentation so that I understand what each token type can do.",
+      "acceptanceCriteria": [
+        "MCP documentation page created",
+        "Explains each token type",
+        "Shows scopes per type",
+        "Shows use cases for each type",
+        "Warns about write access risks",
+        "Examples of when to use each type",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Add MCP Token Indicators in UI",
+      "description": "As a developer, I want to see which API keys are MCP tokens so that I can manage them appropriately.",
+      "acceptanceCriteria": [
+        "MCP tokens marked in keys list",
+        "Badge showing type (read-only, write, admin)",
+        "Different color for each type",
+        "Warning icon for write/admin tokens",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Disable Auth Access by Default",
+      "description": "As a platform engineer, I want MCP tokens to have no auth access by default so that AI tools can't manage users.",
+      "acceptanceCriteria": [
+        "Default MCP scopes exclude auth",
+        "Auth scopes require explicit admin token",
+        "User management blocked for read-only and write tokens",
+        "Clear error if attempted",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Implement MCP Usage Analytics",
+      "description": "As a platform operator, I want to see MCP token usage so that I can understand how AI tools are being used.",
+      "acceptanceCriteria": [
+        "Track usage per MCP token",
+        "Show request count",
+        "Show operations performed",
+        "Show success/error rate",
+        "Exportable for analysis",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/MCP & AI Access Governance.md"
+}

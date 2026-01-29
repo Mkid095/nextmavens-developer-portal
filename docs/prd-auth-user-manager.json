@@ -1,0 +1,291 @@
+{
+  "project": "Auth User Manager in Studio",
+  "branchName": "flow/auth-user-manager",
+  "description": "Visual user management interface in Studio. Developers can list all users, view details (email, name, metadata), disable/delete users, reset passwords, view active sessions. Killer feature for auth service.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Users Tab in Studio",
+      "description": "As a developer, I want a Users tab in Studio so that I can manage users without using API calls.",
+      "acceptanceCriteria": [
+        "Users tab added to Studio sidebar",
+        "Tab shows user list by default",
+        "Integrated into Studio navigation",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": "Already implemented - Users tab exists in Studio sidebar with full integration"
+    },
+    {
+      "id": "US-002",
+      "title": "Create User List Component",
+      "description": "As a developer, I want to see all users so that I can browse user accounts.",
+      "acceptanceCriteria": [
+        "UserList component created",
+        "Fetches users from auth service API",
+        "Shows: email, name, created_at, last_sign_in_at",
+        "Paginated list (50 per page)",
+        "Search/filter by email",
+        "Sortable columns",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Create User Detail View",
+      "description": "As a developer, I want to see user details so that I can understand user accounts.",
+      "acceptanceCriteria": [
+        "UserDetail component created",
+        "Shows: email, name, user_id, created_at, updated_at",
+        "Shows: last_sign_in_at, sign_in_count",
+        "Shows: auth_provider (email, oauth later)",
+        "Shows: user_metadata (JSON)",
+        "Editable metadata",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Implement Disable User",
+      "description": "As a developer, I want to disable users so that I can block accounts without deleting them.",
+      "acceptanceCriteria": [
+        "Disable user button in UserDetail",
+        "Calls auth service API to disable",
+        "User shows as disabled in list",
+        "Disabled users can't sign in",
+        "Re-enable button available",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Implement Delete User",
+      "description": "As a developer, I want to delete users so that I can remove accounts.",
+      "acceptanceCriteria": [
+        "Delete user button in UserDetail",
+        "Confirmation modal before deletion",
+        "Calls auth service API to delete",
+        "User removed from list",
+        "Action logged to audit log",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Integrate with Auth Service API",
+      "description": "As a platform engineer, I want Studio to call auth service API so that user management is centralized.",
+      "acceptanceCriteria": [
+        "API client for auth service created",
+        "Endpoints: list users, get user, update user, delete user, disable user, reset password, get sessions",
+        "Authentication via developer portal token",
+        "Error handling",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Implement Reset Password",
+      "description": "As a developer, I want to reset user passwords so that I can help users who forgot credentials.",
+      "acceptanceCriteria": [
+        "Reset password button in UserDetail",
+        "Sends password reset email",
+        "Shows confirmation",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        5,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step5": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Implement View Active Sessions",
+      "description": "As a developer, I want to see user sessions so that I can understand login activity.",
+      "acceptanceCriteria": [
+        "Sessions section in UserDetail",
+        "Lists active sessions",
+        "Shows: device, IP, created_at",
+        "Revoke session button",
+        "Session revokes immediately",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add User Filtering",
+      "description": "As a developer, I want to filter users so that I can find specific accounts.",
+      "acceptanceCriteria": [
+        "Filter bar in UserList",
+        "Filter by: email, created_at range, last_sign_in range",
+        "Filter by auth_provider",
+        "Filter by status (active/disabled)",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": true,
+      "notes": "Step 5 completed - quality checks passed"
+    },
+    {
+      "id": "US-009",
+      "title": "Add User Export",
+      "description": "As a developer, I want to export users so that I can analyze user data externally.",
+      "acceptanceCriteria": [
+        "Export users button",
+        "Exports to CSV",
+        "Includes: email, name, created_at, last_sign_in, metadata",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": true,
+      "notes": "Step 5 completed - quality checks passed"
+    },
+    {
+      "id": "US-010",
+      "title": "Show User Auth History",
+      "description": "As a developer, I want to see user auth history so that I can track login patterns.",
+      "acceptanceCriteria": [
+        "Auth history section in UserDetail",
+        "Shows: sign_in_at, sign_out_at, method, IP",
+        "Paginated list",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 3,
+      "passes": true,
+      "notes": "Step 5 completed - UserAuthHistory component with pagination, all acceptance criteria met"
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Auth User Manager in Studio.md"
+}

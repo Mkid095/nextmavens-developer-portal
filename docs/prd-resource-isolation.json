@@ -1,0 +1,299 @@
+{
+  "project": "Resource Isolation Enforcement",
+  "branchName": "flow/resource-isolation",
+  "description": "Enforce project boundaries everywhere. JWT contains project_id. DB queries scoped to tenant_{project_id}. Realtime channels prefixed. Storage paths prefixed. Return 403 for cross-project access (never 404).",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Require project_id in JWT",
+      "description": "As a platform engineer, I want JWT to contain project_id so that every request is attributable to a project.",
+      "acceptanceCriteria": [
+        "JWT includes project_id claim",
+        "JWT validation checks project_id exists",
+        "Rejects requests without project_id",
+        "Error: Missing project_id claim",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Scope Database Queries",
+      "description": "As a platform engineer, I want database queries scoped to tenant schema so that projects can't access each other's data.",
+      "acceptanceCriteria": [
+        "API gateway sets search_path to tenant_{project_id}",
+        "All queries scoped to tenant schema",
+        "Cross-schema queries blocked",
+        "Returns 403 for cross-project access",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Prefix Realtime Channels",
+      "description": "As a platform engineer, I want realtime channels prefixed so that projects can't subscribe to each other's updates.",
+      "acceptanceCriteria": [
+        "Realtime channels prefixed: project_id:table_name",
+        "Subscription validation checks prefix",
+        "Rejects subscriptions to other projects",
+        "Returns 403 for cross-project access",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Prefix Storage Paths",
+      "description": "As a platform engineer, I want storage paths prefixed so that projects can't access each other's files.",
+      "acceptanceCriteria": [
+        "Storage paths prefixed: project_id:/path",
+        "Upload/validation checks prefix",
+        "Rejects access to other project paths",
+        "Returns 403 for cross-project access",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Return 403 Not 404",
+      "description": "As a platform engineer, I want cross-project access to return 403 so that isolation is explicit.",
+      "acceptanceCriteria": [
+        "Cross-project DB queries return 403",
+        "Cross-project realtime subscriptions return 403",
+        "Cross-project storage access returns 403",
+        "Error message: \"Access to other project's resources not permitted\"",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Enforce Isolation in API Gateway",
+      "description": "As a platform engineer, I want the API gateway to enforce isolation so that cross-project requests are blocked.",
+      "acceptanceCriteria": [
+        "Gateway validates project_id in JWT",
+        "Gateway sets search_path based on project_id",
+        "Gateway blocks cross-project requests",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Enforce Isolation in Auth Service",
+      "description": "As a platform engineer, I want the auth service to enforce isolation so that auth tokens are project-scoped.",
+      "acceptanceCriteria": [
+        "Auth tokens include project_id claim",
+        "User auth validated per project",
+        "Cross-project auth rejected",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Enforce Isolation in GraphQL Service",
+      "description": "As a platform engineer, I want the GraphQL service to enforce isolation so that GraphQL queries are scoped.",
+      "acceptanceCriteria": [
+        "GraphQL queries scoped to tenant_{project_id}",
+        "Cross-project queries rejected",
+        "Returns 403",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Enforce Isolation in Realtime Service",
+      "description": "As a platform engineer, I want the realtime service to enforce isolation so that WebSocket connections are scoped.",
+      "acceptanceCriteria": [
+        "WebSocket connection validated for project_id",
+        "Channel prefix enforced",
+        "Cross-project channel subscriptions rejected",
+        "Returns 403",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Enforce Isolation in Storage Service",
+      "description": "As a platform engineer, I want the storage service to enforce isolation so that file access is scoped.",
+      "acceptanceCriteria": [
+        "File operations validated for project_id prefix",
+        "Cross-project file access rejected",
+        "Returns 403",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Isolation Testing",
+      "description": "As a platform engineer, I want isolation tested so that I'm confident cross-project access is impossible.",
+      "acceptanceCriteria": [
+        "Test suite for isolation",
+        "Tests cross-project DB access",
+        "Tests cross-project realtime access",
+        "Tests cross-project storage access",
+        "All tests verify 403 response",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        3
+      ],
+      "mcpTools": {
+        "step3": []
+      },
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Resource Isolation Enforcement.md"
+}

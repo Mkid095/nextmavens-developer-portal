@@ -1,0 +1,238 @@
+{
+  "project": "Failure Modes Documentation",
+  "branchName": "flow/failure-modes-docs",
+  "description": "What breaks and how. Rate limits per service. Max file sizes. Query timeouts. Connection limits. Error codes. Common pitfalls. Developers can understand limits and avoid problems.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Document Database Limits",
+      "description": "As a developer, I want to know database limits so that I can design within constraints.",
+      "acceptanceCriteria": [
+        "Database limits section created",
+        "Max rows per query: 1000",
+        "Query timeout: 30 seconds",
+        "Rate limit: 100 requests/minute",
+        "Connection pool: 20 per project",
+        "Transaction timeout: 60 seconds",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Document Auth Limits",
+      "description": "",
+      "acceptanceCriteria": [
+        "Auth limits section created",
+        "Max users per project: 100,000",
+        "Rate limit: 50 requests/minute",
+        "Session duration: 7 days",
+        "Max concurrent sessions: 10 per user",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Document Realtime Limits",
+      "description": "",
+      "acceptanceCriteria": [
+        "Realtime limits section created",
+        "Max connections: 50 per project",
+        "Message rate: 100/second",
+        "Channel subscription limit: 100 per connection",
+        "Connection timeout: 2 hours",
+        "Message size: 64KB max",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Document Storage Limits",
+      "description": "",
+      "acceptanceCriteria": [
+        "Storage limits section created",
+        "Max file size: 5GB",
+        "Upload rate: 10/minute",
+        "Storage quota: varies by plan",
+        "Bucket limit: 100 per project",
+        "File retention: 30 days minimum",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Document GraphQL Limits",
+      "description": "",
+      "acceptanceCriteria": [
+        "GraphQL limits section created",
+        "Query depth: 10 levels",
+        "Query complexity: 1000 points",
+        "Rate limit: 60 requests/minute",
+        "Query timeout: 30 seconds",
+        "Max result size: 10MB",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Document Error Codes",
+      "description": "As a developer, I want error codes documented so that I can handle errors properly.",
+      "acceptanceCriteria": [
+        "Error codes section created",
+        "Each error code documented",
+        "Shows: error name, code, message, retryable",
+        "Shows: when it occurs",
+        "Shows: how to resolve",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Document Common Pitfalls",
+      "description": "As a developer, I want common pitfalls documented so that I can avoid mistakes.",
+      "acceptanceCriteria": [
+        "Pitfalls section created",
+        "Database: N+1 queries, missing indexes",
+        "Auth: Storing tokens insecurely",
+        "Realtime: Not cleaning up subscriptions",
+        "Storage: Large file uploads",
+        "Solutions provided",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Document Query Timeout Scenarios",
+      "description": "",
+      "acceptanceCriteria": [
+        "Timeout scenarios section created",
+        "Long-running queries",
+        "Large result sets",
+        "Missing indexes",
+        "Locks and blocking",
+        "How to diagnose and fix",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Document Rate Limit Behavior",
+      "description": "",
+      "acceptanceCriteria": [
+        "Rate limiting section created",
+        "How limits are calculated",
+        "Sliding window vs fixed window",
+        "Response headers (RateLimit-Remaining, RateLimit-Reset)",
+        "Retry-after header",
+        "Best practices for handling",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Add Troubleshooting Guide",
+      "description": "",
+      "acceptanceCriteria": [
+        "Troubleshooting guide created",
+        "Common errors per service",
+        "Step-by-step diagnosis",
+        "Solutions for each error",
+        "When to contact support",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5
+      ],
+      "mcpTools": {
+        "step5": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Failure Modes Documentation.md"
+}

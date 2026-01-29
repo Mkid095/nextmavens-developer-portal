@@ -1,0 +1,333 @@
+{
+  "project": "Observability Beyond Logs",
+  "branchName": "flow/observability",
+  "description": "Logs exist but no way to trace a request across services. Request tracing with correlation IDs, service health reporting, and request traces table provide complete observability across the platform.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Create Request Traces Table",
+      "description": "As a platform engineer, I want a request_traces table so that I can track request flow across services.",
+      "acceptanceCriteria": [
+        "request_traces table created in control_plane schema",
+        "Columns: request_id (UUID PRIMARY KEY), project_id, path, method, services_hit (JSONB), total_duration_ms, created_at",
+        "services_hit: array of service names",
+        "Index on project_id for querying",
+        "Index on created_at for time range queries",
+        "Migration script created and tested",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-002",
+      "title": "Implement Correlation ID Middleware",
+      "description": "As a platform engineer, I want correlation ID middleware so that every request has a unique ID for tracing.",
+      "acceptanceCriteria": [
+        "Middleware created at src/lib/middleware/correlation.ts",
+        "Generates UUID if not in x-request-id header",
+        "Sets req.id = correlation ID",
+        "Sets x-request-id response header",
+        "Works with Express/Next.js",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-003",
+      "title": "Add Correlation ID to API Gateway",
+      "description": "As a platform engineer, I want the API gateway to use correlation IDs so that all gateway requests are traceable.",
+      "acceptanceCriteria": [
+        "Correlation middleware applied to gateway",
+        "Every request gets x-request-id",
+        "Request ID passed to downstream services",
+        "Request ID logged with all logs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-004",
+      "title": "Add Correlation ID to Auth Service",
+      "description": "As a platform engineer, I want the auth service to use correlation IDs so that auth requests are traceable.",
+      "acceptanceCriteria": [
+        "Correlation middleware applied to auth service",
+        "x-request-id propagated",
+        "Request ID in all auth logs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-005",
+      "title": "Add Correlation ID to GraphQL Service",
+      "description": "As a platform engineer, I want the GraphQL service to use correlation IDs so that GraphQL queries are traceable.",
+      "acceptanceCriteria": [
+        "Correlation middleware applied to GraphQL service",
+        "x-request-id propagated",
+        "Request ID in all GraphQL logs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-006",
+      "title": "Add Correlation ID to Realtime Service",
+      "description": "As a platform engineer, I want the realtime service to use correlation IDs so that WebSocket connections are traceable.",
+      "acceptanceCriteria": [
+        "Correlation ID on connection handshake",
+        "x-request-id in connection headers",
+        "Request ID in all realtime logs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-007",
+      "title": "Add Correlation ID to Storage Service",
+      "description": "As a platform engineer, I want the storage service to use correlation IDs so that storage operations are traceable.",
+      "acceptanceCriteria": [
+        "Correlation middleware applied to storage service",
+        "x-request-id propagated",
+        "Request ID in all storage logs",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-008",
+      "title": "Add Correlation ID to Audit Logs",
+      "description": "As a platform engineer, I want audit logs to include correlation IDs so that I can trace audit entries to specific requests.",
+      "acceptanceCriteria": [
+        "audit_logs table updated with request_id column",
+        "Request ID captured from x-request-id",
+        "Links audit entries to requests",
+        "Can query all audit entries for a request",
+        "Migration script created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-009",
+      "title": "Add Correlation ID to Project Logs",
+      "description": "As a platform engineer, I want project logs to include correlation IDs so that I can trace logs to specific requests.",
+      "acceptanceCriteria": [
+        "project_logs table updated with request_id column",
+        "Request ID captured from x-request-id",
+        "Links logs to requests",
+        "Can query all logs for a request",
+        "Migration script created",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-010",
+      "title": "Create Service Health Endpoint",
+      "description": "As a platform operator, I want a health endpoint in each service so that I can monitor service dependencies.",
+      "acceptanceCriteria": [
+        "GET /internal/health endpoint in all services",
+        "Returns: status, version, uptime, dependencies",
+        "Dependencies section with: database {status, latency_ms}, redis {status, latency_ms}",
+        "Returns 200 if healthy, 503 if unhealthy",
+        "Latency measured for each dependency",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-011",
+      "title": "Implement Request Tracing",
+      "description": "As a platform engineer, I want to trace requests across services so that I can see the full request path.",
+      "acceptanceCriteria": [
+        "Request ID logged when entering each service",
+        "services_hit array updated in request_traces",
+        "Total duration tracked",
+        "Trace queryable by request_id",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        1,
+        2,
+        7,
+        10
+      ],
+      "mcpTools": {
+        "step1": [],
+        "step2": [],
+        "step7": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "US-012",
+      "title": "Create Trace Viewer UI",
+      "description": "As a developer, I want to view request traces so that I can debug request flow.",
+      "acceptanceCriteria": [
+        "Trace viewer page created",
+        "Search by request_id",
+        "Shows request path through services",
+        "Shows duration per service",
+        "Shows total duration",
+        "Timeline visualization",
+        "Typecheck passes"
+      ],
+      "mavenSteps": [
+        5,
+        10
+      ],
+      "mcpTools": {
+        "step5": [],
+        "step10": []
+      },
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    }
+  ],
+  "relatedPRDs": [],
+  "consolidatedMemory": "",
+  "lessonsLearned": "",
+  "memorialFile": "docs/memory/Observability Beyond Logs.md"
+}
