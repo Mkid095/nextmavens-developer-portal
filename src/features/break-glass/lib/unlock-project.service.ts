@@ -23,7 +23,11 @@
 
 import { getPool } from '@/lib/db';
 import { SuspensionManager } from '@/features/abuse-controls/lib/data-layer';
-import { logAdminAction, AdminActionType } from '@nextmavens/audit-logs-database';
+import {
+  logAdminAction,
+  AdminActionType,
+  AdminTargetType,
+} from './admin-database';
 import type {
   UnlockedProjectState,
   UnlockActionLog,
@@ -170,7 +174,7 @@ export async function unlockProject(
   const action = await logAdminAction({
     session_id: sessionId,
     action: AdminActionType.UNLOCK_PROJECT,
-    target_type: 'project',
+    target_type: AdminTargetType.PROJECT,
     target_id: projectId,
     before_state: beforeState,
     after_state: afterState,

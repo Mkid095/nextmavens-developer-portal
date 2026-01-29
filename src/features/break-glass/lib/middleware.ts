@@ -4,7 +4,8 @@
  * Middleware for validating break glass session tokens on admin power endpoints.
  * Ensures that only valid, non-expired break glass sessions can perform emergency actions.
  *
- * US-004: Implement Unlock Project Power - Step 1: Foundation
+ * US-003: Implement Break Glass Authentication
+ * US-004: Implement Unlock Project Power
  *
  * @example
  * ```typescript
@@ -22,8 +23,24 @@
  */
 
 import { NextRequest } from 'next/server';
-import { validateAdminSession } from '@nextmavens/audit-logs-database';
-import type { AdminSessionValidation } from '@nextmavens/audit-logs-database';
+import {
+  validateAdminSession,
+  type AdminSession,
+  type AdminSessionValidation,
+} from './admin-database';
+
+/**
+ * Admin session info (lightweight version for middleware)
+ */
+export interface AdminSessionInfo {
+  id: string;
+  admin_id: string;
+  reason: string;
+  access_method: string;
+  granted_by: string | null;
+  expires_at: Date;
+  created_at: Date;
+}
 
 /**
  * Break glass token validation result
@@ -36,7 +53,7 @@ export interface BreakGlassTokenValidation {
   reason?: 'no_token' | 'invalid_format' | 'not_found' | 'expired';
 
   /** The admin session (if valid) */
-  session?: AdminSessionValidation['session'];
+  session?: AdminSessionInfo;
 
   /** Time until expiration (in seconds, if valid) */
   expires_in_seconds?: number;
@@ -141,9 +158,20 @@ export async function validateBreakGlassToken(
   // Extract admin ID from session
   const admin_id = sessionValidation.session?.admin_id;
 
+  // Convert to lightweight session info
+  const sessionInfo: AdminSessionInfo = {
+    id: sessionValidation.session!.id,
+    admin_id: sessionValidation.session!.admin_id,
+    reason: sessionValidation.session!.reason,
+    access_method: sessionValidation.session!.access_method,
+    granted_by: sessionValidation.session!.granted_by,
+    expires_at: sessionValidation.session!.expires_at,
+    created_at: sessionValidation.session!.created_at,
+  };
+
   return {
     valid: true,
-    session: sessionValidation.session,
+    session: sessionInfo,
     expires_in_seconds: sessionValidation.expires_in_seconds,
     admin_id,
   };
@@ -228,3 +256,6 @@ export function extractTokenFromBody(body: unknown): string | null {
   }
   return null;
 }
+
+// Re-export types for convenience
+export type { AdminSession, AdminAction, AdminAccessMethod, AdminActionType, AdminTargetType } from './admin-database';
