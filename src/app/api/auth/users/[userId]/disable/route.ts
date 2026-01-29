@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth'
-import { authServiceClient } from '@/lib/api/auth-service-client'
+import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 
 export async function POST(
   req: NextRequest,
@@ -22,7 +22,7 @@ export async function POST(
     const reason = body.reason as string | undefined
 
     // Call auth service
-    const response = await authServiceClient.disableEndUser({
+    const response = await client = requireAuthServiceClient(); client.disableEndUser({
       userId,
       reason,
     })

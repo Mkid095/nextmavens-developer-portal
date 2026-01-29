@@ -275,6 +275,34 @@ export function createAuthServiceClient(): AuthServiceClient {
 }
 
 /**
- * Default auth service client instance
+ * Get or create the default auth service client instance
+ * Throws if AUTH_SERVICE_API_KEY is not set
+ * Use this when you need the client and want to fail fast if it's not configured
  */
-export const authServiceClient = createAuthServiceClient()
+export function requireAuthServiceClient(): AuthServiceClient {
+  if (!authServiceClient) {
+    throw new Error('AUTH_SERVICE_API_KEY environment variable is required')
+  }
+  return authServiceClient
+}
+
+/**
+ * Get or create the default auth service client instance
+ * Returns undefined if AUTH_SERVICE_API_KEY is not set
+ */
+export function getAuthServiceClient(): AuthServiceClient | undefined {
+  return authServiceClient
+}
+
+/**
+ * Default auth service client instance (lazy, may be undefined)
+ * Use requireAuthServiceClient() to safely access when required
+ * Use getAuthServiceClient() to safely access when optional
+ */
+export let authServiceClient: AuthServiceClient | undefined = undefined
+
+try {
+  authServiceClient = createAuthServiceClient()
+} catch {
+  // AUTH_SERVICE_API_KEY not set, client will be undefined
+}

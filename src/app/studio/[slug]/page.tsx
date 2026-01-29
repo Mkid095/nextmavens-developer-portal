@@ -18,7 +18,8 @@ import {
   Users,
 } from 'lucide-react'
 import { TablesView, type TableData } from '@/features/studio/components/TablesView'
-import { UsersList, type User } from '@/features/studio/components/UsersList'
+import { UserList } from '@/features/auth-users/components/UserList'
+import { UserDetail } from '@/features/auth-users/components/UserDetail'
 
 interface DatabaseTable {
   name: string
@@ -41,8 +42,8 @@ export default function StudioPage() {
   const [loading, setLoading] = useState(true)
   const [activeNav, setActiveNav] = useState('tables')
   const [searchQuery, setSearchQuery] = useState('')
-  const [users, setUsers] = useState<User[]>([])
-  const [usersLoading, setUsersLoading] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [usersKey, setUsersKey] = useState(0)
 
   useEffect(() => {
     fetchTables()
@@ -53,12 +54,6 @@ export default function StudioPage() {
       fetchTableData(selectedTable)
     }
   }, [selectedTable, params.slug])
-
-  useEffect(() => {
-    if (activeNav === 'users') {
-      fetchUsers()
-    }
-  }, [activeNav, params.slug])
 
   const fetchTables = async () => {
     try {
@@ -96,31 +91,22 @@ export default function StudioPage() {
     }
   }
 
-  const fetchUsers = async () => {
-    setUsersLoading(true)
-    try {
-      const token = localStorage.getItem('accessToken')
-      const res = await fetch(`/api/auth/users?project=${params.slug}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (res.status === 401) {
-        router.push('/login')
-        return
-      }
-      if (res.ok) {
-        const data = await res.json()
-        setUsers(data.users || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch users:', err)
-    } finally {
-      setUsersLoading(false)
-    }
-  }
-
   const filteredTables = tables.filter(t =>
     t.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const handleViewUser = (userId: string) => {
+    setSelectedUserId(userId)
+  }
+
+  const handleBackToUsers = () => {
+    setSelectedUserId(null)
+  }
+
+  const handleUserUpdated = () => {
+    // Trigger a refresh of the user list
+    setUsersKey(prev => prev + 1)
+  }
 
   return (
     <div className="min-h-screen bg-[#F3F5F7] flex">
@@ -213,9 +199,14 @@ export default function StudioPage() {
                     {tableData.total} rows • {tableData.columns.length} columns
                   </p>
                 )}
-                {activeNav === 'users' && (
+                {activeNav === 'users' && !selectedUserId && (
                   <p className="text-sm text-slate-500">
-                    {users.length} users
+                    Manage application users
+                  </p>
+                )}
+                {activeNav === 'users' && selectedUserId && (
+                  <p className="text-sm text-slate-500">
+                    User details
                   </p>
                 )}
               </div>
@@ -232,7 +223,19 @@ export default function StudioPage() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-auto p-6">
           {activeNav === 'users' ? (
-            <UsersList users={users} loading={usersLoading} />
+            selectedUserId ? (
+              <UserDetail
+                key={selectedUserId}
+                userId={selectedUserId}
+                onBack={handleBackToUsers}
+                onUserUpdated={handleUserUpdated}
+              />
+            ) : (
+              <UserList
+                key={usersKey}
+                onViewUser={handleViewUser}
+              />
+            )
           ) : (
             <TablesView
               selectedTable={selectedTable}

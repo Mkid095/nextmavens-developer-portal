@@ -151,3 +151,51 @@ export function getDeleteErrorMessage(errorType: DeleteUserError): string {
       return 'An unexpected error occurred. Please try again.';
   }
 }
+
+/**
+ * Props for the ResetPasswordButton component
+ *
+ * @property userId - The ID of the user to reset password for
+ * @property userEmail - The email of the user
+ * @property onSuccess - Optional callback after successful password reset
+ */
+export interface ResetPasswordButtonProps {
+  userId: string;
+  userEmail: string;
+  onSuccess?: () => void;
+}
+
+/**
+ * State for reset password operation
+ *
+ * @property isResetting - Whether password reset is in progress
+ * @property showSuccess - Whether success message is visible
+ * @property error - Error message if reset failed
+ */
+export interface ResetPasswordState {
+  isResetting: boolean;
+  showSuccess: boolean;
+  error: string | null;
+}
+
+/**
+ * API response for successful password reset
+ *
+ * @property user_id - The ID of the user
+ * @property email_sent - Whether the email was sent
+ * @property message - Human-readable message
+ */
+export interface ResetPasswordResponse {
+  user_id: string;
+  email_sent: boolean;
+  message: string;
+}
+
+/**
+ * API error response for failed password reset
+ *
+ * @property error - Human-readable error message
+ */
+export interface ResetPasswordErrorResponse {
+  error: string;
+}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2, Mail, Calendar, Shield, ArrowLeft, RefreshCw } from 'lucide-react'
 import type { EndUserDetailResponse, EndUserSession } from '@/lib/types/auth-user.types'
-import { authServiceClient } from '@/lib/api/auth-service-client'
+import { getAuthServiceClient } from '@/lib/api/auth-service-client'
 import { UserDetailHeader } from '@/features/auth-users/components/UserDetailHeader'
 import { UserDetailInfo } from '@/features/auth-users/components/UserDetailInfo'
 import { UserDetailSessions } from '@/features/auth-users/components/UserDetailSessions'
@@ -28,12 +28,21 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
+  const getClient = () => {
+    const client = getAuthServiceClient()
+    if (!client) {
+      throw new Error('Auth service client not configured')
+    }
+    return client
+  }
+
   const fetchUser = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const userData = await authServiceClient.getEndUser(userId)
+      const client = getClient()
+      const userData = await client.getEndUser(userId)
       setUser(userData)
     } catch (err) {
       console.error('Failed to fetch user:', err)
@@ -48,7 +57,8 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     setSessionError(null)
 
     try {
-      const response = await authServiceClient.getEndUserSessions(userId)
+      const client = getClient()
+      const response = await client.getEndUserSessions(userId)
       setUser((prev) => (prev ? { ...prev, sessions: response.sessions } : null))
     } catch (err) {
       console.error('Failed to fetch sessions:', err)
@@ -68,7 +78,8 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     setSessionError(null)
 
     try {
-      await authServiceClient.revokeEndUserSession({ userId, sessionId })
+      const client = getClient()
+      await client.revokeEndUserSession({ userId, sessionId })
 
       setUser((prev) => {
         if (!prev?.sessions) return prev
@@ -94,7 +105,8 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     setError(null)
 
     try {
-      const response = await authServiceClient.disableEndUser({
+      const client = getClient()
+      const response = await client.disableEndUser({
         userId: targetUserId,
       })
 
@@ -119,7 +131,8 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     setError(null)
 
     try {
-      const response = await authServiceClient.enableEndUser({
+      const client = getClient()
+      const response = await client.enableEndUser({
         userId: targetUserId,
       })
 

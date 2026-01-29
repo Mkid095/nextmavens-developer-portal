@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth'
-import { authServiceClient } from '@/lib/api/auth-service-client'
+import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 
 export async function GET(
   req: NextRequest,
@@ -18,7 +18,8 @@ export async function GET(
     const { userId } = params
 
     // Call auth service
-    const response = await authServiceClient.getEndUser(userId)
+    const client = requireAuthServiceClient()
+    const response = await client.getEndUser(userId)
 
     return NextResponse.json(response)
   } catch (error) {

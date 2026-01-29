@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2, ChevronLeft, ChevronRight, Users, Mail, Calendar, Shield } from 'lucide-react'
 import type { EndUser, EndUserListQuery } from '@/lib/types/auth-user.types'
-import { authServiceClient } from '@/lib/api/auth-service-client'
+import { getAuthServiceClient } from '@/lib/api/auth-service-client'
 import { UserFilterBar } from '@/features/auth-users/components/UserFilterBar'
 
 interface UserListProps {
@@ -27,13 +27,18 @@ export function UserList({ initialFilters = {}, onViewUser }: UserListProps) {
     setError(null)
 
     try {
+      const client = getAuthServiceClient()
+      if (!client) {
+        throw new Error('Auth service client not configured')
+      }
+
       const query: EndUserListQuery = {
         ...filters,
         limit,
         offset: page * limit,
       }
 
-      const response = await authServiceClient.listEndUsers(query)
+      const response = await client.listEndUsers(query)
       setUsers(response.users)
       setTotal(response.total)
     } catch (err) {

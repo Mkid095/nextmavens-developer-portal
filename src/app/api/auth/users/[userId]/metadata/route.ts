@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth'
-import { authServiceClient } from '@/lib/api/auth-service-client'
+import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 
 export async function PATCH(
   req: NextRequest,
@@ -29,7 +29,7 @@ export async function PATCH(
     }
 
     // Call auth service
-    const response = await authServiceClient.updateEndUserMetadata({
+    const response = await client = requireAuthServiceClient(); client.updateEndUserMetadata({
       userId,
       metadata,
     })

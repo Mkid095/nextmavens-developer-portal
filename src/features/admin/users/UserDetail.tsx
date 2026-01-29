@@ -12,6 +12,7 @@ import { UserBasicInfo } from './components/UserBasicInfo'
 import { UserAuthInfo } from './components/UserAuthInfo'
 import { UserMetadataEditor } from './components/UserMetadataEditor'
 import { DeleteUserButton } from '@/features/users/components/DeleteUserButton'
+import { ResetPasswordButton } from '@/features/users/components/ResetPasswordButton'
 
 interface UserDetailProps {
   userId: string
@@ -218,6 +219,17 @@ export function UserDetail({ userId }: UserDetailProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <UserBasicInfo user={user} />
             <UserAuthInfo user={user} />
+          </div>
+
+          {/* Account Actions */}
+          <div className="mt-6 pt-6 border-t border-slate-200">
+            <h3 className="text-sm font-semibold text-slate-900 mb-4">Account Actions</h3>
+            <div className="flex flex-wrap gap-3">
+              <ResetPasswordButton
+                userId={user.id}
+                userEmail={user.email}
+              />
+            </div>
           </div>
         </div>
       </div>

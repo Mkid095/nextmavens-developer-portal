@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { authenticateRequest } from '@/lib/auth'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
-import { authServiceClient } from '@/lib/api/auth-service-client'
+import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 import type { EndUserListQuery } from '@/lib/types/auth-user.types'
 
 /**
@@ -104,7 +104,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Call auth service
-    const response = await authServiceClient.listEndUsers(query)
+    const client = requireAuthServiceClient()
+    const response = await client.listEndUsers(query)
 
     return NextResponse.json(response)
   } catch (error) {
