@@ -72,8 +72,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: UserDetail.tsx (262 lines) with UserDetailHeader, UserDetailInfo, UserMetadataEdit, UserDetailSessions, and UserAuthHistory. Shows all user fields including email, name, user_id, created_at, updated_at, last_sign_in_at, sign_in_count, auth_provider, and editable user_metadata. Typecheck passes."
     },
     {
       "id": "US-004",
@@ -102,8 +102,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: DisableUserButton.tsx (57 lines) with toggle behavior, integrated into UserDetailHeader. API endpoints at /api/auth/users/[userId]/disable and /api/auth/users/[userId]/enable with proper authentication and audit logging. Typecheck passes."
     },
     {
       "id": "US-005",
