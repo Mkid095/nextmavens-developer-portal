@@ -1,9 +1,13 @@
 import { Mail, ArrowLeft } from 'lucide-react'
 import type { EndUserDetailResponse } from '@/lib/types/auth-user.types'
+import { DisableUserButton } from './DisableUserButton'
 
 interface UserDetailHeaderProps {
   user: EndUserDetailResponse
   onBack: () => void
+  onDisable?: (userId: string) => Promise<void>
+  onEnable?: (userId: string) => Promise<void>
+  isLoading?: boolean
 }
 
 const getStatusBadge = (status: string) => {
@@ -24,7 +28,13 @@ const getProviderBadge = (provider: string) => {
   return 'bg-slate-100 text-slate-800'
 }
 
-export function UserDetailHeader({ user, onBack }: UserDetailHeaderProps) {
+export function UserDetailHeader({
+  user,
+  onBack,
+  onDisable,
+  onEnable,
+  isLoading = false,
+}: UserDetailHeaderProps) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-6">
       <button
@@ -49,6 +59,14 @@ export function UserDetailHeader({ user, onBack }: UserDetailHeaderProps) {
         </div>
 
         <div className="flex items-center gap-3">
+          {onDisable && onEnable && (
+            <DisableUserButton
+              user={user}
+              onDisable={onDisable}
+              onEnable={onEnable}
+              isLoading={isLoading}
+            />
+          )}
           <span
             className={`px-3 py-1 text-sm font-medium rounded ${getStatusBadge(user.status)}`}
           >

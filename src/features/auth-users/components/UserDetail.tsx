@@ -12,19 +12,21 @@ import { UserDetailSessions } from './UserDetailSessions'
 interface UserDetailProps {
   userId: string
   onBack: () => void
+  onUserUpdated?: () => void
 }
 
 interface UserDetailData extends EndUserDetailResponse {
   sessions?: EndUserSession[]
 }
 
-export function UserDetail({ userId, onBack }: UserDetailProps) {
+export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
   const [user, setUser] = useState<UserDetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null)
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
 
   const fetchUser = async () => {
     setLoading(true)
@@ -87,6 +89,56 @@ export function UserDetail({ userId, onBack }: UserDetailProps) {
     }
   }
 
+  const handleDisableUser = async (targetUserId: string) => {
+    setIsUpdatingStatus(true)
+    setError(null)
+
+    try {
+      const response = await authServiceClient.disableEndUser({
+        userId: targetUserId,
+      })
+
+      setUser((prev) =>
+        prev ? { ...prev, status: response.status, updated_at: response.updated_at } : null
+      )
+
+      if (onUserUpdated) {
+        onUserUpdated()
+      }
+    } catch (err) {
+      console.error('Failed to disable user:', err)
+      setError(err instanceof Error ? err.message : 'Failed to disable user')
+      throw err
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
+  const handleEnableUser = async (targetUserId: string) => {
+    setIsUpdatingStatus(true)
+    setError(null)
+
+    try {
+      const response = await authServiceClient.enableEndUser({
+        userId: targetUserId,
+      })
+
+      setUser((prev) =>
+        prev ? { ...prev, status: response.status, updated_at: response.updated_at } : null
+      )
+
+      if (onUserUpdated) {
+        onUserUpdated()
+      }
+    } catch (err) {
+      console.error('Failed to enable user:', err)
+      setError(err instanceof Error ? err.message : 'Failed to enable user')
+      throw err
+    } finally {
+      setIsUpdatingStatus(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -109,7 +161,13 @@ export function UserDetail({ userId, onBack }: UserDetailProps) {
 
   return (
     <div className="space-y-6">
-      <UserDetailHeader user={user} onBack={onBack} />
+      <UserDetailHeader
+        user={user}
+        onBack={onBack}
+        onDisable={handleDisableUser}
+        onEnable={handleEnableUser}
+        isLoading={isUpdatingStatus}
+      />
       <UserDetailInfo user={user} />
       <UserDetailSessions
         sessions={user.sessions}
