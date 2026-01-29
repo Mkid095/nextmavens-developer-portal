@@ -132,6 +132,29 @@ export interface FunctionLogsResponse {
   total: number;
 }
 
+// Secrets types
+export interface SecretInfo {
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SecretsListResponse {
+  success: boolean;
+  secrets: SecretInfo[];
+  total: number;
+}
+
+export interface SecretSetResponse {
+  success: boolean;
+  secret: SecretInfo;
+}
+
+export interface SecretDeleteResponse {
+  success: boolean;
+  message: string;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -343,6 +366,35 @@ export class ApiClient {
     const queryString = params.toString();
     const response = await this.request<{ success: boolean; data: FunctionLogsResponse }>(
       `/v1/projects/${projectId}/functions/${functionName}/logs${queryString ? `?${queryString}` : ''}`
+    );
+    return response.data;
+  }
+
+  // Secrets API methods
+  public async setSecret(projectId: string, key: string, value: string): Promise<SecretSetResponse> {
+    const response = await this.request<{ success: boolean; data: SecretSetResponse }>(
+      `/v1/projects/${projectId}/secrets`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ key, value }),
+      }
+    );
+    return response.data;
+  }
+
+  public async listSecrets(projectId: string): Promise<SecretInfo[]> {
+    const response = await this.request<{ success: boolean; data: SecretInfo[]; meta: { total: number } }>(
+      `/v1/projects/${projectId}/secrets`
+    );
+    return response.data;
+  }
+
+  public async deleteSecret(projectId: string, key: string): Promise<SecretDeleteResponse> {
+    const response = await this.request<{ success: boolean; data: SecretDeleteResponse }>(
+      `/v1/projects/${projectId}/secrets/${key}`,
+      {
+        method: 'DELETE',
+      }
     );
     return response.data;
   }
