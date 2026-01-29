@@ -26,6 +26,10 @@ COMMANDS:
   db diff    Show diff between local and remote schema
   db reset   Reset database to initial state (dev only)
 
+  functions deploy [name]   Deploy edge functions
+  functions list            List deployed functions
+  functions logs <name>     View function logs
+
   hello       Say hello to the world
 
 OPTIONS:

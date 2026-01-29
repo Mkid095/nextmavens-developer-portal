@@ -212,6 +212,16 @@ export default function DatabaseDocsPage() {
           ))}
         </div>
 
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mt-12">
+          <h2 className="text-xl font-semibold text-slate-900 mb-4">Resources</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Link href="/docs/database/limits" className="p-4 border border-slate-200 rounded-lg hover:border-blue-300 hover:bg-blue-50/50 transition-colors">
+              <h3 className="font-semibold text-slate-900 mb-1">Database Limits</h3>
+              <p className="text-sm text-slate-600">Query limits, timeouts, and rate limits</p>
+            </Link>
+          </div>
+        </div>
+
         <div className="mt-12 flex items-center justify-between">
           <Link href="/docs" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
             <ArrowLeft className="w-4 h-4" />

@@ -76,6 +76,62 @@ export interface DbResetResponse {
   warnings?: string[];
 }
 
+// Functions types
+export interface FunctionDeployOptions {
+  function_name?: string;
+  source?: string;
+}
+
+export interface FunctionDeployResponse {
+  success: boolean;
+  function_id: string;
+  function_name: string;
+  url: string;
+  status: string;
+  version: string;
+  deployed_at: string;
+}
+
+export interface FunctionInfo {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  url: string;
+  version: string;
+  created_at: string;
+  updated_at: string;
+  last_invocation?: string;
+  invocation_count?: number;
+}
+
+export interface FunctionListResponse {
+  success: boolean;
+  functions: FunctionInfo[];
+  total: number;
+}
+
+export interface FunctionLogsOptions {
+  limit?: number;
+  offset?: number;
+  since?: string;
+}
+
+export interface FunctionLogEntry {
+  id: string;
+  timestamp: string;
+  level: 'info' | 'warn' | 'error' | 'debug';
+  message: string;
+  metadata?: Record<string, any>;
+}
+
+export interface FunctionLogsResponse {
+  success: boolean;
+  function_name: string;
+  logs: FunctionLogEntry[];
+  total: number;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -255,6 +311,38 @@ export class ApiClient {
       {
         method: 'POST',
       }
+    );
+    return response.data;
+  }
+
+  // Functions API methods
+  public async deployFunction(projectId: string, options: FunctionDeployOptions = {}): Promise<FunctionDeployResponse> {
+    const response = await this.request<{ success: boolean; data: FunctionDeployResponse }>(
+      `/v1/projects/${projectId}/functions/deploy`,
+      {
+        method: 'POST',
+        body: JSON.stringify(options),
+      }
+    );
+    return response.data;
+  }
+
+  public async listFunctions(projectId: string): Promise<FunctionInfo[]> {
+    const response = await this.request<{ success: boolean; data: FunctionInfo[]; meta: { total: number } }>(
+      `/v1/projects/${projectId}/functions`
+    );
+    return response.data;
+  }
+
+  public async getFunctionLogs(projectId: string, functionName: string, options: FunctionLogsOptions = {}): Promise<FunctionLogsResponse> {
+    const params = new URLSearchParams();
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.offset) params.append('offset', options.offset.toString());
+    if (options?.since) params.append('since', options.since);
+
+    const queryString = params.toString();
+    const response = await this.request<{ success: boolean; data: FunctionLogsResponse }>(
+      `/v1/projects/${projectId}/functions/${functionName}/logs${queryString ? `?${queryString}` : ''}`
     );
     return response.data;
   }
