@@ -82,8 +82,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added idempotency middleware to POST /v1/projects endpoint (control-plane-api/src/app/api/v1/projects/route.ts). Idempotency key format: provision:{project_name} with TTL of 1 hour (3600s). Uses getIdempotencyKey() to check Idempotency-Key header or generate key, wraps project creation logic in withIdempotency() helper. Duplicate requests return same cached response without creating duplicate projects. Typecheck passes."
     },
     {
       "id": "US-004",

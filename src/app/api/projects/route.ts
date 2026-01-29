@@ -12,6 +12,11 @@ import {
   type RateLimitIdentifier,
 } from '@/features/abuse-controls/lib/rate-limiter'
 import { logProjectAction, userActor } from '@nextmavens/audit-logs-database'
+import {
+  getIdempotencyKey,
+  withIdempotency,
+  type IdempotencyResponse,
+} from '@/lib/idempotency'
 
 // Rate limiting configuration
 const PROJECTS_PER_HOUR_PER_ORG = 3
