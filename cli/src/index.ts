@@ -14,6 +14,9 @@ USAGE:
   nextmavens [command] [options]
 
 COMMANDS:
+  login       Authenticate with email and password
+  logout      Log out and remove stored token
+  whoami      Show current authenticated user
   hello       Say hello to the world
 
 OPTIONS:
@@ -24,7 +27,7 @@ For more information, visit: https://nextmavens.com/docs
   `);
 }
 
-function main() {
+async function main() {
   const args = process.argv.slice(2);
 
   if (args.includes('--version') || args.includes('-v')) {
@@ -40,6 +43,15 @@ function main() {
   const command = args[0];
 
   switch (command) {
+    case 'login':
+      await (await import('./commands/login')).login();
+      break;
+    case 'logout':
+      await (await import('./commands/logout')).logout();
+      break;
+    case 'whoami':
+      await (await import('./commands/whoami')).whoami();
+      break;
     case 'hello':
       console.log('Hello from NextMavens CLI!');
       break;

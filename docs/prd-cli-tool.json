@@ -60,8 +60,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented login, logout, and whoami commands. Created config management system (src/lib/config.ts) with ~/.nextmavens/config.json storage. Created API client (src/lib/api-client.ts) with authentication and error handling. All commands use password masking for security. Includes exponential backoff on 429 errors. Typecheck passes."
     },
     {
       "id": "US-003",
