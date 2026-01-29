@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Loader2, Mail, Shield, Calendar, Clock, Edit2, Check, X, Key } from 'lucide-react'
 import type {
   UserDetail as UserDetailData,
@@ -10,12 +11,14 @@ import { UserHeader } from './components/UserHeader'
 import { UserBasicInfo } from './components/UserBasicInfo'
 import { UserAuthInfo } from './components/UserAuthInfo'
 import { UserMetadataEditor } from './components/UserMetadataEditor'
+import { DeleteUserButton } from '@/features/users/components/DeleteUserButton'
 
 interface UserDetailProps {
   userId: string
 }
 
 export function UserDetail({ userId }: UserDetailProps) {
+  const router = useRouter()
   const [user, setUser] = useState<UserDetailData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,9 +37,12 @@ export function UserDetail({ userId }: UserDetailProps) {
     setError(null)
 
     try {
+      // SECURITY WARNING: localStorage is vulnerable to XSS attacks.
+      // In production, tokens should be stored in httpOnly cookies.
+      // TODO: Refactor to use secure cookie-based authentication.
       const token = localStorage.getItem('accessToken')
       if (!token) {
-        throw new Error('No authentication token found')
+        throw new Error('Authentication required')
       }
 
       const res = await fetch(`/api/admin/users/${userId}`, {
@@ -48,10 +54,10 @@ export function UserDetail({ userId }: UserDetailProps) {
 
       if (!res.ok) {
         if (res.status === 401) {
-          throw new Error('Authentication expired')
+          throw new Error('Authentication required')
         }
-        if (res.status === 404) {
-          throw new Error('User not found')
+        if (res.status === 403 || res.status === 404) {
+          throw new Error('Access denied')
         }
         throw new Error('Failed to fetch user details')
       }
@@ -61,7 +67,7 @@ export function UserDetail({ userId }: UserDetailProps) {
       setMetadataState({
         isEditing: false,
         jsonError: null,
-        editedMetadata: JSON.stringify(data.user.user_metadata, null, 2),
+        editedMetadata: JSON.stringify(data.user.user_metadata || {}, null, 2),
       })
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch user details'
@@ -94,12 +100,27 @@ export function UserDetail({ userId }: UserDetailProps) {
     if (!user) return
 
     try {
+      // Validate JSON format before sending
       const parsed = JSON.parse(metadataState.editedMetadata)
+
+      // Basic security validation: ensure it's an object and not too large
+      if (typeof parsed !== 'object' || parsed === null) {
+        throw new Error('Metadata must be a valid object')
+      }
+
+      // Size limit to prevent DoS (256KB limit)
+      const jsonString = JSON.stringify(parsed)
+      if (jsonString.length > 262144) {
+        throw new Error('Metadata size exceeds limit (256KB)')
+      }
+
       setMetadataState(prev => ({ ...prev, jsonError: null }))
 
+      // SECURITY WARNING: localStorage is vulnerable to XSS attacks.
+      // TODO: Refactor to use secure cookie-based authentication.
       const token = localStorage.getItem('accessToken')
       if (!token) {
-        throw new Error('No authentication token found')
+        throw new Error('Authentication required')
       }
 
       const res = await fetch(`/api/admin/users/${userId}`, {
@@ -114,6 +135,12 @@ export function UserDetail({ userId }: UserDetailProps) {
       })
 
       if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error('Authentication required')
+        }
+        if (res.status === 403) {
+          throw new Error('Access denied')
+        }
         throw new Error('Failed to update user metadata')
       }
 
@@ -122,7 +149,7 @@ export function UserDetail({ userId }: UserDetailProps) {
       setMetadataState({
         isEditing: false,
         jsonError: null,
-        editedMetadata: JSON.stringify(data.user.user_metadata, null, 2),
+        editedMetadata: JSON.stringify(data.user.user_metadata || {}, null, 2),
       })
     } catch (err) {
       if (err instanceof SyntaxError) {
@@ -203,6 +230,31 @@ export function UserDetail({ userId }: UserDetailProps) {
         onCancelEdit={handleCancelEditMetadata}
         onSave={handleSaveMetadata}
       />
+
+      {/* Danger Zone */}
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200">
+          <h2 className="font-semibold text-red-600">Danger Zone</h2>
+        </div>
+        <div className="p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-slate-900">Delete User</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Permanently remove this user from the platform. This action cannot be undone.
+              </p>
+            </div>
+            <DeleteUserButton
+              userId={user.id}
+              userEmail={user.email}
+              userName={user.name}
+              onDelete={() => {
+                router.push('/studio/users')
+              }}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

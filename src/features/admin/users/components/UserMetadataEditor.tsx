@@ -3,6 +3,15 @@
 import { Edit2, Check, X } from 'lucide-react'
 import type { MetadataEditorState } from '../types'
 
+/**
+ * UserMetadataEditor Component
+ *
+ * SECURITY NOTES:
+ * - JSON content is displayed in a pre tag (React auto-escapes HTML, preventing XSS)
+ * - Textarea input is validated for JSON format before saving
+ * - Server-side validation via zod schema prevents malicious data structures
+ * - Metadata is treated as untrusted input and properly escaped
+ */
 interface UserMetadataEditorProps {
   userMetadata: Record<string, unknown>
   metadataState: MetadataEditorState

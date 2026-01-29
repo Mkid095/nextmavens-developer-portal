@@ -1,9 +1,9 @@
 /**
  * Delete User Feature Exports
  *
- * US-005: Implement Delete User - Step 1: Foundation
+ * US-005: Implement Delete User - Step 5: Implementation
  *
- * This file re-exports all public types and utilities for the Delete User feature.
+ * This file re-exports all public types, utilities, and components for the Delete User feature.
  */
 
 // Types
@@ -22,6 +22,6 @@ export {
   getDeleteErrorMessage,
 } from './types';
 
-// Components will be exported here in Step 5
-// export { DeleteUserButton } from './components/DeleteUserButton';
-// export { DeleteUserConfirmationModal } from './components/DeleteUserConfirmationModal';
+// Components
+export { DeleteUserButton } from './components/DeleteUserButton';
+export { DeleteUserConfirmationModal } from './components/DeleteUserConfirmationModal';

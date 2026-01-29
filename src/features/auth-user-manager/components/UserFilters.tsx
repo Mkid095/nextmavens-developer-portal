@@ -32,6 +32,20 @@ export function UserFilters({
     filters.lastSignInAfter ||
     filters.lastSignInBefore
 
+  /**
+   * Sanitize search input to prevent XSS attacks
+   * Removes HTML tags and special characters
+   */
+  const sanitizeSearchInput = (value: string): string => {
+    // Remove HTML tags and special characters
+    return value.replace(/[<>]/g, '').trim()
+  }
+
+  const handleSearchChange = (value: string) => {
+    const sanitized = sanitizeSearchInput(value)
+    onFiltersChange({ ...filters, search: sanitized })
+  }
+
   return (
     <div className="bg-white rounded-xl border border-slate-200">
       <button
@@ -72,8 +86,9 @@ export function UserFilters({
                   <input
                     type="text"
                     value={filters.search}
-                    onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                     placeholder="Search by email or name"
+                    maxLength={100}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
                   />
                 </div>

@@ -9,9 +9,10 @@ import { UserFilterBar } from '@/features/auth-users/components/UserFilterBar'
 
 interface UserListProps {
   initialFilters?: EndUserListQuery
+  onViewUser?: (userId: string) => void
 }
 
-export function UserList({ initialFilters = {} }: UserListProps) {
+export function UserList({ initialFilters = {}, onViewUser }: UserListProps) {
   const [users, setUsers] = useState<EndUser[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -209,8 +210,9 @@ export function UserList({ initialFilters = {} }: UserListProps) {
                   <div className="col-span-1 flex justify-end">
                     <button
                       onClick={() => {
-                        // TODO: Navigate to user detail page
-                        console.log('View user:', user.user_id)
+                        if (onViewUser) {
+                          onViewUser(user.user_id)
+                        }
                       }}
                       className="text-sm text-emerald-700 hover:text-emerald-800 font-medium"
                     >
