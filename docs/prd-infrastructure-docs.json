@@ -23,7 +23,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Created infrastructure-docs directory with story documentation. Updated Infrastructure Documentation.md in memory/ with accurate current deployment info showing single VPS with Docker container, remote PostgreSQL database (not co-located), Traefik reverse proxy, and external service dependencies (Auth, Audit, Email). Includes architecture diagrams, network flow, docker-compose configuration, and service components. Typecheck passes."
+      "notes": "Created /docs/infrastructure page with comprehensive current deployment state documentation including: architecture diagram (ASCII art), deployment characteristics table, service components (Control Plane, Data Plane, Admin Dashboard), database architecture with schema structure, storage and backups info, network architecture diagram, scaling roadmap phases, and current limitations. Added Infrastructure chapter to docs main page. Typecheck passes."
     },
     {
       "id": "US-002",
