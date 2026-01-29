@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest, generateApiKey, hashApiKey } from '@/lib/auth'
 import { logApiKeyAction, userActor } from '@nextmavens/audit-logs-database'
+import {
+  ApiKeyType,
+  ApiKeyEnvironment,
+  DEFAULT_SCOPES,
+  getKeyPrefix,
+  type ApiKey,
+} from '@/lib/types/api-key.types'
 
 export async function GET(req: NextRequest) {
   try {
