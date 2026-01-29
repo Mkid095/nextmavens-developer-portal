@@ -53,8 +53,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created POST /api/keys/[id]/rotate endpoint at src/app/api/keys/[id]/rotate/route.ts. Creates new key version with same properties as old key (key_type, environment, name, scopes). Links old key.rotated_to to new key id. Sets old key.expires_at to NOW() + 24 hours. Returns new key with secretKey (shown once), message, oldKeyId, and oldKeyExpiresAt. Includes idempotency support. Audit logging integrated. Typecheck passes."
     },
     {
       "id": "US-003",

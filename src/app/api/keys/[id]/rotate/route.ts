@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest, generateApiKey, hashApiKey } from '@/lib/auth'
-import { logApiKeyAction, userActor } from '@nextmavens/audit-logs-database'
 import { getKeyPrefix, type ApiKey, type ApiKeyType, type ApiKeyEnvironment } from '@/lib/types/api-key.types'
 import {
   getIdempotencyKey,
@@ -10,6 +9,7 @@ import {
   type IdempotencyResponse,
 } from '@/lib/idempotency'
 import { DEFAULT_SCOPES } from '@/lib/types/api-key.types'
+import { logAuditEntry, AuditLogType, AuditLogLevel } from '@/features/abuse-controls/lib/audit-logger'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -92,19 +92,23 @@ export async function POST(req: NextRequest, context: RouteContext) {
           [newKey.id, keyId]
         )
 
-        // Log key rotation
+        // Log key rotation to audit logs
         try {
-          await logApiKeyAction.rotated(
-            userActor(developer.id),
-            keyId,
-            newKey.id.toString(),
-            {
-              request: {
-                ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
-                userAgent: req.headers.get('user-agent') || undefined,
-              },
-            }
-          )
+          await logAuditEntry({
+            log_type: AuditLogType.MANUAL_INTERVENTION,
+            severity: AuditLogLevel.INFO,
+            developer_id: developer.id,
+            action: 'key.rotated',
+            details: {
+              old_key_id: keyId,
+              new_key_id: newKey.id.toString(),
+              key_name: existingKey.name,
+              key_type: keyType,
+            },
+            ip_address: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+            user_agent: req.headers.get('user-agent') || undefined,
+            occurred_at: new Date(),
+          })
         } catch (auditError) {
           // Don't fail the request if audit logging fails
           console.error('[Developer Portal] Failed to log key rotation:', auditError)

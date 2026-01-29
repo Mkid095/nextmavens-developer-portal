@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { BookOpen, Database, Shield, HardDrive, Globe, DatabaseBackup, ChevronRight, ChevronLeft, Code, Zap } from 'lucide-react'
+import { BookOpen, Database, Shield, HardDrive, Globe, DatabaseBackup, ChevronRight, ChevronLeft, Code, Zap, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface SidebarSection {
@@ -126,9 +126,11 @@ const colorClasses: Record<string, { bg: string; text: string; hoverBg: string; 
 interface DocsSidebarProps {
   isCollapsed: boolean
   onToggle: () => void
+  isMobileMenuOpen?: boolean
+  onMobileMenuClose?: () => void
 }
 
-export default function DocsSidebar({ isCollapsed, onToggle }: DocsSidebarProps) {
+export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, onMobileMenuClose }: DocsSidebarProps) {
   const pathname = usePathname()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
 
@@ -157,13 +159,28 @@ export default function DocsSidebar({ isCollapsed, onToggle }: DocsSidebarProps)
   return (
     <motion.aside
       initial={false}
-      animate={{ width: isCollapsed ? 80 : 280 }}
+      animate={{
+        width: isCollapsed ? 80 : 280,
+        x: isMobileMenuOpen !== undefined ? (isMobileMenuOpen ? 0 : -280) : 0,
+      }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 h-screen bg-white border-r border-slate-200 overflow-hidden z-40"
+      className={`fixed left-0 top-0 h-screen bg-white border-r border-slate-200 overflow-hidden ${
+        isMobileMenuOpen !== undefined ? 'z-50 md:z-40' : 'z-40'
+      }`}
     >
       <div className="h-full flex flex-col">
         {/* Sidebar Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200">
+          {/* Mobile close button */}
+          {isMobileMenuOpen !== undefined && onMobileMenuClose && (
+            <button
+              onClick={onMobileMenuClose}
+              className="md:hidden p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
           <AnimatePresence mode="wait">
             {!isCollapsed ? (
               <motion.div
@@ -211,6 +228,7 @@ export default function DocsSidebar({ isCollapsed, onToggle }: DocsSidebarProps)
                 <li key={section.id}>
                   <Link
                     href={section.path}
+                    onClick={onMobileMenuClose}
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                       active
                         ? `${colors.bg} ${colors.text} font-medium`
@@ -272,8 +290,8 @@ export default function DocsSidebar({ isCollapsed, onToggle }: DocsSidebarProps)
           </ul>
         </nav>
 
-        {/* Toggle Button */}
-        <div className="p-4 border-t border-slate-200">
+        {/* Toggle Button - hide on mobile */}
+        <div className="hidden md:block p-4 border-t border-slate-200">
           <button
             onClick={onToggle}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
