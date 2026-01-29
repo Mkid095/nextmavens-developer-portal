@@ -106,8 +106,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created authenticateApiKey() function in src/lib/auth.ts. Validates API key by hashing and checking against api_keys table. Checks if key is revoked or expired. Updates last_used to NOW() and increments usage_count asynchronously using fire-and-forget pattern to not block requests. Returns ApiKeyAuth interface with key details including developer_id. Typecheck passes."
     },
     {
       "id": "US-005",
