@@ -106,8 +106,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated POST /api/api-keys endpoint to accept key_type and environment parameters. Validates key_type against valid types (public, secret, service_role, mcp). Validates environment (live, test, dev). Sets default scopes based on key_type using DEFAULT_SCOPES. Sets key prefix using getKeyPrefix function. GET endpoint now returns scopes and environment. Typecheck passes."
     },
     {
       "id": "US-005",
