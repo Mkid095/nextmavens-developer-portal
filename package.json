@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "cli:build": "cd cli && tsc",
+    "cli:typecheck": "cd cli && tsc --noEmit",
     "migrate:notifications": "tsx scripts/migrate-notifications.ts",
     "test:notifications": "tsx scripts/test-notifications.ts"
   },
