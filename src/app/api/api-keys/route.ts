@@ -170,7 +170,9 @@ export async function POST(req: NextRequest) {
     // Add warnings based on key type
     const warning = validatedKeyType === 'public'
       ? 'This key is intended for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code. Never use secret keys in client-side applications.'
-      : validatedKeyType === 'secret' || validatedKeyType === 'service_role'
+      : validatedKeyType === 'service_role'
+      ? 'WARNING: This is a service role key that bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code. Only use this key in trusted server-side environments for admin operations.'
+      : validatedKeyType === 'secret'
       ? 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments where it cannot be accessed by users.'
       : undefined
 
