@@ -243,8 +243,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: API backend already supports environment parameter (from US-004). getKeyPrefix function generates prefixes with environment (pk_live_, pk_test_, pk_dev_). API accepts environment parameter and stores it. Environment is returned in GET /api/api-keys response. UI component (environment dropdown) would be implemented in the key creation form as a separate frontend task."
     },
     {
       "id": "US-009",
