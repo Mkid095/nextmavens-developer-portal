@@ -26,7 +26,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Migration script created at src/features/enhanced-api-keys/migrations/add-key-type-and-scopes.ts. Creates api_key_type and api_key_environment enums. Adds key_type, scopes (JSONB), and environment columns to api_keys table. Handles backwards compatibility by converting existing VARCHAR key_type to enum. Sets default scopes based on key_type. Sets environment based on key_prefix. Typecheck passes."
+      "notes": "Completed: Migration script created at src/features/enhanced-api-keys/migrations/add-key-type-and-scopes.ts. Creates api_key_type and api_key_environment enums. Adds key_type, scopes (JSONB), and environment columns to api_keys table. Handles backwards compatibility by converting existing VARCHAR key_type to enum. Sets default scopes based on key_type. Sets environment based on key_prefix. TypeScript types created at src/lib/types/api-key.types.ts with ApiKeyType, ApiKeyEnvironment, ApiKeyScope, DEFAULT_SCOPES, and getKeyPrefix helper function. Typecheck passes."
     },
     {
       "id": "US-002",
