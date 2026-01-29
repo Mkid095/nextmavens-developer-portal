@@ -5,9 +5,9 @@ import { motion } from 'framer-motion'
 import { Loader2, Mail, Calendar, Shield, ArrowLeft, RefreshCw } from 'lucide-react'
 import type { EndUserDetailResponse, EndUserSession } from '@/lib/types/auth-user.types'
 import { authServiceClient } from '@/lib/api/auth-service-client'
-import { UserDetailHeader } from './UserDetailHeader'
-import { UserDetailInfo } from './UserDetailInfo'
-import { UserDetailSessions } from './UserDetailSessions'
+import { UserDetailHeader } from '@/features/auth-users/components/UserDetailHeader'
+import { UserDetailInfo } from '@/features/auth-users/components/UserDetailInfo'
+import { UserDetailSessions } from '@/features/auth-users/components/UserDetailSessions'
 
 interface UserDetailProps {
   userId: string

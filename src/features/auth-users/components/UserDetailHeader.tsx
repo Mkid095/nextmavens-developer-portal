@@ -1,6 +1,6 @@
 import { Mail, ArrowLeft } from 'lucide-react'
 import type { EndUserDetailResponse } from '@/lib/types/auth-user.types'
-import { DisableUserButton } from './DisableUserButton'
+import { DisableUserButton } from '@/features/auth-users/components/DisableUserButton'
 
 interface UserDetailHeaderProps {
   user: EndUserDetailResponse
