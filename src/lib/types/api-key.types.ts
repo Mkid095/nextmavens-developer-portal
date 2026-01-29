@@ -55,6 +55,9 @@ export interface ApiKey {
   environment?: ApiKeyEnvironment
   created_at: string
   last_used?: string
+  expires_at?: string
+  rotated_to?: string
+  usage_count?: number
 }
 
 /**

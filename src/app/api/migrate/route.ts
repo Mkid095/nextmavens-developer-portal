@@ -4,6 +4,7 @@ import { addKeyTypeAndScopesToApiKeys } from '@/features/enhanced-api-keys'
 import { createFeatureFlagsTable } from '@/features/feature-flags'
 import { seedCoreFeatureFlags } from '@/features/feature-flags'
 import { createIdempotencyKeysTable } from '@/features/idempotency'
+import { addKeyLifecycleColumns } from '@/features/key-rotation/migrations'
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,6 +42,14 @@ export async function POST(req: NextRequest) {
       migration: 'idempotency-keys-table',
       success: idempotencyKeysResult.success,
       error: idempotencyKeysResult.error
+    })
+
+    // Run key lifecycle columns migration
+    const keyLifecycleColumnsResult = await addKeyLifecycleColumns()
+    results.push({
+      migration: 'key-lifecycle-columns',
+      success: keyLifecycleColumnsResult.success,
+      error: keyLifecycleColumnsResult.error
     })
 
     // Check if name column exists in api_keys (legacy migration)
