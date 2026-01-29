@@ -17,7 +17,7 @@ const principles = [
     title: 'Realtime DB-Driven',
     description: 'Change Data Capture (CDC) powered subscriptions',
     color: 'emerald',
-    comingSoon: true,
+    comingSoon: false,
   },
   {
     icon: Shield,
@@ -46,6 +46,66 @@ const principles = [
     description: 'CLI and automation are first-class citizens',
     color: 'teal',
     comingSoon: true,
+  },
+]
+
+const realtimeBenefits = [
+  {
+    title: 'Subscriptions Follow Table Structure',
+    description: 'Subscribe to any table directly. No custom protocols, no separate schema definitions. Your database structure drives your realtime subscriptions.',
+    icon: Database,
+    examples: [
+      'Subscribe to: users, orders, messages, any table',
+      'Filters use SQL WHERE clauses',
+      'Schema-driven, not protocol-driven',
+      'Works with existing database constraints',
+    ],
+  },
+  {
+    title: 'CDC-Based, Not Custom Protocol',
+    description: 'Change Data Capture (CDC) using Postgres logical replication captures database changes at the source. Reliable, ordered, and efficient.',
+    icon: Radio,
+    examples: [
+      'Captures INSERT, UPDATE, DELETE operations',
+      'Real-time streaming via logical replication',
+      'Efficient: only changed data transmitted',
+      'Ordered delivery guarantees',
+    ],
+  },
+  {
+    title: 'Schema-Driven and Automatic',
+    description: 'When you modify your schema, subscriptions automatically adapt. No manual configuration, no redeployment needed.',
+    icon: Zap,
+    examples: [
+      'Automatic sync with database schema',
+      'No separate subscription configuration',
+      'Add/remove columns without breaking clients',
+      'DDL changes propagate instantly',
+    ],
+  },
+]
+
+const realtimeComparison = [
+  {
+    approach: 'NextMavens DB-Driven',
+    description: 'Postgres CDC → WebSocket',
+    pros: [
+      'Subscriptions map 1:1 to tables',
+      'Use existing SQL knowledge',
+      'Schema changes are automatic',
+      'Ordered delivery guaranteed',
+      'No duplicate state management',
+    ],
+  },
+  {
+    approach: 'Custom Pub/Sub',
+    description: 'Application-level events → WebSocket',
+    pros: [
+      'Flexible event naming',
+      'Business logic in events',
+      'Language-agnostic',
+      'Can work with any database',
+    ],
   },
 ]
 
