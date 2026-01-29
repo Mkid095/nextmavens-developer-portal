@@ -155,6 +155,47 @@ export interface SecretDeleteResponse {
   message: string;
 }
 
+// Status types
+export interface UsageMetrics {
+  db_queries?: number;
+  db_queries_limit?: number;
+  realtime_connections?: number;
+  realtime_connections_limit?: number;
+  storage_uploads?: number;
+  storage_uploads_limit?: number;
+  function_invocations?: number;
+  function_invocations_limit?: number;
+}
+
+export interface ServiceStatus {
+  database: boolean;
+  auth: boolean;
+  realtime: boolean;
+  storage: boolean;
+  functions: boolean;
+}
+
+export interface Issue {
+  type: 'warning' | 'error';
+  message: string;
+  timestamp?: string;
+}
+
+export interface ProjectStatusResponse {
+  success: boolean;
+  project: {
+    id: string;
+    name: string;
+    slug: string;
+    status: string;
+    tenant_id: string;
+    created_at: string;
+  };
+  services: ServiceStatus;
+  usage: UsageMetrics;
+  issues: Issue[];
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -397,6 +438,14 @@ export class ApiClient {
       }
     );
     return response.data;
+  }
+
+  // Status API methods
+  public async getProjectStatus(projectId: string): Promise<ProjectStatusResponse> {
+    const response = await this.request<ProjectStatusResponse>(
+      `/v1/projects/${projectId}/status`
+    );
+    return response;
   }
 }
 

@@ -34,6 +34,8 @@ COMMANDS:
   secrets list                List all secret names (values hidden)
   secrets delete <key>        Delete a secret
 
+  status      Show linked project status and information
+
   hello       Say hello to the world
 
 OPTIONS:
@@ -83,6 +85,9 @@ async function main() {
       break;
     case 'secrets':
       await handleSecretsCommand(args.slice(1));
+      break;
+    case 'status':
+      await (await import('./commands/status')).statusCommand();
       break;
     default:
       console.log(`Unknown command: ${command}`);
