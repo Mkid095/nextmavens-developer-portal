@@ -1,5 +1,6 @@
 import { getPool } from '@/lib/db'
 import { HardCapType, ProjectQuota, HardCapConfig, DEFAULT_HARD_CAPS } from '../types'
+import { invalidateSnapshot } from '@/lib/snapshot'
 
 /**
  * Get all quotas for a project
@@ -75,7 +76,12 @@ export async function setProjectQuota(
       [projectId, capType, capValue]
     )
 
-    return result.rows[0]
+    const quota = result.rows[0]
+
+    // Invalidate snapshot cache for this project since quotas changed
+    invalidateSnapshot(projectId)
+
+    return quota
   } catch (error) {
     console.error('[Quotas] Error setting project quota:', error)
     throw new Error('Failed to set project quota')
@@ -153,6 +159,9 @@ export async function deleteProjectQuota(
       `,
       [projectId, capType]
     )
+
+    // Invalidate snapshot cache for this project since quotas changed
+    invalidateSnapshot(projectId)
   } catch (error) {
     console.error('[Quotas] Error deleting project quota:', error)
     throw new Error('Failed to delete project quota')
@@ -176,7 +185,12 @@ export async function resetProjectQuotas(projectId: string): Promise<ProjectQuot
     )
 
     // Apply defaults
-    return applyDefaultQuotas(projectId)
+    const quotas = await applyDefaultQuotas(projectId)
+
+    // Invalidate snapshot cache for this project since quotas changed
+    invalidateSnapshot(projectId)
+
+    return quotas
   } catch (error) {
     console.error('[Quotas] Error resetting project quotas:', error)
     throw new Error('Failed to reset project quotas')

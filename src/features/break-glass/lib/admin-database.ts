@@ -101,6 +101,10 @@ export interface AdminSessionValidation {
   reason?: 'not_found' | 'expired';
   session?: AdminSession;
   expires_in_seconds?: number;
+  /** Warning when session is about to expire (within 5 minutes) */
+  warning?: 'expiring_soon';
+  /** ISO timestamp when session expires */
+  expires_at?: string;
 }
 
 /**
@@ -203,10 +207,15 @@ export async function validateAdminSession(
     (new Date(session.expires_at).getTime() - Date.now()) / 1000
   );
 
+  // Check if session is expiring soon (within 5 minutes = 300 seconds)
+  const warning = expiresInSeconds <= 300 ? ('expiring_soon' as const) : undefined;
+
   return {
     valid: true,
     session,
     expires_in_seconds: expiresInSeconds,
+    ...(warning && { warning }),
+    expires_at: session.expires_at.toISOString(),
   };
 }
 

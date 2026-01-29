@@ -58,6 +58,12 @@ export interface BreakGlassTokenValidation {
   /** Time until expiration (in seconds, if valid) */
   expires_in_seconds?: number;
 
+  /** Warning when session is about to expire (within 5 minutes) */
+  warning?: 'expiring_soon';
+
+  /** ISO timestamp when session expires */
+  expires_at?: string;
+
   /** Admin ID from the session */
   admin_id?: string;
 }
@@ -173,6 +179,8 @@ export async function validateBreakGlassToken(
     valid: true,
     session: sessionInfo,
     expires_in_seconds: sessionValidation.expires_in_seconds,
+    ...(sessionValidation.warning && { warning: sessionValidation.warning }),
+    ...(sessionValidation.expires_at && { expires_at: sessionValidation.expires_at }),
     admin_id,
   };
 }

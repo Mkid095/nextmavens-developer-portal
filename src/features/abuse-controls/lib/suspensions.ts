@@ -96,6 +96,9 @@ export async function suspendProject(
         `[Suspensions] Suspended project ${projectId} for exceeding ${reason.cap_type}`
       )
 
+      // Invalidate snapshot cache for this project
+      invalidateSnapshot(projectId)
+
       // Log to audit logs (non-blocking)
       logProjectAction.autoSuspended(
         projectId,
@@ -204,6 +207,9 @@ export async function unsuspendProject(
       await pool.query('COMMIT')
 
       console.log(`[Suspensions] Unsuspended project ${projectId}`)
+
+      // Invalidate snapshot cache for this project
+      invalidateSnapshot(projectId)
     } catch (error) {
       await pool.query('ROLLBACK')
       throw error
