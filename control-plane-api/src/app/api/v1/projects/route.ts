@@ -24,7 +24,7 @@ async function validateProjectOwnership(
 ): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(
-    'SELECT id, developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, created_at FROM projects WHERE id = $1',
+    'SELECT id, developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, created_at FROM projects WHERE id = $1',
     [projectId]
   )
 
@@ -77,6 +77,11 @@ export async function GET(req: NextRequest) {
       values.push(query.status)
     }
 
+    if (query.environment) {
+      conditions.push(`environment = $${paramIndex++}`)
+      values.push(query.environment)
+    }
+
     const limit = query.limit || 50
     const offset = query.offset || 0
 
@@ -85,7 +90,7 @@ export async function GET(req: NextRequest) {
     const result = await pool.query(
       `SELECT
         p.id, p.project_name, p.tenant_id, p.webhook_url,
-        p.allowed_origins, p.rate_limit, p.status, p.created_at,
+        p.allowed_origins, p.rate_limit, p.status, p.environment, p.created_at,
         t.slug as tenant_slug
       FROM projects p
       JOIN tenants t ON p.tenant_id = t.id
@@ -102,6 +107,7 @@ export async function GET(req: NextRequest) {
         name: p.project_name,
         slug: p.tenant_slug,
         tenant_id: p.tenant_id,
+        environment: p.environment,
         webhook_url: p.webhook_url,
         allowed_origins: p.allowed_origins,
         rate_limit: p.rate_limit,
@@ -177,14 +183,15 @@ export async function POST(req: NextRequest) {
     // Create project
     const projectResult = await pool.query(
       `INSERT INTO projects (
-         developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status
+         developer_id, project_name, tenant_id, environment, webhook_url, allowed_origins, rate_limit, status
        )
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, created_at`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, project_name, tenant_id, environment, webhook_url, allowed_origins, rate_limit, status, created_at`,
       [
         developer.id,
         validatedData.project_name,
         tenantId,
+        validatedData.environment || 'prod',
         validatedData.webhook_url,
         validatedData.allowed_origins,
         1000, // default rate limit
@@ -202,6 +209,7 @@ export async function POST(req: NextRequest) {
           name: project.project_name,
           slug: slug,
           tenant_id: project.tenant_id,
+          environment: project.environment,
           webhook_url: project.webhook_url,
           allowed_origins: project.allowed_origins,
           rate_limit: project.rate_limit,

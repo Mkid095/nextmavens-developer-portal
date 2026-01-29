@@ -19,7 +19,7 @@ async function validateProjectOwnership(
 ): Promise<{ valid: boolean; project?: any; error?: string }> {
   const pool = getPool()
   const result = await pool.query(
-    'SELECT id, developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, created_at FROM projects WHERE id = $1',
+    'SELECT id, developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, created_at FROM projects WHERE id = $1',
     [projectId]
   )
 
@@ -57,7 +57,7 @@ export async function GET(
     const result = await pool.query(
       `SELECT
         p.id, p.project_name, p.tenant_id, p.webhook_url,
-        p.allowed_origins, p.rate_limit, p.status, p.created_at,
+        p.allowed_origins, p.rate_limit, p.status, p.environment, p.created_at,
         t.slug as tenant_slug
       FROM projects p
       JOIN tenants t ON p.tenant_id = t.id
@@ -74,6 +74,7 @@ export async function GET(
         name: fullProject.project_name,
         slug: fullProject.tenant_slug,
         tenant_id: fullProject.tenant_id,
+        environment: fullProject.environment,
         webhook_url: fullProject.webhook_url,
         allowed_origins: fullProject.allowed_origins,
         rate_limit: fullProject.rate_limit,
@@ -154,6 +155,11 @@ export async function PUT(
       values.push(validatedData.rate_limit)
     }
 
+    if (validatedData.environment !== undefined) {
+      updates.push(`environment = $${paramIndex++}`)
+      values.push(validatedData.environment)
+    }
+
     if (updates.length === 0) {
       return errorResponse('VALIDATION_ERROR', 'No fields to update', 400)
     }
@@ -166,7 +172,7 @@ export async function PUT(
       `UPDATE projects
        SET ${updates.join(', ')}
        WHERE id = $${paramIndex}
-       RETURNING id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, updated_at`,
+       RETURNING id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, updated_at`,
       values
     )
 
@@ -185,6 +191,7 @@ export async function PUT(
         name: updatedProject.project_name,
         slug: tenantResult.rows[0]?.slug,
         tenant_id: updatedProject.tenant_id,
+        environment: updatedProject.environment,
         webhook_url: updatedProject.webhook_url,
         allowed_origins: updatedProject.allowed_origins,
         rate_limit: updatedProject.rate_limit,
