@@ -1,0 +1,24 @@
+{
+  "name": "@nextmavens/control-plane-api",
+  "version": "1.0.0",
+  "description": "Control Plane API service for NextMavens platform",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20",
+    "@types/pg": "^8.11.0",
+    "typescript": "^5"
+  }
+}

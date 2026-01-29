@@ -29,8 +29,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Control Plane API service created at control-plane-api/ with versioned routes (/app/api/v1/, /app/api/internal/), shared auth.ts and db.ts libraries. Typecheck passes. Dev server runs successfully."
     },
     {
       "id": "US-002",
