@@ -164,8 +164,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Enhanced admin-database.ts with warning field and expires_at in AdminSessionValidation. Session expiration checked on every validation (expires_at < NOW). Updated middleware.ts to pass through warning and expires_at. Created session-utils.ts (280+ lines) with SessionStatus enum, getSessionStatusFromValidation, getSessionStatus, formatExpirationTime, isExpiringSoon, isCriticallyLow, getExpirationWarning, and calculateExpirationTime utilities. 5-minute warning (300s threshold) implemented. Typecheck passes."
     },
     {
       "id": "US-011",
