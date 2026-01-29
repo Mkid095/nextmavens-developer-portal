@@ -1,7 +1,16 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb } from 'lucide-react'
 
 const chapters = [
+  {
+    id: 'philosophy',
+    title: 'Platform Philosophy',
+    description: 'Postgres-native, JWT-first, multi-tenant architecture principles',
+    icon: Lightbulb,
+    color: 'emerald',
+    tools: ['Postgres-native', 'JWT auth', 'Multi-tenant'],
+    path: '/docs/platform-philosophy',
+  },
   {
     id: 'database',
     title: 'Database',
@@ -125,6 +134,7 @@ export default function DocsPage() {
                 emerald: 'bg-emerald-100 text-emerald-700',
                 teal: 'bg-teal-100 text-teal-700',
                 slate: 'bg-slate-100 text-slate-700',
+                green: 'bg-green-100 text-green-700',
               }[chapter.color]
 
               return (
