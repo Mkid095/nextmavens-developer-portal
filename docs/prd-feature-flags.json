@@ -106,8 +106,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added signups_enabled flag check to src/app/api/developer/register/route.ts. Returns 503 with clear message when signups are disabled. Uses checkFeature() helper with caching. Typecheck passes."
     },
     {
       "id": "US-005",

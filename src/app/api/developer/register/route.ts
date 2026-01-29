@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getPool } from '@/lib/db'
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth'
+import { checkFeature } from '@/lib/features'
 import {
   checkRateLimit,
   extractClientIP,
@@ -18,6 +19,18 @@ const ONE_HOUR_MS = 60 * 60 * 1000
 
 export async function POST(req: NextRequest) {
   try {
+    // Check if signups are enabled
+    const signupsEnabled = await checkFeature('signups_enabled')
+    if (!signupsEnabled) {
+      return NextResponse.json(
+        {
+          error: 'Signups disabled',
+          message: 'New user registrations are temporarily disabled. Please try again later.',
+        },
+        { status: 503 }
+      )
+    }
+
     const clientIP = extractClientIP(req)
 
     // For IP-based rate limiting during signup, we use the IP as the identifier
