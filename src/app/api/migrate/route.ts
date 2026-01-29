@@ -1,12 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { addKeyTypeAndScopesToApiKeys } from '@/features/enhanced-api-keys'
+import { createFeatureFlagsTable } from '@/features/feature-flags'
+import { seedCoreFeatureFlags } from '@/features/feature-flags'
 
 export async function POST(req: NextRequest) {
   try {
     const pool = getPool()
 
     const results = []
+
+    // Run feature flags table migration
+    const featureFlagsTableResult = await createFeatureFlagsTable()
+    results.push({
+      migration: 'feature-flags-table',
+      success: featureFlagsTableResult.success,
+      error: featureFlagsTableResult.error
+    })
+
+    // Run core feature flags seed migration
+    const coreFeatureFlagsResult = await seedCoreFeatureFlags()
+    results.push({
+      migration: 'core-feature-flags',
+      success: coreFeatureFlagsResult.success,
+      error: coreFeatureFlagsResult.error
+    })
 
     // Run enhanced API keys migration
     const enhancedApiKeysResult = await addKeyTypeAndScopesToApiKeys()

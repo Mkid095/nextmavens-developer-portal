@@ -25,8 +25,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created migration at src/features/feature-flags/migrations/create-feature-flags-table.ts"
     },
     {
       "id": "US-002",
@@ -54,8 +54,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created src/lib/features.ts with checkFeature(name, scope, scopeId) async function. Checks global flag first, then scope-specific flag. Returns boolean with 60s TTL caching using in-memory Map. Includes checkFeatureSync for cache-only reads, invalidateFlagCache for cache invalidation, setFeatureFlag for updating flags, and getFeatureFlags for listing all flags. Falls back to 'enabled' (true) on database errors for safety. Integrates with existing database pool from src/lib/db.ts. Typecheck passes."
     },
     {
       "id": "US-003",
@@ -80,8 +80,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created seed migration at src/features/feature-flags/migrations/seed-core-feature-flags.ts. Seeds signups_enabled, provisioning_enabled, storage_enabled, and realtime_enabled flags (all global, default: true). Exported from index.ts. Typecheck passes."
     },
     {
       "id": "US-004",
