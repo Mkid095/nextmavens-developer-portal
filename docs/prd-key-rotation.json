@@ -133,8 +133,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created GET /api/keys/[id]/usage endpoint at src/app/api/keys/[id]/usage/route.ts. Returns usage_count, last_used, created_at, usageByTimePeriod (last7Days, last30Days), and successErrorRate (total, success, error, successRate%, errorRate%). Verifies developer ownership. Falls back gracefully if api_usage_logs table doesn't exist. Typecheck passes."
     },
     {
       "id": "US-006",
