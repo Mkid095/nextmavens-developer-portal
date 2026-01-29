@@ -28,8 +28,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created POST /api/backup/export endpoint with pg_dump integration. Supports both sync and async export modes. Dumps tenant_{slug} schema only. Returns file directly for sync mode, returns processing status for async mode. Typecheck passes."
     },
     {
       "id": "US-002",
