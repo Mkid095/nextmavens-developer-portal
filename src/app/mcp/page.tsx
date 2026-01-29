@@ -14,6 +14,9 @@ import {
   Code2,
   ChevronRight,
   Loader2,
+  Lock,
+  AlertTriangle,
+  Key,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -187,6 +190,138 @@ npm install`} />
               </label>
               <CodeBlock code="npm start" />
             </div>
+          </div>
+        </motion.div>
+
+        {/* MCP Token Types */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-white rounded-2xl border border-slate-200 p-8 mb-12"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <Key className="w-6 h-6 text-emerald-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">MCP Token Types</h2>
+              <p className="text-slate-600">Three access levels for different AI use cases</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Read-Only Token */}
+            <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Lock className="w-5 h-5 text-blue-700" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-slate-900">Read-Only Token</h3>
+                    <code className="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">mcp_ro_</code>
+                  </div>
+                  <p className="text-slate-700 mb-3">
+                    <strong>Default and recommended for most AI assistants.</strong> Safe default that allows AI tools to read and analyze your data without making any changes.
+                  </p>
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-slate-700 mb-2">Capabilities:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-xs bg-white border border-blue-200 text-slate-700 px-2 py-1 rounded">db:select</span>
+                      <span className="text-xs bg-white border border-blue-200 text-slate-700 px-2 py-1 rounded">storage:read</span>
+                      <span className="text-xs bg-white border border-blue-200 text-slate-700 px-2 py-1 rounded">realtime:subscribe</span>
+                      <span className="text-xs bg-white border border-blue-200 text-slate-700 px-2 py-1 rounded">graphql:execute</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-slate-600">
+                    <strong>Use cases:</strong> Code review, data analysis, schema exploration, debugging assistance, documentation generation.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Read-Write Token */}
+            <div className="p-6 bg-amber-50 rounded-xl border border-amber-200">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <AlertTriangle className="w-5 h-5 text-amber-700" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-slate-900">Read-Write Token</h3>
+                    <code className="text-sm bg-amber-100 text-amber-800 px-2 py-1 rounded">mcp_rw_</code>
+                  </div>
+                  <p className="text-slate-700 mb-3">
+                    <strong>For trusted AI tools that need to modify data.</strong> Allows create, update, and delete operations. Only grant to AI systems you trust.
+                  </p>
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-slate-700 mb-2">Capabilities:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-xs bg-white border border-amber-200 text-slate-700 px-2 py-1 rounded">db:insert</span>
+                      <span className="text-xs bg-white border border-amber-200 text-slate-700 px-2 py-1 rounded">db:update</span>
+                      <span className="text-xs bg-white border border-amber-200 text-slate-700 px-2 py-1 rounded">db:delete</span>
+                      <span className="text-xs bg-white border border-amber-200 text-slate-700 px-2 py-1 rounded">storage:write</span>
+                      <span className="text-xs bg-white border border-amber-200 text-slate-700 px-2 py-1 rounded">All read-only scopes</span>
+                    </div>
+                  </div>
+                  <div className="bg-amber-100 border border-amber-300 rounded-lg p-3 mt-3">
+                    <p className="text-sm text-amber-900">
+                      <strong>⚠️ Warning:</strong> This token can modify your data. Only grant to trusted AI systems. Requires explicit opt-in with confirmation.
+                    </p>
+                  </div>
+                  <p className="text-sm text-slate-600 mt-3">
+                    <strong>Use cases:</strong> Automated data migration, content generation with database writes, trusted CI/CD automation.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Token */}
+            <div className="p-6 bg-red-50 rounded-xl border border-red-200">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Shield className="w-5 h-5 text-red-700" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-slate-900">Admin Token</h3>
+                    <code className="text-sm bg-red-100 text-red-800 px-2 py-1 rounded">mcp_admin_</code>
+                  </div>
+                  <p className="text-slate-700 mb-3">
+                    <strong>Full administrative access for trusted AI ops tools.</strong> Bypasses row-level security and can manage users. Highest privilege level.
+                  </p>
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-slate-700 mb-2">Capabilities:</p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="text-xs bg-white border border-red-200 text-slate-700 px-2 py-1 rounded">All read-write scopes</span>
+                      <span className="text-xs bg-white border border-red-200 text-slate-700 px-2 py-1 rounded">auth:manage</span>
+                      <span className="text-xs bg-white border border-red-200 text-slate-700 px-2 py-1 rounded">secrets:read</span>
+                      <span className="text-xs bg-white border border-red-200 text-slate-700 px-2 py-1 rounded">bypasses RLS</span>
+                    </div>
+                  </div>
+                  <div className="bg-red-100 border border-red-300 rounded-lg p-3 mt-3">
+                    <p className="text-sm text-red-900">
+                      <strong>🚨 Critical Warning:</strong> This token has full administrative access and can manage users, read secrets, and bypass all security rules. Only use in trusted environments with verified AI operations tools.
+                    </p>
+                  </div>
+                  <p className="text-sm text-slate-600 mt-3">
+                    <strong>Use cases:</strong> Automated user provisioning, emergency recovery operations, trusted infrastructure automation.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <h4 className="font-semibold text-slate-900 mb-2">Security Best Practices</h4>
+            <ul className="text-sm text-slate-700 space-y-1">
+              <li>• Always start with <code className="bg-slate-200 px-1 rounded">mcp_ro_</code> tokens for read-only operations</li>
+              <li>• Only use <code className="bg-slate-200 px-1 rounded">mcp_rw_</code> tokens when AI tools need to modify data</li>
+              <li>• Reserve <code className="bg-slate-200 px-1 rounded">mcp_admin_</code> tokens for trusted operational automation</li>
+              <li>• Rotate MCP tokens regularly using the dashboard</li>
+              <li>• All MCP actions are heavily audited for security monitoring</li>
+            </ul>
           </div>
         </motion.div>
 

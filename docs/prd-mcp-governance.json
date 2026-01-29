@@ -25,8 +25,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: MCP token types (mcp_ro_, mcp_rw_, mcp_admin_) already defined in TypeScript types (src/lib/types/api-key.types.ts). The getKeyPrefix() function generates these prefixes. The api_keys.key_prefix column stores these values (from migration in prd-enhanced-api-keys.json US-001). The key_type column distinguishes MCP ('mcp') from other key types ('public', 'secret', 'service_role'). Added comprehensive documentation to the MCP integration page at /mcp with detailed explanations of each token type, their capabilities, use cases, security warnings, and best practices. Typecheck passes."
     },
     {
       "id": "US-002",
