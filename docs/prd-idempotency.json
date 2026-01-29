@@ -191,8 +191,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Cleanup job handler exists at src/features/idempotency/lib/cleanup-job.ts with cleanupExpiredIdempotencyKeys() function. Admin API endpoint at /api/admin/idempotency/cleanup for triggering cleanup manually or via cron. Deletes keys where expires_at < NOW(). Job logged in audit log using logSystemAction.executed(). Includes getIdempotencyKeyStats() for monitoring. Typecheck passes."
     },
     {
       "id": "US-008",

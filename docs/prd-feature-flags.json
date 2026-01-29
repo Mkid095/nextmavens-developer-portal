@@ -158,8 +158,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created storage upload endpoint at src/app/api/storage/upload/route.ts with storage_enabled flag check. POST /api/storage/upload checks flag and returns 503 with clear message when disabled. GET /api/storage/upload (for downloads/listing) does NOT check the flag, implementing read-only mode as required. Uses checkFeature() helper with caching. Includes validation for file name, size, and content type. Typecheck passes."
     },
     {
       "id": "US-007",

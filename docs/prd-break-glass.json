@@ -249,8 +249,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: POST /api/admin/projects/[id]/regenerate-keys endpoint (280+ lines) with POST and GET handlers. Service layer regenerate-keys.service.ts (350+ lines) with regenerateKeys function that invalidates all existing API keys, generates new service_role keys with full secrets (show once), and logs before/after states. Types defined in regenerate-keys.types.ts (90+ lines). Supports configurable key_count (1-10) and environment (live/test/dev). Integrates with aggressive audit logging and snapshot invalidation. Typecheck passes."
     },
     {
       "id": "US-008",
