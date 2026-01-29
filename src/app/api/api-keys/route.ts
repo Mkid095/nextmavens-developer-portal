@@ -11,7 +11,8 @@ import {
 } from '@/lib/types/api-key.types'
 import {
   getIdempotencyKey,
-  withIdempotency,
+  getIdempotencyKeySuffix,
+  withIdempotencyWithKey,
   type IdempotencyResponse,
 } from '@/lib/idempotency'
 
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
     const idempotencyKey = getIdempotencyKey('create_key', req.headers, request_id)
 
     // Execute with idempotency (TTL: 5 minutes = 300 seconds)
-    const result = await withIdempotency(
+    const { result, idempotencyKey: returnedKey } = await withIdempotencyWithKey(
       idempotencyKey,
       async (): Promise<IdempotencyResponse> => {
         // Validation errors should not be cached
@@ -217,8 +218,14 @@ export async function POST(req: NextRequest) {
       { ttl: 300 } // 5 minutes TTL
     )
 
-    // Return the response with the appropriate status code
-    return NextResponse.json(result.body, { status: result.status })
+    // Return the response with the appropriate status code and idempotency key header
+    return NextResponse.json(result.body, {
+      status: result.status,
+      headers: {
+        'Idempotency-Key': getIdempotencyKeySuffix(returnedKey),
+        ...result.headers,
+      },
+    })
   } catch (error: any) {
     console.error('[Developer Portal] Create API key error:', error)
     return NextResponse.json({ error: error.message || 'Failed to create API key' }, { status: 401 })

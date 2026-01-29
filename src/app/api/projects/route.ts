@@ -14,7 +14,8 @@ import {
 import { logProjectAction, userActor } from '@nextmavens/audit-logs-database'
 import {
   getIdempotencyKey,
-  withIdempotency,
+  withIdempotencyWithKey,
+  getIdempotencyKeySuffix,
   type IdempotencyResponse,
 } from '@/lib/idempotency'
 import { checkFeature } from '@/lib/features'
@@ -61,7 +62,8 @@ export async function POST(req: NextRequest) {
     )
 
     // Execute with idempotency (TTL: 1 hour = 3600 seconds)
-    const result = await withIdempotency(
+    // Also get the idempotency key for response headers
+    const { result, idempotencyKey: returnedKey } = await withIdempotencyWithKey(
       idempotencyKey,
       async (): Promise<IdempotencyResponse> => {
         // Extract rate limit identifiers
@@ -229,9 +231,15 @@ export async function POST(req: NextRequest) {
     )
 
     // Return the response with the appropriate status code and headers
+    // Include the idempotency key in the response header
+    const responseHeaders: Record<string, string> = {
+      ...result.headers,
+      'Idempotency-Key': getIdempotencyKeySuffix(returnedKey),
+    }
+
     return NextResponse.json(result.body, {
       status: result.status,
-      headers: result.headers,
+      headers: responseHeaders,
     })
   } catch (error: any) {
     console.error('[Developer Portal] Create project error:', error)

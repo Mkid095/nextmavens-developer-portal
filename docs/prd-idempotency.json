@@ -218,8 +218,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Enhanced idempotency middleware in src/lib/idempotency.ts with withIdempotencyWithKey() function that returns both the result and idempotency key. Added getIdempotencyKeySuffix() helper for extracting key suffix. Updated POST /api/projects endpoint to use withIdempotencyWithKey() and return Idempotency-Key header in response. getIdempotencyKey() already checks Idempotency-Key header and generates UUID fallback. Added JSDoc documentation with usage examples. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

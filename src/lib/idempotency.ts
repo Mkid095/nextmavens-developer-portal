@@ -7,6 +7,7 @@ import { getPool } from '@/lib/db'
  * requests from causing duplicate side effects.
  *
  * US-002: Create Idempotency Middleware
+ * US-008: Add Idempotency Key to Request Headers
  */
 
 /**
@@ -24,6 +25,15 @@ export interface IdempotencyResponse {
 export interface IdempotencyResult {
   isDuplicate: boolean
   cachedResponse: IdempotencyResponse | null
+}
+
+/**
+ * Result from idempotency-wrapped operation
+ * Includes the idempotency key for response headers
+ */
+export interface IdempotencyWrappedResult<T extends IdempotencyResponse> {
+  result: T
+  idempotencyKey: string
 }
 
 /**
@@ -113,6 +123,9 @@ export async function storeIdempotencyResult(
  * This helper checks for an existing cached response and returns it if found.
  * Otherwise, it executes the provided function and stores the result.
  *
+ * NOTE: This version does NOT return the idempotency key. Use withIdempotencyWithKey()
+ * if you need the key for response headers.
+ *
  * @param key - The idempotency key
  * @param fn - The async function to execute if no cached result exists
  * @param options - Optional configuration
@@ -147,6 +160,56 @@ export async function withIdempotency<T extends IdempotencyResponse>(
 }
 
 /**
+ * Wrapper function to add idempotency and return the idempotency key
+ *
+ * This is similar to withIdempotency() but also returns the idempotency key
+ * so it can be included in response headers.
+ *
+ * @param key - The idempotency key
+ * @param fn - The async function to execute if no cached result exists
+ * @param options - Optional configuration
+ * @returns Object containing the result and the idempotency key
+ *
+ * @example
+ * ```ts
+ * const { result, idempotencyKey } = await withIdempotencyWithKey('create-user:123', async () => {
+ *   return { status: 201, headers: {}, body: { id: 123 } }
+ * })
+ *
+ * return NextResponse.json(result.body, {
+ *   status: result.status,
+ *   headers: { ...result.headers, 'Idempotency-Key': idempotencyKey }
+ * })
+ * ```
+ */
+export async function withIdempotencyWithKey<T extends IdempotencyResponse>(
+  key: string,
+  fn: () => Promise<T>,
+  options: IdempotencyOptions = {}
+): Promise<IdempotencyWrappedResult<T>> {
+  // Check for existing response
+  const existing = await checkIdempotencyKey(key)
+
+  if (existing.isDuplicate && existing.cachedResponse) {
+    return {
+      result: existing.cachedResponse as T,
+      idempotencyKey: key,
+    }
+  }
+
+  // Execute the function
+  const result = await fn()
+
+  // Store the result
+  await storeIdempotencyResult(key, result, options)
+
+  return {
+    result,
+    idempotencyKey: key,
+  }
+}
+
+/**
  * Extract or generate an idempotency key from a request
  *
  * If the Idempotency-Key header is present, use it.
@@ -170,4 +233,18 @@ export function getIdempotencyKey(
   // Generate a key with the provided fallback or random UUID
   const suffix = fallbackId || crypto.randomUUID()
   return `${prefix}:${suffix}`
+}
+
+/**
+ * Get the key suffix from a full idempotency key
+ *
+ * Useful for extracting the client-provided or generated portion
+ * to return in response headers.
+ *
+ * @param fullKey - The full idempotency key (e.g., 'provision:uuid-here')
+ * @returns The key suffix (e.g., 'uuid-here')
+ */
+export function getIdempotencyKeySuffix(fullKey: string): string {
+  const parts = fullKey.split(':')
+  return parts.length > 1 ? parts.slice(1).join(':') : fullKey
 }

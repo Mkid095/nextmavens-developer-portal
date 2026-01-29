@@ -10,7 +10,8 @@ import {
 } from '@/lib/validation'
 import {
   getIdempotencyKey,
-  withIdempotency,
+  getIdempotencyKeySuffix,
+  withIdempotencyWithKey,
   type IdempotencyResponse,
 } from '@/lib/idempotency'
 
@@ -166,7 +167,7 @@ export async function POST(req: NextRequest) {
     )
 
     // Execute with idempotency (TTL: 1 hour = 3600 seconds)
-    const result = await withIdempotency(
+    const { result, idempotencyKey: returnedKey } = await withIdempotencyWithKey(
       idempotencyKey,
       async (): Promise<IdempotencyResponse> => {
         const pool = getPool()
@@ -248,8 +249,14 @@ export async function POST(req: NextRequest) {
       { ttl: 3600 } // 1 hour TTL
     )
 
-    // Return the response with the appropriate status code
-    return NextResponse.json(result.body, { status: result.status })
+    // Return the response with the appropriate status code and idempotency key header
+    return NextResponse.json(result.body, {
+      status: result.status,
+      headers: {
+        'Idempotency-Key': getIdempotencyKeySuffix(returnedKey),
+        ...result.headers,
+      },
+    })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
       return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
