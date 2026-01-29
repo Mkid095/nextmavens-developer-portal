@@ -6,104 +6,136 @@ This document describes NextMavens' current infrastructure deployment, scaling r
 
 ### Architecture Overview
 
-NextMavens currently runs on a **single VPS deployment** with all services co-located.
+NextMavens currently runs on a **single VPS deployment** with the application containerized and connected to remote services.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Single VPS Instance                       │
+│                      Single VPS Instance                         │
 │                                                                   │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │                    Next.js Application                     │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │  │
-│  │  │   Control   │  │    Data     │  │     Admin       │   │  │
-│  │  │    Plane    │  │   Plane     │  │   Break Glass   │   │  │
-│  │  │    API      │  │   API       │  │     Powers      │   │  │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘   │  │
-│  │                                                               │  │
-│  │  ┌──────────────────────────────────────────────────┐      │  │
-│  │  │           Web Application (Dashboard)            │      │  │
-│  │  └──────────────────────────────────────────────────┘      │  │
+│  │              Docker Container (Traefik Network)            │  │
+│  │  ┌─────────────────────────────────────────────────────┐   │  │
+│  │  │         Next.js Application (Port 3000)              │   │  │
+│  │  │  ┌─────────────┐  ┌─────────────┐  ┌──────────────┐ │   │  │
+│  │  │  │   Control   │  │    Data     │  │     Admin    │ │   │  │
+│  │  │  │    Plane    │  │   Plane     │  │   Dashboard  │ │   │  │
+│  │  │  │    API      │  │   API       │  │              │ │   │  │
+│  │  │  └─────────────┘  └─────────────┘  └──────────────┘ │   │  │
+│  │  │                                                     │   │  │
+│  │  │  ┌─────────────────────────────────────────────┐   │   │  │
+│  │  │  │       Web Application (Dashboard/UI)         │   │   │  │
+│  │  │  └─────────────────────────────────────────────┘   │   │  │
+│  │  └─────────────────────────────────────────────────────┘   │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │                              │                                    │
-│                              ▼                                    │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │                    PostgreSQL Database                     │  │
-│  │  ┌─────────────────┐  ┌─────────────────┐                │  │
-│  │  │  control_plane  │  │   data_plane    │                │  │
-│  │  │     schema      │  │     schema      │                │  │
-│  │  └─────────────────┘  └─────────────────┘                │  │
-│  │                                                               │  │
-│  │  Per-project databases created on-demand                     │  │
-│  └───────────────────────────────────────────────────────────┘  │
-│                              │                                    │
-│                              ▼                                    │
-│  ┌───────────────────────────────────────────────────────────┐  │
-│  │              Telegram Files (Storage/Backups)              │  │
-│  │  • User file uploads                                       │  │
-│  │  • Database backups (daily)                                │  │
-│  └───────────────────────────────────────────────────────────┘  │
+│                              ▼ (Remote)                           │
 └─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│  PostgreSQL   │    │   Telegram    │    │   External    │
+│   (Remote)    │    │   Storage     │    │   Services    │
+│  Managed DB   │    │   Service     │    │  (Auth/Audit) │
+└───────────────┘    └───────────────┘    └───────────────┘
 ```
 
 ### Deployment Characteristics
 
 | Aspect | Current State |
 |--------|---------------|
-| **Infrastructure** | Single VPS (Virtual Private Server) |
-| **Services** | All services co-located on same instance |
-| **Web Server** | Next.js with built-in server / Node.js |
-| **Database** | PostgreSQL on same VPS |
-| **Storage** | Telegram for file storage and backups |
-| **Region** | Single region (US-East) |
+| **Infrastructure** | Single VPS (Docker container) |
+| **Container Runtime** | Docker with docker-compose |
+| **Web Server** | Next.js standalone with Node.js 18-alpine |
+| **Reverse Proxy** | Traefik (HTTPS termination) |
+| **Domain** | https://portal.nextmavens.cloud |
+| **Database** | Remote PostgreSQL (managed service) |
+| **Storage** | Telegram API for file uploads/backups |
+| **Auth Service** | External auth service integration |
+| **Audit Service** | External audit logging service |
+| **Email Service** | Resend API for notifications |
+| **Region** | Single region |
 | **Scalability** | Vertical scaling only |
-| **Load Balancing** | None (single instance) |
+| **Load Balancing** | Traefik (single instance) |
 | **CDN** | Not implemented |
+
+### Docker Configuration
+
+The application is deployed using Docker with the following configuration:
+
+**docker-compose.yml:**
+- Container: `nextmavens-developer-portal`
+- Port mapping: `3006:3000` (host:container)
+- Network: `dokploy-network` (external Traefik network)
+- Restart policy: `unless-stopped`
+- Base image: `node:18-alpine`
+
+**Traefik Labels:**
+- HTTPS enabled with Let's Encrypt
+- Domain: `portal.nextmavens.cloud`
+- TLS certificate resolver: `letsencrypt`
+- Entry point: `websecure`
 
 ### Service Components
 
-#### Control Plane
-- **API**: `/api/*` endpoints for platform management
-- **Authentication**: JWT-based developer authentication
-- **Project Management**: CRUD operations for projects
-- **API Key Management**: Generation and rotation of API keys
-- **Break Glass Powers**: Emergency admin operations
+#### Control Plane APIs
+- **Authentication**: `/api/auth/*` - Developer authentication (JWT)
+- **Developer Auth**: `/api/developer/*` - Developer account management
+- **Project Management**: `/api/projects/*` - CRUD operations
+- **API Key Management**: `/api/admin/projects/[id]/regenerate-keys` - Key generation
+- **Break Glass**: `/api/admin/break-glass/*` - Emergency admin operations
+- **Admin Operations**: `/api/admin/*` - Platform management
 
-#### Data Plane
-- **Database API**: Direct database access for projects
-- **Query Execution**: SQL query execution with safety limits
-- **Schema Management**: Schema migrations and diffs
-- **Edge Functions**: Serverless function deployment
+#### Data Plane APIs
+- **Database Query**: `/api/*` - Direct database access for projects
+- **Schema Browser**: View and manage database schemas
+- **Storage**: `/api/storage/*` - File upload via Telegram
 
-#### Admin Dashboard
-- **Project Monitoring**: View all projects and their status
-- **Developer Management**: Manage developer accounts
-- **Audit Logs**: Review system actions and changes
-- **System Health**: Monitor service status
+#### External Service Integrations
+- **Auth Service** (feature-flagged): User management via Studio interface
+- **Audit Logs** (feature-flagged): External audit trail
+- **Telegram Storage**: File uploads and backup storage
+- **Resend Email**: Notification service for suspensions/alerts
 
 ### Database Architecture
 
-PostgreSQL is deployed on the same VPS with the following schema structure:
+**Remote PostgreSQL Database:**
+- Host: `nextmavens-db-m4sxnf.1.mvuvh68efk7jnvynmv8r2jm2u` (managed service)
+- Port: `5432`
+- Database: `nextmavens`
+- Connection Pool: Max 20 connections
+- Multi-tenancy: Each project gets its own tenant
+- Row Level Security (RLS) enabled
 
+**Schema Structure:**
 ```
-PostgreSQL Instance
+PostgreSQL Database (Remote)
 │
-├── control_plane schema
-│   ├── developers      - Developer accounts
-│   ├── projects        - Project metadata
-│   ├── api_keys        - API key management
-│   ├── admin_sessions  - Break glass sessions
-│   ├── admin_actions   - Break glass audit logs
-│   └── audit_logs      - General audit trail
+├── Core Tables
+│   ├── developers         - Developer accounts
+│   ├── projects           - Project metadata
+│   ├── api_keys           - API key storage (SHA-256 hashed)
+│   ├── tenants            - Tenant information
+│   ├── feature_flags      - Feature toggle management
+│   └── audit_logs         - Audit trail
 │
-└── data_plane schema (per project)
-    ├── [project_name]  - Project-specific database
-    └── [tables]        - User-defined tables
+├── Abuse Control Tables
+│   ├── project_quotas     - Hard cap configurations
+│   ├── suspensions        - Project suspension records
+│   ├── manual_overrides   - Admin override tracking
+│   ├── pattern_detections - Malicious pattern tracking
+│   ├── spike_detections   - Usage spike tracking
+│   └── error_metrics      - Error rate tracking
+│
+└── Per-Project Schemas
+    ├── [tenant_id]        - Tenant-specific data
+    └── usage_metrics      - Resource usage tracking
 ```
 
 ### Storage and Backups
 
-- **File Storage**: Telegram API for file uploads
-- **Database Backups**: Daily backups to Telegram
+- **File Storage**: Telegram API for user file uploads
+- **Database Backups**: Daily backups to Telegram (manual process)
 - **Backup Retention**: Configurable retention period
 - **Recovery**: Manual restore from Telegram backups
 
@@ -114,32 +146,45 @@ PostgreSQL Instance
                        │
                        ▼
               ┌─────────────────┐
-              │  VPS Firewall   │
-              │  (Port 80/443)  │
+              │     Traefik     │
+              │  (Reverse Proxy)│
+              │  TLS Termination│
+              │  Let's Encrypt  │
               └─────────────────┘
                        │
                        ▼
               ┌─────────────────┐
-              │   Node.js /     │
-              │   Next.js App   │
+              │   VPS Firewall  │
+              │   (Port 3006)   │
               └─────────────────┘
                        │
-        ┌──────────────┼──────────────┐
-        ▼              ▼              ▼
-  ┌───────────┐  ┌───────────┐  ┌───────────┐
-  │ PostgreSQL │  │  Telegram │  │  Logs /   │
-  │  Database  │  │   Files   │  │ Monitoring│
-  └───────────┘  └───────────┘  └───────────┘
+                       ▼
+        ┌────────────────────────────┐
+        │  Docker Container           │
+        │  nextmavens-developer-portal│
+        │  Next.js App (Port 3000)    │
+        └────────────────────────────┘
+                       │
+        ┌──────────────┼──────────────────┐
+        ▼              ▼                  ▼
+  ┌───────────┐  ┌───────────┐    ┌───────────┐
+  │ PostgreSQL │  │  Telegram │    │  External │
+  │  (Remote)  │  │  Storage  │    │  Services │
+  └───────────┘  └───────────┘    │ (Auth/    │
+                                  │  Audit/   │
+                                  │  Email)   │
+                                  └───────────┘
 ```
 
 ### Current Limitations
 
 - **Single Point of Failure**: No redundancy if VPS fails
-- **Region Availability**: Only available in US-East region
+- **Single Region**: Only available in one region
 - **Scalability**: Limited to single instance capacity
 - **Disaster Recovery**: Manual backup restoration required
 - **Monitoring**: Basic logging, no comprehensive observability
 - **Auto-scaling**: Not implemented
+- **Remote Dependencies**: Relies on external services (auth, audit)
 
 ---
 

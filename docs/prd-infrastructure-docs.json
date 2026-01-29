@@ -23,7 +23,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Created comprehensive infrastructure documentation at docs/memory/Infrastructure Documentation.md. Includes Current Deployment section with single VPS architecture diagram showing all services co-located (Control Plane API, Data Plane API, Admin Dashboard, PostgreSQL, Telegram storage). Documents deployment characteristics, service components, database architecture, storage/backups, network architecture, and current limitations. Also includes planned scaling phases, regional data isolation, disaster recovery, monitoring approach, service dependencies, security architecture, FAQ, and SLA targets sections. Typecheck passes."
+      "notes": "Completed: Created infrastructure-docs directory with story documentation. Updated Infrastructure Documentation.md in memory/ with accurate current deployment info showing single VPS with Docker container, remote PostgreSQL database (not co-located), Traefik reverse proxy, and external service dependencies (Auth, Audit, Email). Includes architecture diagrams, network flow, docker-compose configuration, and service components. Typecheck passes."
     },
     {
       "id": "US-002",
