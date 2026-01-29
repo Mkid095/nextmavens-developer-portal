@@ -1,41 +1,127 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/auth'
+import { ZodError } from 'zod'
+import { authenticateRequest, type Developer } from '@/lib/auth'
 import { getPool } from '@/lib/db'
+import {
+  createProjectSchema,
+  listProjectsQuerySchema,
+  type CreateProjectInput,
+  type ListProjectsQuery,
+} from '@/lib/validation'
+
+// Helper function for standard error responses
+function errorResponse(code: string, message: string, status: number) {
+  return NextResponse.json(
+    { success: false, error: { code, message } },
+    { status }
+  )
+}
+
+// Helper function to validate ownership
+async function validateProjectOwnership(
+  projectId: string,
+  developer: Developer
+): Promise<{ valid: boolean; project?: any }> {
+  const pool = getPool()
+  const result = await pool.query(
+    'SELECT id, developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, created_at FROM projects WHERE id = $1',
+    [projectId]
+  )
+
+  if (result.rows.length === 0) {
+    return { valid: false }
+  }
+
+  const project = result.rows[0]
+  if (project.developer_id !== developer.id) {
+    return { valid: false, project }
+  }
+
+  return { valid: true, project }
+}
 
 // GET /v1/projects - List all projects (with filtering)
 export async function GET(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
-
-    // TODO: Implement filtering logic
     const pool = getPool()
+
+    // Parse and validate query parameters
+    const searchParams = req.nextUrl.searchParams
+    const queryParams: Record<string, string> = {}
+    searchParams.forEach((value, key) => {
+      queryParams[key] = value
+    })
+
+    let query: ListProjectsQuery = {}
+    try {
+      query = listProjectsQuerySchema.parse(queryParams)
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return errorResponse(
+          'VALIDATION_ERROR',
+          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          400
+        )
+      }
+      throw error
+    }
+
+    // Build query with filters
+    const conditions: string[] = ['developer_id = $1']
+    const values: any[] = [developer.id]
+    let paramIndex = 2
+
+    if (query.status) {
+      conditions.push(`status = $${paramIndex++}`)
+      values.push(query.status)
+    }
+
+    const limit = query.limit || 50
+    const offset = query.offset || 0
+
+    values.push(limit, offset)
+
     const result = await pool.query(
-      'SELECT id, name, slug, status, created_at FROM control_plane.projects WHERE developer_id = $1 ORDER BY created_at DESC',
-      [developer.id]
+      `SELECT
+        p.id, p.project_name, p.tenant_id, p.webhook_url,
+        p.allowed_origins, p.rate_limit, p.status, p.created_at,
+        t.slug as tenant_slug
+      FROM projects p
+      JOIN tenants t ON p.tenant_id = t.id
+      WHERE ${conditions.join(' AND ')}
+      ORDER BY p.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      values
     )
 
     return NextResponse.json({
       success: true,
-      data: result.rows,
+      data: result.rows.map(p => ({
+        id: p.id,
+        name: p.project_name,
+        slug: p.tenant_slug,
+        tenant_id: p.tenant_id,
+        webhook_url: p.webhook_url,
+        allowed_origins: p.allowed_origins,
+        rate_limit: p.rate_limit,
+        status: p.status,
+        created_at: p.created_at,
+      })),
+      meta: {
+        limit,
+        offset,
+      }
     })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
-      return NextResponse.json(
-        { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
+      return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
     }
     if (error instanceof Error && error.message === 'Invalid token') {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' } },
-        { status: 401 }
-      )
+      return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
     console.error('Error listing projects:', error)
-    return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to list projects' } },
-      { status: 500 }
-    )
+    return errorResponse('INTERNAL_ERROR', 'Failed to list projects', 500)
   }
 }
 
@@ -45,37 +131,94 @@ export async function POST(req: NextRequest) {
     const developer = await authenticateRequest(req)
     const body = await req.json()
 
-    // TODO: Implement validation and project creation logic
+    // Validate request body
+    let validatedData: CreateProjectInput
+    try {
+      validatedData = createProjectSchema.parse(body)
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return errorResponse(
+          'VALIDATION_ERROR',
+          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          400
+        )
+      }
+      throw error
+    }
+
     const pool = getPool()
+
+    // Check if project with same name already exists for this developer
+    const existingProject = await pool.query(
+      'SELECT id FROM projects p JOIN tenants t ON p.tenant_id = t.id WHERE p.developer_id = $1 AND t.name = $2',
+      [developer.id, validatedData.project_name]
+    )
+
+    if (existingProject.rows.length > 0) {
+      return errorResponse('DUPLICATE_PROJECT', 'A project with this name already exists', 409)
+    }
+
+    // Generate slug from project name
+    const slug = validatedData.project_name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+
+    // Create tenant
+    const tenantResult = await pool.query(
+      `INSERT INTO tenants (name, slug, settings)
+       VALUES ($1, $2, $3)
+       RETURNING id`,
+      [validatedData.project_name, slug, {}]
+    )
+
+    const tenantId = tenantResult.rows[0].id
+
+    // Create project
+    const projectResult = await pool.query(
+      `INSERT INTO projects (
+         developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, created_at`,
+      [
+        developer.id,
+        validatedData.project_name,
+        tenantId,
+        validatedData.webhook_url,
+        validatedData.allowed_origins,
+        1000, // default rate limit
+        'active', // default status
+      ]
+    )
+
+    const project = projectResult.rows[0]
 
     return NextResponse.json(
       {
         success: true,
         data: {
-          id: 'temp-id',
-          name: body.name || 'New Project',
-          developer_id: developer.id,
+          id: project.id,
+          name: project.project_name,
+          slug: slug,
+          tenant_id: project.tenant_id,
+          webhook_url: project.webhook_url,
+          allowed_origins: project.allowed_origins,
+          rate_limit: project.rate_limit,
+          status: project.status,
+          created_at: project.created_at,
         },
       },
       { status: 201 }
     )
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
-      return NextResponse.json(
-        { success: false, error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
+      return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
     }
     if (error instanceof Error && error.message === 'Invalid token') {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' } },
-        { status: 401 }
-      )
+      return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
     console.error('Error creating project:', error)
-    return NextResponse.json(
-      { success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to create project' } },
-      { status: 500 }
-    )
+    return errorResponse('INTERNAL_ERROR', 'Failed to create project', 500)
   }
 }

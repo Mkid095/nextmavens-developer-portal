@@ -25,8 +25,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration script created (add-deletion-columns-to-projects.ts) with three nullable TIMESTAMPTZ columns (deleted_at, deletion_scheduled_at, grace_period_ends_at). Includes rollback function. Migration runner script created (scripts/migrate-deletion-preview.ts). Typecheck passes. Existing projects will have NULL values for new columns."
     },
     {
       "id": "US-002",

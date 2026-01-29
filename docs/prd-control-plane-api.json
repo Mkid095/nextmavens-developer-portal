@@ -58,8 +58,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented full Projects CRUD API with Zod validation, authentication via JWT, ownership checks, filtering support (by status, limit, offset), soft delete (status='archived'), and standard JSON error responses. Typecheck passes."
     },
     {
       "id": "US-003",
