@@ -27,8 +27,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Migration created at migrations/002_create_request_traces_table.sql"
     },
     {
       "id": "US-002",
