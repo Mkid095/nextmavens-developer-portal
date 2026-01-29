@@ -74,6 +74,9 @@ async function main() {
     case 'db':
       await handleDbCommand(args.slice(1));
       break;
+    case 'functions':
+      await handleFunctionsCommand(args.slice(1));
+      break;
     default:
       console.log(`Unknown command: ${command}`);
       console.log('Run "nextmavens --help" for usage information.');
@@ -132,6 +135,34 @@ async function handleDbCommand(args: string[]) {
     default:
       console.error(`Unknown db command: ${subcommand}`);
       console.error('Available db commands: push, diff, reset');
+      console.error('Run "nextmavens --help" for more information.');
+      process.exit(1);
+  }
+}
+
+async function handleFunctionsCommand(args: string[]) {
+  const subcommand = args[0];
+
+  if (!subcommand) {
+    console.error('Error: functions command requires a subcommand');
+    console.error('Usage: nextmavens functions <deploy|list|logs> [options]');
+    console.error('Run "nextmavens --help" for more information.');
+    process.exit(1);
+  }
+
+  switch (subcommand) {
+    case 'deploy':
+      await (await import('./commands/functions/deploy')).functionsDeploy(args.slice(1));
+      break;
+    case 'list':
+      await (await import('./commands/functions/list')).functionsList();
+      break;
+    case 'logs':
+      await (await import('./commands/functions/logs')).functionsLogs(args.slice(1));
+      break;
+    default:
+      console.error(`Unknown functions command: ${subcommand}`);
+      console.error('Available functions commands: deploy, list, logs');
       console.error('Run "nextmavens --help" for more information.');
       process.exit(1);
   }

@@ -208,8 +208,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented functions commands (deploy, list, logs) in cli/src/commands/functions/. deploy command scans functions/ directory for edge functions (supports subdirectories with index.ts/js or single .ts/.js files), deploys all or specific function, shows deployment progress with function_id, URL, version, status. list command displays all deployed functions with details (id, slug, status, url, version, invocation count, last invocation, dates). logs command fetches and displays function logs with filtering (--limit, --since), includes log level symbols, timestamps, messages, and metadata. Added API client methods: deployFunction, listFunctions, getFunctionLogs. Added TypeScript types: FunctionDeployOptions, FunctionDeployResponse, FunctionInfo, FunctionListResponse, FunctionLogsOptions, FunctionLogEntry, FunctionLogsResponse. Updated CLI help text. Typecheck passes."
     },
     {
       "id": "US-006",
