@@ -247,7 +247,7 @@ export async function DELETE(req: NextRequest) {
     const idempotencyKey = getIdempotencyKey('revoke', req.headers, keyId)
 
     // Execute with idempotency (TTL: 1 year - effectively permanent since revocation is permanent)
-    const result = await withIdempotency(
+    const { result, idempotencyKey: returnedKey } = await withIdempotencyWithKey(
       idempotencyKey,
       async (): Promise<IdempotencyResponse> => {
         const pool = getPool()
@@ -302,8 +302,14 @@ export async function DELETE(req: NextRequest) {
       { ttl: 31536000 } // 1 year TTL (revocation is permanent)
     )
 
-    // Return the response with the appropriate status code
-    return NextResponse.json(result.body, { status: result.status })
+    // Return the response with the appropriate status code and idempotency key header
+    return NextResponse.json(result.body, {
+      status: result.status,
+      headers: {
+        'Idempotency-Key': getIdempotencyKeySuffix(returnedKey),
+        ...result.headers,
+      },
+    })
   } catch (error: any) {
     console.error('[Developer Portal] Delete API key error:', error)
     return NextResponse.json({ error: error.message || 'Failed to delete API key' }, { status: 401 })

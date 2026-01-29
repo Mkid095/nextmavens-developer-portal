@@ -219,7 +219,7 @@
       },
       "priority": 2,
       "passes": true,
-      "notes": "Completed: Enhanced idempotency middleware in src/lib/idempotency.ts with withIdempotencyWithKey() function that returns both the result and idempotency key. Added getIdempotencyKeySuffix() helper for extracting key suffix. Updated POST /api/projects endpoint to use withIdempotencyWithKey() and return Idempotency-Key header in response. getIdempotencyKey() already checks Idempotency-Key header and generates UUID fallback. Added JSDoc documentation with usage examples. Typecheck passes."
+      "notes": "Completed: Enhanced idempotency middleware in src/lib/idempotency.ts with withIdempotencyWithKey() function that returns both the result and idempotency key. Added getIdempotencyKeySuffix() helper for extracting key suffix. getIdempotencyKey() checks Idempotency-Key header and generates UUID fallback. Updated POST /v1/projects (control-plane-api) and POST/DELETE /api/api-keys endpoints to use withIdempotencyWithKey() and return Idempotency-Key header in response. Added comprehensive JSDoc documentation with usage examples. Typecheck passes."
     }
   ],
   "relatedPRDs": [],
