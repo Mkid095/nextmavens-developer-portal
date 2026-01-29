@@ -244,7 +244,7 @@
       },
       "priority": 2,
       "passes": true,
-      "notes": "Completed: API backend already supports environment parameter (from US-004). getKeyPrefix function generates prefixes with environment (pk_live_, pk_test_, pk_dev_). API accepts environment parameter and stores it. Environment is returned in GET /api/api-keys response. UI component (environment dropdown) would be implemented in the key creation form as a separate frontend task."
+      "notes": "Completed: Added environment selector dropdown to key creation forms in both dashboard page (src/app/dashboard/page.tsx) and project detail page (src/app/dashboard/projects/[slug]/page.tsx). Options: Production (live), Staging (test), Development (dev). Key prefix includes environment (pk_live_, pk_test_, pk_dev_) via getKeyPrefix function from US-002. API endpoint accepts and stores environment parameter. Typecheck passes."
     },
     {
       "id": "US-009",
