@@ -17,6 +17,7 @@ import {
   withIdempotency,
   type IdempotencyResponse,
 } from '@/lib/idempotency'
+import { checkFeature } from '@/lib/features'
 
 // Rate limiting configuration
 const PROJECTS_PER_HOUR_PER_ORG = 3
@@ -25,78 +26,20 @@ const ONE_HOUR_MS = 60 * 60 * 1000
 
 export async function POST(req: NextRequest) {
   try {
+    // Check if provisioning is enabled
+    const provisioningEnabled = await checkFeature('provisioning_enabled')
+    if (!provisioningEnabled) {
+      return NextResponse.json(
+        {
+          error: 'Provisioning disabled',
+          message: 'Project provisioning is temporarily disabled. Existing projects are unaffected. Please try again later.',
+        },
+        { status: 503 }
+      )
+    }
+
     const developer = await authenticateRequest(req)
     const clientIP = extractClientIP(req)
-
-    // Extract rate limit identifiers
-    const orgIdentifier: RateLimitIdentifier = {
-      type: RateLimitIdentifierType.ORG,
-      value: developer.id,
-    }
-
-    const ipIdentifier: RateLimitIdentifier = {
-      type: RateLimitIdentifierType.IP,
-      value: clientIP,
-    }
-
-    // Check org-based rate limit
-    const orgRateLimitResult = await checkRateLimit(
-      orgIdentifier,
-      PROJECTS_PER_HOUR_PER_ORG,
-      ONE_HOUR_MS
-    )
-
-    if (!orgRateLimitResult.allowed) {
-      const retryAfter = await getRetryAfterSeconds(
-        orgIdentifier,
-        ONE_HOUR_MS
-      )
-
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          message: `You can create only ${PROJECTS_PER_HOUR_PER_ORG} projects per hour. Please try again later.`,
-          retry_after: retryAfter,
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': retryAfter.toString(),
-            'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_ORG.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': orgRateLimitResult.resetAt.toISOString(),
-          },
-        }
-      )
-    }
-
-    // Check IP-based rate limit
-    const ipRateLimitResult = await checkRateLimit(
-      ipIdentifier,
-      PROJECTS_PER_HOUR_PER_IP,
-      ONE_HOUR_MS
-    )
-
-    if (!ipRateLimitResult.allowed) {
-      const retryAfter = await getRetryAfterSeconds(ipIdentifier, ONE_HOUR_MS)
-
-      return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          message: `Too many project creation attempts from your location. Please try again later.`,
-          retry_after: retryAfter,
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': retryAfter.toString(),
-            'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_IP.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': ipRateLimitResult.resetAt.toISOString(),
-          },
-        }
-      )
-    }
 
     const body = await req.json()
     const { project_name, webhook_url, allowed_origins } = body
@@ -109,102 +52,187 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const pool = getPool()
-    const slug = generateSlug(project_name)
-
-    // Create tenant
-    const tenantResult = await pool.query(
-      `INSERT INTO tenants (name, slug, settings)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
-      [project_name, slug, {}]
+    // Generate idempotency key: provision:{project_id}
+    // Use the project_name as the identifier for idempotency
+    const idempotencyKey = getIdempotencyKey(
+      'provision',
+      req.headers,
+      `${developer.id}:${project_name}`
     )
 
-    const tenantId = tenantResult.rows[0].id
+    // Execute with idempotency (TTL: 1 hour = 3600 seconds)
+    const result = await withIdempotency(
+      idempotencyKey,
+      async (): Promise<IdempotencyResponse> => {
+        // Extract rate limit identifiers
+        const orgIdentifier: RateLimitIdentifier = {
+          type: RateLimitIdentifierType.ORG,
+          value: developer.id,
+        }
 
-    // Generate API keys
-    const publicKey = generateApiKey('public')
-    const secretKey = generateApiKey('secret')
+        const ipIdentifier: RateLimitIdentifier = {
+          type: RateLimitIdentifierType.IP,
+          value: clientIP,
+        }
 
-    // Create project
-    const projectResult = await pool.query(
-      `INSERT INTO projects (
-         developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit
-       )
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, project_name, tenant_id, created_at`,
-      [developer.id, project_name, tenantId, webhook_url, allowed_origins, 1000]
-    )
+        // Check org-based rate limit
+        const orgRateLimitResult = await checkRateLimit(
+          orgIdentifier,
+          PROJECTS_PER_HOUR_PER_ORG,
+          ONE_HOUR_MS
+        )
 
-    const project = projectResult.rows[0]
+        if (!orgRateLimitResult.allowed) {
+          const retryAfter = await getRetryAfterSeconds(
+            orgIdentifier,
+            ONE_HOUR_MS
+          )
 
-    // Create API keys
-    await pool.query(
-      `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, scopes)
-       VALUES ($1, 'public', $2, $3, $4)`,
-      [project.id, 'nm_live_pk_', hashApiKey(publicKey), ['read']]
-    )
+          return {
+            status: 429,
+            headers: {
+              'Retry-After': retryAfter.toString(),
+              'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_ORG.toString(),
+              'X-RateLimit-Remaining': '0',
+              'X-RateLimit-Reset': orgRateLimitResult.resetAt.toISOString(),
+            },
+            body: {
+              error: 'Rate limit exceeded',
+              message: `You can create only ${PROJECTS_PER_HOUR_PER_ORG} projects per hour. Please try again later.`,
+              retry_after: retryAfter,
+            },
+          }
+        }
 
-    await pool.query(
-      `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, scopes)
-       VALUES ($1, 'secret', $2, $3, $4)`,
-      [project.id, 'nm_live_sk_', hashApiKey(secretKey), ['read', 'write']]
-    )
+        // Check IP-based rate limit
+        const ipRateLimitResult = await checkRateLimit(
+          ipIdentifier,
+          PROJECTS_PER_HOUR_PER_IP,
+          ONE_HOUR_MS
+        )
 
-    // Apply default quotas to the new project
-    await applyDefaultQuotas(project.id)
+        if (!ipRateLimitResult.allowed) {
+          const retryAfter = await getRetryAfterSeconds(ipIdentifier, ONE_HOUR_MS)
 
-    // Log project creation
-    await logProjectAction.created(
-      userActor(developer.id),
-      project.id,
-      {
-        metadata: {
-          project_name: project.project_name,
-          tenant_id: tenantId,
-          webhook_url,
-          allowed_origins,
-        },
-        request: {
-          ip: clientIP || undefined,
-          userAgent: req.headers.get('user-agent') || undefined,
-        },
-      }
-    )
+          return {
+            status: 429,
+            headers: {
+              'Retry-After': retryAfter.toString(),
+              'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_IP.toString(),
+              'X-RateLimit-Remaining': '0',
+              'X-RateLimit-Reset': ipRateLimitResult.resetAt.toISOString(),
+            },
+            body: {
+              error: 'Rate limit exceeded',
+              message: `Too many project creation attempts from your location. Please try again later.`,
+              retry_after: retryAfter,
+            },
+          }
+        }
 
-    return NextResponse.json(
-      {
-        project: {
-          id: project.id,
-          name: project.project_name,
-          slug: slug,
-          tenant_id: project.tenant_id,
-          created_at: project.created_at,
-        },
-        api_keys: {
-          public_key: publicKey,
-          secret_key: secretKey,
-        },
-        endpoints: {
-          gateway: 'https://api.nextmavens.cloud',
-          auth: 'https://auth.nextmavens.cloud',
-          graphql: 'https://graphql.nextmavens.cloud',
-          rest: 'https://api.nextmavens.cloud',
-          realtime: 'wss://realtime.nextmavens.cloud',
-          storage: 'https://telegram.nextmavens.cloud',
-        },
-        database_url: `postgresql://nextmavens:Elishiba@95@nextmavens-db-m4sxnf.1.mvuvh68efk7jnvynmv8r2jm2u:5432/nextmavens?options=--search_path=tenant_${slug}`,
-        warning: "Save your API keys now! You won't be able to see the secret key again.",
+        const pool = getPool()
+        const slug = generateSlug(project_name)
+
+        // Create tenant
+        const tenantResult = await pool.query(
+          `INSERT INTO tenants (name, slug, settings)
+           VALUES ($1, $2, $3)
+           RETURNING id`,
+          [project_name, slug, {}]
+        )
+
+        const tenantId = tenantResult.rows[0].id
+
+        // Generate API keys
+        const publicKey = generateApiKey('public')
+        const secretKey = generateApiKey('secret')
+
+        // Create project
+        const projectResult = await pool.query(
+          `INSERT INTO projects (
+             developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit
+           )
+           VALUES ($1, $2, $3, $4, $5, $6)
+           RETURNING id, project_name, tenant_id, created_at`,
+          [developer.id, project_name, tenantId, webhook_url, allowed_origins, 1000]
+        )
+
+        const project = projectResult.rows[0]
+
+        // Create API keys
+        await pool.query(
+          `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, scopes)
+           VALUES ($1, 'public', $2, $3, $4)`,
+          [project.id, 'nm_live_pk_', hashApiKey(publicKey), ['read']]
+        )
+
+        await pool.query(
+          `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, scopes)
+           VALUES ($1, 'secret', $2, $3, $4)`,
+          [project.id, 'nm_live_sk_', hashApiKey(secretKey), ['read', 'write']]
+        )
+
+        // Apply default quotas to the new project
+        await applyDefaultQuotas(project.id)
+
+        // Log project creation
+        await logProjectAction.created(
+          userActor(developer.id),
+          project.id,
+          {
+            metadata: {
+              project_name: project.project_name,
+              tenant_id: tenantId,
+              webhook_url,
+              allowed_origins,
+            },
+            request: {
+              ip: clientIP || undefined,
+              userAgent: req.headers.get('user-agent') || undefined,
+            },
+          }
+        )
+
+        return {
+          status: 201,
+          headers: {
+            'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_ORG.toString(),
+            'X-RateLimit-Remaining': orgRateLimitResult.remainingAttempts.toString(),
+            'X-RateLimit-Reset': orgRateLimitResult.resetAt.toISOString(),
+          },
+          body: {
+            project: {
+              id: project.id,
+              name: project.project_name,
+              slug: slug,
+              tenant_id: project.tenant_id,
+              created_at: project.created_at,
+            },
+            api_keys: {
+              public_key: publicKey,
+              secret_key: secretKey,
+            },
+            endpoints: {
+              gateway: 'https://api.nextmavens.cloud',
+              auth: 'https://auth.nextmavens.cloud',
+              graphql: 'https://graphql.nextmavens.cloud',
+              rest: 'https://api.nextmavens.cloud',
+              realtime: 'wss://realtime.nextmavens.cloud',
+              storage: 'https://telegram.nextmavens.cloud',
+            },
+            database_url: `postgresql://nextmavens:Elishiba@95@nextmavens-db-m4sxnf.1.mvuvh68efk7jnvynmv8r2jm2u:5432/nextmavens?options=--search_path=tenant_${slug}`,
+            warning: "Save your API keys now! You won't be able to see the secret key again.",
+          },
+        }
       },
-      {
-        status: 201,
-        headers: {
-          'X-RateLimit-Limit': PROJECTS_PER_HOUR_PER_ORG.toString(),
-          'X-RateLimit-Remaining': orgRateLimitResult.remainingAttempts.toString(),
-          'X-RateLimit-Reset': orgRateLimitResult.resetAt.toISOString(),
-        },
-      }
+      { ttl: 3600 } // 1 hour TTL
     )
+
+    // Return the response with the appropriate status code and headers
+    return NextResponse.json(result.body, {
+      status: result.status,
+      headers: result.headers,
+    })
   } catch (error: any) {
     console.error('[Developer Portal] Create project error:', error)
     return NextResponse.json(

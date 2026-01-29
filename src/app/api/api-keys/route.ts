@@ -61,140 +61,164 @@ export async function POST(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
     const body = await req.json()
-    const { name, projectId, key_type, environment } = body
+    const { name, projectId, key_type, environment, request_id } = body
 
-    if (!name) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
-    }
+    // Generate idempotency key: create_key:{request_id}
+    const idempotencyKey = getIdempotencyKey('create_key', req.headers, request_id)
 
-    // Validate key_type if provided
-    let validatedKeyType: ApiKeyType = 'public' // default
-    if (key_type) {
-      const validKeyTypes: ApiKeyType[] = ['public', 'secret', 'service_role', 'mcp']
-      if (!validKeyTypes.includes(key_type)) {
-        return NextResponse.json(
-          { error: `Invalid key_type. Must be one of: ${validKeyTypes.join(', ')}` },
-          { status: 400 }
-        )
-      }
-      validatedKeyType = key_type as ApiKeyType
-    } else {
-      // For backwards compatibility, infer from name if not provided
-      validatedKeyType = name.toLowerCase().includes('secret') ? 'secret' : 'public'
-    }
-
-    // Validate environment if provided
-    let validatedEnvironment: ApiKeyEnvironment = 'live' // default
-    if (environment) {
-      const validEnvironments: ApiKeyEnvironment[] = ['live', 'test', 'dev']
-      if (!validEnvironments.includes(environment)) {
-        return NextResponse.json(
-          { error: `Invalid environment. Must be one of: ${validEnvironments.join(', ')}` },
-          { status: 400 }
-        )
-      }
-      validatedEnvironment = environment as ApiKeyEnvironment
-    }
-
-    // Get or create a default project for the developer
-    const pool = getPool()
-
-    // Ensure name column exists (auto-migrate)
-    try {
-      await pool.query(`
-        ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS name VARCHAR(255)
-      `)
-    } catch {
-      // Column might already exist, ignore error
-    }
-
-    // First check if developer has a default project
-    let projectResult = await pool.query(
-      'SELECT id FROM projects WHERE developer_id = $1 LIMIT 1',
-      [developer.id]
-    )
-
-    let finalProjectId = projectId
-
-    if (projectResult.rows.length === 0 && !projectId) {
-      // Create a tenant first
-      const tenantResult = await pool.query(
-        "INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id",
-        ['Default Project', 'default-project']
-      )
-
-      // Create a default project
-      const newProject = await pool.query(
-        "INSERT INTO projects (developer_id, project_name, tenant_id) VALUES ($1, $2, $3) RETURNING id",
-        [developer.id, 'Default Project', tenantResult.rows[0].id]
-      )
-      finalProjectId = newProject.rows[0].id
-    } else if (!finalProjectId) {
-      finalProjectId = projectResult.rows[0].id
-    }
-
-    // Get default scopes for the key type
-    const scopes = DEFAULT_SCOPES[validatedKeyType]
-
-    // Generate key prefix based on type and environment
-    const keyPrefix = getKeyPrefix(validatedKeyType, validatedEnvironment)
-
-    // Generate API key pair
-    const publicKey = generateApiKey('public')
-    const secretKey = generateApiKey('secret')
-    const hashedSecretKey = hashApiKey(secretKey)
-
-    const result = await pool.query(
-      `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, name, scopes, environment)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, key_type, key_prefix, scopes, environment, created_at`,
-      [finalProjectId, validatedKeyType, keyPrefix, hashedSecretKey, name, JSON.stringify(scopes), validatedEnvironment]
-    )
-
-    const apiKey = result.rows[0]
-
-    // Log API key creation
-    try {
-      await logApiKeyAction.created(
-        userActor(developer.id),
-        apiKey.id.toString(),
-        apiKey.key_type,
-        scopes,
-        {
-          request: {
-            ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
-            userAgent: req.headers.get('user-agent') || undefined,
-          },
+    // Execute with idempotency (TTL: 5 minutes = 300 seconds)
+    const result = await withIdempotency(
+      idempotencyKey,
+      async (): Promise<IdempotencyResponse> => {
+        // Validation errors should not be cached
+        if (!name) {
+          return {
+            status: 400,
+            headers: {},
+            body: { error: 'Name is required' }
+          }
         }
-      )
-    } catch (auditError) {
-      // Don't fail the request if audit logging fails
-      console.error('[Developer Portal] Failed to log API key creation:', auditError)
-    }
 
-    // Add warnings based on key type
-    const warning = validatedKeyType === 'public'
-      ? 'This key is intended for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code. Never use secret keys in client-side applications.'
-      : validatedKeyType === 'service_role'
-      ? 'WARNING: This is a service role key that bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code. Only use this key in trusted server-side environments for admin operations.'
-      : validatedKeyType === 'secret'
-      ? 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments where it cannot be accessed by users.'
-      : undefined
+        // Validate key_type if provided
+        let validatedKeyType: ApiKeyType = 'public' // default
+        if (key_type) {
+          const validKeyTypes: ApiKeyType[] = ['public', 'secret', 'service_role', 'mcp']
+          if (!validKeyTypes.includes(key_type)) {
+            return {
+              status: 400,
+              headers: {},
+              body: { error: `Invalid key_type. Must be one of: ${validKeyTypes.join(', ')}` }
+            }
+          }
+          validatedKeyType = key_type as ApiKeyType
+        } else {
+          // For backwards compatibility, infer from name if not provided
+          validatedKeyType = name.toLowerCase().includes('secret') ? 'secret' : 'public'
+        }
 
-    return NextResponse.json({
-      apiKey: {
-        id: apiKey.id.toString(),
-        name: name,
-        key_type: apiKey.key_type,
-        key_prefix: apiKey.key_prefix,
-        scopes: scopes,
-        environment: apiKey.environment,
-        public_key: publicKey,
-        created_at: apiKey.created_at,
+        // Validate environment if provided
+        let validatedEnvironment: ApiKeyEnvironment = 'live' // default
+        if (environment) {
+          const validEnvironments: ApiKeyEnvironment[] = ['live', 'test', 'dev']
+          if (!validEnvironments.includes(environment)) {
+            return {
+              status: 400,
+              headers: {},
+              body: { error: `Invalid environment. Must be one of: ${validEnvironments.join(', ')}` }
+            }
+          }
+          validatedEnvironment = environment as ApiKeyEnvironment
+        }
+
+        // Get or create a default project for the developer
+        const pool = getPool()
+
+        // Ensure name column exists (auto-migrate)
+        try {
+          await pool.query(`
+            ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS name VARCHAR(255)
+          `)
+        } catch {
+          // Column might already exist, ignore error
+        }
+
+        // First check if developer has a default project
+        let projectResult = await pool.query(
+          'SELECT id FROM projects WHERE developer_id = $1 LIMIT 1',
+          [developer.id]
+        )
+
+        let finalProjectId = projectId
+
+        if (projectResult.rows.length === 0 && !projectId) {
+          // Create a tenant first
+          const tenantResult = await pool.query(
+            "INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id",
+            ['Default Project', 'default-project']
+          )
+
+          // Create a default project
+          const newProject = await pool.query(
+            "INSERT INTO projects (developer_id, project_name, tenant_id) VALUES ($1, $2, $3) RETURNING id",
+            [developer.id, 'Default Project', tenantResult.rows[0].id]
+          )
+          finalProjectId = newProject.rows[0].id
+        } else if (!finalProjectId) {
+          finalProjectId = projectResult.rows[0].id
+        }
+
+        // Get default scopes for the key type
+        const scopes = DEFAULT_SCOPES[validatedKeyType]
+
+        // Generate key prefix based on type and environment
+        const keyPrefix = getKeyPrefix(validatedKeyType, validatedEnvironment)
+
+        // Generate API key pair
+        const publicKey = generateApiKey('public')
+        const secretKey = generateApiKey('secret')
+        const hashedSecretKey = hashApiKey(secretKey)
+
+        const dbResult = await pool.query(
+          `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, name, scopes, environment)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING id, key_type, key_prefix, scopes, environment, created_at`,
+          [finalProjectId, validatedKeyType, keyPrefix, hashedSecretKey, name, JSON.stringify(scopes), validatedEnvironment]
+        )
+
+        const apiKey = dbResult.rows[0]
+
+        // Log API key creation
+        try {
+          await logApiKeyAction.created(
+            userActor(developer.id),
+            apiKey.id.toString(),
+            apiKey.key_type,
+            scopes,
+            {
+              request: {
+                ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || undefined,
+                userAgent: req.headers.get('user-agent') || undefined,
+              },
+            }
+          )
+        } catch (auditError) {
+          // Don't fail the request if audit logging fails
+          console.error('[Developer Portal] Failed to log API key creation:', auditError)
+        }
+
+        // Add warnings based on key type
+        const warning = validatedKeyType === 'public'
+          ? 'This key is intended for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code. Never use secret keys in client-side applications.'
+          : validatedKeyType === 'service_role'
+          ? 'WARNING: This is a service role key that bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code. Only use this key in trusted server-side environments for admin operations.'
+          : validatedKeyType === 'secret'
+          ? 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments where it cannot be accessed by users.'
+          : undefined
+
+        return {
+          status: 201,
+          headers: {},
+          body: {
+            apiKey: {
+              id: apiKey.id.toString(),
+              name: name,
+              key_type: apiKey.key_type,
+              key_prefix: apiKey.key_prefix,
+              scopes: scopes,
+              environment: apiKey.environment,
+              public_key: publicKey,
+              created_at: apiKey.created_at,
+            },
+            secretKey,
+            warning,
+          }
+        }
       },
-      secretKey,
-      warning,
-    })
+      { ttl: 300 } // 5 minutes TTL
+    )
+
+    // Return the response with the appropriate status code
+    return NextResponse.json(result.body, { status: result.status })
   } catch (error: any) {
     console.error('[Developer Portal] Create API key error:', error)
     return NextResponse.json({ error: error.message || 'Failed to create API key' }, { status: 401 })
