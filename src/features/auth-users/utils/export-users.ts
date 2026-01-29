@@ -50,10 +50,19 @@ export function usersToCSV(users: EndUser[]): string {
 /**
  * Escape a field value for CSV format
  * Wraps in quotes if it contains commas, quotes, or newlines
+ * Prevents CSV injection by sanitizing dangerous formula characters
  */
 function escapeCSVField(value: string): string {
   if (!value) {
     return '""'
+  }
+
+  // Prevent CSV injection attacks
+  // If value starts with dangerous characters (=, +, -, @, |, \t, \r, \n),
+  // prepend with a single quote to force Excel to treat it as text
+  const dangerousPrefix = /^[\t\r\n=\+\-\@\|]/
+  if (dangerousPrefix.test(value)) {
+    return `'${value}`
   }
 
   // Check if value needs quoting
