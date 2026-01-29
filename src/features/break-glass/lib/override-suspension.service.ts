@@ -38,6 +38,7 @@ import type {
   OverrideSuspensionError,
 } from '../types/override-suspension.types';
 import { HardCapType } from '@/features/abuse-controls/types';
+import { invalidateSnapshot } from '@/lib/snapshot';
 
 /**
  * Hard cap update record
@@ -250,6 +251,9 @@ export async function overrideSuspension(
     );
     updatedProject = updateResult.rows[0];
   }
+
+  // Invalidate snapshot cache for this project
+  invalidateSnapshot(projectId);
 
   // Capture after state
   const afterState: Record<string, unknown> = {

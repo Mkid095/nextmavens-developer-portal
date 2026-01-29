@@ -12,6 +12,7 @@ import { getCurrentUsage, checkQuota } from './enforcement'
 import { getProjectQuota } from './quotas'
 import { sendSuspensionNotification } from './notifications'
 import { logProjectAction } from '@nextmavens/audit-logs-database'
+import { invalidateSnapshot } from '@/lib/snapshot'
 
 /**
  * Suspend a project due to cap violation

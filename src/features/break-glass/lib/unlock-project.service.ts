@@ -34,6 +34,7 @@ import type {
   UnlockProjectResponse,
   UnlockProjectError,
 } from '../types/unlock-project.types';
+import { invalidateSnapshot } from '@/lib/snapshot';
 
 /**
  * Unlock project operation parameters
@@ -156,6 +157,9 @@ export async function unlockProject(
   );
 
   const updatedProject = updateResult.rows[0];
+
+  // Invalidate snapshot cache for this project
+  invalidateSnapshot(projectId);
 
   // Capture after state
   const afterState: Record<string, unknown> = {
