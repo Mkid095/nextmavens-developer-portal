@@ -22,6 +22,10 @@ COMMANDS:
   project list             List all projects
   project link [id/slug]   Link current directory to a project
 
+  db push    Push schema changes to project database
+  db diff    Show diff between local and remote schema
+  db reset   Reset database to initial state (dev only)
+
   hello       Say hello to the world
 
 OPTIONS:
@@ -63,6 +67,9 @@ async function main() {
     case 'project':
       await handleProjectCommand(args.slice(1));
       break;
+    case 'db':
+      await handleDbCommand(args.slice(1));
+      break;
     default:
       console.log(`Unknown command: ${command}`);
       console.log('Run "nextmavens --help" for usage information.');
@@ -93,6 +100,34 @@ async function handleProjectCommand(args: string[]) {
     default:
       console.error(`Unknown project command: ${subcommand}`);
       console.error('Available project commands: create, list, link');
+      console.error('Run "nextmavens --help" for more information.');
+      process.exit(1);
+  }
+}
+
+async function handleDbCommand(args: string[]) {
+  const subcommand = args[0];
+
+  if (!subcommand) {
+    console.error('Error: db command requires a subcommand');
+    console.error('Usage: nextmavens db <push|diff|reset>');
+    console.error('Run "nextmavens --help" for more information.');
+    process.exit(1);
+  }
+
+  switch (subcommand) {
+    case 'push':
+      await (await import('./commands/db/push')).dbPush();
+      break;
+    case 'diff':
+      await (await import('./commands/db/diff')).dbDiff();
+      break;
+    case 'reset':
+      await (await import('./commands/db/reset')).dbReset();
+      break;
+    default:
+      console.error(`Unknown db command: ${subcommand}`);
+      console.error('Available db commands: push, diff, reset');
       console.error('Run "nextmavens --help" for more information.');
       process.exit(1);
   }

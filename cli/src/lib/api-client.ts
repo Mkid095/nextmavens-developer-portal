@@ -35,6 +35,47 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
+export interface DbPushOptions {
+  schema: string;
+  schema_file: string;
+}
+
+export interface DbPushResponse {
+  success: boolean;
+  version: string;
+  tables_created: number;
+  tables_modified: number;
+  tables_deleted: number;
+  warnings?: string[];
+}
+
+export interface DbDiffOptions {
+  schema?: string;
+}
+
+export interface DbDiffResponse {
+  has_changes: boolean;
+  tables_created?: string[];
+  tables_modified?: any[];
+  tables_deleted?: string[];
+  columns_created?: any[];
+  columns_deleted?: any[];
+  summary?: {
+    tables_created: number;
+    tables_modified: number;
+    tables_deleted: number;
+    columns_created: number;
+    columns_deleted: number;
+  };
+}
+
+export interface DbResetResponse {
+  success: boolean;
+  version: string;
+  tables_initialized: number;
+  warnings?: string[];
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -182,6 +223,38 @@ export class ApiClient {
     const queryString = params.toString();
     const response = await this.request<{ success: boolean; data: Project[]; meta?: any }>(
       `/v1/projects${queryString ? `?${queryString}` : ''}`
+    );
+    return response.data;
+  }
+
+  public async dbPush(projectId: string, options: DbPushOptions): Promise<DbPushResponse> {
+    const response = await this.request<{ success: boolean; data: DbPushResponse }>(
+      `/v1/projects/${projectId}/db/push`,
+      {
+        method: 'POST',
+        body: JSON.stringify(options),
+      }
+    );
+    return response.data;
+  }
+
+  public async dbDiff(projectId: string, options: DbDiffOptions = {}): Promise<DbDiffResponse> {
+    const response = await this.request<{ success: boolean; data: DbDiffResponse }>(
+      `/v1/projects/${projectId}/db/diff`,
+      {
+        method: 'POST',
+        body: JSON.stringify(options),
+      }
+    );
+    return response.data;
+  }
+
+  public async dbReset(projectId: string): Promise<DbResetResponse> {
+    const response = await this.request<{ success: boolean; data: DbResetResponse }>(
+      `/v1/projects/${projectId}/db/reset`,
+      {
+        method: 'POST',
+      }
     );
     return response.data;
   }
