@@ -75,8 +75,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created src/lib/snapshot/errors.ts with fail-closed error types (SnapshotError, ControlPlaneUnavailableError, DatabaseConnectionError, SnapshotBuildError, ProjectNotFoundError, QuotaServiceUnavailableError) and errorToHttpResponse helper. Updated builder.ts to throw specific errors for database connection failures, quota service unavailability, and project not found. Updated route.ts to use errorToHttpResponse which returns 503 with Retry-After header (30s default) for all control plane failures. Typecheck passes."
     },
     {
       "id": "US-004",

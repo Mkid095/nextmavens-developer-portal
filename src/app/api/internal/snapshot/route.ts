@@ -7,6 +7,11 @@
  * No authentication required (internal endpoint).
  * Snapshots are cached with 45-second TTL for performance.
  *
+ * FAIL-CLOSED BEHAVIOR:
+ * - Returns 503 Service Unavailable when snapshot fetch fails
+ * - Data plane services MUST deny all requests when 503 is returned
+ * - Retry-After header indicates when to retry
+ *
  * Response time target: < 100ms (achieved via caching)
  */
 
@@ -14,6 +19,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { buildSnapshot } from '@/lib/snapshot/builder'
 import { getCachedSnapshot, setCachedSnapshot } from '@/lib/snapshot/cache'
 import { SnapshotMetadata } from '@/lib/snapshot/types'
+import { errorToHttpResponse, ProjectNotFoundError } from '@/lib/snapshot/errors'
 
 /**
  * Snapshot response with optional metadata
@@ -63,15 +69,6 @@ export async function GET(req: NextRequest) {
       // Build snapshot from database
       snapshot = await buildSnapshot(projectId)
 
-      if (!snapshot) {
-        return NextResponse.json(
-          {
-            error: 'Project not found',
-          } as SnapshotResponse,
-          { status: 404 }
-        )
-      }
-
       // Cache the snapshot (45 second TTL)
       setCachedSnapshot(projectId, snapshot, 45 * 1000)
     }
@@ -96,14 +93,27 @@ export async function GET(req: NextRequest) {
         },
       }
     )
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Snapshot API] Error:', error)
 
     const responseTime = Date.now() - startTime
 
+    // Convert error to appropriate HTTP response
+    const { status, message, retryAfter } = errorToHttpResponse(error)
+
+    const headers: Record<string, string> = {
+      'X-Response-Time': `${responseTime}ms`,
+      'X-Cache-Status': 'ERROR',
+    }
+
+    // Add Retry-After header for 503 responses
+    if (status === 503 && retryAfter) {
+      headers['Retry-After'] = retryAfter.toString()
+    }
+
     return NextResponse.json(
       {
-        error: error.message || 'Failed to generate snapshot',
+        error: message,
         metadata: {
           generatedAt: new Date().toISOString(),
           ttl: 0,
@@ -111,11 +121,8 @@ export async function GET(req: NextRequest) {
         },
       } as SnapshotResponse,
       {
-        status: 500,
-        headers: {
-          'X-Response-Time': `${responseTime}ms`,
-          'X-Cache-Status': 'ERROR',
-        },
+        status,
+        headers,
       }
     )
   }

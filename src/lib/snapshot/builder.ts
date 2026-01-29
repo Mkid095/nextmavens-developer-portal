@@ -3,12 +3,21 @@
  *
  * Builds control plane snapshots by aggregating project state from multiple sources.
  * This is the authoritative source of truth for data plane services.
+ *
+ * All errors are propagated as fail-closed errors - data plane services MUST deny
+ * requests when snapshot generation fails.
  */
 
 import { getPool } from '@/lib/db'
 import { QuotaManager } from '@/features/abuse-controls/lib/data-layer'
 import { ControlPlaneSnapshot, SnapshotProject, Services, RateLimit, Quotas } from './types'
 import { getSnapshotVersion } from './cache'
+import {
+  DatabaseConnectionError,
+  SnapshotBuildError,
+  ProjectNotFoundError,
+  QuotaServiceUnavailableError,
+} from './errors'
 
 /**
  * Generate a version string for the snapshot
@@ -21,8 +30,10 @@ function generateVersion(projectId: string): string {
 
 /**
  * Get project basic information
+ * @throws DatabaseConnectionError if database is unavailable
+ * @throws ProjectNotFoundError if project doesn't exist
  */
-async function getProjectInfo(projectId: string): Promise<SnapshotProject | null> {
+async function getProjectInfo(projectId: string): Promise<SnapshotProject> {
   const pool = getPool()
 
   try {
@@ -39,7 +50,7 @@ async function getProjectInfo(projectId: string): Promise<SnapshotProject | null
     )
 
     if (result.rows.length === 0) {
-      return null
+      throw new ProjectNotFoundError(projectId)
     }
 
     const row = result.rows[0]
@@ -57,8 +68,15 @@ async function getProjectInfo(projectId: string): Promise<SnapshotProject | null
       updated_at: row.updated_at,
     }
   } catch (error) {
-    console.error('[Snapshot Builder] Error fetching project info:', error)
-    throw new Error('Failed to fetch project information')
+    if (error instanceof ProjectNotFoundError) {
+      throw error
+    }
+
+    // Database connection errors - fail closed
+    console.error('[Snapshot Builder] Database error fetching project info:', error)
+    throw new DatabaseConnectionError(
+      error instanceof Error ? error : undefined
+    )
   }
 }
 
@@ -82,6 +100,7 @@ async function getServicesConfig(projectId: string): Promise<Services> {
 
 /**
  * Get rate limits for a project
+ * @throws DatabaseConnectionError if database is unavailable
  */
 async function getRateLimits(projectId: string): Promise<RateLimit> {
   const pool = getPool()
@@ -110,18 +129,17 @@ async function getRateLimits(projectId: string): Promise<RateLimit> {
       requests_per_day: rateLimit,
     }
   } catch (error) {
-    console.error('[Snapshot Builder] Error fetching rate limits:', error)
-    // Return default rate limits on error
-    return {
-      requests_per_minute: 60,
-      requests_per_hour: 1000,
-      requests_per_day: 10000,
-    }
+    console.error('[Snapshot Builder] Database error fetching rate limits:', error)
+    // Fail closed on database errors
+    throw new DatabaseConnectionError(
+      error instanceof Error ? error : undefined
+    )
   }
 }
 
 /**
  * Get hard quota limits for a project
+ * @throws QuotaServiceUnavailableError if quota service is unavailable
  */
 async function getHardQuotas(projectId: string): Promise<Quotas> {
   try {
@@ -146,26 +164,23 @@ async function getHardQuotas(projectId: string): Promise<Quotas> {
     }
   } catch (error) {
     console.error('[Snapshot Builder] Error fetching hard quotas:', error)
-    // Return default quotas on error
-    return {
-      db_queries_per_day: 10000,
-      realtime_connections: 100,
-      storage_uploads_per_day: 1000,
-      function_invocations_per_day: 5000,
-    }
+    // Fail closed on quota service errors
+    throw new QuotaServiceUnavailableError(
+      error instanceof Error ? error : undefined
+    )
   }
 }
 
 /**
  * Build a complete control plane snapshot for a project
+ * @throws ProjectNotFoundError if project doesn't exist (404)
+ * @throws ControlPlaneUnavailableError if control plane is down (503)
+ * @throws SnapshotBuildError if snapshot generation fails (503)
  */
-export async function buildSnapshot(projectId: string): Promise<ControlPlaneSnapshot | null> {
+export async function buildSnapshot(projectId: string): Promise<ControlPlaneSnapshot> {
   try {
     // Get project information
     const project = await getProjectInfo(projectId)
-    if (!project) {
-      return null
-    }
 
     // Get services configuration
     const services = await getServicesConfig(projectId)
@@ -187,8 +202,21 @@ export async function buildSnapshot(projectId: string): Promise<ControlPlaneSnap
 
     return snapshot
   } catch (error) {
-    console.error('[Snapshot Builder] Error building snapshot:', error)
-    throw new Error('Failed to build snapshot')
+    // Re-throw known errors
+    if (
+      error instanceof ProjectNotFoundError ||
+      error instanceof DatabaseConnectionError ||
+      error instanceof QuotaServiceUnavailableError
+    ) {
+      throw error
+    }
+
+    // Unknown errors - fail closed
+    console.error('[Snapshot Builder] Unexpected error building snapshot:', error)
+    throw new SnapshotBuildError(
+      'Unexpected error during snapshot generation',
+      error instanceof Error ? error : undefined
+    )
   }
 }
 
