@@ -3,6 +3,7 @@ import { getPool } from '@/lib/db'
 import { addKeyTypeAndScopesToApiKeys } from '@/features/enhanced-api-keys'
 import { createFeatureFlagsTable } from '@/features/feature-flags'
 import { seedCoreFeatureFlags } from '@/features/feature-flags'
+import { createIdempotencyKeysTable } from '@/features/idempotency'
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,6 +33,14 @@ export async function POST(req: NextRequest) {
       migration: 'enhanced-api-keys',
       success: enhancedApiKeysResult.success,
       error: enhancedApiKeysResult.error
+    })
+
+    // Run idempotency keys table migration
+    const idempotencyKeysResult = await createIdempotencyKeysTable()
+    results.push({
+      migration: 'idempotency-keys-table',
+      success: idempotencyKeysResult.success,
+      error: idempotencyKeysResult.error
     })
 
     // Check if name column exists in api_keys (legacy migration)
