@@ -35,6 +35,7 @@ import {
   createAdminSession,
   AdminAccessMethod,
 } from '@/features/break-glass/lib/admin-database';
+import { sendBreakGlassSessionCreatedNotification } from '@/features/break-glass/lib/notifications';
 import type {
   BreakGlassAuthRequest,
   BreakGlassAuthResponse,
@@ -160,12 +161,35 @@ export async function POST(req: NextRequest) {
       expires_in_hours: 1, // Sessions expire after 1 hour
     });
 
-    // Step 7: Calculate expiration time
+    // Step 7: Send notification to platform owners about the new session
+    // Extract IP address for audit purposes
+    const ipAddress = req.headers.get('x-forwarded-for') ||
+                      req.headers.get('x-real-ip') ||
+                      undefined;
+
+    try {
+      await sendBreakGlassSessionCreatedNotification({
+        adminEmail: developer.email || 'unknown@example.com',
+        adminId: developer.id,
+        sessionId: session.id,
+        reason,
+        accessMethod: access_method,
+        expiresAt: session.expires_at,
+        ipAddress,
+      });
+      console.log(`[Break Glass] Session created notification sent for session ${session.id}`);
+    } catch (error) {
+      // Log notification error but don't fail the session creation
+      console.error('[Break Glass] Failed to send session notification:', error);
+      // The session is still created and valid, just the notification failed
+    }
+
+    // Step 8: Calculate expiration time
     const expiresAt = new Date(session.expires_at);
     const now = new Date();
     const expiresInSeconds = Math.floor((expiresAt.getTime() - now.getTime()) / 1000);
 
-    // Step 8: Return success response with session token
+    // Step 9: Return success response with session token
     const response: BreakGlassAuthResponse = {
       success: true,
       session_token: session.id,

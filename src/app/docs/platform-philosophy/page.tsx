@@ -403,6 +403,164 @@ export default function PlatformPhilosophyPage() {
           </div>
         </div>
 
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-emerald-100 rounded-xl">
+              <Stream className="w-6 h-6 text-emerald-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">Realtime DB-Driven Philosophy</h2>
+              <p className="text-slate-600">Why database-driven subscriptions are the right approach</p>
+            </div>
+          </div>
+
+          <div className="space-y-6 mb-12">
+            {realtimeBenefits.map((benefit, index) => {
+              const Icon = benefit.icon
+              return (
+                <motion.div
+                  key={benefit.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-xl p-8 border border-slate-200"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <Icon className="w-5 h-5 text-emerald-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-900 mb-2">{benefit.title}</h3>
+                      <p className="text-slate-600 leading-relaxed">{benefit.description}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    {benefit.examples.map((example) => (
+                      <div key={example} className="flex items-center gap-2 text-sm text-slate-600">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>{example}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Comparison: DB-Driven vs Custom Protocol</h3>
+            <p className="text-slate-600 mb-8">
+              Understanding the trade-offs between database-driven realtime and custom pub/sub systems helps
+              you make the right architectural decision for your application.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {realtimeComparison.map((approach, index) => (
+                <motion.div
+                  key={approach.approach}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className={`rounded-xl p-6 border ${
+                    approach.approach === 'NextMavens DB-Driven'
+                      ? 'border-emerald-200 bg-emerald-50'
+                      : 'border-slate-200 bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    {approach.approach === 'NextMavens DB-Driven' ? (
+                      <div className="p-2 bg-emerald-100 rounded-lg">
+                        <Stream className="w-5 h-5 text-emerald-700" />
+                      </div>
+                    ) : (
+                      <div className="p-2 bg-slate-200 rounded-lg">
+                        <Code className="w-5 h-5 text-slate-600" />
+                      </div>
+                    )}
+                    <h4 className="font-semibold text-slate-900">{approach.approach}</h4>
+                  </div>
+                  <p className="text-sm text-slate-600 mb-4">{approach.description}</p>
+                  <ul className="space-y-2">
+                    {approach.pros.map((pro, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                        <CheckCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                          approach.approach === 'NextMavens DB-Driven' ? 'text-emerald-600' : 'text-slate-500'
+                        }`} />
+                        <span>{pro}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Why DB-Driven Realtime Wins</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Database className="w-5 h-5 text-blue-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Single Source of Truth</h4>
+                  <p className="text-slate-600">
+                    Your database schema is the only schema. No separate subscription definitions to maintain,
+                    no sync issues between API and realtime layer.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Zap className="w-5 h-5 text-purple-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Automatic Schema Evolution</h4>
+                  <p className="text-slate-600">
+                    Add a column? Subscriptions see it instantly. Rename a table? No configuration change needed.
+                    The database drives the realtime layer automatically.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Shield className="w-5 h-5 text-orange-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Built-in Reliability</h4>
+                  <p className="text-slate-600">
+                    Postgres logical replication provides ordered, at-least-once delivery guarantees.
+                    No need to build your own message ordering or deduplication.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-emerald-50 rounded-xl p-8 border border-emerald-200 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-emerald-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-emerald-700" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">The Bottom Line</h4>
+                <p className="text-slate-700 leading-relaxed mb-4">
+                  By making subscriptions database-driven, we eliminate the complexity of custom pub/sub systems
+                  while gaining automatic schema sync and built-in reliability. Your data model is your realtime
+                  model—no translation layer needed.
+                </p>
+                <Link
+                  href="/docs/realtime"
+                  className="inline-flex items-center gap-2 text-emerald-700 font-medium hover:text-emerald-800"
+                >
+                  Explore Realtime Documentation
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-12 flex items-center justify-between">
           <Link href="/docs" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
             <ArrowLeft className="w-4 h-4" />

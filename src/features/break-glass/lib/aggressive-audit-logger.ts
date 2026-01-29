@@ -34,6 +34,7 @@ import {
   type AdminAction,
 } from './admin-database';
 import { AuditLogType, AuditLogLevel, logAuditEntry } from '@/features/abuse-controls/lib/audit-logger';
+import { sendBreakGlassActionNotification } from './notifications';
 
 /**
  * Break glass audit log entry parameters
@@ -252,6 +253,44 @@ export async function logBreakGlassAction(
     user_agent: userAgent,
     occurred_at: new Date(),
   });
+
+  // Step 3: Send email notification about the action
+  // First, get the session details to include admin email and reason
+  try {
+    const sessionResult = await pool.query(
+      `
+      SELECT
+        s.admin_id,
+        s.reason,
+        d.email
+      FROM control_plane.admin_sessions s
+      LEFT JOIN developers d ON d.id = s.admin_id
+      WHERE s.id = $1
+      `,
+      [sessionId]
+    );
+
+    if (sessionResult.rows.length > 0) {
+      const sessionRow = sessionResult.rows[0];
+      await sendBreakGlassActionNotification({
+        adminEmail: sessionRow.email || 'unknown@example.com',
+        adminId: adminId,
+        sessionId: sessionId,
+        sessionReason: sessionRow.reason || 'No reason provided',
+        action: action,
+        targetType: targetType,
+        targetId: targetId,
+        beforeState: beforeState,
+        afterState: afterState,
+        ipAddress: ipAddress,
+      });
+      console.log(`[BreakGlassAudit] Action notification sent for action ${adminAction.id}`);
+    }
+  } catch (error) {
+    // Log notification error but don't fail the audit logging
+    console.error('[BreakGlassAudit] Failed to send action notification:', error);
+    // The action is still logged, just the notification failed
+  }
 
   return adminAction;
 }
