@@ -1,0 +1,295 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { BookOpen, Database, Shield, HardDrive, Globe, DatabaseBackup, ChevronRight, ChevronLeft, Code, Zap } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+
+interface SidebarSection {
+  id: string
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  color: string
+  path: string
+  children?: {
+    title: string
+    path: string
+  }[]
+}
+
+const sidebarSections: SidebarSection[] = [
+  {
+    id: 'getting-started',
+    title: 'Getting Started',
+    icon: BookOpen,
+    color: 'emerald',
+    path: '/docs',
+  },
+  {
+    id: 'database',
+    title: 'Database',
+    icon: Database,
+    color: 'blue',
+    path: '/docs/database',
+  },
+  {
+    id: 'authentication',
+    title: 'Authentication',
+    icon: Shield,
+    color: 'purple',
+    path: '/docs/auth',
+  },
+  {
+    id: 'realtime',
+    title: 'Realtime',
+    icon: Zap,
+    color: 'orange',
+    path: '/docs/realtime',
+  },
+  {
+    id: 'storage',
+    title: 'Storage',
+    icon: HardDrive,
+    color: 'orange',
+    path: '/docs/storage',
+  },
+  {
+    id: 'graphql',
+    title: 'GraphQL',
+    icon: Globe,
+    color: 'emerald',
+    path: '/docs/graphql',
+  },
+  {
+    id: 'sdk',
+    title: 'SDK',
+    icon: Code,
+    color: 'slate',
+    path: '/docs/sdk',
+  },
+  {
+    id: 'mcp-integration',
+    title: 'MCP Integration',
+    icon: Globe,
+    color: 'teal',
+    path: '/mcp',
+  },
+  {
+    id: 'backups',
+    title: 'Backup Strategy',
+    icon: DatabaseBackup,
+    color: 'blue',
+    path: '/docs/backups',
+  },
+]
+
+const colorClasses: Record<string, { bg: string; text: string; hoverBg: string; hoverText: string }> = {
+  emerald: {
+    bg: 'bg-emerald-100',
+    text: 'text-emerald-700',
+    hoverBg: 'group-hover:bg-emerald-200',
+    hoverText: 'group-hover:text-emerald-800',
+  },
+  blue: {
+    bg: 'bg-blue-100',
+    text: 'text-blue-700',
+    hoverBg: 'group-hover:bg-blue-200',
+    hoverText: 'group-hover:text-blue-800',
+  },
+  purple: {
+    bg: 'bg-purple-100',
+    text: 'text-purple-700',
+    hoverBg: 'group-hover:bg-purple-200',
+    hoverText: 'group-hover:text-purple-800',
+  },
+  orange: {
+    bg: 'bg-orange-100',
+    text: 'text-orange-700',
+    hoverBg: 'group-hover:bg-orange-200',
+    hoverText: 'group-hover:text-orange-800',
+  },
+  teal: {
+    bg: 'bg-teal-100',
+    text: 'text-teal-700',
+    hoverBg: 'group-hover:bg-teal-200',
+    hoverText: 'group-hover:text-teal-800',
+  },
+  slate: {
+    bg: 'bg-slate-100',
+    text: 'text-slate-700',
+    hoverBg: 'group-hover:bg-slate-200',
+    hoverText: 'group-hover:text-slate-800',
+  },
+}
+
+interface DocsSidebarProps {
+  isCollapsed: boolean
+  onToggle: () => void
+}
+
+export default function DocsSidebar({ isCollapsed, onToggle }: DocsSidebarProps) {
+  const pathname = usePathname()
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+
+  // Toggle button is separate - handled in DocsLayout
+  // This component just renders the sidebar content
+
+  const toggleSection = (sectionId: string) => {
+    setExpandedSections((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId)
+      } else {
+        newSet.add(sectionId)
+      }
+      return newSet
+    })
+  }
+
+  const isActive = (path: string) => {
+    if (path === '/docs') {
+      return pathname === '/docs'
+    }
+    return pathname.startsWith(path)
+  }
+
+  return (
+    <motion.aside
+      initial={false}
+      animate={{ width: isCollapsed ? 80 : 280 }}
+      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      className="fixed left-0 top-0 h-screen bg-white border-r border-slate-200 overflow-hidden z-40"
+    >
+      <div className="h-full flex flex-col">
+        {/* Sidebar Header */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-200">
+          <AnimatePresence mode="wait">
+            {!isCollapsed ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex items-center gap-3"
+              >
+                <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-700 text-white shadow flex-shrink-0">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 12c5 0 4-8 10-8 0 3 6 3 6 8s-6 5-6 8c-6 0-5-8-10-8Z" fill="currentColor" />
+                  </svg>
+                </div>
+                <span className="text-xl font-semibold tracking-tight text-slate-900">nextmavens</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="w-full flex justify-center"
+              >
+                <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-700 text-white shadow">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 12c5 0 4-8 10-8 0 3 6 3 6 8s-6 5-6 8c-6 0-5-8-10-8Z" fill="currentColor" />
+                  </svg>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Sidebar Content */}
+        <nav className="flex-1 overflow-y-auto py-4 px-3">
+          <ul className="space-y-1">
+            {sidebarSections.map((section) => {
+              const Icon = section.icon
+              const colors = colorClasses[section.color]
+              const active = isActive(section.path)
+              const expanded = expandedSections.has(section.id)
+
+              return (
+                <li key={section.id}>
+                  <Link
+                    href={section.path}
+                    className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
+                      active
+                        ? `${colors.bg} ${colors.text} font-medium`
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className={`p-2 rounded-lg ${colors.bg} ${colors.text} flex-shrink-0`}>
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <AnimatePresence mode="wait">
+                      {!isCollapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="flex-1 truncate"
+                        >
+                          {section.title}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                    {active && !isCollapsed && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="w-2 h-2 rounded-full bg-current flex-shrink-0"
+                      />
+                    )}
+                  </Link>
+
+                  {/* Collapsible children */}
+                  {section.children && expanded && !isCollapsed && (
+                    <motion.ul
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="ml-12 mt-1 space-y-1"
+                    >
+                      {section.children.map((child) => (
+                        <li key={child.path}>
+                          <Link
+                            href={child.path}
+                            className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
+                              pathname === child.path
+                                ? `${colors.bg} ${colors.text} font-medium`
+                                : 'text-slate-600 hover:bg-slate-100'
+                            }`}
+                          >
+                            {child.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </motion.ul>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* Toggle Button */}
+        <div className="p-4 border-t border-slate-200">
+          <button
+            onClick={onToggle}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-5 h-5" />
+            ) : (
+              <>
+                <ChevronLeft className="w-5 h-5" />
+                <span>Collapse</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </motion.aside>
+  )
+}
