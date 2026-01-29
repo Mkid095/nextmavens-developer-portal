@@ -109,8 +109,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: unlock-project.service.ts (317 lines) with unlockProject function that clears suspension flags, sets status to ACTIVE, and logs before/after states. API endpoint at src/app/api/admin/projects/[id]/unlock/route.ts (251 lines) with POST and GET handlers. Typecheck passes."
     },
     {
       "id": "US-005",
