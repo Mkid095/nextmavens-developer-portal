@@ -65,6 +65,7 @@ export default function DashboardPage() {
   // Form states
   const [apiKeyName, setApiKeyName] = useState('')
   const [projectName, setProjectName] = useState('')
+  const [keyEnvironment, setKeyEnvironment] = useState<'live' | 'test' | 'dev'>('live')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -157,6 +158,7 @@ export default function DashboardPage() {
 
   const openCreateKeyModal = () => {
     setApiKeyName('')
+    setKeyEnvironment('live')
     setError('')
     setShowApiKeyModal(true)
   }
@@ -164,6 +166,7 @@ export default function DashboardPage() {
   const closeCreateKeyModal = () => {
     setShowApiKeyModal(false)
     setApiKeyName('')
+    setKeyEnvironment('live')
     setError('')
   }
 
@@ -186,7 +189,7 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: apiKeyName.trim() }),
+        body: JSON.stringify({ name: apiKeyName.trim(), environment: keyEnvironment }),
       })
 
       const data = await res.json()
@@ -351,6 +354,24 @@ export default function DashboardPage() {
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
                     autoFocus
                   />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Environment
+                  </label>
+                  <select
+                    value={keyEnvironment}
+                    onChange={(e) => setKeyEnvironment(e.target.value as 'live' | 'test' | 'dev')}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent bg-white"
+                  >
+                    <option value="live">Production (Live)</option>
+                    <option value="test">Staging (Test)</option>
+                    <option value="dev">Development (Dev)</option>
+                  </select>
+                  <p className="text-xs text-slate-500 mt-2">
+                    The key prefix will include this environment (e.g., pk_live_, pk_test_, pk_dev_)
+                  </p>
                 </div>
 
                 {error && (

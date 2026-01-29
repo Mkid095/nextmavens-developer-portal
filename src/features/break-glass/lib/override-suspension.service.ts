@@ -31,6 +31,7 @@ import {
   AdminActionType,
   AdminTargetType,
 } from './admin-database';
+import { logBreakGlassAction } from './aggressive-audit-logger';
 import type {
   OverrideProjectState,
   OverrideActionLog,
@@ -270,14 +271,25 @@ export async function overrideSuspension(
     admin_reason: reason || null,
   };
 
-  // Step 7: Log the admin action
-  const action = await logAdminAction({
-    session_id: sessionId,
+  // Step 7: Log the admin action to BOTH admin_actions AND audit_logs (aggressive logging)
+  const action = await logBreakGlassAction({
+    adminId,
+    sessionId,
     action: AdminActionType.OVERRIDE_SUSPENSION,
-    target_type: AdminTargetType.PROJECT,
-    target_id: projectId,
-    before_state: beforeState,
-    after_state: afterState,
+    targetType: AdminTargetType.PROJECT,
+    targetId: projectId,
+    beforeState,
+    afterState,
+    metadata: {
+      reason: reason || 'No reason provided',
+      project_name: project.project_name,
+      previous_status: project.status,
+      suspension_cleared: clearedSuspension,
+      caps_updated: capsUpdated,
+      cap_updates: capUpdates,
+    },
+    projectId,
+    developerId: adminId,
   });
 
   // Step 8: Build response

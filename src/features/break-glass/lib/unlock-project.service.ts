@@ -28,6 +28,7 @@ import {
   AdminActionType,
   AdminTargetType,
 } from './admin-database';
+import { logBreakGlassAction } from './aggressive-audit-logger';
 import type {
   UnlockedProjectState,
   UnlockActionLog,
@@ -174,14 +175,23 @@ export async function unlockProject(
     admin_reason: reason || null,
   };
 
-  // Step 5: Log the admin action
-  const action = await logAdminAction({
-    session_id: sessionId,
+  // Step 5: Log the admin action to BOTH admin_actions AND audit_logs (aggressive logging)
+  const action = await logBreakGlassAction({
+    adminId,
+    sessionId,
     action: AdminActionType.UNLOCK_PROJECT,
-    target_type: AdminTargetType.PROJECT,
-    target_id: projectId,
-    before_state: beforeState,
-    after_state: afterState,
+    targetType: AdminTargetType.PROJECT,
+    targetId: projectId,
+    beforeState,
+    afterState,
+    metadata: {
+      reason: reason || 'No reason provided',
+      project_name: project.project_name,
+      previous_status: project.status,
+      suspension_cleared: clearedSuspension,
+    },
+    projectId,
+    developerId: adminId,
   });
 
   // Step 6: Build response

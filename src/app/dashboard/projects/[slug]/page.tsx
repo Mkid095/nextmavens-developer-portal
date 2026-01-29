@@ -20,6 +20,7 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  X,
   LucideIcon,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
@@ -109,6 +110,11 @@ export default function ProjectDetailPage() {
   const [showSecret, setShowSecret] = useState<Record<string, boolean>>({})
   const [suspensionStatus, setSuspensionStatus] = useState<SuspensionRecord | null>(null)
   const [suspensionLoading, setSuspensionLoading] = useState(true)
+  const [showCreateKeyModal, setShowCreateKeyModal] = useState(false)
+  const [newKeyName, setNewKeyName] = useState('')
+  const [newKeyEnvironment, setNewKeyEnvironment] = useState<'live' | 'test' | 'dev'>('live')
+  const [keySubmitting, setKeySubmitting] = useState(false)
+  const [keyError, setKeyError] = useState('')
 
   useEffect(() => {
     if (project) {
@@ -183,6 +189,58 @@ export default function ProjectDetailPage() {
       console.error('Failed to fetch suspension status:', err)
     } finally {
       setSuspensionLoading(false)
+    }
+  }
+
+  const openCreateKeyModal = () => {
+    setNewKeyName('')
+    setNewKeyEnvironment('live')
+    setKeyError('')
+    setShowCreateKeyModal(true)
+  }
+
+  const closeCreateKeyModal = () => {
+    setShowCreateKeyModal(false)
+    setNewKeyName('')
+    setNewKeyEnvironment('live')
+    setKeyError('')
+  }
+
+  const handleCreateApiKey = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setKeyError('')
+
+    if (!newKeyName.trim()) {
+      setKeyError('Please enter a name for this API key')
+      return
+    }
+
+    setKeySubmitting(true)
+
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch('/api/api-keys', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: newKeyName.trim(), environment: newKeyEnvironment }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create API key')
+      }
+
+      setNewKey(data)
+      closeCreateKeyModal()
+      fetchApiKeys()
+    } catch (err: any) {
+      setKeyError(err.message || 'Failed to create API key')
+    } finally {
+      setKeySubmitting(false)
     }
   }
 
