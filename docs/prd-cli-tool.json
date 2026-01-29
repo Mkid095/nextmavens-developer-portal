@@ -120,8 +120,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: API client at cli/src/lib/api-client.ts with ApiError class, exponential backoff on 429, TypeScript types (Developer, Project, LoginResponse, ApiResponse, etc.). Integrates with config manager for token storage. Typecheck passes."
     },
     {
       "id": "US-009",
