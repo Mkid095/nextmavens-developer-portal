@@ -9,6 +9,11 @@ import {
   getKeyPrefix,
   type ApiKey,
 } from '@/lib/types/api-key.types'
+import {
+  getIdempotencyKey,
+  withIdempotency,
+  type IdempotencyResponse,
+} from '@/lib/idempotency'
 
 export async function GET(req: NextRequest) {
   try {
