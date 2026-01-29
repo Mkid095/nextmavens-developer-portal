@@ -8,6 +8,11 @@ import {
   type CreateProjectInput,
   type ListProjectsQuery,
 } from '@/lib/validation'
+import {
+  getIdempotencyKey,
+  withIdempotency,
+  type IdempotencyResponse,
+} from '@/lib/idempotency'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -152,73 +157,99 @@ export async function POST(req: NextRequest) {
       throw error
     }
 
-    const pool = getPool()
-
-    // Check if project with same name already exists for this developer
-    const existingProject = await pool.query(
-      'SELECT id FROM projects p JOIN tenants t ON p.tenant_id = t.id WHERE p.developer_id = $1 AND t.name = $2',
-      [developer.id, validatedData.project_name]
+    // Generate idempotency key: provision:{project_id}
+    // Use the project_name from validated data as the identifier
+    const idempotencyKey = getIdempotencyKey(
+      'provision',
+      req.headers,
+      validatedData.project_name
     )
 
-    if (existingProject.rows.length > 0) {
-      return errorResponse('DUPLICATE_PROJECT', 'A project with this name already exists', 409)
-    }
+    // Execute with idempotency (TTL: 1 hour = 3600 seconds)
+    const result = await withIdempotency(
+      idempotencyKey,
+      async (): Promise<IdempotencyResponse> => {
+        const pool = getPool()
 
-    // Generate slug from project name
-    const slug = validatedData.project_name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
+        // Check if project with same name already exists for this developer
+        const existingProject = await pool.query(
+          'SELECT id FROM projects p JOIN tenants t ON p.tenant_id = t.id WHERE p.developer_id = $1 AND t.name = $2',
+          [developer.id, validatedData.project_name]
+        )
 
-    // Create tenant
-    const tenantResult = await pool.query(
-      `INSERT INTO tenants (name, slug, settings)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
-      [validatedData.project_name, slug, {}]
-    )
+        if (existingProject.rows.length > 0) {
+          return {
+            status: 409,
+            headers: {},
+            body: {
+              success: false,
+              error: { code: 'DUPLICATE_PROJECT', message: 'A project with this name already exists' }
+            }
+          }
+        }
 
-    const tenantId = tenantResult.rows[0].id
+        // Generate slug from project name
+        const slug = validatedData.project_name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
 
-    // Create project
-    const projectResult = await pool.query(
-      `INSERT INTO projects (
-         developer_id, project_name, tenant_id, environment, webhook_url, allowed_origins, rate_limit, status
-       )
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, project_name, tenant_id, environment, webhook_url, allowed_origins, rate_limit, status, created_at`,
-      [
-        developer.id,
-        validatedData.project_name,
-        tenantId,
-        validatedData.environment || 'prod',
-        validatedData.webhook_url,
-        validatedData.allowed_origins,
-        1000, // default rate limit
-        'active', // default status
-      ]
-    )
+        // Create tenant
+        const tenantResult = await pool.query(
+          `INSERT INTO tenants (name, slug, settings)
+           VALUES ($1, $2, $3)
+           RETURNING id`,
+          [validatedData.project_name, slug, {}]
+        )
 
-    const project = projectResult.rows[0]
+        const tenantId = tenantResult.rows[0].id
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          id: project.id,
-          name: project.project_name,
-          slug: slug,
-          tenant_id: project.tenant_id,
-          environment: project.environment,
-          webhook_url: project.webhook_url,
-          allowed_origins: project.allowed_origins,
-          rate_limit: project.rate_limit,
-          status: project.status,
-          created_at: project.created_at,
-        },
+        // Create project
+        const projectResult = await pool.query(
+          `INSERT INTO projects (
+             developer_id, project_name, tenant_id, environment, webhook_url, allowed_origins, rate_limit, status
+           )
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           RETURNING id, project_name, tenant_id, environment, webhook_url, allowed_origins, rate_limit, status, created_at`,
+          [
+            developer.id,
+            validatedData.project_name,
+            tenantId,
+            validatedData.environment || 'prod',
+            validatedData.webhook_url,
+            validatedData.allowed_origins,
+            1000, // default rate limit
+            'active', // default status
+          ]
+        )
+
+        const project = projectResult.rows[0]
+
+        return {
+          status: 201,
+          headers: {},
+          body: {
+            success: true,
+            data: {
+              id: project.id,
+              name: project.project_name,
+              slug: slug,
+              tenant_id: project.tenant_id,
+              environment: project.environment,
+              webhook_url: project.webhook_url,
+              allowed_origins: project.allowed_origins,
+              rate_limit: project.rate_limit,
+              status: project.status,
+              created_at: project.created_at,
+            }
+          }
+        }
       },
-      { status: 201 }
+      { ttl: 3600 } // 1 hour TTL
     )
+
+    // Return the response with the appropriate status code
+    return NextResponse.json(result.body, { status: result.status })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
       return errorResponse('UNAUTHORIZED', 'Authentication required', 401)

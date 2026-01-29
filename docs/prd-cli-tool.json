@@ -266,8 +266,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented status command (`nextmavens status`) in cli/src/commands/status.ts. Shows linked project information (name, slug, ID, status, tenant ID, created date). Shows enabled services status (database, auth, realtime, storage, functions) with icons. Shows current usage metrics with percentage indicators (DB queries, realtime connections, storage uploads, function invocations). Displays any issues or warnings with timestamps. Includes contextual messages based on project status and approaching limits (75% and 90% thresholds). Added TypeScript types (UsageMetrics, ServiceStatus, Issue, ProjectStatusResponse) and API client method (getProjectStatus). Typecheck passes."
     },
     {
       "id": "US-010",
