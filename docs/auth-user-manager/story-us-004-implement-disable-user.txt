@@ -1,0 +1,63 @@
+---
+memoryVersion: 1
+storyId: US-004
+storyTitle: Implement Disable User
+completedDate: 2026-01-29
+---
+
+STORY: US-004 - Implement Disable User
+========================================
+
+DESCRIPTION:
+As a developer, I want to disable users so that I can block accounts without deleting them.
+
+MAVEN STEPS COMPLETED:
+[1, 2, 5, 7, 10]
+
+IMPLEMENTATION SUMMARY:
+Created complete user disable/enable functionality with UI components, API routes, and auth service integration. Fixed critical security vulnerabilities including client-side API key exposure, hardcoded secrets, missing authorization checks, and lack of audit logging.
+
+KEY FILES CREATED:
+- developer-portal/src/lib/types/auth-user.types.ts - TypeScript types for auth user management
+- developer-portal/src/lib/api/auth-service-client.ts - Auth service API client
+- developer-portal/src/app/api/auth/users/route.ts - List users endpoint
+- developer-portal/src/app/api/auth/users/[userId]/route.ts - Get user endpoint
+- developer-portal/src/app/api/auth/users/[userId]/disable/route.ts - Disable endpoint with RBAC
+- developer-portal/src/app/api/auth/users/[userId]/enable/route.ts - Enable endpoint with RBAC
+- developer-portal/src/app/api/auth/users/[userId]/sessions/route.ts - List sessions endpoint
+- developer-portal/src/app/api/auth/users/[userId]/sessions/[sessionId]/route.ts - Revoke session endpoint
+- developer-portal/src/features/auth-users/components/DisableUserButton.tsx - Disable/enable button
+- developer-portal/src/features/auth-users/components/UserDetail.tsx - User detail view
+- developer-portal/src/features/auth-users/components/UserList.tsx - User list with status badges
+
+KEY FILES MODIFIED:
+- developer-portal/src/app/studio/[slug]/page.tsx - Added Users tab integration
+- developer-portal/src/lib/auth.ts - Removed hardcoded secrets, require env vars
+- developer-portal/.gitignore - Enhanced to exclude .env files
+
+DECISIONS MADE:
+- Used "EndUser" prefix for types to avoid conflicts with existing User types
+- Required operator/admin role for disable/enable actions (RBAC)
+- All disable/enable actions logged to audit database with IP tracking
+- UI calls Next.js API routes instead of auth service directly (security)
+- Professional solid colors only (amber-600 for disable, emerald-700 for enable)
+
+INTEGRATION POINTS:
+- Auth service API for user management operations
+- Audit logs database for security event logging
+- Authorization system (requireOperatorOrAdmin)
+- Studio page navigation (Users tab)
+
+SECURITY FIXES APPLIED:
+- CRITICAL: Removed client-side auth service API calls (API key exposure)
+- CRITICAL: Removed hardcoded JWT_SECRET and REFRESH_SECRET defaults
+- HIGH: Added RBAC authorization checks to disable/enable routes
+- MEDIUM: Added comprehensive audit logging for all disable/enable actions
+- LOW: Enhanced .gitignore to exclude .env files
+
+LESSONS LEARNED:
+- Never expose auth service API key to client-side code
+- Always require environment variables for secrets (no defaults)
+- All state-changing operations need RBAC authorization checks
+- Audit logging is essential for security compliance
+- UserList and UserDetail were created by other agents - verify all components use API routes

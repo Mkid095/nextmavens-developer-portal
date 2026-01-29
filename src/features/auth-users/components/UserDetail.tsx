@@ -198,6 +198,16 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     }
   }
 
+  const handleMetadataUpdated = (metadata: Record<string, unknown>) => {
+    setUser((prev) =>
+      prev ? { ...prev, user_metadata: metadata, updated_at: new Date().toISOString() } : null
+    )
+
+    if (onUserUpdated) {
+      onUserUpdated()
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -227,7 +237,7 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
         onEnable={handleEnableUser}
         isLoading={isUpdatingStatus}
       />
-      <UserDetailInfo user={user} />
+      <UserDetailInfo user={user} onMetadataUpdated={handleMetadataUpdated} />
       <UserDetailSessions
         sessions={user.sessions}
         loading={sessionsLoading}

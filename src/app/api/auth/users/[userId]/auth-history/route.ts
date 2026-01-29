@@ -1,11 +1,15 @@
 /**
  * API Route: Get User Authentication History
  * GET /api/auth/users/[userId]/auth-history - Get authentication history for a user
+ *
+ * SECURITY: Requires operator or admin role
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth'
 import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
+import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
+import { logAuditEntry, AuditLogType, AuditLogLevel, extractClientIP, extractUserAgent } from '@/features/abuse-controls/lib/audit-logger'
 
 export async function GET(
   req: NextRequest,
@@ -13,7 +17,10 @@ export async function GET(
 ) {
   try {
     // Authenticate the request
-    await authenticateRequest(req)
+    const developer = await authenticateRequest(req)
+
+    // Authorize - only operators and admins can view auth history
+    const developerWithRole = await requireOperatorOrAdmin(developer)
 
     const { userId } = params
     const { searchParams } = new URL(req.url)
@@ -41,6 +48,22 @@ export async function GET(
     const client = requireAuthServiceClient()
     const response = await client.getEndUserAuthHistory(userId, { limit, offset })
 
+    // Audit log the auth history view
+    await logAuditEntry({
+      log_type: AuditLogType.MANUAL_INTERVENTION,
+      severity: AuditLogLevel.INFO,
+      developer_id: developerWithRole.id,
+      action: 'auth_history_viewed',
+      details: {
+        target_user_id: userId,
+        performed_by: developerWithRole.email,
+        role: developerWithRole.role,
+      },
+      ip_address: extractClientIP(req),
+      user_agent: extractUserAgent(req),
+      occurred_at: new Date(),
+    })
+
     return NextResponse.json(response)
   } catch (error) {
     console.error('Error getting auth history:', error)
@@ -56,6 +79,14 @@ export async function GET(
       return NextResponse.json(
         { error: 'Unauthorized', message: 'Invalid authentication token' },
         { status: 401 }
+      )
+    }
+
+    // Check for authorization errors
+    if (error instanceof Error && error.name === 'AuthorizationError') {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'Insufficient permissions' },
+        { status: 403 }
       )
     }
 

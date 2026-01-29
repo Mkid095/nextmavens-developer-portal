@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup } from 'lucide-react'
 
 const chapters = [
   {
@@ -37,6 +37,15 @@ const chapters = [
     color: 'emerald',
     tools: ['graphql', 'graphql_introspect'],
     path: '/docs/graphql',
+  },
+  {
+    id: 'backups',
+    title: 'Backup Strategy',
+    description: 'Database, storage, and logs backup with Telegram integration',
+    icon: DatabaseBackup,
+    color: 'blue',
+    tools: ['export', 'restore', 'retention'],
+    path: '/docs/backups',
   },
   {
     id: 'mcp',
@@ -91,7 +100,7 @@ export default function DocsPage() {
           </div>
           <p className="text-xl text-slate-600">
             Complete guide to integrating NextMavens services into your applications.
-            Learn how to use Database, Authentication, Storage, GraphQL, and MCP tools.
+            Learn how to use Database, Authentication, Storage, GraphQL, Backups, and MCP tools.
           </p>
         </div>
 

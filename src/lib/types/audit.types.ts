@@ -106,4 +106,5 @@ export const ACTOR_TYPE_LABELS: Record<ActorType, string> = {
   user: 'User',
   system: 'System',
   api_key: 'API Key',
+  project: 'Project',
 };

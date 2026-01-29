@@ -3,11 +3,21 @@
  *
  * Send expiration notifications for backups nearing expiration.
  * This is an admin endpoint for manually triggering notifications.
+ *
+ * SECURITY:
+ * - Rate limited: 10 requests per hour per project (prevents spam)
+ * - Requires project ownership verification
+ * - Returns minimal information to prevent data leakage
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/middleware';
 import { getPool } from '@/lib/db';
+import {
+  checkRateLimit,
+  extractClientIP,
+  RateLimitIdentifierType,
+} from '@/features/abuse-controls/lib/rate-limiter';
 
 export async function POST(
   request: NextRequest,
@@ -29,6 +39,36 @@ export async function POST(
       return NextResponse.json(
         { error: 'Project not found or access denied' },
         { status: 404 }
+      );
+    }
+
+    // SECURITY: Rate limit notification operations to prevent spam
+    // Limit: 10 notification requests per hour per project
+    const rateLimitResult = await checkRateLimit(
+      {
+        type: RateLimitIdentifierType.ORG,
+        value: projectId,
+      },
+      10, // 10 requests per hour
+      60 * 60 * 1000 // 1 hour window
+    );
+
+    if (!rateLimitResult.allowed) {
+      const retryAfterSeconds = Math.max(0, Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000));
+      return NextResponse.json(
+        {
+          error: 'Too many notification requests. Please try again later.',
+          retryAfter: rateLimitResult.resetAt,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': retryAfterSeconds.toString(),
+            'X-RateLimit-Limit': '10',
+            'X-RateLimit-Remaining': rateLimitResult.remainingAttempts.toString(),
+            'X-RateLimit-Reset': rateLimitResult.resetAt.toISOString(),
+          },
+        }
       );
     }
 
