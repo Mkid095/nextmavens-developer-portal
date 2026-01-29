@@ -17,6 +17,11 @@ COMMANDS:
   login       Authenticate with email and password
   logout      Log out and remove stored token
   whoami      Show current authenticated user
+
+  project create <name>    Create a new project
+  project list             List all projects
+  project link [id/slug]   Link current directory to a project
+
   hello       Say hello to the world
 
 OPTIONS:
@@ -55,9 +60,40 @@ async function main() {
     case 'hello':
       console.log('Hello from NextMavens CLI!');
       break;
+    case 'project':
+      await handleProjectCommand(args.slice(1));
+      break;
     default:
       console.log(`Unknown command: ${command}`);
       console.log('Run "nextmavens --help" for usage information.');
+      process.exit(1);
+  }
+}
+
+async function handleProjectCommand(args: string[]) {
+  const subcommand = args[0];
+
+  if (!subcommand) {
+    console.error('Error: project command requires a subcommand');
+    console.error('Usage: nextmavens project <create|list|link> [options]');
+    console.error('Run "nextmavens --help" for more information.');
+    process.exit(1);
+  }
+
+  switch (subcommand) {
+    case 'create':
+      await (await import('./commands/project/create')).projectCreate(args[1]);
+      break;
+    case 'list':
+      await (await import('./commands/project/list')).projectList();
+      break;
+    case 'link':
+      await (await import('./commands/project/link')).projectLink(args[1]);
+      break;
+    default:
+      console.error(`Unknown project command: ${subcommand}`);
+      console.error('Available project commands: create, list, link');
+      console.error('Run "nextmavens --help" for more information.');
       process.exit(1);
   }
 }

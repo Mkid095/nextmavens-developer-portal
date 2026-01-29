@@ -8,6 +8,22 @@ export interface Developer {
   created_at?: string;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  slug: string;
+  tenant_id: string;
+  webhook_url?: string;
+  allowed_origins?: string[];
+  rate_limit?: number;
+  status: string;
+  created_at: string;
+}
+
+export interface CreateProjectResponse {
+  project: Project;
+}
+
 export interface LoginResponse {
   developer: Developer;
   accessToken: string;
@@ -147,6 +163,27 @@ export class ApiClient {
 
   public getAuthToken(): string | null {
     return this.token;
+  }
+
+  public async createProject(name: string): Promise<Project> {
+    const response = await this.request<{ success: boolean; data: Project }>('/v1/projects', {
+      method: 'POST',
+      body: JSON.stringify({ project_name: name }),
+    });
+    return response.data;
+  }
+
+  public async listProjects(options?: { status?: string; limit?: number; offset?: number }): Promise<Project[]> {
+    const params = new URLSearchParams();
+    if (options?.status) params.append('status', options.status);
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.offset) params.append('offset', options.offset.toString());
+
+    const queryString = params.toString();
+    const response = await this.request<{ success: boolean; data: Project[]; meta?: any }>(
+      `/v1/projects${queryString ? `?${queryString}` : ''}`
+    );
+    return response.data;
   }
 }
 
