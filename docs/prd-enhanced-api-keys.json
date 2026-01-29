@@ -25,8 +25,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration script created at src/features/enhanced-api-keys/migrations/add-key-type-and-scopes.ts. Creates api_key_type and api_key_environment enums. Adds key_type, scopes (JSONB), and environment columns to api_keys table. Handles backwards compatibility by converting existing VARCHAR key_type to enum. Sets default scopes based on key_type. Sets environment based on key_prefix. Typecheck passes."
     },
     {
       "id": "US-002",
