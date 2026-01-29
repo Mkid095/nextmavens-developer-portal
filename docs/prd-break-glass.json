@@ -137,8 +137,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: POST /api/admin/projects/[id]/override-suspension endpoint (268 lines) with POST and GET handlers. Service layer override-suspension.service.ts (380 lines) with overrideSuspension function that clears suspension flags, optionally increases hard caps (via new_hard_caps array or increase_caps_by_percent), sets status to ACTIVE, and logs before/after states. Types defined in override-suspension.types.ts (76 lines). Integrates with SuspensionManager and QuotaManager from abuse-controls. Typecheck passes."
     },
     {
       "id": "US-010",
