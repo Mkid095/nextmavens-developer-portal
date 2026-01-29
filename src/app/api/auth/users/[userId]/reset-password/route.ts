@@ -22,7 +22,8 @@ export async function POST(
     const email = body.email as string | undefined
 
     // Call auth service to send password reset email
-    const response = await client = requireAuthServiceClient(); client.resetEndUserPassword({
+    const client = requireAuthServiceClient()
+    const response = await client.resetEndUserPassword({
       userId,
       email,
     })

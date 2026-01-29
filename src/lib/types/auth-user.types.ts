@@ -179,6 +179,47 @@ export interface EndUserSessionsResponse {
   total: number
 }
 
+/**
+ * Authentication method type
+ */
+export type AuthMethod = 'email' | 'google' | 'github' | 'microsoft'
+
+/**
+ * End-user authentication history entry
+ */
+export interface EndUserAuthHistory {
+  id: string
+  user_id: string
+  sign_in_at: string
+  sign_out_at?: string
+  method: AuthMethod
+  ip_address?: string
+  user_agent?: string
+  device_type?: string
+  browser?: string
+  location?: string
+  success: boolean
+  failure_reason?: string
+}
+
+/**
+ * Auth history list query parameters
+ */
+export interface AuthHistoryListQuery {
+  limit?: number
+  offset?: number
+}
+
+/**
+ * Auth history list response
+ */
+export interface AuthHistoryListResponse {
+  history: EndUserAuthHistory[]
+  total: number
+  limit: number
+  offset: number
+}
+
 // Legacy type aliases for backward compatibility
 /**
  * @deprecated Use EndUserStatus instead

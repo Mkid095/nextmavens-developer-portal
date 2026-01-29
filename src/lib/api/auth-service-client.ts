@@ -20,6 +20,9 @@ import type {
   EndUserSessionsResponse,
   RevokeEndUserSessionRequest,
   RevokeEndUserSessionResponse,
+  EndUserAuthHistory,
+  AuthHistoryListQuery,
+  AuthHistoryListResponse,
   AuthServiceError,
 } from '@/lib/types/auth-user.types'
 
@@ -179,6 +182,19 @@ export class AuthServiceClient {
     })
   }
 
+  /**
+   * Get authentication history for an end-user
+   */
+  async getEndUserAuthHistory(userId: string, query: AuthHistoryListQuery = {}): Promise<AuthHistoryListResponse> {
+    const params = new URLSearchParams()
+
+    if (query.limit) params.append('limit', String(query.limit))
+    if (query.offset) params.append('offset', String(query.offset))
+
+    const queryString = params.toString()
+    return this.request<AuthHistoryListResponse>(`/users/${userId}/auth-history${queryString ? `?${queryString}` : ''}`)
+  }
+
   // Legacy aliases for backward compatibility
   /**
    * @deprecated Use listEndUsers instead
@@ -241,6 +257,13 @@ export class AuthServiceClient {
    */
   async revokeSession(request: RevokeEndUserSessionRequest): Promise<RevokeEndUserSessionResponse> {
     return this.revokeEndUserSession(request)
+  }
+
+  /**
+   * @deprecated Use getEndUserAuthHistory instead
+   */
+  async getAuthHistory(userId: string, query: AuthHistoryListQuery = {}): Promise<AuthHistoryListResponse> {
+    return this.getEndUserAuthHistory(userId, query)
   }
 }
 

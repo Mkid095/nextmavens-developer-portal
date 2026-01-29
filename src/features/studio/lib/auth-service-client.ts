@@ -114,6 +114,14 @@ export class StudioAuthServiceClient {
     return client.revokeEndUserSession(request)
   }
 
+  /**
+   * Get authentication history for an end-user
+   */
+  async getEndUserAuthHistory(userId: string, query: Parameters<AuthServiceClient['getEndUserAuthHistory']>[1] = {}) {
+    const client = await this.getClient()
+    return client.getEndUserAuthHistory(userId, query)
+  }
+
   // Legacy aliases for backward compatibility
   /**
    * @deprecated Use listEndUsers instead
@@ -176,6 +184,13 @@ export class StudioAuthServiceClient {
    */
   async revokeSession(request: Parameters<AuthServiceClient['revokeEndUserSession']>[0]) {
     return this.revokeEndUserSession(request)
+  }
+
+  /**
+   * @deprecated Use getEndUserAuthHistory instead
+   */
+  async getAuthHistory(userId: string, query: Parameters<AuthServiceClient['getEndUserAuthHistory']>[1] = {}) {
+    return this.getEndUserAuthHistory(userId, query)
   }
 }
 

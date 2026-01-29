@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Loader2, Mail, Calendar, Shield, ArrowLeft, RefreshCw } from 'lucide-react'
-import type { EndUserDetailResponse, EndUserSession } from '@/lib/types/auth-user.types'
-import { getAuthServiceClient } from '@/lib/api/auth-service-client'
+import type { EndUserDetailResponse, EndUserSession, EndUserAuthHistory } from '@/lib/types/auth-user.types'
 import { UserDetailHeader } from '@/features/auth-users/components/UserDetailHeader'
 import { UserDetailInfo } from '@/features/auth-users/components/UserDetailInfo'
 import { UserDetailSessions } from '@/features/auth-users/components/UserDetailSessions'
+import { UserAuthHistory } from '@/features/auth-users/components/UserAuthHistory'
 
 interface UserDetailProps {
   userId: string
@@ -17,6 +17,27 @@ interface UserDetailProps {
 
 interface UserDetailData extends EndUserDetailResponse {
   sessions?: EndUserSession[]
+  authHistory?: EndUserAuthHistory[]
+}
+
+/**
+ * Helper function to make authenticated API requests to the backend
+ */
+async function apiRequest(url: string, options: RequestInit = {}): Promise<Response> {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Unknown error' }))
+    throw new Error(error.message || `HTTP ${response.status}`)
+  }
+
+  return response
 }
 
 export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
@@ -27,22 +48,19 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
   const [sessionsLoading, setSessionsLoading] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
-
-  const getClient = () => {
-    const client = getAuthServiceClient()
-    if (!client) {
-      throw new Error('Auth service client not configured')
-    }
-    return client
-  }
+  const [authHistoryLoading, setAuthHistoryLoading] = useState(false)
+  const [authHistoryError, setAuthHistoryError] = useState<string | null>(null)
+  const [authHistoryOffset, setAuthHistoryOffset] = useState(0)
+  const [authHistoryTotal, setAuthHistoryTotal] = useState(0)
+  const authHistoryLimit = 20
 
   const fetchUser = async () => {
     setLoading(true)
     setError(null)
 
     try {
-      const client = getClient()
-      const userData = await client.getEndUser(userId)
+      const response = await apiRequest(`/api/auth/users/${userId}`)
+      const userData = await response.json()
       setUser(userData)
     } catch (err) {
       console.error('Failed to fetch user:', err)
@@ -57,9 +75,9 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     setSessionError(null)
 
     try {
-      const client = getClient()
-      const response = await client.getEndUserSessions(userId)
-      setUser((prev) => (prev ? { ...prev, sessions: response.sessions } : null))
+      const response = await apiRequest(`/api/auth/users/${userId}/sessions`)
+      const data = await response.json()
+      setUser((prev) => (prev ? { ...prev, sessions: data.sessions } : null))
     } catch (err) {
       console.error('Failed to fetch sessions:', err)
       setSessionError(err instanceof Error ? err.message : 'Failed to load sessions')
@@ -68,18 +86,45 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     }
   }
 
+  const fetchAuthHistory = async () => {
+    setAuthHistoryLoading(true)
+    setAuthHistoryError(null)
+
+    try {
+      const params = new URLSearchParams({
+        limit: String(authHistoryLimit),
+        offset: String(authHistoryOffset),
+      })
+      const response = await apiRequest(`/api/auth/users/${userId}/auth-history?${params}`)
+      const data = await response.json()
+      setUser((prev) => (prev ? { ...prev, authHistory: data.history } : null))
+      setAuthHistoryTotal(data.total)
+    } catch (err) {
+      console.error('Failed to fetch auth history:', err)
+      setAuthHistoryError(err instanceof Error ? err.message : 'Failed to load authentication history')
+    } finally {
+      setAuthHistoryLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchUser()
     fetchSessions()
+    fetchAuthHistory()
   }, [userId])
+
+  useEffect(() => {
+    fetchAuthHistory()
+  }, [authHistoryOffset])
 
   const handleRevokeSession = async (sessionId: string) => {
     setRevokingSessionId(sessionId)
     setSessionError(null)
 
     try {
-      const client = getClient()
-      await client.revokeEndUserSession({ userId, sessionId })
+      await apiRequest(`/api/auth/users/${userId}/sessions/${sessionId}`, {
+        method: 'DELETE',
+      })
 
       setUser((prev) => {
         if (!prev?.sessions) return prev
@@ -105,13 +150,14 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     setError(null)
 
     try {
-      const client = getClient()
-      const response = await client.disableEndUser({
-        userId: targetUserId,
+      const response = await apiRequest(`/api/auth/users/${targetUserId}/disable`, {
+        method: 'POST',
+        body: JSON.stringify({}),
       })
+      const data = await response.json()
 
       setUser((prev) =>
-        prev ? { ...prev, status: response.status, updated_at: response.updated_at } : null
+        prev ? { ...prev, status: data.status, updated_at: data.updated_at } : null
       )
 
       if (onUserUpdated) {
@@ -131,13 +177,13 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
     setError(null)
 
     try {
-      const client = getClient()
-      const response = await client.enableEndUser({
-        userId: targetUserId,
+      const response = await apiRequest(`/api/auth/users/${targetUserId}/enable`, {
+        method: 'POST',
       })
+      const data = await response.json()
 
       setUser((prev) =>
-        prev ? { ...prev, status: response.status, updated_at: response.updated_at } : null
+        prev ? { ...prev, status: data.status, updated_at: data.updated_at } : null
       )
 
       if (onUserUpdated) {
@@ -189,6 +235,17 @@ export function UserDetail({ userId, onBack, onUserUpdated }: UserDetailProps) {
         revokingSessionId={revokingSessionId}
         onRefresh={fetchSessions}
         onRevokeSession={handleRevokeSession}
+      />
+      <UserAuthHistory
+        userId={userId}
+        history={user.authHistory}
+        loading={authHistoryLoading}
+        error={authHistoryError}
+        total={authHistoryTotal}
+        limit={authHistoryLimit}
+        offset={authHistoryOffset}
+        onRefresh={fetchAuthHistory}
+        onPageChange={(offset) => setAuthHistoryOffset(offset)}
       />
     </div>
   )

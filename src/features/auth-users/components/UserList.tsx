@@ -6,6 +6,7 @@ import { Loader2, ChevronLeft, ChevronRight, Users, Mail, Calendar, Shield } fro
 import type { EndUser, EndUserListQuery } from '@/lib/types/auth-user.types'
 import { getAuthServiceClient } from '@/lib/api/auth-service-client'
 import { UserFilterBar } from '@/features/auth-users/components/UserFilterBar'
+import { ExportUsersButton } from '@/features/auth-users/components/ExportUsersButton'
 
 interface UserListProps {
   initialFilters?: EndUserListQuery
@@ -115,6 +116,7 @@ export function UserList({ initialFilters = {}, onViewUser }: UserListProps) {
               Users {total > 0 && <span className="text-slate-500">({total.toLocaleString()})</span>}
             </h2>
           </div>
+          <ExportUsersButton filters={filters} />
         </div>
 
         {loading ? (
