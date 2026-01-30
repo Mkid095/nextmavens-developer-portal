@@ -230,7 +230,7 @@ export async function GET(req: NextRequest) {
       `SELECT
         s.id, s.project_id, s.name, s.version, s.active,
         s.rotated_from, s.rotation_reason, s.created_at,
-        s.created_by
+        s.created_by, s.expires_at
        FROM control_plane.secrets s
        WHERE ${conditions.join(' AND ')}
        ORDER BY s.name, s.version DESC
@@ -257,6 +257,7 @@ export async function GET(req: NextRequest) {
         rotated_from: s.rotated_from,
         rotation_reason: s.rotation_reason,
         created_at: s.created_at,
+        expires_at: s.expires_at,
       })),
       meta: {
         limit,

@@ -286,8 +286,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated Studio query API at src/app/api/studio/[projectId]/query/route.ts to enforce RBAC permissions for ALL queries (not just writes). All queries now require authentication and permission checks: SELECT queries require database.read permission (all authenticated users have this), INSERT/UPDATE/DELETE require database.write permission (Admin/Owner only), DDL operations also require database.write permission. Role-based enforcement: Viewers can only SELECT, Developers can SELECT (with database.read), Admins/Owners have full access (SELECT/INSERT/UPDATE/DELETE/DDL). Error messages are clear about which permission is needed and who to contact. Typecheck passes."
     },
     {
       "id": "US-012",
@@ -312,8 +312,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: PERMISSION_DENIED error code already exists in src/lib/errors.ts with ErrorCode.PERMISSION_DENIED enum value, 403 HTTP status code, false retryable flag, and '/docs/errors#PERMISSION_DENIED' documentation link. permissionDeniedError() factory function creates PlatformError instances with clear messages. Error messages include required_permission field, your_role field, and query_type field to help developers understand what they need. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

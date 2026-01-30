@@ -150,10 +150,13 @@ export async function POST(
         ]
       )
 
-      // Mark the old version as inactive
+      // Mark the old version as inactive and set grace period expiration
+      // Grace period: 24 hours from rotation
+      const gracePeriodHours = 24
       await client.query(
         `UPDATE control_plane.secrets
-         SET active = FALSE
+         SET active = FALSE,
+             expires_at = NOW() + INTERVAL '${gracePeriodHours} hours'
          WHERE id = $1`,
         [currentSecret.id]
       )
@@ -161,6 +164,12 @@ export async function POST(
       await client.query('COMMIT')
 
       const newSecret = newSecretResult.rows[0]
+
+      // Get the updated old secret with expires_at for the response
+      const oldSecretWithExpiration = await client.query(
+        `SELECT id, expires_at FROM control_plane.secrets WHERE id = $1`,
+        [currentSecret.id]
+      )
 
       return NextResponse.json({
         success: true,
@@ -173,6 +182,12 @@ export async function POST(
           rotated_from: newSecret.rotated_from,
           rotation_reason: newSecret.rotation_reason,
           created_at: newSecret.created_at,
+          // Include grace period info for old version
+          oldSecret: {
+            id: currentSecret.id,
+            expiresAt: oldSecretWithExpiration.rows[0]?.expires_at,
+          },
+          gracePeriodHours: 24,
         },
       }, { status: 201 })
 
