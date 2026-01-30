@@ -63,6 +63,7 @@ interface SchemaBrowserProps {
  * Displays database schema in a tree structure with:
  * - Tables list (expandable)
  * - Search box for filtering tables
+ * - Row counts for each table
  * - Columns with details (expandable)
  * - Indexes with details (expandable)
  * - Foreign keys with details (expandable)
@@ -73,6 +74,7 @@ interface SchemaBrowserProps {
  * US-006: Display Indexes
  * US-008: Display Foreign Keys
  * US-009: Search Tables
+ * US-010: Show Row Count
  */
 export function SchemaBrowser({
   projectId,

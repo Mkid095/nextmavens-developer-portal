@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Code2, ArrowLeft, ArrowRight, Download, Github, FileText, Copy, Check } from 'lucide-react'
+import { Code2, ArrowLeft, ArrowRight, Download, Github, FileText, Copy, Check, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 
@@ -498,6 +498,516 @@ if (error) {
   console.error(userMessage)
   // Show error to user in UI
 }`,
+  },
+]
+
+const errorHandlingExamples = [
+  {
+    title: 'Basic Try/Catch Pattern',
+    description: 'Handle errors with try/catch blocks for async operations',
+    code: `// Basic error handling pattern
+try {
+  const { data, error } = await client
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+
+  if (error) {
+    console.error('Query failed:', error.message)
+    // Handle the error appropriately
+    return
+  }
+
+  // Success - use the data
+  console.log('User data:', data)
+} catch (err) {
+  // Handle unexpected errors (network issues, etc.)
+  console.error('Unexpected error:', err)
+}
+
+// Always check for errors before using data
+const { data, error } = await client
+  .from('posts')
+  .insert({ title: 'New Post', content: 'Content here' })
+
+if (error) {
+  // Log error and show user-friendly message
+  console.error('Insert failed:', error)
+  alert('Failed to create post. Please try again.')
+  return
+}
+
+// Continue only if no error
+console.log('Post created:', data)`,
+  },
+  {
+    title: 'Error Object Structure',
+    description: 'Understand the error object returned by the SDK',
+    code: `// Error object structure
+const { data, error } = await client
+  .from('users')
+  .select('*')
+
+if (error) {
+  console.log('Error message:', error.message)
+  console.log('Error code:', error.code)      // e.g., '23505', 'PGRST116'
+  console.log('Error details:', error.details)
+  console.log('Error hint:', error.hint)
+  console.log('Full error object:', error)
+
+  // Example error output:
+  // {
+  //   message: "duplicate key value violates unique constraint",
+  //   code: "23505",
+  //   details: "Key (email)=(user@example.com) already exists.",
+  //   hint: null
+  // }
+}
+
+// Check for specific error codes
+if (error?.code === '23505') {
+  console.log('Duplicate key error - record already exists')
+} else if (error?.code === 'PGRST116') {
+  console.log('Not found error - resource does not exist')
+}`,
+  },
+  {
+    title: 'Common Error Codes',
+    description: 'Handle specific error codes with custom messages',
+    code: `// Helper function to handle common database errors
+const handleDatabaseError = (error: any) => {
+  if (!error) return null
+
+  switch (error.code) {
+    case '23505':
+      return {
+        message: 'This record already exists',
+        type: 'duplicate',
+        recoverable: false
+      }
+
+    case '23503':
+      return {
+        message: 'Referenced record does not exist',
+        type: 'foreign_key_violation',
+        recoverable: true
+      }
+
+    case '23502':
+      return {
+        message: 'Required field is missing',
+        type: 'not_null_violation',
+        recoverable: true
+      }
+
+    case 'PGRST116':
+      return {
+        message: 'Resource not found',
+        type: 'not_found',
+        recoverable: false
+      }
+
+    case '22P02':
+      return {
+        message: 'Invalid data format',
+        type: 'invalid_text_representation',
+        recoverable: true
+      }
+
+    default:
+      return {
+        message: error.message || 'An unexpected error occurred',
+        type: 'unknown',
+        recoverable: false
+      }
+  }
+}
+
+// Usage example
+const { data, error } = await client
+  .from('users')
+  .insert({ email: 'user@example.com', name: 'John' })
+
+if (error) {
+  const handled = handleDatabaseError(error)
+  console.log(handled.message)
+
+  if (handled.recoverable) {
+    // Allow user to fix and retry
+    showFormWithErrorMessage(handled.message)
+  } else {
+    // Show error and prevent retry
+    showFatalError(handled.message)
+  }
+}`,
+  },
+  {
+    title: 'Network Error Handling',
+    description: 'Handle network-related errors gracefully',
+    code: `// Detect and handle network errors
+const isNetworkError = (error: any) => {
+  return error?.message?.includes('fetch') ||
+         error?.message?.includes('network') ||
+         error?.message?.includes('ECONNREFUSED') ||
+         !error?.code // No error code usually means network issue
+}
+
+// Request with network error handling
+const fetchWithRetry = async (
+  operation: () => Promise<any>,
+  maxRetries = 3
+) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const { data, error } = await operation()
+
+      if (error) {
+        if (isNetworkError(error) && attempt < maxRetries) {
+          // Exponential backoff
+          const delay = Math.pow(2, attempt) * 1000
+          console.log(\`Network error, retrying in \${delay}ms...\`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+          continue
+        }
+        throw error
+      }
+
+      return data
+    } catch (err: any) {
+      if (attempt === maxRetries) {
+        console.error('Max retries reached:', err)
+        throw err
+      }
+    }
+  }
+}
+
+// Usage
+try {
+  const data = await fetchWithRetry(() =>
+    client.from('users').select('*')
+  )
+  console.log('Data fetched:', data)
+} catch (error) {
+  console.error('Failed after retries:', error)
+  showNetworkErrorMessage()
+}`,
+  },
+  {
+    title: 'Retry Logic with Exponential Backoff',
+    description: 'Implement automatic retries for transient failures',
+    code: `// Generic retry wrapper with exponential backoff
+const retryOperation = async <T>(
+  operation: () => Promise<{ data?: T, error?: any }>,
+  options: {
+    maxRetries?: number
+    baseDelay?: number
+    maxDelay?: number
+    retryableCodes?: string[]
+  } = {}
+): Promise<T> => {
+  const {
+    maxRetries = 3,
+    baseDelay = 1000,
+    maxDelay = 10000,
+    retryableCodes = ['PGRST116', '408', '503']
+  } = options
+
+  let lastError: any
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const { data, error } = await operation()
+
+      if (error) {
+        // Check if error is retryable
+        const isRetryable = retryableCodes.includes(error.code) ||
+                          isNetworkError(error)
+
+        if (isRetryable && attempt < maxRetries) {
+          lastError = error
+          // Calculate delay with exponential backoff
+          const delay = Math.min(
+            baseDelay * Math.pow(2, attempt),
+            maxDelay
+          )
+          console.log(\`Attempt \${attempt + 1} failed, retrying in \${delay}ms...\`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+          continue
+        }
+
+        throw error
+      }
+
+      return data as T
+    } catch (error: any) {
+      if (attempt === maxRetries) {
+        throw error
+      }
+      lastError = error
+    }
+  }
+
+  throw lastError
+}
+
+// Usage examples
+try {
+  // Retry on network errors
+  const users = await retryOperation(() =>
+    client.from('users').select('*')
+  )
+
+  // Retry with custom options
+  const posts = await retryOperation(() =>
+    client.from('posts').insert({ title: 'Post' })
+  , {
+    maxRetries: 5,
+    baseDelay: 2000,
+    retryableCodes: ['23505'] // Retry on duplicate key
+  })
+} catch (error) {
+  console.error('Operation failed after all retries:', error)
+}`,
+  },
+  {
+    title: 'Error Boundaries (React)',
+    description: 'Use React Error Boundaries to catch errors in components',
+    code: `// Error Boundary Component
+import React, { Component, ErrorInfo, ReactNode } from 'react'
+
+interface Props {
+  children: ReactNode
+  fallback?: ReactNode
+}
+
+interface State {
+  hasError: boolean
+  error?: Error
+}
+
+class SDKErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('SDK Error caught by boundary:', error)
+    console.error('Error info:', errorInfo)
+
+    // Log to error tracking service
+    // logErrorToService(error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="error-fallback">
+          <h2>Something went wrong</h2>
+          <p>{this.state.error?.message}</p>
+          <button onClick={() => window.location.reload()}>
+            Reload Page
+          </button>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
+// Usage in your app
+function App() {
+  return (
+    <SDKErrorBoundary>
+      <MyComponentUsingSDK />
+    </SDKErrorBoundary>
+  )
+}
+
+// Functional alternative with hooks
+const useSDKErrorHandler = () => {
+  const [error, setError] = React.useState<Error | null>(null)
+
+  const execute = async <T>(
+    operation: () => Promise<{ data?: T, error?: any }>
+  ): Promise<T | null> => {
+    try {
+      const { data, error } = await operation()
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      return data as T
+    } catch (err: any) {
+      const error = err instanceof Error ? err : new Error(err.message)
+      setError(error)
+      return null
+    }
+  }
+
+  const clear = () => setError(null)
+
+  return { error, execute, clear }
+}
+
+// Usage in component
+function UserProfile({ userId }: { userId: string }) {
+  const { error, execute, clear } = useSDKErrorHandler()
+
+  const loadUser = async () => {
+    const user = await execute(() =>
+      client.from('users').select('*').eq('id', userId).single()
+    )
+
+    if (user) {
+      console.log('User loaded:', user)
+    }
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>
+  }
+
+  return <button onClick={loadUser}>Load User</button>
+}`,
+  },
+  {
+    title: 'Validation Errors',
+    description: 'Handle validation and constraint errors',
+    code: `// Type-safe data validation
+interface CreateUserInput {
+  email: string
+  name: string
+  age?: number
+}
+
+const validateUserInput = (input: CreateUserInput): string[] => {
+  const errors: string[] = []
+
+  // Email validation
+  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/
+  if (!input.email) {
+    errors.push('Email is required')
+  } else if (!emailRegex.test(input.email)) {
+    errors.push('Email format is invalid')
+  }
+
+  // Name validation
+  if (!input.name || input.name.trim().length < 2) {
+    errors.push('Name must be at least 2 characters')
+  }
+
+  // Age validation
+  if (input.age !== undefined) {
+    if (input.age < 0 || input.age > 150) {
+      errors.push('Age must be between 0 and 150')
+    }
+  }
+
+  return errors
+}
+
+// Usage with SDK
+const createUser = async (input: CreateUserInput) => {
+  // Validate first
+  const validationErrors = validateUserInput(input)
+  if (validationErrors.length > 0) {
+    console.error('Validation errors:', validationErrors)
+    return { error: { message: validationErrors.join(', ') } }
+  }
+
+  // Proceed with SDK call
+  const { data, error } = await client
+    .from('users')
+    .insert(input)
+    .select()
+
+  if (error) {
+    // Handle database constraint errors
+    if (error.code === '23505') {
+      return { error: { message: 'Email already registered' } }
+    }
+    return { error }
+  }
+
+  return { data }
+}`,
+  },
+  {
+    title: 'Error Logging and Monitoring',
+    description: 'Log errors for debugging and monitoring',
+    code: `// Error logging utility
+const logSDKError = (
+  operation: string,
+  error: any,
+  context?: Record<string, any>
+) => {
+  const errorLog = {
+    timestamp: new Date().toISOString(),
+    operation,
+    error: {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+      hint: error?.hint
+    },
+    context,
+    environment: process.env.NODE_ENV,
+    userAgent: navigator?.userAgent
+  }
+
+  // In development, log to console
+  if (process.env.NODE_ENV === 'development') {
+    console.error('[SDK Error]', errorLog)
+  }
+
+  // In production, send to monitoring service
+  if (process.env.NODE_ENV === 'production') {
+    // Send to Sentry, DataDog, etc.
+    // monitoringService.captureError(errorLog)
+  }
+}
+
+// Usage with SDK operations
+const safeSDKOperation = async <T>(
+  operationName: string,
+  operation: () => Promise<{ data?: T, error?: any }>,
+  context?: Record<string, any>
+): Promise<T | null> => {
+  try {
+    const { data, error } = await operation()
+
+    if (error) {
+      logSDKError(operationName, error, context)
+      return null
+    }
+
+    return data as T
+  } catch (err: any) {
+    logSDKError(operationName, err, context)
+    return null
+  }
+}
+
+// Examples
+const user = await safeSDKOperation(
+  'fetch_user_by_id',
+  () => client.from('users').select('*').eq('id', userId).single(),
+  { userId }
+)
+
+const post = await safeSDKOperation(
+  'create_post',
+  () => client.from('posts').insert({ title, content }).select(),
+  { title, content, userId: session.user.id }
+)`,
   },
 ]
 
@@ -1251,6 +1761,106 @@ NEXTMAVENS_PROJECT_ID=your_project_id`}</code>
               <li>• Implement email verification for new accounts</li>
               <li>• Use HTTPS in production to protect tokens in transit</li>
             </ul>
+          </div>
+        </div>
+
+        {/* Error Handling Section */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <svg className="w-5 h-5 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Error Handling</h2>
+              <p className="text-slate-600">Handle errors gracefully with proper patterns and practices</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {errorHandlingExamples.map((example, index) => (
+              <motion.div
+                key={example.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="border border-slate-200 rounded-lg overflow-hidden"
+              >
+                <div className="p-4 border-b border-slate-200 bg-slate-50">
+                  <h3 className="text-base font-semibold text-slate-900 mb-1">{example.title}</h3>
+                  <p className="text-sm text-slate-600">{example.description}</p>
+                </div>
+                <div className="p-4">
+                  <div className="relative group">
+                    <button
+                      onClick={() => handleCopy(example.code, `error-${index}`)}
+                      className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                      aria-label="Copy code"
+                    >
+                      {copied === `error-${index}` ? (
+                        <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                    <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                      <code className="text-xs text-slate-300 font-mono block">{example.code}</code>
+                    </pre>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
+            <h4 className="text-sm font-semibold text-red-900 mb-2">Error Handling Best Practices</h4>
+            <ul className="text-xs text-red-800 space-y-1">
+              <li>• Always check the error property before using data from SDK responses</li>
+              <li>• Use try/catch blocks to handle unexpected errors and network issues</li>
+              <li>• Implement retry logic with exponential backoff for transient failures</li>
+              <li>• Validate user input on the client before sending to the server</li>
+              <li>• Log errors in production for debugging and monitoring</li>
+              <li>• Use React Error Boundaries to catch errors in component trees</li>
+              <li>• Provide user-friendly error messages based on error codes</li>
+              <li>• Distinguish between recoverable and fatal errors</li>
+              <li>• Never expose sensitive information in error messages to users</li>
+              <li>• Test error scenarios to ensure your app handles failures gracefully</li>
+            </ul>
+          </div>
+
+          <div className="mt-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <h4 className="text-sm font-semibold text-slate-900 mb-3">Common Error Codes Reference</h4>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="bg-white rounded p-3 border border-slate-200">
+                <code className="text-xs text-emerald-700 font-mono">23505</code>
+                <p className="text-xs text-slate-600 mt-1">Duplicate key violation - unique constraint failed</p>
+              </div>
+              <div className="bg-white rounded p-3 border border-slate-200">
+                <code className="text-xs text-emerald-700 font-mono">23503</code>
+                <p className="text-xs text-slate-600 mt-1">Foreign key violation - referenced record doesn't exist</p>
+              </div>
+              <div className="bg-white rounded p-3 border border-slate-200">
+                <code className="text-xs text-emerald-700 font-mono">23502</code>
+                <p className="text-xs text-slate-600 mt-1">NOT NULL violation - required field is missing</p>
+              </div>
+              <div className="bg-white rounded p-3 border border-slate-200">
+                <code className="text-xs text-emerald-700 font-mono">PGRST116</code>
+                <p className="text-xs text-slate-600 mt-1">Resource not found - query returned no results</p>
+              </div>
+              <div className="bg-white rounded p-3 border border-slate-200">
+                <code className="text-xs text-emerald-700 font-mono">22P02</code>
+                <p className="text-xs text-slate-600 mt-1">Invalid text representation - wrong data format</p>
+              </div>
+              <div className="bg-white rounded p-3 border border-slate-200">
+                <code className="text-xs text-emerald-700 font-mono">Network</code>
+                <p className="text-xs text-slate-600 mt-1">Connection error - check internet connectivity</p>
+              </div>
+            </div>
           </div>
         </div>
 
