@@ -184,8 +184,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration 026_add_query_timeout_to_projects.sql adds query_timeout column to projects table (default 30000ms, range 1000-300000ms). Updated query route at src/app/api/studio/[projectId]/query/route.ts with getQueryTimeout() function to fetch per-project timeout, and executeQueryWithTimeout() using Promise.race to enforce timeout. Returns 408 status with QUERY_TIMEOUT error code when exceeded. Error message includes timeout value and suggestion to optimize query or increase timeout. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -207,8 +207,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added query stats to POST /api/studio/:projectId/query response at src/app/api/studio/[projectId]/query/route.ts. Added isExplainQuery() and wrapWithExplain() helper functions. Request accepts optional 'explain' boolean parameter. Response includes: executionTime (ms), rowCount (for SELECT), rowsAffected (for INSERT/UPDATE/DELETE), queryPlan (when explain=true, returns parsed EXPLAIN ANALYZE output in JSON format). GET endpoint documentation updated with queryStats info explaining all returned statistics. Typecheck passes."
     },
     {
       "id": "US-009",
