@@ -34,6 +34,13 @@ export {
   setGraphQLCorrelationId,
   getGraphQLCorrelationId,
   clearGraphQLContext,
+  // US-007: GraphQL-specific error helpers
+  graphQLSchemaError,
+  graphQLExecutionError,
+  graphQLIntrospectionError,
+  getGraphQLErrorResponse,
+  isGraphQLError,
+  toGraphQLErrorNextResponse,
 } from './snapshot-client'
 
 /**
@@ -47,15 +54,17 @@ export type GraphQLOperationType =
 
 /**
  * Detailed validation result for GraphQL operations
+ * US-007: Updated to include standardized error response
  */
 export interface GraphQLOperationValidation {
   allowed: boolean
-  reason?: string
+  errorResponse?: import('@/lib/errors').ErrorResponse
   operationType?: GraphQLOperationType
 }
 
 /**
  * Validate a GraphQL operation before execution
+ * US-007: Updated to use standardized error response
  * @param projectId - Project ID
  * @param operationType - Type of GraphQL operation
  * @returns Validation result
@@ -68,7 +77,7 @@ export async function validateGraphQLOperationByType(
 
   return {
     allowed: result.allowed,
-    reason: result.reason,
+    errorResponse: result.errorResponse,
     operationType,
   }
 }

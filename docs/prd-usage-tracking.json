@@ -187,8 +187,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: src/app/dashboard/projects/[slug]/usage/page.tsx (400+ lines) with comprehensive usage dashboard. Features: quota overview cards with progress bars and color coding (red/yellow/green based on usage percentage), usage by service section with metric breakdown, historical usage chart with bar visualization, aggregation selector (day/week/month), days selector (7/30/90), refresh button, export to CSV button. Shows current usage per service, percentage of quota used with visual indicators, reset date. Integrates with /api/usage/[projectId] endpoint. Uses Tailwind CSS, framer-motion, lucide-react icons. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -241,8 +241,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: src/lib/usage/sampling.ts with getSampleRate, getConfiguredSampleRate, shouldTrackUsage, getExtrapolationMultiplier, adjustQuantityForSampling, isSamplingEnabled, getSamplingInfo, trackWithSampling, trackWithExtrapolation functions. Sample rate configurable per environment: Prod 10%, Staging 50%, Dev 100% (via USAGE_SAMPLE_RATE env var override). Extrapolates from sample via getExtrapolationMultiplier (1/sampleRate) and adjustQuantityForSampling. Updated src/lib/usage/index.ts to export sampling functions. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

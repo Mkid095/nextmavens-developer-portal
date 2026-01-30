@@ -110,7 +110,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Added explicit opt-in for write access when creating MCP tokens. Implemented: (1) MCP access level selector (ro/rw/admin) in the create key modal, (2) Warning modal shown when creating write-enabled (rw/admin) MCP tokens with warning text \"This AI can modify your data. Only grant to trusted systems.\" and \"This AI has full administrative access\" for admin tokens, (3) Checkbox to confirm understanding of risks, (4) Confirmation required before token creation (user must check the box and click \"Confirm & Create\" button, which is disabled until checkbox is checked), (5) In-line warning banners for rw/admin access levels in the main form, (6) Info banner for read-only tokens, (7) Modified handleCreateApiKey to show modal and include mcp_access_level in API request. Typecheck passes."
+      "notes": "Completed: Added explicit opt-in warning modal when creating write-enabled MCP tokens (rw/admin access levels). Implemented: (1) When user selects rw or admin MCP access level, clicking 'Create Key' now redirects to 'confirm-write' step instead of immediately creating the key, (2) Warning modal with title 'Confirm Write Access' and warning text 'This AI Can Modify Your Data', (3) Detailed warning: 'This token will allow AI assistants to make changes to your data. Only grant write access to trusted AI systems that you control.', (4) Bullet points explaining risks: Read/write tokens can insert/update/delete data, Admin tokens have full access including destructive operations, These permissions should only be granted to trusted systems, (5) Checkbox: 'I understand that this token can modify my data and I am granting this access only to a trusted AI system.', (6) 'Confirm & Create Key' button is disabled until checkbox is checked, (7) writeWarningConfirmed state resets when user changes MCP access level. Typecheck passes."
     },
     {
       "id": "US-007",
@@ -191,8 +191,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added explicit opt-in warning modal for MCP write/admin tokens. When user selects rw or admin MCP access level, a new confirmation step (confirm-write) is shown with warning: \"This AI Can Modify Your Data\" with checkbox \"I understand that this token can modify my data and I am granting this access only to a trusted AI system.\" User cannot create the key until checkbox is confirmed. The MCP write token type=mcp, scope=mcp_rw_, key prefix: mcp_rw_ scopes db:insert, db:update, storage:write were already implemented in DEFAULT_SCOPES.mcp_rw. Typecheck passes."
     },
     {
       "id": "US-005",

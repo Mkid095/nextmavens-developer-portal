@@ -3,7 +3,7 @@
  *
  * Exports all usage tracking functionality for database, storage, auth, and other services.
  *
- * US-002, US-004, US-005 from prd-usage-tracking.json
+ * US-002, US-004, US-005, US-009 from prd-usage-tracking.json
  */
 
 export {
@@ -37,6 +37,18 @@ export {
   type AuthMetricType,
   type AuthUsageMetric,
 } from './auth-tracking'
+
+export {
+  getSampleRate,
+  getConfiguredSampleRate,
+  shouldTrackUsage,
+  getExtrapolationMultiplier,
+  adjustQuantityForSampling,
+  isSamplingEnabled,
+  getSamplingInfo,
+  trackWithSampling,
+  trackWithExtrapolation,
+} from './sampling'
 
 export {
   withUsageTracking,
