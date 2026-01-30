@@ -21,6 +21,84 @@ export enum UserRole {
 }
 
 /**
+ * Organization member roles for team-based access control
+ *
+ * These roles define what members can do within an organization's projects.
+ */
+export enum OrganizationRole {
+  /** Organization owner - full control including user management */
+  OWNER = 'owner',
+  /** Organization admin - can manage resources but not owners */
+  ADMIN = 'admin',
+  /** Organization developer - can use and view services */
+  DEVELOPER = 'developer',
+  /** Organization viewer - read-only access */
+  VIEWER = 'viewer',
+}
+
+/**
+ * Permission flags for organization capabilities
+ *
+ * Each permission represents a specific action that can be performed
+ * within an organization context.
+ */
+export enum OrganizationPermission {
+  /** Delete projects within the organization */
+  DELETE_PROJECTS = 'delete_projects',
+  /** Manage services (create, update, delete) */
+  MANAGE_SERVICES = 'manage_services',
+  /** Manage API keys and credentials */
+  MANAGE_KEYS = 'manage_keys',
+  /** Manage organization members (invite, remove, change roles) */
+  MANAGE_USERS = 'manage_users',
+  /** View logs and monitoring data */
+  VIEW_LOGS = 'view_logs',
+  /** Use services (make API calls, invoke functions) */
+  USE_SERVICES = 'use_services',
+}
+
+/**
+ * Permission Matrix for Organization Roles
+ *
+ * Defines which permissions each organization role has.
+ *
+ * | Permission      | Owner | Admin | Developer | Viewer |
+ * |-----------------|-------|-------|-----------|--------|
+ * | delete_projects | ✓     | ✗     | ✗         | ✗      |
+ * | manage_services | ✓     | ✓     | ✗         | ✗      |
+ * | manage_keys     | ✓     | ✓     | ✗         | ✗      |
+ * | manage_users    | ✓     | ✗     | ✗         | ✗      |
+ * | view_logs       | ✓     | ✓     | ✓         | ✓      |
+ * | use_services    | ✓     | ✓     | ✓         | ✗      |
+ */
+export const ORGANIZATION_PERMISSION_MATRIX: Record<
+  OrganizationRole,
+  OrganizationPermission[]
+> = {
+  [OrganizationRole.OWNER]: [
+    OrganizationPermission.DELETE_PROJECTS,
+    OrganizationPermission.MANAGE_SERVICES,
+    OrganizationPermission.MANAGE_KEYS,
+    OrganizationPermission.MANAGE_USERS,
+    OrganizationPermission.VIEW_LOGS,
+    OrganizationPermission.USE_SERVICES,
+  ],
+  [OrganizationRole.ADMIN]: [
+    OrganizationPermission.MANAGE_SERVICES,
+    OrganizationPermission.MANAGE_KEYS,
+    OrganizationPermission.VIEW_LOGS,
+    OrganizationPermission.USE_SERVICES,
+  ],
+  [OrganizationRole.DEVELOPER]: [
+    OrganizationPermission.VIEW_LOGS,
+    OrganizationPermission.USE_SERVICES,
+  ],
+  [OrganizationRole.VIEWER]: [
+    OrganizationPermission.VIEW_LOGS,
+  ],
+}
+
+/**
  * Developer record with role information
  */
 export interface DeveloperWithRole extends Developer {
@@ -318,4 +396,143 @@ export async function logAuthorizationAction(
     console.error('[Authorization] Error logging authorization action:', error)
     // Don't throw - logging failure shouldn't block the operation
   }
+}
+
+/**
+ * Organization member interface with role information
+ */
+export interface OrganizationMember {
+  orgId: string
+  userId: string
+  role: OrganizationRole
+}
+
+/**
+ * Check if an organization role has a specific permission
+ *
+ * @param role - The organization role to check
+ * @param permission - The permission to verify
+ * @returns true if the role has the permission
+ *
+ * @example
+ * ```typescript
+ * if (hasOrganizationPermission(OrganizationRole.ADMIN, OrganizationPermission.MANAGE_SERVICES)) {
+ *   // Allow service management
+ * }
+ * ```
+ */
+export function hasOrganizationPermission(
+  role: OrganizationRole,
+  permission: OrganizationPermission
+): boolean {
+  return ORGANIZATION_PERMISSION_MATRIX[role].includes(permission)
+}
+
+/**
+ * Require a specific organization permission for an operation
+ *
+ * Use this function in API endpoints to ensure organization members
+ * have the required permission before performing an action.
+ *
+ * @param role - The user's organization role
+ * @param permission - The required permission
+ * @throws AuthorizationError if the role lacks the permission
+ *
+ * @example
+ * ```typescript
+ * export async function POST(req: NextRequest) {
+ *   const developer = await authenticateRequest(req)
+ *   const memberRole = await getOrganizationRole(developer.id, orgId)
+ *   await requireOrganizationPermission(memberRole, OrganizationPermission.MANAGE_KEYS)
+ *   // Proceed with key management
+ * }
+ * ```
+ */
+export function requireOrganizationPermission(
+  role: OrganizationRole,
+  permission: OrganizationPermission
+): void {
+  if (!hasOrganizationPermission(role, permission)) {
+    console.warn(
+      `[Authorization] Role ${role} attempted to access permission ${permission}`
+    )
+    throw new AuthorizationError(
+      `This operation requires the '${permission}' permission`,
+      403
+    )
+  }
+}
+
+/**
+ * Get a developer's organization role
+ *
+ * @param developerId - The developer ID to look up
+ * @param organizationId - The organization ID to check
+ * @returns The developer's role in the organization
+ * @throws Error if the developer is not a member of the organization
+ */
+export async function getOrganizationRole(
+  developerId: string,
+  organizationId: string
+): Promise<OrganizationRole> {
+  const pool = getPool()
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT role
+      FROM control_plane.organization_members
+      WHERE org_id = $1 AND user_id = $2
+      `,
+      [organizationId, developerId]
+    )
+
+    if (result.rows.length === 0) {
+      throw new AuthorizationError(
+        'You are not a member of this organization',
+        403
+      )
+    }
+
+    return result.rows[0].role as OrganizationRole
+  } catch (error) {
+    if (error instanceof AuthorizationError) {
+      throw error
+    }
+    console.error('[Authorization] Error fetching organization role:', error)
+    throw new Error('Failed to fetch organization membership')
+  }
+}
+
+/**
+ * Require organization membership with a specific permission
+ *
+ * Convenience function that combines getting the organization role
+ * and checking for a specific permission.
+ *
+ * @param developerId - The authenticated developer's ID
+ * @param organizationId - The organization ID
+ * @param permission - The required permission
+ * @throws AuthorizationError if not a member or lacks permission
+ *
+ * @example
+ * ```typescript
+ * export async function DELETE(req: NextRequest, { params }: { params: { orgId: string } }) {
+ *   const developer = await authenticateRequest(req)
+ *   await requireOrganizationMembershipPermission(
+ *     developer.id,
+ *     params.orgId,
+ *     OrganizationPermission.MANAGE_USERS
+ *   )
+ *   // Proceed with user management
+ * }
+ * ```
+ */
+export async function requireOrganizationMembershipPermission(
+  developerId: string,
+  organizationId: string,
+  permission: OrganizationPermission
+): Promise<void> {
+  const role = await getOrganizationRole(developerId, organizationId)
+  requireOrganizationPermission(role, permission)
 }
