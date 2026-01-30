@@ -541,6 +541,42 @@ export function getGraphQLSnapshotCacheStats(): {
 }
 
 /**
+ * Set the correlation ID for the current request
+ * Call this at the start of each request to enable tracing
+ * @param correlationId - The correlation ID from x-request-id header
+ *
+ * @example
+ * ```typescript
+ * import { setGraphQLCorrelationId } from '@/lib/graphql-service'
+ * import { withCorrelationId } from '@/lib/middleware/correlation'
+ *
+ * export async function POST(req: NextRequest) {
+ *   const correlationId = withCorrelationId(req)
+ *   setGraphQLCorrelationId(correlationId)
+ *   // ... rest of handler
+ * }
+ * ```
+ */
+export function setGraphQLCorrelationId(correlationId: string): void {
+  graphqlServiceSnapshotClient.setCorrelationId(correlationId)
+}
+
+/**
+ * Get the current correlation ID
+ * @returns The correlation ID
+ */
+export function getGraphQLCorrelationId(): string {
+  return graphqlServiceSnapshotClient.getCorrelationId()
+}
+
+/**
+ * Clear the request context (call between requests)
+ */
+export function clearGraphQLContext(): void {
+  graphqlServiceSnapshotClient.clearContext()
+}
+
+/**
  * Clean up expired cache entries
  * Call this periodically to remove stale entries
  */
