@@ -3,10 +3,17 @@
  *
  * This module provides tenant-aware database connections with search_path isolation.
  * All tenant queries are scoped to tenant_{slug} schema to prevent cross-project access.
+ *
+ * Also integrates database usage tracking (usage-tracking PRD US-002):
+ * - Tracks db_query count
+ * - Tracks db_row_read count
+ * - Tracks db_row_written count
+ * - Records to usage_metrics table asynchronously
  */
 
 import { Pool, PoolClient } from 'pg'
 import { getPool } from './db'
+import { recordDatabaseUsageAsync, DatabaseUsageMetrics, extractRowCounts } from './database-usage-tracking'
 
 /**
  * Error codes for tenant access violations
@@ -35,6 +42,25 @@ export interface TenantQueryResult<T = any> {
   error?: {
     code: string
     message: string
+  }
+  usage?: {
+    queryCount: number
+    rowsRead: number
+    rowsWritten: number
+  }
+}
+
+/**
+ * Result of a tenant transaction
+ */
+export interface TenantTransactionResult<T = any> {
+  success: boolean
+  data?: T
+  error?: string
+  usage?: {
+    queryCount: number
+    rowsRead: number
+    rowsWritten: number
   }
 }
 
@@ -144,6 +170,7 @@ export class TenantQueryExecutor {
   /**
    * Execute a query in the tenant's schema
    * Validates that the query doesn't attempt cross-schema access
+   * Tracks database usage asynchronously (db_query, db_row_read, db_row_written)
    */
   async query<T = any>(sql: string, params: any[] = []): Promise<TenantQueryResult<T>> {
     // Validate query for cross-schema access attempts
@@ -162,9 +189,27 @@ export class TenantQueryExecutor {
 
     try {
       const result = await client.query(sql, params)
+
+      // Extract usage metrics from the query result
+      const { rowsRead, rowsWritten } = extractRowCounts(result)
+
+      // Record database usage asynchronously (fire-and-forget, doesn't block response)
+      const usageMetrics: DatabaseUsageMetrics = {
+        projectId: this.tenantContext.projectId,
+        queryCount: 1,
+        rowsRead,
+        rowsWritten,
+      }
+      recordDatabaseUsageAsync(usageMetrics)
+
       return {
         success: true,
         data: result.rows,
+        usage: {
+          queryCount: 1,
+          rowsRead,
+          rowsWritten,
+        },
       }
     } catch (error) {
       // Check for permission denied errors
@@ -190,22 +235,44 @@ export class TenantQueryExecutor {
 
   /**
    * Execute a transaction in the tenant's schema
+   * Tracks database usage for all queries in the transaction
    */
   async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>
-  ): Promise<{ success: boolean; data?: T; error?: string }> {
+    callback: (client: PoolClient) => Promise<{ result: T; rowCount?: number; command?: string }>
+  ): Promise<TenantTransactionResult<T>> {
     const client = await this.getClient()
 
     try {
       await client.query('BEGIN')
 
-      const result = await callback(client)
+      const transactionResult = await callback(client)
 
       await client.query('COMMIT')
 
+      // Extract usage metrics from the transaction result
+      const rowsRead = transactionResult.rowCount || 0
+      const isWriteOperation = transactionResult.command
+        ? ['INSERT', 'UPDATE', 'DELETE', 'COPY'].includes(transactionResult.command.toUpperCase())
+        : false
+      const rowsWritten = isWriteOperation ? rowsRead : 0
+
+      // Record database usage asynchronously (fire-and-forget, doesn't block response)
+      const usageMetrics: DatabaseUsageMetrics = {
+        projectId: this.tenantContext.projectId,
+        queryCount: 1,
+        rowsRead,
+        rowsWritten,
+      }
+      recordDatabaseUsageAsync(usageMetrics)
+
       return {
         success: true,
-        data: result,
+        data: transactionResult.result,
+        usage: {
+          queryCount: 1,
+          rowsRead,
+          rowsWritten,
+        },
       }
     } catch (error) {
       await client.query('ROLLBACK')

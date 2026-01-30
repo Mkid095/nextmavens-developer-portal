@@ -21,6 +21,7 @@ import {
   generateAllowedChannels,
   ChannelType,
 } from '@/lib/middleware/realtime-scope';
+import { trackRealtimeMessage, trackRealtimeConnection } from '@/lib/usage/realtime-tracking';
 import crypto from 'crypto';
 
 /**
@@ -113,6 +114,9 @@ export async function POST(req: NextRequest) {
     if (response.status === 200) {
       const subscriptionId = crypto.randomUUID();
       const subscription = addSubscription(subscriptionId, channel, auth);
+
+      // Track the subscription as a connection (fire and forget)
+      trackRealtimeConnection(auth.project_id);
 
       // Update response with subscription metadata
       const responseData = await response.json();

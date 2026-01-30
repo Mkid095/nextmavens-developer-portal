@@ -19,6 +19,7 @@ import {
   generateAllowedChannels,
   RealtimeScopeError,
 } from '@/lib/middleware/realtime-scope';
+import { trackRealtimeConnection } from '@/lib/usage/realtime-tracking';
 
 /**
  * POST /api/realtime/connect
@@ -87,6 +88,9 @@ export async function POST(req: NextRequest) {
 
     // Create handshake response
     const response = createRealtimeHandshake(req, auth);
+
+    // Track the connection (fire and forget - don't await)
+    trackRealtimeConnection(auth.project_id);
 
     return setCorrelationHeader(response, correlationId);
   } catch (error: any) {

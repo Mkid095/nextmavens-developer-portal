@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Info,
   Calendar,
+  ChevronDown as ChevronDownIcon,
 } from 'lucide-react'
 
 /**
@@ -115,6 +116,13 @@ export default function LogsPage() {
   const [downloading, setDownloading] = useState(false)
   const [downloadSuccess, setDownloadSuccess] = useState(false)
   const [connecting, setConnecting] = useState(false)
+  const [displayedLogs, setDisplayedLogs] = useState<LogEntry[]>([])
+  const [pageSize] = useState(100)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [totalLogCount, setTotalLogCount] = useState(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
 
   // Initialize filters from URL
   useEffect(() => {
@@ -130,6 +138,19 @@ export default function LogsPage() {
   useEffect(() => {
     fetchProject()
   }, [params.slug])
+
+  // Update displayed logs when logs change
+  useEffect(() => {
+    setDisplayedLogs(logs.slice(0, pageSize))
+    setHasMore(logs.length > pageSize)
+    setTotalLogCount(logs.length)
+  }, [logs, pageSize])
+
+  // Reset pagination when filters change
+  useEffect(() => {
+    setDisplayedLogs([])
+    setHasMore(true)
+  }, [serviceFilter, levelFilter, dateRangeFilter, customStartDate, customEndDate])
 
   // SSE connection for real-time logs
   useEffect(() => {
@@ -307,7 +328,7 @@ export default function LogsPage() {
   }
 
   // Client-side filtering for search (filters are applied server-side via SSE)
-  const filteredLogs = logs.filter((log) => {
+  const filteredLogs = displayedLogs.filter((log) => {
     const matchesSearch =
       searchQuery === '' ||
       log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -317,6 +338,46 @@ export default function LogsPage() {
 
     return matchesSearch
   })
+
+  // Load more logs
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore) return
+
+    setLoadingMore(true)
+    setTimeout(() => {
+      setDisplayedLogs((prev) => {
+        const currentLength = prev.length
+        const nextLogs = logs.slice(currentLength, currentLength + pageSize)
+        const combined = [...prev, ...nextLogs]
+        setHasMore(logs.length > combined.length)
+        return combined
+      })
+      setLoadingMore(false)
+    }, 300)
+  }, [loadingMore, hasMore, logs, pageSize])
+
+  // Auto-load on scroll
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    const trigger = loadMoreTriggerRef.current
+
+    if (!scrollContainer || !trigger || !hasMore || loadingMore) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore()
+        }
+      },
+      { root: scrollContainer, rootMargin: '200px', threshold: 0.1 }
+    )
+
+    observer.observe(trigger)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [hasMore, loadingMore, loadMore])
 
   const handleDownload = () => {
     setDownloading(true)
@@ -588,13 +649,34 @@ export default function LogsPage() {
           )}
 
           {/* Results Count */}
-          <div className="mt-3 text-sm text-slate-500">
-            Showing {filteredLogs.length} of {logs.length} log entries
+          <div className="mt-3 flex items-center justify-between">
+            <div className="text-sm text-slate-500">
+              Showing {filteredLogs.length} of {totalLogCount} log entries
+            </div>
+            {hasMore && (
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="text-sm text-emerald-700 hover:text-emerald-800 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+              >
+                {loadingMore ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    Load More
+                    <ChevronDownIcon className="w-3 h-3" />
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
         {/* Log Stream */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div ref={scrollContainerRef} className="bg-white rounded-xl border border-slate-200 overflow-hidden max-h-[600px] overflow-y-auto">
           {filteredLogs.length === 0 ? (
             <div className="p-12 text-center">
               <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
@@ -683,6 +765,24 @@ export default function LogsPage() {
                   </div>
                 </motion.div>
               ))}
+            </div>
+          )}
+
+          {/* Load More Trigger (for auto-load on scroll) */}
+          <div ref={loadMoreTriggerRef} className="h-4" />
+
+          {/* Loading More Indicator */}
+          {loadingMore && (
+            <div className="py-6 flex items-center justify-center">
+              <Loader2 className="w-5 h-5 text-emerald-700 animate-spin" />
+              <span className="ml-2 text-sm text-slate-600">Loading more logs...</span>
+            </div>
+          )}
+
+          {/* End of Logs Message */}
+          {!hasMore && filteredLogs.length > 0 && (
+            <div className="py-6 text-center text-sm text-slate-500">
+              All logs loaded
             </div>
           )}
         </div>

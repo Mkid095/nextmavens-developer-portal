@@ -55,7 +55,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: src/lib/usage/database-tracking.ts (270+ lines) with recordDatabaseMetric, recordDatabaseMetrics, trackDatabaseQuery, getDatabaseUsageStats, and getCurrentDatabaseUsage functions. src/lib/usage/usage-middleware.ts (220+ lines) with withUsageTracking and withUsageTrackingCustom middleware wrappers for automatic tracking. All tracking is async (fire-and-forget) to avoid blocking requests. Integrates with JWT authentication to extract project_id. Typecheck passes."
+      "notes": "Completed: src/lib/usage/database-tracking.ts (270+ lines) with recordDatabaseMetric, recordDatabaseMetrics, trackDatabaseQuery, getDatabaseUsageStats, and getCurrentDatabaseUsage functions. src/lib/usage/usage-middleware.ts (220+ lines) with withUsageTracking and withUsageTrackingCustom middleware wrappers for automatic tracking. All tracking is async (fire-and-forget) to avoid blocking requests. Integrates with JWT authentication to extract project_id. src/features/abuse-controls/lib/enforcement.ts updated to query usage_metrics table instead of returning 0, and to record metrics to usage_metrics table. Typecheck passes."
     },
     {
       "id": "US-003",
@@ -81,8 +81,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: src/lib/usage/realtime-tracking.ts (380+ lines) with recordRealtimeMetric, recordRealtimeMetrics, trackRealtimeMessage, trackRealtimeMessages, trackRealtimeConnection, getRealtimeUsageStats, getCurrentRealtimeUsage, and getCurrentHourConnectionCount functions. src/app/api/realtime/track/route.ts for message tracking API. Integrated tracking into connect and subscribe endpoints. All tracking is async (fire-and-forget) to avoid blocking requests. Connection count tracked per hour via getCurrentHourConnectionCount. Typecheck passes."
     },
     {
       "id": "US-004",

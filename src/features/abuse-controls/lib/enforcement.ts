@@ -1,6 +1,7 @@
 import { getPool } from '@/lib/db'
 import { HardCapType, DEFAULT_HARD_CAPS } from '../types'
 import { getProjectQuota } from './quotas'
+import { getCurrentDatabaseUsage, recordDatabaseMetric } from '@/lib/usage/database-tracking'
 
 /**
  * Quota check result
@@ -72,8 +73,11 @@ export async function checkMultipleQuotas(
 }
 
 /**
- * Get current usage for a project (this would be implemented based on actual usage tracking)
- * For now, this is a placeholder that would need to be connected to actual metrics
+ * Get current usage for a project
+ *
+ * Queries the usage_metrics table to get actual usage data for quota enforcement.
+ * For database-related caps, this returns the count of db_query, db_row_read, or db_row_written.
+ * For other service types, this will be implemented as those tracking services are added.
  */
 export async function getCurrentUsage(
   projectId: string,
@@ -82,10 +86,54 @@ export async function getCurrentUsage(
   const pool = getPool()
 
   try {
-    // This is a placeholder implementation
-    // In a real system, this would query actual usage metrics from logs, monitoring, etc.
-    // For now, return 0 to allow operations
-    return 0
+    // For database-related caps, use the database usage tracking service
+    if (capType === HardCapType.DB_QUERIES_PER_DAY) {
+      const result = await getCurrentDatabaseUsage(projectId)
+      if (result.success && result.data) {
+        return result.data.dbQueryCount
+      }
+      return 0
+    }
+
+    // For other service types (realtime, storage, functions),
+    // query the usage_metrics table directly
+    // These will be implemented as those tracking services are added (US-003, US-004, US-005)
+    const serviceMap: Record<HardCapType, string> = {
+      [HardCapType.REALTIME_CONNECTIONS]: 'realtime',
+      [HardCapType.STORAGE_UPLOADS_PER_DAY]: 'storage',
+      [HardCapType.FUNCTION_INVOCATIONS_PER_DAY]: 'functions',
+      [HardCapType.DB_QUERIES_PER_DAY]: 'database', // Already handled above
+    }
+
+    const metricTypeMap: Record<HardCapType, string> = {
+      [HardCapType.REALTIME_CONNECTIONS]: 'realtime_connection',
+      [HardCapType.STORAGE_UPLOADS_PER_DAY]: 'storage_upload',
+      [HardCapType.FUNCTION_INVOCATIONS_PER_DAY]: 'function_invocation',
+      [HardCapType.DB_QUERIES_PER_DAY]: 'db_query', // Already handled above
+    }
+
+    const service = serviceMap[capType]
+    const metricType = metricTypeMap[capType]
+
+    if (!service || !metricType) {
+      console.warn(`[Quota Enforcement] Unknown cap type mapping: ${capType}`)
+      return 0
+    }
+
+    // Query usage_metrics table for today's usage
+    const result = await pool.query(
+      `
+      SELECT COALESCE(SUM(quantity), 0) as total_usage
+      FROM control_plane.usage_metrics
+      WHERE project_id = $1
+        AND service = $2
+        AND metric_type = $3
+        AND DATE(recorded_at) = CURRENT_DATE
+      `,
+      [projectId, service, metricType]
+    )
+
+    return parseInt(result.rows[0]?.total_usage) || 0
   } catch (error) {
     console.error('[Quota Enforcement] Error getting current usage:', error)
     return 0
@@ -107,17 +155,75 @@ export async function canPerformOperation(
 }
 
 /**
- * Record usage for a quota type (placeholder for actual usage tracking)
+ * Record usage for a quota type
+ *
+ * Records usage metrics to the usage_metrics table asynchronously.
+ * This is a fire-and-forget operation that doesn't block the request.
  */
 export async function recordUsage(
   projectId: string,
   capType: HardCapType,
   amount: number = 1
 ): Promise<void> {
-  // This is a placeholder for recording usage
-  // In a real system, this would increment counters in Redis, a metrics system, etc.
-  // For now, we just log it
-  console.log(`[Quota Enforcement] Recorded ${amount} usage for ${capType} on project ${projectId}`)
+  const pool = getPool()
+
+  try {
+    // For database-related caps, use the database usage tracking service
+    if (capType === HardCapType.DB_QUERIES_PER_DAY) {
+      // Fire and forget - don't await to avoid blocking
+      recordDatabaseMetric({
+        projectId,
+        metricType: 'db_query',
+        quantity: amount,
+      }).catch(err => {
+        console.error('[Quota Enforcement] Failed to record db_query metric:', err)
+      })
+      return
+    }
+
+    // Map cap types to service and metric type
+    const serviceMap: Record<HardCapType, string> = {
+      [HardCapType.REALTIME_CONNECTIONS]: 'realtime',
+      [HardCapType.STORAGE_UPLOADS_PER_DAY]: 'storage',
+      [HardCapType.FUNCTION_INVOCATIONS_PER_DAY]: 'functions',
+      [HardCapType.DB_QUERIES_PER_DAY]: 'database', // Already handled above
+    }
+
+    const metricTypeMap: Record<HardCapType, string> = {
+      [HardCapType.REALTIME_CONNECTIONS]: 'realtime_connection',
+      [HardCapType.STORAGE_UPLOADS_PER_DAY]: 'storage_upload',
+      [HardCapType.FUNCTION_INVOCATIONS_PER_DAY]: 'function_invocation',
+      [HardCapType.DB_QUERIES_PER_DAY]: 'db_query', // Already handled above
+    }
+
+    const service = serviceMap[capType]
+    const metricType = metricTypeMap[capType]
+
+    if (!service || !metricType) {
+      console.warn(`[Quota Enforcement] Unknown cap type mapping: ${capType}`)
+      return
+    }
+
+    // Record to usage_metrics table (async, fire-and-forget)
+    await pool.query(
+      `
+      INSERT INTO control_plane.usage_metrics (project_id, service, metric_type, quantity, recorded_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      `,
+      [projectId, service, metricType, amount]
+    )
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Quota Enforcement] Recorded ${amount} usage for ${capType} (${metricType}) on project ${projectId}`)
+    }
+  } catch (error) {
+    console.error('[Quota Enforcement] Failed to record usage:', {
+      projectId,
+      capType,
+      amount,
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
 }
 
 /**
