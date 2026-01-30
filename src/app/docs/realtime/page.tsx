@@ -622,10 +622,10 @@ ws.close();`}</code>
                   <td className="px-6 py-4">
                     <code className="text-orange-400">TRUNCATE</code>
                   </td>
-                  <td className="iams-label px-6 py-4 text-slate-300">All rows removed (table truncated)</td>
+                  <td className="px-6 py-4 text-slate-300">All rows removed (table truncated)</td>
                   <td className="px-6 py-4">
                     <code className="text-sm text-slate-400">""</code>
-                  </td Flags="false">
+                  </td
                 </tr>
                 <tr className="hover:bg-slate-700/30">
                   <td className="px-6 py-4">

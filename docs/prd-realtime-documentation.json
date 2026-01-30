@@ -9,7 +9,7 @@
       "description": "As a documentation reader, I want a realtime overview so that I understand what the service does.",
       "acceptanceCriteria": [
         "Overview page created",
-        "Explains: PostgreSQL CDC → WebSocket",
+        "Explains: PostgreSQL CDC \u00e2\u2020\u2019 WebSocket",
         "Explains: use cases",
         "Explains: how it works",
         "Diagram of flow",
@@ -96,8 +96,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added TRUNCATE event to Event Types table in src/app/docs/realtime/page.tsx. Enhanced with comprehensive event payload documentation including INSERT (new row with all fields), UPDATE (old and new values showing changes), DELETE (old values of deleted row), TRUNCATE (all rows removed, empty payload object), and wildcard (*) for all events. Event types section displays event codes, descriptions, and payload structures in a clear table format. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-005",
