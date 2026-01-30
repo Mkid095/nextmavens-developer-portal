@@ -77,8 +77,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created migration 005_add_organization_to_projects.sql adding organization_id column to projects table. Nullable FK to control_plane.organizations(id) with ON DELETE SET NULL. Indexes on organization_id and (organization_id, developer_id) for efficient org-based queries. Typecheck passes."
     },
     {
       "id": "US-004",
