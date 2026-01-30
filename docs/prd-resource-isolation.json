@@ -27,8 +27,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Added JwtPayload interface with project_id claim. Updated generateAccessToken to accept projectId parameter. Updated verifyAccessToken to validate project_id exists and throw 'Missing project_id claim' error if missing. Updated authenticateRequest return type to JwtPayload."
     },
     {
       "id": "US-002",
