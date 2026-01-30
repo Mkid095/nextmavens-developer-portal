@@ -110,8 +110,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented search highlighting with highlightText utility function that wraps matching terms in <mark> elements with yellow background. Full-text search now includes log message, service name, request_id, and metadata (JSON.stringify). Search box already existed in the page from US-001. Typecheck passes."
     },
     {
       "id": "US-005",
