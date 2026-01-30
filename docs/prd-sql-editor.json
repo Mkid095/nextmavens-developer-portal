@@ -133,8 +133,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: RBAC enforcement for writes implemented in POST /api/studio/:projectId/query endpoint at src/app/api/studio/[projectId]/query/route.ts. Query API checks user permissions using checkUserPermission() from lib/rbac.ts. Permission matrix enforced: Viewers can only SELECT (database.read only), Developers can only SELECT (database.read only, no database.write), Admins and Owners can write (database.write permission granted). Returns PERMISSION_DENIED (403) with detailed error message for unauthorized writes, explaining the required permission and user's role. Typecheck passes."
     },
     {
       "id": "US-004",

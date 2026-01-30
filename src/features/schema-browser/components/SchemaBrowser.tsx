@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ChevronRight,
   ChevronDown,
@@ -12,6 +12,8 @@ import {
   ShieldCheck,
   Star,
   Link2,
+  Search,
+  X,
 } from 'lucide-react'
 
 export interface DatabaseColumn {
@@ -60,6 +62,7 @@ interface SchemaBrowserProps {
  *
  * Displays database schema in a tree structure with:
  * - Tables list (expandable)
+ * - Search box for filtering tables
  * - Columns with details (expandable)
  * - Indexes with details (expandable)
  * - Foreign keys with details (expandable)
@@ -69,6 +72,7 @@ interface SchemaBrowserProps {
  * US-001: Create Schema Browser Component
  * US-006: Display Indexes
  * US-008: Display Foreign Keys
+ * US-009: Search Tables
  */
 export function SchemaBrowser({
   projectId,
@@ -77,12 +81,24 @@ export function SchemaBrowser({
   onTableSelect,
   selectedTable,
 }: SchemaBrowserProps) {
+  const [searchQuery, setSearchQuery] = useState('')
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
   const [expandedIndexes, setExpandedIndexes] = useState<Set<string>>(new Set())
   const [tableIndexes, setTableIndexes] = useState<Map<string, DatabaseIndex[]>>(new Map())
   const [loadingIndexes, setLoadingIndexes] = useState<Set<string>>(new Set())
   const [tableForeignKeys, setTableForeignKeys] = useState<Map<string, DatabaseForeignKey[]>>(new Map())
   const [loadingForeignKeys, setLoadingForeignKeys] = useState<Set<string>>(new Set())
+
+  // Filter tables based on search query
+  const filteredTables = useMemo(() => {
+    if (!schemaData) return []
+    if (!searchQuery.trim()) return schemaData.tables
+
+    const query = searchQuery.toLowerCase()
+    return schemaData.tables.filter(table =>
+      table.name.toLowerCase().includes(query)
+    )
+  }, [schemaData, searchQuery])
 
   // Fetch indexes when a table is expanded
   useEffect(() => {
@@ -229,6 +245,52 @@ export function SchemaBrowser({
     )
   }
 
+  // Display message if no tables match search
+  if (filteredTables.length === 0 && searchQuery.trim()) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        {/* Header with Search */}
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+          <div className="flex items-center gap-2">
+            <Database className="w-4 h-4 text-slate-600" />
+            <h3 className="text-sm font-semibold text-slate-900">Database Schema</h3>
+            <span className="ml-auto text-xs text-slate-500">
+              {schemaData.tables.length} table{schemaData.tables.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+        </div>
+
+        {/* Search Box */}
+        <div className="px-4 py-3 border-b border-slate-200">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tables..."
+              className="w-full pl-10 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* No Results Message */}
+        <div className="flex flex-col items-center justify-center p-8 text-center">
+          <Search className="w-12 h-12 text-slate-300 mb-3" />
+          <p className="text-sm text-slate-600">No tables match "{searchQuery}"</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
       {/* Header */}
@@ -237,14 +299,36 @@ export function SchemaBrowser({
           <Database className="w-4 h-4 text-slate-600" />
           <h3 className="text-sm font-semibold text-slate-900">Database Schema</h3>
           <span className="ml-auto text-xs text-slate-500">
-            {schemaData.tables.length} table{schemaData.tables.length !== 1 ? 's' : ''}
+            {filteredTables.length} of {schemaData.tables.length} table{schemaData.tables.length !== 1 ? 's' : ''}
           </span>
+        </div>
+      </div>
+
+      {/* Search Box */}
+      <div className="px-4 py-3 border-b border-slate-200">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tables..."
+            className="w-full pl-10 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Tree Structure */}
       <div className="divide-y divide-slate-100">
-        {schemaData.tables.map((table) => {
+        {filteredTables.map((table) => {
           const isExpanded = expandedTables.has(table.name)
           const isSelected = selectedTable === table.name
           const DataTypeIcon = getDataTypeIcon(table.columns?.[0]?.data_type || '')
