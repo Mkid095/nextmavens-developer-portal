@@ -1385,6 +1385,420 @@ const cleanup = () => {
   },
 ]
 
+const typescriptExamples = [
+  {
+    title: 'Type Definitions',
+    description: 'Define TypeScript interfaces for your database schema',
+    code: `// Define your database table types
+interface User {
+  id: string
+  email: string
+  name: string
+  status: 'active' | 'inactive' | 'pending'
+  created_at: string
+  updated_at?: string
+}
+
+interface Post {
+  id: string
+  title: string
+  content: string
+  user_id: string
+  published: boolean
+  created_at: string
+}
+
+// Define relationship types
+interface PostWithUser extends Post {
+  user: User
+}
+
+interface UserWithPosts extends User {
+  posts: Post[]
+}
+
+// Define response types
+type DatabaseResponse<T> = {
+  data: T[] | null
+  error: {
+    message: string
+    code: string
+    details?: string
+    hint?: string
+  } | null
+}
+
+type SingleResponse<T> = {
+  data: T | null
+  error: {
+    message: string
+    code: string
+  } | null
+}`,
+  },
+  {
+    title: 'Generic Query Function',
+    description: 'Create reusable type-safe query functions',
+    code: `// Generic function to fetch a single record
+async function fetchOne<T>(
+  table: string,
+  filters: Record<string, any>
+): Promise<T | null> {
+  const { data, error } = await client
+    .from(table)
+    .select('*')
+    .match(filters)
+    .single()
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return data as T
+}
+
+// Generic function to fetch multiple records
+async function fetchMany<T>(
+  table: string,
+  options?: {
+    filters?: Record<string, any>
+    orderBy?: { column: string; ascending?: boolean }
+    limit?: number
+  }
+): Promise<T[]> {
+  let query = client.from(table).select('*')
+
+  if (options?.filters) {
+    query = query.match(filters)
+  }
+
+  if (options?.orderBy) {
+    query = query.order(options.orderBy.column, {
+      ascending: options.orderBy.ascending ?? true
+    })
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data ?? []) as T[]
+}
+
+// Usage examples
+const user = await fetchOne<User>('users', { id: '123' })
+const activeUsers = await fetchMany<User>('users', {
+  filters: { status: 'active' },
+  orderBy: { column: 'created_at', ascending: false },
+  limit: 10
+})`,
+  },
+  {
+    title: 'Type-Safe Insert',
+    description: 'Ensure data types match your schema when inserting',
+    code: `// Create type-safe insert functions
+async function createUser(
+  userData: Omit<User, 'id' | 'created_at'>
+): Promise<User> {
+  const { data, error } = await client
+    .from('users')
+    .insert(userData)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(\`Failed to create user: \${error.message}\`)
+  }
+
+  return data as User
+}
+
+// Create type-safe batch insert
+async function createPosts(
+  posts: Omit<Post, 'id' | 'created_at'>[]
+): Promise<Post[]> {
+  const { data, error } = await client
+    .from('posts')
+    .insert(posts)
+    .select()
+
+  if (error) {
+    throw new Error(\`Failed to create posts: \${error.message}\`)
+  }
+
+  return (data ?? []) as Post[]
+}
+
+// Usage with full type safety
+const newUser = await createUser({
+  email: 'user@example.com',
+  name: 'John Doe',
+  status: 'active'  // TypeScript enforces valid values
+})
+
+const newPosts = await createPosts([
+  {
+    title: 'First Post',
+    content: 'Content here',
+    user_id: newUser.id,
+    published: false
+  },
+  {
+    title: 'Second Post',
+    content: 'More content',
+    user_id: newUser.id,
+    published: true
+  }
+])`,
+  },
+  {
+    title: 'Type-Safe Updates',
+    description: 'Update records with partial type safety',
+    code: `// Create type-safe update functions
+type UpdateableUserFields = Partial<
+  Pick<User, 'email' | 'name' | 'status'>
+>
+
+async function updateUser(
+  userId: string,
+  updates: UpdateableUserFields
+): Promise<User> {
+  const { data, error } = await client
+    .from('users')
+    .update(updates)
+    .eq('id', userId)
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(\`Failed to update user: \${error.message}\`)
+  }
+
+  return data as User
+}
+
+// Conditional update utility
+async function updateUserIf<T extends Record<string, any>>(
+  table: string,
+  userId: string,
+  condition: keyof T,
+  updates: Partial<T>
+): Promise<boolean> {
+  const { data, error } = await client
+    .from(table)
+    .update(updates)
+    .eq('id', userId)
+    .eq(condition as string, true)
+    .select()
+
+  if (error) {
+    throw new Error(\`Failed conditional update: \${error.message}\`)
+  }
+
+  return (data?.length ?? 0) > 0
+}
+
+// Usage
+await updateUser('123', {
+  status: 'inactive'  // TypeScript validates field types
+})
+
+const wasUpdated = await updateUserIf<User>(
+  'users',
+  '123',
+  'status',
+  { status: 'inactive' }
+)`,
+  },
+  {
+    title: 'Typed Join Queries',
+    description: 'Get type-safe results from table joins',
+    code: `// Define typed join result types
+interface OrderWithItems {
+  id: string
+  total: number
+  created_at: string
+  user: {
+    id: string
+    email: string
+    name: string
+  }
+  items: {
+    id: string
+    quantity: number
+    price: number
+    product: {
+      id: string
+      name: string
+      image_url: string
+    }
+  }[]
+}
+
+// Type-safe join query function
+async function getOrderWithItems(
+  orderId: string
+): Promise<OrderWithItems> {
+  const { data, error } = await client
+    .from('orders')
+    .select(\`
+      id,
+      total,
+      created_at,
+      user:users!inner(
+        id,
+        email,
+        name
+      ),
+      items:order_items(
+        id,
+        quantity,
+        price,
+        product:products(
+          id,
+          name,
+          image_url
+        )
+      )
+    \`)
+    .eq('id', orderId)
+    .single()
+
+  if (error) {
+    throw new Error(\`Failed to fetch order: \${error.message}\`)
+  }
+
+  return data as OrderWithItems
+}
+
+// Generic join utility
+async function fetchWithRelation<
+  T extends Record<string, any>,
+  R extends Record<string, any>
+>(
+  table: string,
+  relation: string,
+  columns: string,
+  filters?: Record<string, any>
+): Promise<Array<T & { [K in string]: R }>> {
+  let query = client
+    .from(table)
+    .select(\`*, \${relation}(\${columns})\`)
+
+  if (filters) {
+    query = query.match(filters)
+  }
+
+  const { data, error } = await query
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return (data ?? []) as Array<T & { [K in string]: R }>
+}`,
+  },
+  {
+    title: 'React Hook with TypeScript',
+    description: 'Type-safe custom hooks for data fetching',
+    code: `import { useState, useEffect } from 'react'
+
+// Generic useQuery hook
+function useQuery<T>(
+  table: string,
+  filters?: Record<string, any>
+) {
+  const [data, setData] = useState<T[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      setError(null)
+
+      try {
+        let query = client.from(table).select('*')
+
+        if (filters) {
+          query = query.match(filters)
+        }
+
+        const { data, error } = await query
+
+        if (error) {
+          setError(error.message)
+        } else {
+          setData((data ?? []) as T[])
+        }
+      } catch (err: any) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [table, JSON.stringify(filters)])
+
+  return { data, loading, error }
+}
+
+// Type-safe mutation hook
+function useMutation<T, R = T>() {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const mutate = async (
+    operation: () => Promise<{ data?: R; error?: any }>
+  ): Promise<R | null> => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const { data, error } = await operation()
+
+      if (error) {
+        setError(error.message)
+        return null
+      }
+
+      return data as R
+    } catch (err: any) {
+      setError(err.message)
+      return null
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { mutate, loading, error }
+}
+
+// Usage in component
+function UserProfile({ userId }: { userId: string }) {
+  const { data: user, loading, error } = useQuery<User>('users', { id: userId })
+  const { mutate: updateUser, loading: updating } = useMutation<User>()
+
+  if (loading) return <div>Loading...</div>
+  if (error) return <div>Error: {error}</div>
+
+  return (
+    <div>
+      <h1>{user[0]?.name}</h1>
+      <p>{user[0]?.email}</p>
+    </div>
+  )
+}`,
+  },
+]
+
 const codeExamples = [
   {
     title: 'Import and Initialize',
@@ -1861,6 +2275,71 @@ NEXTMAVENS_PROJECT_ID=your_project_id`}</code>
                 <p className="text-xs text-slate-600 mt-1">Connection error - check internet connectivity</p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* TypeScript Section */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <Code2 className="w-5 h-5 text-indigo-700" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">TypeScript Support</h2>
+              <p className="text-slate-600">Type-safe development with full TypeScript support</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {typescriptExamples.map((example, index) => (
+              <motion.div
+                key={example.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="border border-slate-200 rounded-lg overflow-hidden"
+              >
+                <div className="p-4 border-b border-slate-200 bg-slate-50">
+                  <h3 className="text-base font-semibold text-slate-900 mb-1">{example.title}</h3>
+                  <p className="text-sm text-slate-600">{example.description}</p>
+                </div>
+                <div className="p-4">
+                  <div className="relative group">
+                    <button
+                      onClick={() => handleCopy(example.code, `ts-${index}`)}
+                      className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                      aria-label="Copy code"
+                    >
+                      {copied === `ts-${index}` ? (
+                        <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                    <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                      <code className="text-xs text-slate-300 font-mono block">{example.code}</code>
+                    </pre>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+            <h4 className="text-sm font-semibold text-indigo-900 mb-2">TypeScript Best Practices</h4>
+            <ul className="text-xs text-indigo-800 space-y-1">
+              <li>• Define interfaces for all your database tables to get full type safety</li>
+              <li>• Use generic functions to create reusable type-safe utilities</li>
+              <li>• Leverage TypeScript's utility types (Pick, Omit, Partial) for precise type definitions</li>
+              <li>• Create custom hooks that are generic and work with any table type</li>
+              <li>• Use type guards and discriminated unions for complex data structures</li>
+              <li>• Enable strict mode in tsconfig.json for maximum type safety</li>
+              <li>• Use the 'as' keyword sparingly - prefer proper type definitions</li>
+            </ul>
           </div>
         </div>
 

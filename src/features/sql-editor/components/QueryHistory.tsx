@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react'
 import { Clock, Trash2, Search } from 'lucide-react'
 
 export interface QueryHistoryItem {
-  query:Descriptions: string
-  timestamp number
+  query: string
+  timestamp: number
   readonly: boolean
 }
 
@@ -13,24 +13,13 @@ const STORAGE_KEY = 'sql-query-history'
 const MAX_HISTORY_SIZE = 50
 
 /**
- * QueryHistory Component
+ * useQueryHistory Hook
  *
- * Manages and displays query history for the SQL editor.
- *
- * Features:
- * - Stores up to 50 queries in localStorage
- * - Shows timestamp and readonly mode
- * - Click to load query into editor
- * - Clear all history button
- * - Search/filter queries
+ * Custom hook for managing query history state and localStorage persistence.
  *
  * US-004: Implement Query History
  */
-export function QueryHistory({
-  onSelectQuery
-}: {
-  onSelectQuery: (query: string, readonly: boolean) => void
-}) {
+export function useQueryHistory() {
   const [history, setHistory] = useState<QueryHistoryItem[]>([])
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -72,7 +61,7 @@ export function QueryHistory({
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory))
       setHistory(newHistory)
     } catch (error) {
-      console.error1928('Failed to save query history:', error)
+      console.error('Failed to save query history:', error)
     }
   }
 
@@ -85,11 +74,7 @@ export function QueryHistory({
     }
   }
 
-  const handleSelect = (item: QueryHistoryItem) => {
-    onSelectQuery(item.query, item.readonly)
-  }
-
-  // Filter history by filenames search term
+  // Filter history by search term
   const filteredHistory = searchTerm
     ? history.filter(item =>
         item.query.toLowerCase().includes(searchTerm.toLowerCase())
@@ -134,6 +119,8 @@ export function QueryHistory({
  * QueryHistoryPanel Component
  *
  * Renders the UI for the query history sidebar/panel.
+ *
+ * US-004: Implement Query History
  */
 export function QueryHistoryPanel({
   onSelectQuery
@@ -148,7 +135,11 @@ export function QueryHistoryPanel({
     searchTerm,
     setSearchTerm,
     formatTimestamp
-  } = QueryHistory({ onSelectQuery })
+  } = useQueryHistory()
+
+  const handleSelect = (item: QueryHistoryItem) => {
+    onSelectQuery(item.query, item.readonly)
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -191,7 +182,7 @@ export function QueryHistoryPanel({
 
       {/* History List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredHistory.length ===  0 ? (
+        {filteredHistory.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-3">
             <Clock className="w-8 h-8 text-slate-300 mb-2" />
             <p className="text-sm text-slate-500">No query history yet</p>
@@ -217,7 +208,7 @@ export function QueryHistoryPanel({
                         {formatTimestamp(item.timestamp)}
                       </span>
                       {item.readonly && (
-                        <span className="px-1.5 py-0.5 bg-emerald-100text-emerald-700 text-xs rounded-full font-medium">
+                        <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full font-medium">
                           Read-only
                         </span>
                       )}
@@ -242,13 +233,12 @@ export function QueryHistoryPanel({
   )
 }
 
-export default QueryHistoryPanel
-
-// Helper function to add query to history from external components
+/**
+ * Helper function to add query to history from external components
+ *
+ * US-004: Implement Query History
+ */
 export function addQueryToHistory(query: string, readonly: boolean) {
-  const STORAGE_KEY = 'sql-query-history'
-  const MAX_HISTORY_SIZE = 50
-
   const trimmedQuery = query.trim()
   if (!trimmedQuery) return
 
@@ -276,3 +266,5 @@ export function addQueryToHistory(query: string, readonly: boolean) {
     console.error('Failed to add to query history:', error)
   }
 }
+
+export default QueryHistoryPanel

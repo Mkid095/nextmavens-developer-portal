@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
-import { Play, ShieldAlert, Lock } from 'lucide-react'
+import { Play, ShieldAlert, Lock, History } from 'lucide-react'
+import { addQueryToHistory } from './QueryHistory'
 
 type UserRole = 'owner' | 'admin' | 'developer' | 'viewer' | null
 
