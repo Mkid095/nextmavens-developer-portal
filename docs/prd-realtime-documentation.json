@@ -48,8 +48,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Enhanced WebSocket Connection section in src/app/docs/realtime/page.tsx with: WebSocket URL format (production and local development), JWT authentication via query parameter and subprotocol with helpful note about token sourcing, JavaScript connection example with browser-based WebSocket including event handlers and reconnection comment, Python connection example using websockets library with async/await, comprehensive error handling documentation with specific error codes (4001, 4002, 4003, 429) and resolution steps. Fixed corrupted text issues. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-003",

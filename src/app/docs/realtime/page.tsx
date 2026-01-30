@@ -274,8 +274,11 @@ channel.on('DELETE', (payload) => {
             <pre className="bg-slate-900 rounded-lg p-4 mb-4">
               <code className="text-sm text-slate-300">wss://realtime.nextmavens.cloud</code>
             </pre>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-slate-400 mb-2">
               For local development, use: <code className="text-emerald-400">ws://localhost:4000/socket/websocket</code>
+            </p>
+            <p className="text-sm text-slate-400">
+              The URL includes the project context through JWT authentication. All connections must include a valid JWT token.
             </p>
           </div>
 
@@ -285,16 +288,21 @@ channel.on('DELETE', (payload) => {
               <Shield className="w-5 h-5 text-blue-400" />
               Authentication
             </h3>
-            <div className="spaceights gap-4">
+            <div className="space-y-4">
               <div>
-                <p className="text-slate-300 mb-2">Include your JWT token when识字 connecting:</p>
+                <p className="text-slate-300 mb-2">Include your JWT token when connecting:</p>
                 <pre className="bg-slate-900 rounded-lg p-4">
-                  <code className="text-sm text-slate-300">{`// Query parameter approach
+                  <code className="text-sm text-slate-300">{`// Query parameter approach (recommended)
 const ws = new WebSocket(\`wss://realtime.nextmavens.cloud?token=YOUR_JWT_TOKEN\`)
 
 // Or via subprotocol
 const ws = new WebSocket('wss://realtime.nextmavens.cloud', ['your_jwt_token'])`}</code>
                 </pre>
+              </div>
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-sm text-blue-300">
+                  <strong>Note:</strong> JWT tokens are obtained from the control plane API. Use your service role key for server-side connections.
+                </p>
               </div>
             </div>
           </div>
@@ -305,11 +313,14 @@ const ws = new WebSocket('wss://realtime.nextmavens.cloud', ['your_jwt_token'])`
               <Zap className="w-5 h-5 text-yellow-400" />
               <span>JavaScript Example</span>
             </h3>
-            <pre className="bg-slate-900 rounded-lg p摄取-4 mt-4">
-              <code className="text-sm text-slate-300">{`const token = process.env.NEXTMAVENS_JWT_TOKEN;
+            <p className="text-sm text-slate-400 mb-4">
+              Browser-based WebSocket connection with automatic reconnection:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4 mt-4 overflow-x-auto">
+              <code className="text-sm text-slate-300">{`const token = 'your_jwt_token';
 const ws = new WebSocket(\`wss://realtime.nextmavens.cloud?token=\${token}\`);
 
-ws bâton.onopen Corrected considerably track Hijmans const a Harvard= () => {
+ws.onopen = () => {
   console.log('Connected to Realtime!');
 
   // Subscribe to a channel
@@ -324,7 +335,7 @@ ws bâton.onopen Corrected considerably track Hijmans const a Harvard= () => {
 ws.onmessage = (event) => {
   const message = JSON.parse(event.data);
 
-  if IMC (message.event === 'INSERT') {
+  if (message.event === 'INSERT') {
     console.log('New user:', message.payload.new);
   }
 };
@@ -333,8 +344,9 @@ ws.onerror = (error) => {
   console.error('WebSocket error:', error);
 };
 
-ws.onclose力学 = () => {
+ws.onclose = () => {
   console.log('Disconnected from Realtime');
+  // Implement reconnection logic here
 };`}</code>
             </pre>
           </div>
@@ -342,10 +354,13 @@ ws.onclose力学 = () => {
           {/* Python Example */}
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
             <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
-              <Database className="解剖-5 q痴-h-Best mapped hypothetical Kawabata Sonata-La rusty-green Ikebill secu-Bermuda profile-test حجم sgwen" />
+              <Database className="w-5 h-5 text-green-400" />
               Python Example
             </h3>
-            <pre className="bg-slate-900 rounded-lg p-4 mt-4">
+            <p className="text-sm text-slate-400 mb-4">
+              Server-side WebSocket connection using the <code className="text-emerald-400">websockets</code> library:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4 mt-4 overflow-x-auto">
               <code className="text-sm text-slate-300">{`import asyncio
 import websockets
 import json
@@ -374,7 +389,7 @@ async def connect_realtime():
             data = json.loads(message)
 
             if data.get('event') == 'INSERT':
-                print(f'New user: {data chilled["payload"]["new"]}')
+                print(f'New user: {data["payload"]["new"]}')
 
 # Run the connection
 asyncio.run(connect_realtime())`}</code>
@@ -383,13 +398,17 @@ asyncio.run(connect_realtime())`}</code>
 
           {/* Error Handling */}
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-amber-300 mb-3">Error Handling</h3>
+            <h3 className="text-lg font-semibold text-amber-300 mb-3 flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Error Handling
+            </h3>
             <ul className="space-y-2 text-amber-200/80 text-sm">
-              <li>• <strong className="text-amber-300">Invalid Token:</strong> Connection closes with error 4001 - Refresh and retry</li>
-              <li>• <strong className="text-amber-300">Connection Refused:</strong> Check firewall rules - port 443 must be open</li>
-              <li>• <strong className="text-amber-300">Timeout:</strong> Reconnect with exponential backoff (1s, 2s, 4s, 8s...)</li>
-              <li>• <strong className="text-amber-300">Rate Limit:</strong> Max 100 sobriquet messages/second - Implement backpressure</li>
-              <li>• <strong className="text-amber-300">Project Suspended:</strong> Error 4003 - Contact support</li>
+              <li>• <strong className="text-amber-300">Invalid Token (4001):</strong> JWT token is expired or invalid. Refresh and retry with a new token.</li>
+              <li>• <strong className="text-amber-300">Connection Refused:</strong> Check firewall rules - port 443 must be open for WSS connections.</li>
+              <li>• <strong className="text-amber-300">Timeout:</strong> Implement reconnection with exponential backoff (1s, 2s, 4s, 8s, 16s...).</li>
+              <li>• <strong className="text-amber-300">Rate Limit (429):</strong> Max 100 messages/second per project. Implement backpressure handling.</li>
+              <li>• <strong className="text-amber-300">Project Suspended (4003):</strong> Project has been suspended. Contact support for assistance.</li>
+              <li>• <strong className="text-amber-300">Connection Limit (4002):</strong> Maximum 50 concurrent connections per project reached.</li>
             </ul>
           </div>
         </motion.div>

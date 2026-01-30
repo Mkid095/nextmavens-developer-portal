@@ -33,6 +33,7 @@ import {
   Info,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
+import QuotaWarningBanner from '@/components/QuotaWarningBanner'
 import ServiceTab from '@/components/ServiceTab'
 import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKeyModal'
 import DeletionPreviewModal from '@/components/DeletionPreviewModal'
@@ -670,6 +671,9 @@ export default function ProjectDetailPage() {
             }}
           />
         )}
+
+        {/* Quota Warning Banner - US-005 */}
+        {project && <QuotaWarningBanner projectId={project.id} />}
 
         <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
           {tabs.map((tab) => (
