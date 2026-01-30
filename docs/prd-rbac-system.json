@@ -77,8 +77,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created src/lib/rbac.ts with permission checking functions. Implements checkUserPermission() which retrieves user's role from control_plane.organization_members table and checks permissions via hasPermission(). Provides detailed PermissionCheckResult with granted status and reason. Includes helper functions: getUserRole(), hasPermissionForOrganization() (boolean return), isOrganizationMember(), getOrganizationMembers(). Typecheck passes."
     },
     {
       "id": "US-004",
