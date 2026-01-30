@@ -183,21 +183,39 @@ export function getMcpDefaultScopes(mcpAccessLevel: McpAccessLevel): ApiKeyScope
 }
 
 /**
+ * Map project environment to API key prefix environment.
+ * US-010: Environment-Specific API Key Prefixes
+ * - prod -> live (production keys use "live" prefix)
+ * - dev -> dev (development keys use "dev" prefix)
+ * - staging -> staging (staging keys use "staging" prefix)
+ */
+export function mapProjectEnvironmentToKeyEnvironment(
+  projectEnvironment: 'prod' | 'dev' | 'staging'
+): 'live' | 'dev' | 'staging' {
+  const envMap: Record<'prod' | 'dev' | 'staging', 'live' | 'dev' | 'staging'> = {
+    prod: 'live',
+    dev: 'dev',
+    staging: 'staging',
+  }
+  return envMap[projectEnvironment]
+}
+
+/**
  * Key prefix format for each key type and environment.
+ * US-010: Environment-Specific API Key Prefixes
  *
- * Public keys: pk_prod_, pk_dev_, pk_staging_
- * Secret keys: sk_prod_, sk_dev_, sk_staging_
- * Service role: sr_prod_, sr_dev_, sr_staging_
- * MCP tokens: mcp_ro_, mcp_rw_, mcp_admin_
+ * Prod keys: nm_live_pk_, nm_live_sk_
+ * Dev keys: nm_dev_pk_, nm_dev_sk_
+ * Staging keys: nm_staging_pk_, nm_staging_sk_
  *
  * @param keyType - The type of API key
- * @param environment - The environment (prod, dev, staging)
+ * @param projectEnvironment - The project's environment (prod, dev, staging)
  * @param mcpAccessLevel - The MCP access level (ro, rw, admin) - only used for MCP keys
  * @returns The key prefix string
  */
 export function getKeyPrefix(
   keyType: ApiKeyType,
-  environment: ApiKeyEnvironment = 'prod',
+  projectEnvironment: ApiKeyEnvironment = 'prod',
   mcpAccessLevel?: McpAccessLevel
 ): string {
   if (keyType === 'mcp') {
@@ -205,17 +223,12 @@ export function getKeyPrefix(
     return `mcp_${level}_`
   }
 
-  const typePrefix = {
+  const keyEnvironment = mapProjectEnvironmentToKeyEnvironment(projectEnvironment)
+  const typeSuffix = {
     public: 'pk',
     secret: 'sk',
-    service_role: 'sr',
+    service_role: 'sk', // service_role keys use sk suffix like secret keys
   }[keyType]
 
-  const envSuffix = {
-    prod: '_prod_',
-    dev: '_dev_',
-    staging: '_staging_',
-  }[environment]
-
-  return `${typePrefix}${envSuffix}`
+  return `nm_${keyEnvironment}_${typeSuffix}_`
 }

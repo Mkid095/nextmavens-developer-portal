@@ -162,7 +162,7 @@ export function getKeyPrefix(
   const typeMap = {
     public: 'pk',
     secret: 'sk',
-    service_role: 'srv_sk',
+    service_role: 'sk', // service_role keys use sk suffix like secret keys
     mcp: 'mcp_sk',
   }
   return `nm_${keyEnvironment}_${typeMap[keyType]}_`

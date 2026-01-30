@@ -91,8 +91,8 @@
         "step5": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Storage Limits section already exists in docs/failure-modes.md with all required limits documented: max file size (5GB), upload rate (10/minute), storage quota (varies by plan), bucket limit (100 per project), file retention (30 days minimum). Includes best practices and common issues. Typecheck passes."
     },
     {
       "id": "US-005",
@@ -114,8 +114,8 @@
         "step5": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: GraphQL Limits section already exists in docs/failure-modes.md with all required limits documented: query depth (10 levels), query complexity (1000 points), rate limit (60 requests/minute), query timeout (30 seconds), max result size (10MB). Includes best practices and common issues. Typecheck passes."
     },
     {
       "id": "US-006",
@@ -136,8 +136,8 @@
         "step5": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Error Codes section already exists in docs/failure-modes.md with comprehensive error code documentation including error name, code, message, retryable flag, description, and TypeScript example for handling errors. Typecheck passes."
     },
     {
       "id": "US-007",
@@ -159,8 +159,8 @@
         "step5": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Common Pitfalls section already exists in docs/failure-modes.md with comprehensive pitfalls for Database, Auth, Realtime, and Storage services. Each pitfall includes description and solution. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -182,8 +182,8 @@
         "step5": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Query Timeout Scenarios section already exists in docs/failure-modes.md under Troubleshooting with comprehensive coverage of long-running queries, large result sets, missing indexes, and locks/blocking. Includes diagnosis and solutions. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -205,8 +205,8 @@
         "step5": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Rate Limit Behavior section already exists in docs/failure-modes.md with comprehensive coverage of how limits are calculated, sliding window algorithm, response headers (RateLimit-Remaining, RateLimit-Reset, Retry-After), and best practices. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -227,8 +227,8 @@
         "step5": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Troubleshooting guide already exists in docs/failure-modes.md with comprehensive coverage including Query Timeout Scenarios, Rate Limit Behavior, and When to Contact Support sections. Includes step-by-step diagnosis and solutions. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

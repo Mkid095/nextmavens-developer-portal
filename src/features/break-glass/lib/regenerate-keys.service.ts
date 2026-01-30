@@ -32,6 +32,7 @@ import { logBreakGlassAction } from './aggressive-audit-logger';
 import {
   getKeyPrefix,
   DEFAULT_SCOPES,
+  mapProjectEnvironmentToKeyEnvironment,
   type ApiKey,
 } from '@/lib/types/api-key.types';
 import { invalidateSnapshot } from '@/lib/snapshot';

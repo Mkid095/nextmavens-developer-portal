@@ -100,10 +100,21 @@ export function generateSlug(name: string): string {
     .substring(0, 50)
 }
 
+/**
+ * Generate an API key with the specified format.
+ * US-010: Environment-Specific API Key Prefixes
+ * Format: {prefix}_{random_bytes}
+ * Example: nm_live_pk_abc123def456...
+ *
+ * Note: This function generates the random suffix only.
+ * Use getKeyPrefix() to get the environment-specific prefix.
+ *
+ * @param type - The type of API key (public or secret)
+ * @returns The random suffix of the API key
+ */
 export function generateApiKey(type: 'public' | 'secret' = 'public'): string {
-  const prefix = type === 'public' ? 'nm_live_pk_' : 'nm_live_sk_'
   const key = Buffer.from(crypto.randomBytes(32)).toString('hex')
-  return `${prefix}${key}`
+  return key
 }
 
 export function hashApiKey(key: string): string {
