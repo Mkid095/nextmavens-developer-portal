@@ -22,6 +22,7 @@ import {
   secureError,
   safeErrorResponse,
 } from '@/lib/secure-logger'
+import { logSecretRotation } from '@/lib/audit-logger'
 
 // Schema for rotating a secret
 const rotateSecretSchema = z.object({
@@ -178,6 +179,19 @@ export async function POST(
         `SELECT id, grace_period_ends_at FROM control_plane.secrets WHERE id = $1`,
         [currentSecret.id]
       )
+
+      // Log secret rotation to audit logs (US-012: Secret Access Logging)
+      try {
+        await logSecretRotation(developer.id, currentSecret.id, newSecret.id, currentSecret.project_id, {
+          secretName: currentSecret.name,
+          oldVersion: currentSecret.version,
+          newVersion: newSecret.version,
+          rotationReason: rotation_reason || 'Not provided',
+        })
+      } catch (auditError) {
+        // Don't fail the request if audit logging fails
+        secureError('Failed to log secret rotation audit', { error: String(auditError) })
+      }
 
       // Log secret rotation without value (US-011: Prevent Secret Logging)
       secureLog('Secret rotated', {

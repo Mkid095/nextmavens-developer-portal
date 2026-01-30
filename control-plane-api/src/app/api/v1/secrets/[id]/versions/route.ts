@@ -15,6 +15,7 @@ import {
   secureError,
   safeErrorResponse,
 } from '@/lib/secure-logger'
+import { logSecretAccess } from '@/lib/audit-logger'
 
 // Helper function for standard error responses (using safe error response)
 function errorResponse(code: string, message: string, status: number) {

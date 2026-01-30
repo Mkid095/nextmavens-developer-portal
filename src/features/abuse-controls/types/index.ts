@@ -606,6 +606,8 @@ export enum NotificationType {
   ERROR_RATE_DETECTED = 'error_rate_detected',
   /** Malicious pattern detected notification */
   MALICIOUS_PATTERN_DETECTED = 'malicious_pattern_detected',
+  /** Webhook disabled notification */
+  WEBHOOK_DISABLED = 'webhook_disabled',
 }
 
 /**

@@ -18,6 +18,7 @@ import {
   safeErrorResponse,
   createSafeAuditEntry,
 } from '@/lib/secure-logger'
+import { logSecretCreation } from '@/lib/audit-logger'
 
 // Validation schemas using Zod
 import { z } from 'zod'
@@ -140,6 +141,17 @@ export async function POST(req: NextRequest) {
     )
 
     const secret = result.rows[0]
+
+    // Log secret creation to audit logs (US-012: Secret Access Logging)
+    try {
+      await logSecretCreation(developer.id, secret.id, project_id, {
+        secretName: secret.name,
+        version: secret.version,
+      })
+    } catch (auditError) {
+      // Don't fail the request if audit logging fails
+      secureError('Failed to log secret creation audit', { error: String(auditError) })
+    }
 
     // Log secret creation without value (US-011: Prevent Secret Logging)
     secureLog('Secret created', {

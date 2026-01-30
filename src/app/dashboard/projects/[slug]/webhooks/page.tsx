@@ -314,9 +314,70 @@ export default function WebhooksPage() {
   }
 
   const handleRetryFailedWebhooks = async () => {
-    // This would call an API endpoint to retry failed webhook deliveries
-    // For now, just refresh the history
-    fetchEventLogs(selectedWebhookId || undefined)
+    // Retry all failed webhook deliveries for the current filter
+    const failedLogs = eventLogs.filter(log => log.status === 'failed')
+
+    if (failedLogs.length === 0) {
+      setError('No failed webhooks to retry')
+      return
+    }
+
+    try {
+      const headers = { headers: { get: (name: string) => {
+        if (name === 'authorization') {
+          if (typeof window !== 'undefined') {
+            return localStorage.getItem('token') || ''
+          }
+        }
+        return null
+      }}}
+
+      // Retry each failed webhook delivery
+      for (const log of failedLogs) {
+        await client.retryWebhook({ event_log_id: log.id }, headers)
+      }
+
+      // Show success feedback
+      setTestResult({
+        webhookId: 'retry-all',
+        success: true,
+        message: `${failedLogs.length} webhook(s) queued for retry`,
+      })
+
+      // Refresh the history after retrying
+      await fetchEventLogs(selectedWebhookId || undefined)
+    } catch (err) {
+      console.error('Failed to retry webhooks:', err)
+      setError(err instanceof Error ? err.message : 'Failed to retry webhooks')
+    }
+  }
+
+  const handleRetrySingleWebhook = async (eventLogId: string) => {
+    try {
+      const headers = { headers: { get: (name: string) => {
+        if (name === 'authorization') {
+          if (typeof window !== 'undefined') {
+            return localStorage.getItem('token') || ''
+          }
+        }
+        return null
+      }}}
+
+      await client.retryWebhook({ event_log_id }, headers)
+
+      // Show success feedback
+      setTestResult({
+        webhookId: 'retry',
+        success: true,
+        message: 'Webhook queued for retry',
+      })
+
+      // Refresh the history after retrying
+      await fetchEventLogs(selectedWebhookId || undefined)
+    } catch (err) {
+      console.error('Failed to retry webhook:', err)
+      setError(err instanceof Error ? err.message : 'Failed to retry webhook')
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -733,6 +794,24 @@ export default function WebhooksPage() {
                   ))}
                 </div>
                 <div className="ml-auto flex items-center gap-2">
+                  {testResult?.webhookId === 'retry-all' && (
+                    <div className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                      testResult.success
+                        ? 'bg-green-900/20 border border-green-900/50 text-green-300'
+                        : 'bg-red-900/20 border border-red-900/50 text-red-300'
+                    }`}>
+                      {testResult.message}
+                    </div>
+                  )}
+                  {testResult?.webhookId === 'retry' && (
+                    <div className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+                      testResult.success
+                        ? 'bg-green-900/20 border border-green-900/50 text-green-300'
+                        : 'bg-red-900/20 border border-red-900/50 text-red-300'
+                    }`}>
+                      {testResult.message}
+                    </div>
+                  )}
                   {historyFilter === 'failed' && (
                     <button
                       onClick={handleRetryFailedWebhooks}
@@ -788,6 +867,16 @@ export default function WebhooksPage() {
                               Retry {log.retry_count}
                             </span>
                           )}
+                          {log.status === 'failed' && log.retry_count < 5 && (
+                            <button
+                              onClick={() => handleRetrySingleWebhook(log.id)}
+                              className="inline-flex items-center gap-1 rounded-md bg-orange-900/30 px-2 py-1 text-xs font-medium text-orange-300 hover:bg-orange-900/50 transition-colors"
+                              title="Retry this webhook delivery"
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                              Retry
+                            </button>
+                          )}
                         </div>
 
                         {log.webhook && (
@@ -827,6 +916,19 @@ export default function WebhooksPage() {
                           </div>
                         )}
                       </div>
+
+                      {/* Action buttons */}
+                      {log.status === 'failed' && log.retry_count < 5 && (
+                        <div className="flex-shrink-0">
+                          <button
+                            onClick={() => handleRetrySingleWebhook(log.id)}
+                            className="rounded-lg border border-orange-900/50 p-2 text-orange-400 hover:bg-orange-900/20 transition-colors"
+                            title="Retry this webhook delivery"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))

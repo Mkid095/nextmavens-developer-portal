@@ -269,7 +269,7 @@
       },
       "priority": 2,
       "passes": true,
-      "notes": "Completed: Created GET /api/v1/webhooks/history endpoint in control-plane-api with filtering by project_id, webhook_id, event_type, status, and pagination support. Added EventLog types to webhook.types.ts with all required fields (id, project_id, webhook_id, event_type, status, response_code, response_body, retry_count, delivered_at, created_at). Updated control-plane-client.ts with listEventLogs() method. Added webhook history UI section to webhooks page with event type, delivered_at, status, response code display, retry count indicator, retry failed webhooks button, and status filter (all/delivered/failed/pending). Added View History button in page header and individual webhook cards. Typecheck passes."
+      "notes": "Completed: Created GET /api/v1/webhooks/history endpoint in control-plane-api with filtering by project_id, webhook_id, event_type, status, and pagination support. Added POST /api/v1/webhooks/retry endpoint to retry failed webhook deliveries. Added EventLog types to webhook.types.ts with all required fields (id, project_id, webhook_id, event_type, status, response_code, response_body, retry_count, delivered_at, created_at). Updated control-plane-client.ts with listEventLogs() and retryWebhook() methods. Added webhook history UI section to webhooks page with event type, delivered_at, status, response code display, retry count indicator, retry failed webhooks button (now functional), individual retry button for each failed webhook, and status filter (all/delivered/failed/pending). Added View History button in page header and individual webhook cards. Typecheck passes."
     },
     {
       "id": "US-011",

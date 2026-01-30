@@ -16,6 +16,7 @@ import {
   secureError,
   safeErrorResponse,
 } from '@/lib/secure-logger'
+import { logSecretAccess } from '@/lib/audit-logger'
 
 // Helper function for standard error responses (using safe error response)
 function errorResponse(code: string, message: string, status: number) {
@@ -90,6 +91,18 @@ export async function GET(
         'Failed to decrypt secret value',
         500
       )
+    }
+
+    // Log secret access to audit logs (US-012: Secret Access Logging)
+    try {
+      await logSecretAccess(developer.id, secretId, secret.project_id, {
+        version: secret.version,
+        action: 'accessed',
+        secretName: secret.name,
+      })
+    } catch (auditError) {
+      // Don't fail the request if audit logging fails
+      secureError('Failed to log secret access audit', { error: String(auditError) })
     }
 
     // Log secret access without value (US-011: Prevent Secret Logging)
