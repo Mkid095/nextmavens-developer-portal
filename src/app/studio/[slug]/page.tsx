@@ -18,6 +18,8 @@ import {
   Users,
   Terminal,
   AlertCircle,
+  Clock,
+  Bookmark,
 } from 'lucide-react'
 import { TablesView, type TableData } from '@/features/studio/components/TablesView'
 import { UserList } from '@/features/auth-users/components/UserList'
@@ -25,6 +27,7 @@ import { UserDetail } from '@/features/auth-users/components/UserDetail'
 import { SqlEditor } from '@/features/sql-editor'
 import { ResultsTable } from '@/features/sql-editor/components/ResultsTable'
 import { QueryHistoryPanel, addQueryToHistory } from '@/features/sql-editor/components/QueryHistory'
+import { SavedQueriesPanel } from '@/features/sql-editor/components/SavedQueries'
 import { Permission } from '@/lib/types/rbac.types'
 
 interface DatabaseTable {
@@ -65,6 +68,9 @@ export default function StudioPage() {
 
   // US-004: Query History state
   const [showQueryHistory, setShowQueryHistory] = useState(true)
+
+  // US-010: Saved Queries state
+  const [showSavedQueries, setShowSavedQueries] = useState(false)
 
   // US-011: RBAC state for SQL execution permissions
   const [userRole, setUserRole] = useState<UserRole>(null)
@@ -241,6 +247,14 @@ export default function StudioPage() {
    * US-004: Handle selecting a query from history
    */
   const handleSelectQueryFromHistory = (query: string, readonly: boolean) => {
+    setSqlQuery(query)
+    setQueryError(null)
+  }
+
+  /**
+   * US-010: Handle selecting a saved query
+   */
+  const handleSelectSavedQuery = (query: string) => {
     setSqlQuery(query)
     setQueryError(null)
   }
@@ -452,7 +466,7 @@ export default function StudioPage() {
           {activeNav === 'sql' ? (
             <div className="flex gap-6 h-full">
               {/* Main SQL Editor Section */}
-              <div className={`flex flex-col gap-6 ${showQueryHistory ? 'flex-1' : 'w-full'}`}>
+              <div className={`flex flex-col gap-6 ${(showQueryHistory || showSavedQueries) ? 'flex-1' : 'w-full'}`}>
                 {/* US-011: Permission banner showing user's role and allowed operations */}
                 {!permissionsLoading && (
                   <div className={`flex items-start gap-3 p-4 rounded-lg border ${
@@ -534,12 +548,55 @@ export default function StudioPage() {
                 )}
               </div>
 
-              {/* US-004: Query History Panel */}
-              {showQueryHistory && (
-                <div className="w-80 flex-shrink-0">
-                  <QueryHistoryPanel
-                    onSelectQuery={handleSelectQueryFromHistory}
-                  />
+              {/* US-004: Query History Panel / US-010: Saved Queries Panel */}
+              {(showQueryHistory || showSavedQueries) && (
+                <div className="w-80 flex-shrink-0 flex flex-col">
+                  {/* Tab toggle between History and Saved Queries */}
+                  <div className="flex border-b border-slate-200 bg-white rounded-t-lg">
+                    <button
+                      onClick={() => {
+                        setShowQueryHistory(true)
+                        setShowSavedQueries(false)
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition ${
+                        showQueryHistory
+                          ? 'text-emerald-700 border-b-2 border-emerald-700 bg-emerald-50'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Clock className="w-4 h-4" />
+                      History
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowQueryHistory(false)
+                        setShowSavedQueries(true)
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition ${
+                        showSavedQueries
+                          ? 'text-indigo-700 border-b-2 border-indigo-700 bg-indigo-50'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Bookmark className="w-4 h-4" />
+                      Saved
+                    </button>
+                  </div>
+
+                  {/* Panel content */}
+                  <div className="flex-1 overflow-auto bg-white border border-t-0 border-slate-200 rounded-b-lg">
+                    {showQueryHistory && (
+                      <QueryHistoryPanel
+                        onSelectQuery={handleSelectQueryFromHistory}
+                      />
+                    )}
+                    {showSavedQueries && (
+                      <SavedQueriesPanel
+                        onSelectQuery={handleSelectSavedQuery}
+                        className="border-0 rounded-none"
+                      />
+                    )}
+                  </div>
                 </div>
               )}
             </div>
