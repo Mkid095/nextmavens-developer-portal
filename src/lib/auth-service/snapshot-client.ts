@@ -25,11 +25,12 @@ interface SnapshotClientConfig {
 }
 
 /**
- * Snapshot cache entry
+ * Snapshot cache entry with version tracking
  */
 interface CachedSnapshot {
   snapshot: ControlPlaneSnapshot
   expiresAt: number
+  version: string
 }
 
 /**
