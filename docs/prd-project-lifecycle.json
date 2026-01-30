@@ -26,8 +26,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration 006_add_project_status_column.sql created with status column, enum constraint, default value, and index. Typecheck passes."
     },
     {
       "id": "US-002",

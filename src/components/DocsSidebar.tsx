@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { BookOpen, Database, Shield, HardDrive, Globe, DatabaseBackup, ChevronRight, ChevronLeft, Code, Zap, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -133,9 +133,14 @@ interface DocsSidebarProps {
 export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, onMobileMenuClose }: DocsSidebarProps) {
   const pathname = usePathname()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const activeItemRef = useRef<HTMLAnchorElement>(null)
 
-  // Toggle button is separate - handled in DocsLayout
-  // This component just renders the sidebar content
+  // Scroll active item into view when pathname changes
+  useEffect(() => {
+    if (activeItemRef.current && !isCollapsed) {
+      activeItemRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [pathname, isCollapsed])
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) => {
@@ -227,11 +232,12 @@ export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, o
               return (
                 <li key={section.id}>
                   <Link
+                    ref={active ? activeItemRef : null}
                     href={section.path}
                     onClick={onMobileMenuClose}
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                       active
-                        ? `${colors.bg} ${colors.text} font-medium`
+                        ? `${colors.bg} ${colors.text} font-bold`
                         : 'text-slate-700 hover:bg-slate-100'
                     }`}
                   >

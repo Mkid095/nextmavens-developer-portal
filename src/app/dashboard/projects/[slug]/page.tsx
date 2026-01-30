@@ -27,6 +27,7 @@ import {
   ShieldAlert,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
+import ServiceTab from '@/components/ServiceTab'
 
 interface Project {
   id: string
