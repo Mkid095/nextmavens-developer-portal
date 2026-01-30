@@ -205,8 +205,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created migration_locks table with columns: id, pid, host, acquired_at, migration_version, completed_at. Added index on completed_at for cleanup. Implemented acquireMigrationLock() function that: (1) Creates table if not exists, (2) Cleans up old completed locks (>1 hour), (3) Checks for active locks, (4) Acquires lock if available, (5) Waits with retry if lock held (configurable timeout, default 30s), (6) Returns release function. Updated runMigrations() to acquire lock at start and release in finally block. Tracks pid and hostname for lock identification. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

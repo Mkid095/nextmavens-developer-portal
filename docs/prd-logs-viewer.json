@@ -189,8 +189,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated getLevelBgColor function in logs page. Info logs now use bg-gray-50, warn logs use bg-yellow-50, error logs use bg-red-50. All log entries have background colors applied via border-l-4 and background classes. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -212,8 +212,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Expandable log entries with click handler toggleLogExpand (line 467-469). Shows timestamp, service (with uppercase badge), level (with icon and color), and message (with search highlighting). Metadata displayed as formatted JSON in dark code block when present. Request ID shown in expanded details. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-009",

@@ -313,10 +313,10 @@ export default function LogsPage() {
       case 'error':
         return 'bg-red-50 border-red-200'
       case 'warn':
-        return 'bg-amber-50 border-amber-200'
+        return 'bg-yellow-50 border-yellow-200'
       case 'info':
       default:
-        return 'bg-slate-50 border-slate-200'
+        return 'bg-gray-50 border-gray-200'
     }
   }
 
