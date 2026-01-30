@@ -22,6 +22,7 @@ interface FeatureFlagRow {
   enabled: boolean;
   scope: FeatureFlagScope;
   metadata: Record<string, unknown>;
+  scope_id?: string;
 }
 
 /**
@@ -104,6 +105,7 @@ export function invalidateFlagCache(name?: string): void {
 
 /**
  * Fetch feature flag from database
+ * For project/org scope, checks specific scope first, then falls back to global
  */
 async function fetchFlag(name: string, scope: FeatureFlagScope, scopeId?: string): Promise<boolean> {
   const pool = getPool();
@@ -119,17 +121,31 @@ async function fetchFlag(name: string, scope: FeatureFlagScope, scopeId?: string
       WHERE name = $1 AND scope = 'global'
     `;
     params = [name];
-  } else {
-    // For project/org scope, check both specific scope and global
-    // Specific scope takes precedence over global
+  } else if (scopeId) {
+    // For project/org scope with scopeId, check specific scope first
+    // If not found, fall back to global flag
+    // Project/org flags take precedence over global flags
     query = `
       SELECT enabled, scope
       FROM control_plane.feature_flags
-      WHERE name = $1 AND (scope = $2 OR scope = 'global')
-      ORDER BY scope DESC
+      WHERE name = $1 AND (scope = $2 AND scope_id = $3) OR (scope = 'global')
+      ORDER BY
+        CASE
+          WHEN scope = $2 AND scope_id = $3 THEN 1
+          WHEN scope = 'global' THEN 2
+          ELSE 3
+        END
       LIMIT 1
     `;
-    params = [name, scope];
+    params = [name, scope, scopeId];
+  } else {
+    // For project/org scope without scopeId, just check global
+    query = `
+      SELECT enabled, scope
+      FROM control_plane.feature_flags
+      WHERE name = $1 AND scope = 'global'
+    `;
+    params = [name];
   }
 
   try {
@@ -227,30 +243,33 @@ export async function setFeatureFlag(
   const selectQuery = `
     SELECT enabled
     FROM control_plane.feature_flags
-    WHERE name = $1 AND scope = $2
+    WHERE name = $1 AND scope = $2 ${scopeId ? 'AND scope_id = $3' : ''}
   `;
 
   let oldValue: boolean | null = null;
   try {
-    const selectResult = await pool.query<{ enabled: boolean }>(selectQuery, [name, scope]);
+    const selectResult = await pool.query<{ enabled: boolean }>(
+      selectQuery,
+      scopeId ? [name, scope, scopeId] : [name, scope]
+    );
     if (selectResult.rows.length > 0) {
       oldValue = selectResult.rows[0].enabled;
     }
   } catch (error) {
     // Ignore error, flag might not exist yet
-    console.debug(`[Feature Flags] No existing flag found for "${name}" at scope "${scope}"`);
+    console.debug(`[Feature Flags] No existing flag found for "${name}" at scope "${scope}"${scopeId ? ` with scope_id "${scopeId}"` : ''}`);
   }
 
   const query = `
-    INSERT INTO control_plane.feature_flags (name, enabled, scope, metadata)
-    VALUES ($1, $2, $3, $4)
-    ON CONFLICT (name) DO UPDATE SET
+    INSERT INTO control_plane.feature_flags (name, enabled, scope, scope_id, metadata)
+    VALUES ($1, $2, $3, $4, $5)
+    ON CONFLICT (name, scope, scope_id) DO UPDATE SET
       enabled = EXCLUDED.enabled,
       updated_at = NOW(),
       metadata = EXCLUDED.metadata
   `;
 
-  await pool.query(query, [name, enabled, scope, JSON.stringify(metadata)]);
+  await pool.query(query, [name, enabled, scope, scopeId || null, JSON.stringify(metadata)]);
 
   // Invalidate cache for this flag
   invalidateFlagCache(name);
@@ -271,16 +290,97 @@ export async function getFeatureFlags(
 ): Promise<FeatureFlagRow[]> {
   const pool = getPool();
 
-  let query = 'SELECT name, enabled, scope, metadata FROM control_plane.feature_flags';
+  let query = 'SELECT name, enabled, scope, scope_id, metadata FROM control_plane.feature_flags';
   const params: (string | number)[] = [];
 
+  const conditions: string[] = [];
   if (scope) {
-    query += ' WHERE scope = $1';
+    conditions.push('scope = $1');
     params.push(scope);
+  }
+  if (scopeId) {
+    const paramIndex = params.length + 1;
+    conditions.push(`scope_id = $${paramIndex}`);
+    params.push(scopeId);
+  }
+
+  if (conditions.length > 0) {
+    query += ' WHERE ' + conditions.join(' AND ');
   }
 
   query += ' ORDER BY name';
 
   const result = await pool.query<FeatureFlagRow>(query, params);
   return result.rows;
+}
+
+/**
+ * Get feature flags for a specific project
+ * Returns both project-specific flags and global flags
+ *
+ * @param projectId - The project ID to get flags for
+ * @returns Array of feature flags with project flags overriding global flags
+ */
+export async function getProjectFeatureFlags(projectId: string): Promise<FeatureFlagRow[]> {
+  const pool = getPool();
+
+  const query = `
+    WITH all_flags AS (
+      SELECT
+        name,
+        enabled,
+        scope,
+        scope_id,
+        metadata,
+        ROW_NUMBER() OVER (
+          PARTITION BY name
+          ORDER BY
+            CASE
+              WHEN scope = 'project' AND scope_id = $1 THEN 1
+              WHEN scope = 'global' THEN 2
+              ELSE 3
+            END
+        ) as rn
+      FROM control_plane.feature_flags
+      WHERE scope = 'global' OR (scope = 'project' AND scope_id = $1)
+    )
+    SELECT name, enabled, scope, scope_id, metadata
+    FROM all_flags
+    WHERE rn = 1
+    ORDER BY name
+  `;
+
+  const result = await pool.query<FeatureFlagRow>(query, [projectId]);
+  return result.rows;
+}
+
+/**
+ * Delete a feature flag for a specific scope
+ *
+ * @param name - The feature flag name
+ * @param scope - The scope of the flag
+ * @param scopeId - The ID of the project or org (required for non-global scopes)
+ * @returns true if the flag was deleted, false if it didn't exist
+ */
+export async function deleteFeatureFlag(
+  name: string,
+  scope: FeatureFlagScope = 'global',
+  scopeId?: string
+): Promise<boolean> {
+  const pool = getPool();
+
+  let query = 'DELETE FROM control_plane.feature_flags WHERE name = $1 AND scope = $2';
+  const params: (string | null)[] = [name, scope];
+
+  if (scopeId) {
+    query += ' AND scope_id = $3';
+    params.push(scopeId);
+  }
+
+  const result = await pool.query(query, params);
+
+  // Invalidate cache for this flag
+  invalidateFlagCache(name);
+
+  return (result.rowCount ?? 0) > 0;
 }

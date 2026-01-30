@@ -66,8 +66,8 @@
         "step5": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created Regional Data Isolation section in /docs/infrastructure page with comprehensive documentation including: current state (single US-East region), future multi-region deployment (US/EU/Asia), data stays in selected region explanation (databases, storage, audit logs, API endpoints, backups), compliance implications (GDPR, data residency laws, audit & compliance), cross-region replication as optional future feature (async, failover-ready, compliance-aware), region selector preview with UI mockup showing regional selection, regional architecture diagram, and migration between regions guidance. Also created detailed story document at /docs/infrastructure-docs/story-us-003-document-regional-data-isolation.md. Typecheck passes."
     },
     {
       "id": "US-004",

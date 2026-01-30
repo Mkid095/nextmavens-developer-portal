@@ -290,8 +290,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created migration add-scope-id-to-feature-flags.ts (174 lines) that adds scope_id column, updates primary key to composite (name, scope, scope_id), adds CHECK constraint for valid scope_id patterns, and creates index. Updated features.ts with getProjectFeatureFlags() (merges project + global flags), deleteFeatureFlag() for scoped deletion, and updated setFeatureFlag/getFeatureFlags to support scope_id. Created API endpoints: GET/POST /api/projects/[projectId]/feature-flags (list/create project flags), PATCH/DELETE /api/projects/[projectId]/feature-flags/[flagName] (update/delete project flags). Project flags override global flags via SQL ORDER BY in getProjectFeatureFlags. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

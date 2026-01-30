@@ -31,6 +31,10 @@ import {
   Server,
   ChevronDown,
   Info,
+  ToggleLeft,
+  ToggleRight,
+  Loader2,
+  CheckCircle,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import QuotaWarningBanner from '@/components/QuotaWarningBanner'
@@ -95,7 +99,7 @@ interface TabConfig {
   icon: LucideIcon
 }
 
-type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys'
+type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'feature-flags'
 
 const tabs: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Settings },
@@ -105,6 +109,7 @@ const tabs: TabConfig[] = [
   { id: 'realtime', label: 'Realtime', icon: Activity },
   { id: 'graphql', label: 'GraphQL', icon: Code2 },
   { id: 'api-keys', label: 'API Keys', icon: Key },
+  { id: 'feature-flags', label: 'Feature Flags', icon: ShieldAlert },
 ]
 
 /**
@@ -249,6 +254,11 @@ export default function ProjectDetailPage() {
   // US-010: Deletion preview modal
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  // US-011: Feature Flags state
+  const [featureFlags, setFeatureFlags] = useState<any[]>([])
+  const [flagsLoading, setFlagsLoading] = useState(false)
+  const [flagsError, setFlagsError] = useState<string | null>(null)
+  const [updatingFlag, setUpdatingFlag] = useState<string | null>(null)
 
   useEffect(() => {
     if (project) {
@@ -269,6 +279,13 @@ export default function ProjectDetailPage() {
       })
     }
   }, [apiKeys])
+
+  // US-011: Fetch feature flags when tab changes to feature-flags
+  useEffect(() => {
+    if (activeTab === 'feature-flags') {
+      fetchFeatureFlags()
+    }
+  }, [activeTab, project?.id])
 
   const fetchProject = async () => {
     try {
@@ -307,6 +324,32 @@ export default function ProjectDetailPage() {
       }
     } catch (err) {
       console.error('Failed to fetch API keys:', err)
+    }
+  }
+
+  // US-011: Fetch project feature flags
+  const fetchFeatureFlags = async () => {
+    if (!project?.id) return
+
+    setFlagsLoading(true)
+    setFlagsError(null)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/projects/${project.id}/feature-flags`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setFeatureFlags(data.flags || [])
+      } else {
+        const errorData = await res.json()
+        setFlagsError(errorData.error || 'Failed to fetch feature flags')
+      }
+    } catch (err) {
+      console.error('Failed to fetch feature flags:', err)
+      setFlagsError('Failed to fetch feature flags')
+    } finally {
+      setFlagsLoading(false)
     }
   }
 
@@ -547,6 +590,78 @@ export default function ProjectDetailPage() {
       alert(err.message || 'Failed to revoke API key')
     } finally {
       setRevokeSubmitting(false)
+    }
+  }
+
+  // US-011: Handle feature flag toggle
+  const handleToggleFeatureFlag = async (flagName: string, currentEnabled: boolean) => {
+    if (!project?.id) return
+
+    setUpdatingFlag(flagName)
+    setFlagsError(null)
+
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/projects/${project.id}/feature-flags/${flagName}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          enabled: !currentEnabled,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to update feature flag')
+      }
+
+      // Refresh feature flags
+      fetchFeatureFlags()
+    } catch (err: any) {
+      console.error('Failed to toggle feature flag:', err)
+      setFlagsError(err.message || 'Failed to update feature flag')
+    } finally {
+      setUpdatingFlag(null)
+    }
+  }
+
+  // US-011: Handle remove project-specific flag (revert to global)
+  const handleRemoveProjectFlag = async (flagName: string) => {
+    if (!project?.id) return
+
+    if (!confirm(`Remove project-specific setting for "${flagName}" and use the global default?`)) {
+      return
+    }
+
+    setUpdatingFlag(flagName)
+    setFlagsError(null)
+
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/projects/${project.id}/feature-flags/${flagName}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to remove feature flag')
+      }
+
+      // Refresh feature flags
+      fetchFeatureFlags()
+    } catch (err: any) {
+      console.error('Failed to remove feature flag:', err)
+      setFlagsError(err.message || 'Failed to remove feature flag')
+    } finally {
+      setUpdatingFlag(null)
     }
   }
 

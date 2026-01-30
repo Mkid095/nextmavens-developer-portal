@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle } from 'lucide-react'
+import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin } from 'lucide-react'
 
 export default function InfrastructureDocsPage() {
   return (
@@ -71,6 +71,9 @@ export default function InfrastructureDocsPage() {
             </a>
             <a href="#scaling" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Scaling Roadmap
+            </a>
+            <a href="#regional-isolation" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
+              <ChevronRight className="w-4 h-4" /> Regional Data Isolation
             </a>
             <a href="#limitations" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Current Limitations
@@ -462,6 +465,164 @@ export default function InfrastructureDocsPage() {
                   <li>• Container orchestration (Kubernetes/Docker)</li>
                   <li>• CDN for static assets</li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Regional Data Isolation */}
+        <section id="regional-isolation" className="bg-white rounded-xl p-8 border border-slate-200 mb-8">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-6 flex items-center gap-3">
+            <MapPin className="w-6 h-6 text-blue-700" />
+            Regional Data Isolation
+          </h2>
+
+          <p className="text-slate-600 mb-6">
+            NextMavens is designed with <strong>data sovereignty</strong> in mind. As we scale to multiple regions, your data remains in the region you select, ensuring compliance with data residency requirements.
+          </p>
+
+          {/* Current State */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              Current State: Single Region
+            </h3>
+            <p className="text-sm text-slate-600 mb-3">
+              All data is currently hosted in the <strong>US-East</strong> region. As we expand globally, regional isolation will become a core platform feature.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-blue-900">
+                <CheckCircle className="w-4 h-4" />
+                <span>Region: <strong>US-East</strong> | All projects currently reside here</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Future Regional Deployment */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+              Future: Multi-Region Deployment (Planned Q3 2026)
+            </h3>
+            <p className="text-sm text-purple-800 mb-4">
+              When multi-region deployment launches, projects will be created in specific regions and data will <strong>never leave</strong> that region unless explicitly configured.
+            </p>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <div className="text-2xl mb-2">🇺🇸</div>
+                <h4 className="font-semibold text-purple-900 mb-1">US Region</h4>
+                <p className="text-xs text-purple-700">Primary region for North American users</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <div className="text-2xl mb-2">🇪🇺</div>
+                <h4 className="font-semibold text-purple-900 mb-1">EU Region</h4>
+                <p className="text-xs text-purple-700">GDPR compliant for European users</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <div className="text-2xl mb-2">🌏</div>
+                <h4 className="font-semibold text-purple-900 mb-1">Asia Region</h4>
+                <p className="text-xs text-purple-700">Low-latency access for APAC users</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Data Stays in Selected Region */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-5">
+              <h3 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Data Stays in Selected Region
+              </h3>
+              <ul className="text-sm text-green-800 space-y-2">
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-1.5"></div>
+                  <span>Database instances are region-specific</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-1.5"></div>
+                  <span>File storage remains in the selected region</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-1.5"></div>
+                  <span>API requests are routed to the regional endpoint</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-600 mt-1.5"></div>
+                  <span>No cross-region data transfer by default</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
+              <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Compliance Implications
+              </h3>
+              <ul className="text-sm text-blue-800 space-y-2">
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5"></div>
+                  <span><strong>GDPR:</strong> EU region ensures data stays in Europe</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5"></div>
+                  <span><strong>Data Residency:</strong> Meet country-specific requirements</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5"></div>
+                  <span><strong>Auditing:</strong> Regional audit logs for compliance</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-600 mt-1.5"></div>
+                  <span><strong>Legal:</strong> Simplified cross-border data compliance</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Cross-Region Replication (Future) */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+              <span className="text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded">FUTURE</span>
+              Cross-Region Replication (Optional)
+            </h3>
+            <p className="text-sm text-amber-800 mb-3">
+              For users who require high availability across regions, we will offer optional cross-region replication as an opt-in feature.
+            </p>
+            <ul className="text-sm text-amber-700 space-y-1">
+              <li>• <strong>Opt-in only:</strong> Explicitly enabled per project</li>
+              <li>• <strong>Async replication:</strong> Near-real-time data sync</li>
+              <li>• <strong>Failover:</strong> Automatic regional failover on outage</li>
+              <li>• <strong>Compliance aware:</strong> Clear indicators when data crosses borders</li>
+            </ul>
+          </div>
+
+          {/* Region Selector Preview */}
+          <div className="bg-slate-100 border border-slate-300 rounded-lg p-6">
+            <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <span className="text-xs bg-slate-300 text-slate-700 px-2 py-1 rounded">COMING SOON</span>
+              Region Selector (Planned Feature)
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              When creating a new project, you will be able to select the region where your data will be stored. This selection cannot be changed after project creation.
+            </p>
+            <div className="bg-white rounded-lg p-4 border border-slate-200">
+              <div className="text-sm font-medium text-slate-700 mb-3">Preview: Region Selection</div>
+              <div className="grid md:grid-cols-3 gap-2">
+                <div className="border-2 border-slate-200 rounded-lg p-3 text-center cursor-pointer hover:border-emerald-500 transition">
+                  <div className="text-xl mb-1">🇺🇸</div>
+                  <div className="text-xs font-medium text-slate-700">US-East</div>
+                  <div className="text-xs text-slate-500">Virginia</div>
+                </div>
+                <div className="border-2 border-slate-200 rounded-lg p-3 text-center cursor-pointer hover:border-emerald-500 transition opacity-50">
+                  <div className="text-xl mb-1">🇪🇺</div>
+                  <div className="text-xs font-medium text-slate-700">EU-West</div>
+                  <div className="text-xs text-slate-500">Coming Soon</div>
+                </div>
+                <div className="border-2 border-slate-200 rounded-lg p-3 text-center cursor-pointer hover:border-emerald-500 transition opacity-50">
+                  <div className="text-xl mb-1">🌏</div>
+                  <div className="text-xs font-medium text-slate-700">Asia-East</div>
+                  <div className="text-xs text-slate-500">Coming Soon</div>
+                </div>
               </div>
             </div>
           </div>
