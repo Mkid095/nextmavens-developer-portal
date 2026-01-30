@@ -82,8 +82,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: rollbackMigration(version) function already implemented at src/lib/migrations.ts:179-220. It executes rollback_sql from schema_migrations table, removes the migration record, and has proper transaction handling with verification. Typecheck passes."
     },
     {
       "id": "US-006",

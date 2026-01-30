@@ -19,6 +19,18 @@
 
 import { ControlPlaneSnapshot, ProjectStatus } from '@/lib/snapshot/types'
 import { generateCorrelationId, extractCorrelationId as extractCorrelationIdHeader, CORRELATION_HEADER } from '@/lib/middleware/correlation'
+import {
+  ErrorCode,
+  PlatformError,
+  createError,
+  validationError,
+  internalError,
+  projectSuspendedError,
+  projectArchivedError,
+  projectDeletedError,
+  serviceDisabledError,
+  ErrorResponse,
+} from '@/lib/errors'
 
 /**
  * Configuration for the snapshot client
@@ -56,10 +68,11 @@ interface SnapshotFetchResult {
 
 /**
  * GraphQL operation result
+ * US-007: Updated to use standardized error format
  */
 interface GraphQLOperationResult {
   allowed: boolean
-  reason?: string
+  errorResponse?: ErrorResponse
 }
 
 /**
