@@ -25,6 +25,8 @@ import {
   LucideIcon,
   RefreshCw,
   ShieldAlert,
+  Clock,
+  BarChart3,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import ServiceTab from '@/components/ServiceTab'
@@ -48,6 +50,28 @@ interface ApiKey {
   expires_at?: string
   last_used?: string
   usage_count?: number
+}
+
+/**
+ * Key usage statistics from GET /api/keys/:id/usage
+ * US-005: Create Key Usage API
+ */
+interface KeyUsageStats {
+  keyId: string
+  usageCount: number
+  lastUsed: string | null
+  createdAt: string
+  usageByTimePeriod: {
+    last7Days: number
+    last30Days: number
+  }
+  successErrorRate: {
+    total: number
+    success: number
+    error: number
+    successRate: number
+    errorRate: number
+  }
 }
 
 interface NewKeyResponse {
