@@ -26,8 +26,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: migrations/013_create_usage_metrics_table.sql (97 lines). Table created with all required columns: id, project_id, service, metric_type, quantity, recorded_at, created_at. Composite index on (project_id, service, recorded_at) for efficient aggregation. All 11 metric types supported with CHECK constraint. Migration record inserted. Typecheck passes."
     },
     {
       "id": "US-002",
