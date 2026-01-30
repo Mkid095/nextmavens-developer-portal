@@ -7,8 +7,10 @@
 
 /**
  * Project status enum
+ * Note: Snapshot uses UPPERCASE to match the snapshot builder output
+ * The database stores lowercase, but snapshot builder converts to uppercase
  */
-export type ProjectStatus = 'created' | 'active' | 'suspended' | 'archived' | 'deleted'
+export type ProjectStatus = 'CREATED' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED' | 'DELETED'
 
 /**
  * Environment type

@@ -52,8 +52,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created POST /api/studio/:projectId/query endpoint at src/app/api/studio/[projectId]/query/route.ts. Request body accepts { query: string, readonly: boolean }. Validates query for destructive commands (INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE, CREATE, REPLACE, RENAME, GRANT, REVOKE, COMMENT) when readonly=true. Uses withSchemaScope middleware to execute queries on tenant_{slug} schema with automatic search_path setting. Returns JSON with { success: true, data: { columns, rows, rowCount, executionTime } }. Includes GET endpoint for API documentation. Typecheck passes."
     },
     {
       "id": "US-003",

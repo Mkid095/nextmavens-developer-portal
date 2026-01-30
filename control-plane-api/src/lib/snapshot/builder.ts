@@ -59,7 +59,7 @@ async function getProjectInfo(projectId: string): Promise<SnapshotProject> {
 
     return {
       id: row.id,
-      status: row.status?.toUpperCase() || 'active',
+      status: (row.status?.toUpperCase() as 'CREATED' | 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED' | 'DELETED') || 'ACTIVE',
       environment,
       tenant_id: row.tenant_id,
       created_at: row.created_at,

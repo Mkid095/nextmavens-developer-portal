@@ -239,7 +239,8 @@ export class ApiGatewaySnapshotClient {
       return false
     }
 
-    const isActive = snapshot.project.status === 'ACTIVE'
+    // Check if status is ACTIVE or CREATED (both allow API access)
+    const isActive = snapshot.project.status === 'ACTIVE' || snapshot.project.status === 'CREATED'
 
     if (!isActive) {
       console.log(`[ApiGateway Snapshot] Project ${projectId} is not active: ${snapshot.project.status}`)
@@ -363,6 +364,9 @@ export class ApiGatewaySnapshotClient {
           break
         case 'DELETED':
           reason = 'PROJECT_DELETED'
+          break
+        case 'CREATED':
+          // CREATED projects are allowed to make requests
           break
         default:
           reason = 'PROJECT_NOT_ACTIVE'
