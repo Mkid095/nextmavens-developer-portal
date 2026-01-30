@@ -54,7 +54,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
     }
 
     // Get usage by time period (last 7 days and last 30 days)
-    // Note: This uses api_usage_logs table if it exists, otherwise returns 0
+    // US-009: usage_stats table tracks request count
+    // Note: This uses usage_stats table if it exists, otherwise returns 0
     let last7DaysCount = 0
     let last30DaysCount = 0
 
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
           COUNT(*) FILTER (
             WHERE occurred_at >= NOW() - INTERVAL '30 days'
           ) as last_30_days
-        FROM api_usage_logs
+        FROM usage_stats
         WHERE key_id = $1
       `, [keyId])
 
@@ -76,11 +77,12 @@ export async function GET(req: NextRequest, context: RouteContext) {
         last30DaysCount = parseInt(usageResult.rows[0].last_30_days) || 0
       }
     } catch (error) {
-      // api_usage_logs table might not exist yet, use defaults
-      console.log('[Usage API] api_usage_logs table not available, using usage_count')
+      // usage_stats table might not exist yet, use defaults
+      console.log('[Usage API] usage_stats table not available, using usage_count')
     }
 
-    // Get success/error rate from api_usage_logs
+    // Get success/error rate from usage_stats
+    // US-009: Success vs error rate
     let successErrorRate: SuccessErrorRate = {
       total: 0,
       success: 0,
@@ -95,7 +97,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
           COUNT(*) as total,
           COUNT(*) FILTER (WHERE status_code BETWEEN 200 AND 299) as success,
           COUNT(*) FILTER (WHERE status_code >= 400) as error
-        FROM api_usage_logs
+        FROM usage_stats
         WHERE key_id = $1
           AND occurred_at >= NOW() - INTERVAL '30 days'
       `, [keyId])
@@ -114,8 +116,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
         }
       }
     } catch (err) {
-      // api_usage_logs table might not exist yet, use defaults
-      console.log('[Usage API] api_usage_logs table not available for rate stats')
+      // usage_stats table might not exist yet, use defaults
+      console.log('[Usage API] usage_stats table not available for rate stats')
     }
 
     // Build the response
