@@ -25,7 +25,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Pool, PoolClient } from 'pg';
 import { getPool } from '@/lib/db';
 import { authenticateRequest, JwtPayload } from '@/lib/auth';
-import { toErrorNextResponse, ErrorCode } from '@/lib/errors';
+import {
+  toErrorNextResponse,
+  permissionDeniedError,
+  notFoundError,
+  internalError,
+} from '@/lib/errors';
 
 /**
  * Error codes for schema scoping
@@ -328,20 +333,22 @@ export function withSchemaScopeHandler<T extends NextRequest>(
       // Handle schema scoping errors using standard error factory
       if (error.message === SchemaScopeError.CROSS_SCHEMA_ACCESS) {
         return toErrorNextResponse(
-          { code: ErrorCode.PERMISSION_DENIED, message: 'Access to other project resources not permitted' },
-          req.headers.get('x-project-id') || undefined
+          permissionDeniedError(
+            'Access to other project resources not permitted',
+            req.headers.get('x-project-id') || undefined
+          )
         );
       }
 
       if (error.message === SchemaScopeError.TENANT_NOT_FOUND) {
         return toErrorNextResponse(
-          { code: ErrorCode.NOT_FOUND, message: 'The project tenant could not be found' }
+          notFoundError('The project tenant could not be found')
         );
       }
 
       if (error.message === SchemaScopeError.SCHEMA_INIT_FAILED) {
         return toErrorNextResponse(
-          { code: ErrorCode.INTERNAL_ERROR, message: 'Failed to initialize database schema scope' }
+          internalError('Failed to initialize database schema scope')
         );
       }
 

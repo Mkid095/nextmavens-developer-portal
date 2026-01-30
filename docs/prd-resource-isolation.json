@@ -135,8 +135,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Verified all cross-project access returns 403. DB queries use permissionDeniedError() for cross-schema access (403). Realtime subscriptions return 403 for cross-project channel access. Storage paths return 403 for cross-project path access. All use the error message 'Access to other project's resources not permitted'. Fixed schema-scope.ts to use proper error factory functions. Typecheck passes."
     },
     {
       "id": "US-006",
