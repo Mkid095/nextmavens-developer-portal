@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getPool } from '@/lib/db'
-import { generateAccessToken, generateRefreshToken } from '@/lib/auth'
 import { checkFeature } from '@/lib/features'
 import {
   checkRateLimit,
@@ -149,10 +148,6 @@ export async function POST(req: NextRequest) {
 
     const developer = result.rows[0]
 
-    // Generate tokens
-    const accessToken = generateAccessToken(developer)
-    const refreshToken = generateRefreshToken(developer.id)
-
     return NextResponse.json(
       {
         developer: {
@@ -161,8 +156,7 @@ export async function POST(req: NextRequest) {
           name: developer.name,
           organization: developer.organization,
         },
-        accessToken,
-        refreshToken,
+        message: 'Registration successful. Please log in with your project_id.',
       },
       {
         status: 201,
