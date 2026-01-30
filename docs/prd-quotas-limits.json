@@ -28,7 +28,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: TypeScript migration created at src/features/quotas-limits/migrations/create-quotas-table.ts. Creates quotas table in control_plane schema with columns: project_id (UUID FK to projects.id), service (VARCHAR 50 with CHECK constraint for db_queries/storage_mb/realtime_connections/function_invocations/auth_users), monthly_limit (INTEGER), hard_cap (INTEGER), reset_at (TIMESTAMPTZ), created_at, updated_at. Composite primary key on (project_id, service). Indexes on project_id, service, and reset_at for efficient queries. Includes rollback function. Typecheck passes."
+      "notes": "Completed: SQL migration 009_create_quotas_table.sql creates quotas table in control_plane schema with columns: project_id (UUID FK to projects.id), service (VARCHAR 50 with CHECK constraint for db_queries/storage_mb/realtime_connections/function_invocations/auth_users), monthly_limit (INTEGER), hard_cap (INTEGER), reset_at (TIMESTAMPTZ), created_at, updated_at. Composite primary key on (project_id, service). Indexes on project_id, service, and reset_at for efficient queries. Migration record inserted into schema_migrations. Typecheck passes."
     },
     {
       "id": "US-002",
