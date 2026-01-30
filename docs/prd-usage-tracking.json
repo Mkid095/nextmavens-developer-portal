@@ -214,8 +214,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: src/lib/usage/export.ts with fetchUsageDataForExport, convertToCSV, generateUsageExportCSV functions. GET /api/usage/[projectId]/export endpoint at src/app/api/usage/[projectId]/export/route.ts. Exports to CSV format with columns: date, service, metric_type, quantity. Supports date range filtering via start_date, end_date, days query params. Supports service and metric_type filters. Date range limited to 7 days max as per acceptance criteria. Returns CSV file download with proper Content-Disposition header. Typecheck passes. Note: Frontend export button and date range selector on usage dashboard (US-007) will consume this API endpoint."
     },
     {
       "id": "US-009",
