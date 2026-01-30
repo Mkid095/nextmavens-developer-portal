@@ -88,8 +88,8 @@
         "step5": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added JWT-First Authentication section to platform-philosophy page. Includes three main benefits: Stateless Architecture (no server-side session storage, each JWT contains all required information, validated cryptographically), Token-Based Auth Flow (login → JWT issued → JWT sent with requests → JWT validated → access granted/denied), and Security Benefits (CSRF protection, easy revocation via blacklist, portable across services). Added comparison table showing JWT vs Session-Based auth. Updated 'comingSoon' flag to false for JWT-First Auth principle. Typecheck passes."
     },
     {
       "id": "US-005",
@@ -110,8 +110,8 @@
         "step5": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added Multi-Tenant by Default section to platform-philosophy page. Includes three main benefits: Schema-Based Isolation (each project gets dedicated Postgres schema, tenant_{slug} schema pattern, complete data isolation), Security Through Isolation (no cross-tenant data access, RLS policies per schema, separate database users per tenant), and Scalability (efficient resource utilization, easy tenant onboarding, independent tenant scaling). Added 'How It Works' section explaining the tenant isolation flow. Added comparison showing multi-tenant vs single-tenant approaches. Updated 'comingSoon' flag to false for Multi-Tenant principle. Typecheck passes."
     },
     {
       "id": "US-008",
