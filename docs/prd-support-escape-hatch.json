@@ -201,8 +201,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: Email notifications for support requests via @/lib/support-notifications.ts. Created email on support request creation with HTML template showing request details (request_id, subject, project, status) and link to view. Created email on status change with previous and current status, color-coded status badges. Both emails include project link. Added migration 024_add_previous_status_to_support_requests.sql to track previous status. Notifications sent as fire-and-forget from POST /api/support/request and PUT /api/support/requests/[id]. Uses Resend email service. Typecheck passes."
     },
     {
       "id": "US-008",
