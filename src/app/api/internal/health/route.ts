@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { withCorrelationId, getCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
 import { getPool } from '@/lib/db'
-import { addApiVersionHeaders } from '@/lib/api-versioning'
 import packageJson from '../../../../../package.json'
 
 interface DependencyHealth {
@@ -33,6 +33,7 @@ interface HealthResponse {
  * Returns 503 if any dependency is unhealthy
  */
 export async function GET(req: NextRequest) {
+  const correlationId = withCorrelationId(req)
   const startTime = Date.now()
   const uptime = process.uptime()
 
@@ -64,8 +65,7 @@ export async function GET(req: NextRequest) {
     { status: statusCode }
   )
 
-  // Add API versioning headers
-  return addApiVersionHeaders(response)
+  return setCorrelationHeader(response, correlationId)
 }
 
 /**
@@ -116,6 +116,7 @@ async function checkRedisHealth(): Promise<DependencyHealth | null> {
     const port = parseInt(url.port) || 6379
 
     // Simple TCP connection check
+    const net = await import('net')
     const result = await testTcpConnection(host, port)
     const latency = Date.now() - startTime
 

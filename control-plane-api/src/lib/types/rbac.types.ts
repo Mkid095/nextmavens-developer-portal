@@ -6,6 +6,7 @@
  * for enforcing access control across the platform.
  *
  * US-008: Apply Permissions to User Management
+ * Only owners can manage users (invite/remove members) so admins can't add other admins
  */
 
 /**
@@ -40,8 +41,8 @@ export enum Role {
  * Role-to-permissions mapping.
  * Defines which permissions each role has.
  *
- * Owner: All permissions (including project deletion)
- * Admin: All permissions except projects.delete
+ * Owner: All permissions (including project deletion and user management)
+ * Admin: All permissions except projects.delete and projects.manage_users (US-008)
  * Developer: projects.view_logs, projects.use_services, database.read
  * Viewer: projects.view_logs, database.read
  */
@@ -59,7 +60,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, Readonly<Permission[]>>> = 
   [Role.ADMIN]: [
     Permission.PROJECTS_MANAGE_SERVICES,
     Permission.PROJECTS_MANAGE_KEYS,
-    Permission.PROJECTS_MANAGE_USERS,
+    // US-008: Only owners can manage users (invite/remove members) so admins can't add other admins
+    // Permission.PROJECTS_MANAGE_USERS, // Removed - only owners can manage users
     Permission.PROJECTS_VIEW_LOGS,
     Permission.PROJECTS_USE_SERVICES,
     Permission.DATABASE_WRITE,
