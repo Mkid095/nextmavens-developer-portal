@@ -124,21 +124,48 @@ export function hashApiKey(apiKey: string): string {
 }
 
 /**
- * Get the key prefix based on key type and environment.
+ * Map project environment to API key prefix environment.
+ * US-010: Environment-Specific API Key Prefixes
+ * - prod -> live (production keys use "live" prefix)
+ * - dev -> dev (development keys use "dev" prefix)
+ * - staging -> staging (staging keys use "staging" prefix)
+ */
+export function mapProjectEnvironmentToKeyEnvironment(
+  projectEnvironment: 'prod' | 'dev' | 'staging'
+): 'live' | 'dev' | 'staging' {
+  const envMap: Record<'prod' | 'dev' | 'staging', 'live' | 'dev' | 'staging'> = {
+    prod: 'live',
+    dev: 'dev',
+    staging: 'staging',
+  }
+  return envMap[projectEnvironment]
+}
+
+/**
+ * Get the key prefix based on key type and project environment.
+ * US-010: Environment-Specific API Key Prefixes
  * Format: nm_{env}_{type}_pk/sk
- * Example: nm_live_secret_sk, nm_test_public_pk
+ * Examples:
+ * - Prod keys: nm_live_pk_, nm_live_sk_
+ * - Dev keys: nm_dev_pk_, nm_dev_sk_
+ * - Staging keys: nm_staging_pk_, nm_staging_sk_
+ *
+ * @param keyType - The type of API key (public, secret, service_role, mcp)
+ * @param projectEnvironment - The project's environment (prod, dev, staging)
+ * @returns The key prefix string
  */
 export function getKeyPrefix(
   keyType: 'public' | 'secret' | 'service_role' | 'mcp',
-  environment: 'live' | 'test' | 'dev' = 'live'
+  projectEnvironment: 'prod' | 'dev' | 'staging'
 ): string {
+  const keyEnvironment = mapProjectEnvironmentToKeyEnvironment(projectEnvironment)
   const typeMap = {
     public: 'pk',
     secret: 'sk',
     service_role: 'srv_sk',
     mcp: 'mcp_sk',
   }
-  return `nm_${environment}_${keyType}_${typeMap[keyType]}`
+  return `nm_${keyEnvironment}_${typeMap[keyType]}_`
 }
 
 /**

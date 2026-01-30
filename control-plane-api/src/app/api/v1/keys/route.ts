@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
-import { authenticateRequest, type JwtPayload, generateApiKey, hashApiKey, getKeyPrefix, DEFAULT_API_KEY_SCOPES } from '@/lib/auth'
+import { authenticateRequest, type JwtPayload, generateApiKey, hashApiKey, getKeyPrefix, DEFAULT_API_KEY_SCOPES, mapProjectEnvironmentToKeyEnvironment } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import {
   createApiKeySchema,
@@ -17,14 +17,14 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate project ownership
+// Helper function to validate project ownership and return project details
 async function validateProjectOwnership(
   projectId: string,
   developer: JwtPayload
 ): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(
-    'SELECT id, developer_id, project_name, tenant_id, status FROM projects WHERE id = $1',
+    'SELECT id, developer_id, project_name, tenant_id, status, environment FROM projects WHERE id = $1',
     [projectId]
   )
 

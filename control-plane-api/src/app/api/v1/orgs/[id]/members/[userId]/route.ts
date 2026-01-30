@@ -139,11 +139,11 @@ export async function DELETE(
   try {
     const developer = await authenticateRequest(req)
 
-    // Check ownership (only owners can remove members)
+    // Check ownership (only owners/admins can remove members)
     const ownershipCheck = await validateOrganizationOwnership(params.id, developer)
     if (!ownershipCheck.valid) {
       if (ownershipCheck.organization) {
-        return errorResponse('FORBIDDEN', 'Only owners can remove members', 403)
+        return errorResponse('FORBIDDEN', 'Only owners and admins can remove members', 403)
       }
       return errorResponse('NOT_FOUND', 'Organization not found', 404)
     }

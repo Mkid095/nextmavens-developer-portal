@@ -144,6 +144,24 @@ export class RealtimeServiceSnapshotClient {
   }
 
   /**
+   * Set the correlation ID for this client instance
+   * US-006: Correlation ID tracking
+   * @param correlationId - The correlation ID to set
+   */
+  setCorrelationId(correlationId: string): void {
+    setRequestCorrelationId(correlationId)
+  }
+
+  /**
+   * Get the current correlation ID
+   * US-006: Correlation ID tracking
+   * @returns The correlation ID or undefined
+   */
+  getCorrelationId(): string | undefined {
+    return getRequestCorrelationId()
+  }
+
+  /**
    * Fetch a snapshot from the control plane
    * @param projectId - Project ID to fetch snapshot for
    * @returns Snapshot fetch result
@@ -151,22 +169,30 @@ export class RealtimeServiceSnapshotClient {
   async fetchSnapshot(projectId: string): Promise<SnapshotFetchResult> {
     try {
       const url = `${this.config.controlPlaneUrl}/api/internal/snapshot?project_id=${projectId}`
+      const correlationId = getRequestCorrelationId()
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+
+      // US-006: Add x-request-id header for correlation
+      if (correlationId) {
+        headers['x-request-id'] = correlationId
+      }
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), this.config.requestTimeout)
 
       const response = await fetch(url, {
         signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       })
 
       clearTimeout(timeoutId)
 
       if (!response.ok) {
         if (response.status === 503) {
-          console.error('[Realtime Service Snapshot] Control plane unavailable (503)')
+          console.error(formatLogMessage('Control plane unavailable (503)'))
           return {
             success: false,
             error: 'Control plane unavailable',
@@ -174,14 +200,14 @@ export class RealtimeServiceSnapshotClient {
         }
 
         if (response.status === 404) {
-          console.error(`[Realtime Service Snapshot] Project not found: ${projectId}`)
+          console.error(formatLogMessage(`Project not found: ${projectId}`))
           return {
             success: false,
             error: 'Project not found',
           }
         }
 
-        console.error(`[Realtime Service Snapshot] Unexpected response: ${response.status}`)
+        console.error(formatLogMessage(`Unexpected response: ${response.status}`))
         return {
           success: false,
           error: `Unexpected response: ${response.status}`,
@@ -191,7 +217,7 @@ export class RealtimeServiceSnapshotClient {
       const data = await response.json()
 
       if (!data.snapshot) {
-        console.error('[Realtime Service Snapshot] No snapshot in response')
+        console.error(formatLogMessage('No snapshot in response'))
         return {
           success: false,
           error: 'Invalid response format',
@@ -204,14 +230,14 @@ export class RealtimeServiceSnapshotClient {
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('[Realtime Service Snapshot] Request timeout')
+        console.error(formatLogMessage('Request timeout'))
         return {
           success: false,
           error: 'Request timeout',
         }
       }
 
-      console.error('[Realtime Service Snapshot] Fetch error:', error)
+      console.error(formatLogMessage('Fetch error:'), error)
       return {
         success: false,
         error: 'Failed to fetch snapshot',
@@ -240,6 +266,7 @@ export class RealtimeServiceSnapshotClient {
     if (!result.success || !result.snapshot) {
       // Fail closed - remove from cache if exists
       snapshotCache.delete(projectId)
+      console.error(formatLogMessage(`Snapshot unavailable for project ${projectId}`))
       return null
     }
 
@@ -247,7 +274,7 @@ export class RealtimeServiceSnapshotClient {
     if (cached) {
       if (cached.snapshot.version !== result.snapshot.version) {
         console.log(
-          `[Realtime Service Snapshot] Version changed for project ${projectId}: ${cached.snapshot.version} -> ${result.snapshot.version}`
+          formatLogMessage(`Version changed for project ${projectId}: ${cached.snapshot.version} -> ${result.snapshot.version}`)
         )
       }
     }
@@ -272,14 +299,14 @@ export class RealtimeServiceSnapshotClient {
 
     if (!snapshot) {
       // Fail closed - deny if snapshot unavailable
-      console.error(`[Realtime Service Snapshot] Snapshot unavailable for project ${projectId}`)
+      console.error(formatLogMessage(`Snapshot unavailable for project ${projectId}`))
       return false
     }
 
     const isActive = snapshot.project.status === 'active'
 
     if (!isActive) {
-      console.log(`[Realtime Service Snapshot] Project ${projectId} is not active: ${snapshot.project.status}`)
+      console.log(formatLogMessage(`Project ${projectId} is not active: ${snapshot.project.status}`))
     }
 
     return isActive
@@ -295,14 +322,14 @@ export class RealtimeServiceSnapshotClient {
 
     if (!snapshot) {
       // Fail closed - deny if snapshot unavailable
-      console.error(`[Realtime Service Snapshot] Snapshot unavailable for project ${projectId}`)
+      console.error(formatLogMessage(`Snapshot unavailable for project ${projectId}`))
       return false
     }
 
     const isEnabled = snapshot.services.realtime?.enabled ?? false
 
     if (!isEnabled) {
-      console.log(`[Realtime Service Snapshot] Realtime service not enabled for project ${projectId}`)
+      console.log(formatLogMessage(`Realtime service not enabled for project ${projectId}`))
     }
 
     return isEnabled
@@ -342,7 +369,7 @@ export class RealtimeServiceSnapshotClient {
     const current = activeConnections.get(projectId) || 0
     const newCount = current + 1
     activeConnections.set(projectId, newCount)
-    console.log(`[Realtime Service Snapshot] Connection count for project ${projectId}: ${newCount}`)
+    console.log(formatLogMessage(`Connection count for project ${projectId}: ${newCount}`))
     return newCount
   }
 
@@ -356,7 +383,7 @@ export class RealtimeServiceSnapshotClient {
     const current = activeConnections.get(projectId) || 0
     const newCount = Math.max(0, current - 1)
     activeConnections.set(projectId, newCount)
-    console.log(`[Realtime Service Snapshot] Connection count for project ${projectId}: ${newCount}`)
+    console.log(formatLogMessage(`Connection count for project ${projectId}: ${newCount}`))
     return newCount
   }
 
@@ -414,7 +441,7 @@ export class RealtimeServiceSnapshotClient {
     const currentCount = this.getActiveConnectionCount(projectId)
 
     if (limit !== null && currentCount >= limit) {
-      console.log(`[Realtime Service Snapshot] Connection limit exceeded for project ${projectId}: ${currentCount}/${limit}`)
+      console.log(formatLogMessage(`Connection limit exceeded for project ${projectId}: ${currentCount}/${limit}`))
       return {
         allowed: false,
         reason: 'CONNECTION_LIMIT_EXCEEDED',
@@ -490,7 +517,7 @@ export class RealtimeServiceSnapshotClient {
    */
   invalidateCache(projectId: string): void {
     snapshotCache.delete(projectId)
-    console.log(`[Realtime Service Snapshot] Invalidated cache for project ${projectId}`)
+    console.log(formatLogMessage(`Invalidated cache for project ${projectId}`))
   }
 
   /**

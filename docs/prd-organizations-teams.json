@@ -214,8 +214,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Control plane API DELETE /v1/orgs/:id/members/:userId endpoint already implemented with full validation: only owners/admins can remove members (via validateOrganizationOwnership), prevents removing organization owner, deletes member from organization_members table which revokes access to org projects. Added removeOrganizationMember method to ControlPlaneClient. Created developer portal DELETE /api/organizations/:id/members/:userId endpoint that forwards to control plane API with proper error handling (FORBIDDEN, NOT_FOUND, UNAUTHORIZED). Fixed error message to correctly state 'Only owners and admins can remove members'."
     },
     {
       "id": "US-009",
