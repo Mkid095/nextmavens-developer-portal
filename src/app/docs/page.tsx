@@ -12,6 +12,15 @@ const chapters = [
     path: '/docs/platform-philosophy',
   },
   {
+    id: 'sdk',
+    title: 'JavaScript SDK',
+    description: 'Official JavaScript/TypeScript client for NextMavens',
+    icon: Code2,
+    color: 'blue',
+    tools: ['Database', 'Auth', 'Storage', 'Realtime', 'GraphQL'],
+    path: '/docs/sdk',
+  },
+  {
     id: 'database',
     title: 'Database',
     description: 'PostgreSQL-powered queries with full CRUD operations',
@@ -127,7 +136,7 @@ export default function DocsPage() {
           </div>
           <p className="text-xl text-slate-600">
             Complete guide to integrating NextMavens services into your applications.
-            Learn how to use Database, Authentication, Storage, GraphQL, Backups, Infrastructure, Realtime, and MCP tools.
+            Learn how to use the JavaScript SDK, Database, Authentication, Storage, GraphQL, Backups, Infrastructure, Realtime, and MCP tools.
           </p>
         </div>
 
