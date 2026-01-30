@@ -207,3 +207,38 @@ export const listJobsQuerySchema = z.object({
 export type JobType = z.infer<typeof jobTypeEnum>
 export type JobStatus = z.infer<typeof jobStatusEnum>
 export type ListJobsQuery = z.infer<typeof listJobsQuerySchema>
+
+// Audit log type enum
+export const auditLogTypeEnum = z.enum([
+  'suspension',
+  'unsuspension',
+  'auth_failure',
+  'rate_limit_exceeded',
+  'validation_failure',
+  'background_job',
+  'manual_intervention',
+], {
+  errorMap: () => ({ message: 'Audit log type must be one of: suspension, unsuspension, auth_failure, rate_limit_exceeded, validation_failure, background_job, manual_intervention' }),
+})
+
+// Audit log severity enum
+export const auditLogSeverityEnum = z.enum(['info', 'warning', 'error', 'critical'], {
+  errorMap: () => ({ message: 'Severity must be one of: info, warning, error, critical' }),
+})
+
+// Query parameters for listing audit logs
+export const listAuditLogsQuerySchema = z.object({
+  actor_id: z.string().uuid('Invalid actor ID format').optional(),
+  action: z.string().min(1).optional(),
+  log_type: auditLogTypeEnum.optional(),
+  severity: auditLogSeverityEnum.optional(),
+  project_id: z.string().uuid('Invalid project ID format').optional(),
+  start_date: z.string().datetime('Invalid start date format').optional(),
+  end_date: z.string().datetime('Invalid end date format').optional(),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default('100'),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+})
+
+export type AuditLogType = z.infer<typeof auditLogTypeEnum>
+export type AuditLogSeverity = z.infer<typeof auditLogSeverityEnum>
+export type ListAuditLogsQuery = z.infer<typeof listAuditLogsQuerySchema>
