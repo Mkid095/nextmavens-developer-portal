@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import DocsSidebar from './DocsSidebar'
+import TableOfContents from './docs/TableOfContents'
 import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
 
@@ -115,8 +116,14 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
         }}
       >
         <div className="md:hidden pt-14" /> {/* Mobile header spacer */}
-        {children}
+
+        <div className="max-w-4xl">
+          {children}
+        </div>
       </main>
+
+      {/* Table of Contents */}
+      <TableOfContents />
     </div>
   )
 }
