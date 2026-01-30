@@ -88,6 +88,17 @@ export async function GET(
       [secret.project_id, secretId]
     )
 
+    // Log secret versions list access to audit logs (US-012: Secret Access Logging)
+    try {
+      await logSecretAccess(developer.id, secretId, secret.project_id, {
+        action: 'listed',
+        secretName: secret.name,
+      })
+    } catch (auditError) {
+      // Don't fail the request if audit logging fails
+      secureError('Failed to log secret versions list audit', { error: String(auditError) })
+    }
+
     // Log secret versions list access without values (US-011: Prevent Secret Logging)
     secureLog('Secret versions listed', {
       secretId,

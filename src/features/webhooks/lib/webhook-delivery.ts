@@ -258,6 +258,9 @@ async function resetWebhookFailures(webhook_id: string): Promise<void> {
 /**
  * Increment consecutive failures counter and auto-disable if needed
  *
+ * US-011: Disable Failed Webhooks
+ * After 5 consecutive failures, webhook is disabled and notification is sent
+ *
  * @param webhook_id - Webhook ID
  * @param maxRetries - Maximum retry attempts before auto-disable
  */
@@ -276,7 +279,7 @@ async function incrementWebhookFailures(
         enabled = CASE WHEN consecutive_failures + 1 >= $2 THEN false ELSE enabled END,
         updated_at = NOW()
       WHERE id = $1
-      RETURNING consecutive_failures, enabled
+      RETURNING id, project_id, event, target_url, consecutive_failures, enabled
       `,
       [webhook_id, maxRetries]
     )
@@ -288,7 +291,22 @@ async function incrementWebhookFailures(
       console.warn(
         `[Webhook] Webhook ${webhook_id} auto-disabled after ${webhook.consecutive_failures} consecutive failures`
       )
-      // TODO: Send notification to project owner (US-011)
+
+      // Send notification to project owner (US-011)
+      try {
+        const { sendWebhookDisabledNotification } = await import('@/features/abuse-controls/lib/notifications')
+        await sendWebhookDisabledNotification(
+          webhook.project_id,
+          webhook.id,
+          webhook.event,
+          webhook.target_url,
+          webhook.consecutive_failures
+        )
+        console.log(`[Webhook] Webhook disabled notification sent for webhook ${webhook_id}`)
+      } catch (notifError) {
+        console.error(`[Webhook] Failed to send webhook disabled notification:`, notifError)
+        // Don't throw - notification failure shouldn't break webhook processing
+      }
     }
   } catch (error) {
     console.error('[Webhook] Error incrementing failures:', error)
