@@ -53,8 +53,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration 010_create_event_log_table.sql created with event_log table in control_plane schema. All required columns: id (UUID PK), project_id (UUID FK to projects.id), event_type (VARCHAR 100), payload (JSONB with default {}), delivered_at (TIMESTAMPTZ, nullable), status (VARCHAR 20 with CHECK constraint for pending/delivered/failed), created_at. Indexes on (project_id, status), project_id, event_type, status, and created_at DESC. Migration record inserted into schema_migrations. Typecheck passes."
     },
     {
       "id": "US-003",
