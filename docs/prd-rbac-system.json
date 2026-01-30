@@ -156,8 +156,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Applied permission checking to service management endpoints. Updated POST /api/projects/[projectId]/suspend and POST /api/projects/[projectId]/activate endpoints in src/app/api/projects/[projectId]/suspend/route.ts and activate/route.ts. Both endpoints now use requirePermission middleware with Permission.PROJECTS_MANAGE_SERVICES. Extracts organization ID from project's tenant_id before permission check. Only admins and owners (who have projects.manage_services permission) can suspend or activate projects. Returns 403 Forbidden for developers/viewers with detailed error message including required_permission field. Typecheck passes."
     },
     {
       "id": "US-007",

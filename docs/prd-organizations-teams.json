@@ -138,7 +138,7 @@
     {
       "id": "US-006",
       "title": "Implement Invite Member",
-      "description": "",
+      "description": "As a developer, I want to invite members to my organization by email so that my team can collaborate.",
       "acceptanceCriteria": [
         "POST /api/organizations/:id/members endpoint",
         "Request: email, role",
@@ -160,8 +160,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented POST /v1/orgs/:id/members endpoint for email-based invitations. Created migration 017 adding email, status, and invitation_token columns to organization_members table. Added inviteMemberSchema with email and role validation. Implemented secure token generation using crypto.randomBytes(32). Created email service (control-plane-api/src/lib/email.ts) with sendOrganizationInvitationEmail function that sends HTML invitation emails with accept link. Endpoint validates ownership/admin access, checks for existing invitations (PENDING_INVITATION) or memberships (ALREADY_MEMBER), creates pending membership with 7-day expiry, and sends invitation email. Only owners and admins can invite members. Typecheck passes."
     },
     {
       "id": "US-007",
