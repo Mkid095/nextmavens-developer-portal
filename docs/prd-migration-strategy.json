@@ -157,8 +157,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: getMigrationStatus() function already exists at src/lib/migrations.ts:140-174. Returns object with: applied (array of MigrationRecord with version, description, applied_at, rollback_sql, breaking, created_at) and pending (array of version strings). MigrationRecord type includes breaking field. Queries control_plane.schema_migrations table sorted by applied_at DESC. Typecheck passes."
     },
     {
       "id": "US-007",
