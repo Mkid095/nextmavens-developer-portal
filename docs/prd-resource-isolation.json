@@ -81,8 +81,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created src/lib/middleware/realtime-scope.ts with channel prefixing and validation. Channel format: project_id:channel_type:identifier (e.g., 'abc-123:table:users'). validateChannelSubscription() checks prefix and blocks cross-project access with 403. Created /api/realtime/connect for handshake and /api/realtime/subscribe for subscription requests. Both return 403 for cross-project access. buildChannelName() helper ensures proper prefixing. Typecheck passes."
     },
     {
       "id": "US-004",
