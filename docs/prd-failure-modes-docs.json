@@ -68,8 +68,8 @@
         "step5": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Realtime Limits section already exists in docs/failure-modes.md with all required limits documented: max connections (50 per project), message rate (100/second), channel subscription limit (100 per connection), connection timeout (2 hours), message size (64KB max). Includes best practices and common issues. Typecheck passes."
     },
     {
       "id": "US-004",

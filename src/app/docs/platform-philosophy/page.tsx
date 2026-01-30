@@ -849,6 +849,149 @@ const operationalComparison = [
   },
 ]
 
+const comparisonData = [
+  {
+    platform: 'Supabase',
+    icon: Database,
+    color: 'emerald',
+    description: 'Open-source Firebase alternative with PostgreSQL at its core',
+    similarities: [
+      'PostgreSQL as the primary database',
+      'Realtime subscriptions using PostgreSQL',
+      'Row Level Security (RLS) for authorization',
+      'RESTful API auto-generated from database schema',
+      'Open-source and self-hostable',
+    ],
+    differences: [
+      'NextMavens: Multi-tenant by default with schema isolation',
+      'NextMavens: JWT-first auth without proprietary auth service',
+      'NextMavens: Storage abstraction (Telegram + Cloudinary)',
+      'Supabase: Built-in auth service (GoTrue)',
+      'Supabase: Storage service built on S3-compatible backends',
+    ],
+    tradeoffs: [
+      'Supabase: More mature ecosystem and tooling',
+      'Supabase: Larger community and more third-party integrations',
+      'NextMavens: More opinionated security model (fail closed)',
+      'NextMavens: Simpler operational model (fewer services)',
+    ],
+    whenToChooseNextMavens: 'When you want multi-tenant isolation, JWT-first auth, and minimal operational complexity',
+  },
+  {
+    platform: 'Firebase',
+    icon: Code,
+    color: 'orange',
+    description: 'Google\'s BaaS platform with NoSQL database and real-time sync',
+    similarities: [
+      'Realtime data synchronization',
+      'Authentication as a service',
+      'Serverless functions (Cloud Functions vs Next.js API routes)',
+      'File storage capabilities',
+      'Built-in monitoring and analytics',
+    ],
+    differences: [
+      'NextMavens: SQL-first (PostgreSQL) vs NoSQL (Firestore)',
+      'NextMavens: Direct database access vs proprietary SDK',
+      'NextMavens: JWT-based auth vs Firebase token management',
+      'NextMavens: Schema-driven vs schema-less document model',
+      'NextMavens: Standard SQL queries vs Firestore query API',
+    ],
+    tradeoffs: [
+      'Firebase: Easier mobile app integration',
+      'Firebase: Better real-time sync for complex offline scenarios',
+      'NextMavens: More portable (standard SQL vs vendor lock-in)',
+      'NextMavens: Better for complex queries and relational data',
+    ],
+    whenToChooseNextMavens: 'When you need complex queries, relational data, and want to avoid vendor lock-in',
+  },
+  {
+    platform: 'AWS Amplify',
+    icon: Cloud,
+    color: 'blue',
+    description: 'Full-stack framework for building cloud applications on AWS',
+    similarities: [
+      'Backend-as-a-Service approach',
+      'Authentication service integration',
+      'Storage capabilities (S3 integration)',
+      'Real-time updates (AppSync)',
+      'Serverless functions (Lambda)',
+    ],
+    differences: [
+      'NextMavens: Database-first vs service-first architecture',
+      'NextMavens: Single PostgreSQL database vs multiple AWS services',
+      'NextMavens: Simpler deployment (Docker vs CloudFormation)',
+      'NextMavens: Standard SQL vs GraphQL (AppSync)',
+      'NextMavens: Multi-tenant schemas vs AWS accounts/projects',
+    ],
+    tradeoffs: [
+      'AWS Amplify: Deeper AWS ecosystem integration',
+      'AWS Amplify: More enterprise-ready features',
+      'NextMavens: Simpler operational model (fewer services)',
+      'NextMavens: Lower complexity for small to medium teams',
+    ],
+    whenToChooseNextMavens: 'When you want simplicity, lower operational overhead, and database-driven architecture',
+  },
+]
+
+const featureComparison = [
+  {
+    feature: 'Database',
+    nextmavens: 'PostgreSQL (multi-tenant schemas)',
+    supabase: 'PostgreSQL (RLS-based isolation)',
+    firebase: 'Firestore (NoSQL document store)',
+    amplify: 'Multiple options (DynamoDB, Aurora, etc.)',
+  },
+  {
+    feature: 'Realtime',
+    nextmavens: 'PostgreSQL CDC → WebSocket',
+    supabase: 'PostgreSQL logical replication',
+    firebase: 'Realtime Database / Firestore listeners',
+    amplify: 'AWS AppSync (GraphQL subscriptions)',
+  },
+  {
+    feature: 'Authentication',
+    nextmavens: 'JWT-based (stateless)',
+    supabase: 'GoTrue service (JWT-based)',
+    firebase: 'Firebase Auth (proprietary tokens)',
+    amplify: 'Amazon Cognito integration',
+  },
+  {
+    feature: 'Storage',
+    nextmavens: 'Telegram + Cloudinary abstraction',
+    supabase: 'S3-compatible storage service',
+    firebase: 'Cloud Storage for Firebase',
+    amplify: 'Amazon S3 integration',
+  },
+  {
+    feature: 'API Access',
+    nextmavens: 'Direct PostgreSQL + REST API',
+    supabase: 'Auto-generated REST & GraphQL API',
+    firebase: 'Firestore SDK + REST API',
+    amplify: 'AppSync (GraphQL) or API Gateway (REST)',
+  },
+  {
+    feature: 'Multi-tenancy',
+    nextmavens: 'Schema-based isolation (built-in)',
+    supabase: 'RLS policies (manual implementation)',
+    firebase: 'Firestore collections (manual)',
+    amplify: 'Multiple projects/accounts (manual)',
+  },
+  {
+    feature: 'Self-hosting',
+    nextmavens: 'Docker compose (simple)',
+    supabase: 'Docker stack (complex)',
+    firebase: 'Not available (proprietary)',
+    amplify: 'Not available (AWS-only)',
+  },
+  {
+    feature: 'Vendor Lock-in',
+    nextmavens: 'Low (standard SQL + Docker)',
+    supabase: 'Low (open-source)',
+    firebase: 'High (proprietary SDK)',
+    amplify: 'High (AWS ecosystem)',
+  },
+]
+
 export default function PlatformPhilosophyPage() {
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
