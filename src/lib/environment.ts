@@ -16,6 +16,27 @@
 export type Environment = 'prod' | 'dev' | 'staging'
 
 /**
+ * Snapshot environment types (from database)
+ * These differ from the Environment type for backward compatibility
+ */
+export type SnapshotEnvironment = 'production' | 'development' | 'staging'
+
+/**
+ * Map snapshot environment to environment config type
+ *
+ * @param snapshotEnv - Environment from snapshot (production/development/staging)
+ * @returns Corresponding environment config type (prod/dev/staging)
+ */
+export function mapSnapshotEnvironment(snapshotEnv: SnapshotEnvironment): Environment {
+  const mapping: Record<SnapshotEnvironment, Environment> = {
+    production: 'prod',
+    development: 'dev',
+    staging: 'staging',
+  }
+  return mapping[snapshotEnv]
+}
+
+/**
  * Environment-specific configuration
  * Defines how different behaviors apply per environment
  */

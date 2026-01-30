@@ -14,6 +14,7 @@
  */
 
 import { ControlPlaneSnapshot, ProjectStatus } from '@/lib/snapshot/types'
+import { getEnvironmentConfig, mapSnapshotEnvironment } from '@/lib/environment'
 
 /**
  * Configuration for the snapshot client
@@ -262,6 +263,12 @@ export class ApiGatewaySnapshotClient {
 
   /**
    * Check rate limit for a project
+   *
+   * US-004: Rate limit checking uses environment config multiplier.
+   * - Dev environment gets 10x rate limit
+   * - Staging gets 5x rate limit
+   * - Prod gets standard rate limit (1x multiplier)
+   *
    * @param projectId - Project ID to check
    * @returns Rate limit check result
    */
@@ -280,15 +287,23 @@ export class ApiGatewaySnapshotClient {
     const limits = snapshot.limits
     const now = Date.now()
 
+    // Get environment config for rate limit multiplier
+    const environment = mapSnapshotEnvironment(snapshot.project.environment)
+    const envConfig = getEnvironmentConfig(environment)
+    const rateLimitMultiplier = envConfig.rate_limit_multiplier
+
+    // Calculate effective rate limit with environment multiplier
+    const effectiveLimit = Math.floor(limits.requests_per_minute * rateLimitMultiplier)
+
     // Clean up old requests
     cleanupRateLimitTracker(projectId, 60 * 1000) // 1 minute window
 
     // Get current requests
     const requests = rateLimitTracker.get(projectId) || []
 
-    // Check per-minute limit
-    if (requests.length >= limits.requests_per_minute) {
-      console.log(`[ApiGateway Snapshot] Rate limit exceeded for project ${projectId} (per-minute)`)
+    // Check per-minute limit with environment multiplier applied
+    if (requests.length >= effectiveLimit) {
+      console.log(`[ApiGateway Snapshot] Rate limit exceeded for project ${projectId} (per-minute: ${requests.length}/${effectiveLimit}, env: ${environment})`)
       return {
         allowed: false,
         reason: 'Rate limit exceeded (per-minute)',

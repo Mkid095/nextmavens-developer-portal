@@ -117,8 +117,14 @@ export interface CreateApiKeyResponse {
 
 /**
  * Default scopes for each key type.
+ * For MCP tokens, scopes are defined per access level (ro, rw, admin).
+ *
+ * US-002: MCP tokens default to read-only for safe default behavior.
+ * - mcp_ro: db:select, storage:read, realtime:subscribe (no auth, no graphql)
+ * - mcp_rw: All ro scopes plus db:insert, db:update, storage:write, graphql:execute
+ * - mcp_admin: All rw scopes plus db:delete, realtime:publish, auth:manage
  */
-export const DEFAULT_SCOPES: Record<ApiKey, ApiKeyScope[]> = {
+export const DEFAULT_SCOPES: Record<string, ApiKeyScope[]> = {
   public: ['db:select', 'storage:read', 'auth:signin', 'realtime:subscribe'],
   secret: [
     'db:select',
@@ -142,7 +148,38 @@ export const DEFAULT_SCOPES: Record<ApiKey, ApiKeyScope[]> = {
     'realtime:subscribe',
     'realtime:publish',
   ],
-  mcp: ['db:select', 'db:insert', 'db:update', 'db:delete', 'storage:read', 'storage:write', 'graphql:execute'],
+  // MCP default scopes per access level
+  mcp_ro: ['db:select', 'storage:read', 'realtime:subscribe'],
+  mcp_rw: [
+    'db:select',
+    'db:insert',
+    'db:update',
+    'storage:read',
+    'storage:write',
+    'realtime:subscribe',
+    'graphql:execute',
+  ],
+  mcp_admin: [
+    'db:select',
+    'db:insert',
+    'db:update',
+    'db:delete',
+    'storage:read',
+    'storage:write',
+    'realtime:subscribe',
+    'realtime:publish',
+    'graphql:execute',
+    'auth:manage',
+  ],
+}
+
+/**
+ * Get default scopes for an MCP token based on its access level.
+ * @param mcpAccessLevel - The MCP access level (ro, rw, admin)
+ * @returns Array of default scopes for the specified access level
+ */
+export function getMcpDefaultScopes(mcpAccessLevel: McpAccessLevel): ApiKeyScope[] {
+  return DEFAULT_SCOPES[`mcp_${mcpAccessLevel}`] || DEFAULT_SCOPES.mcp_ro
 }
 
 /**

@@ -27,6 +27,10 @@ import {
   ShieldAlert,
   Clock,
   BarChart3,
+  Globe,
+  Server,
+  ChevronDown,
+  Info,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import ServiceTab from '@/components/ServiceTab'
@@ -129,6 +133,81 @@ interface SuspensionStatusResponse {
   message?: string
 }
 
+/**
+ * Key type configuration for US-011: Enhanced Key Creation UI
+ */
+const KEY_TYPE_CONFIG = {
+  public: {
+    name: 'Public Key',
+    icon: Globe,
+    color: 'blue',
+    description: 'Safe for client-side code. Can be exposed in browsers and mobile apps.',
+    warning: 'This key is intended for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code.',
+    defaultScopes: ['db:select', 'storage:read', 'auth:signin', 'realtime:subscribe'],
+    riskLevel: 'Low',
+    useCases: ['Web applications', 'Mobile apps', 'Public APIs', 'Read-only data access'],
+  },
+  secret: {
+    name: 'Secret Key',
+    icon: Key,
+    color: 'purple',
+    description: 'Server-side key with full CRUD access. Never expose in client code.',
+    warning: 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments where it cannot be accessed by users.',
+    defaultScopes: ['db:select', 'db:insert', 'db:update', 'db:delete', 'storage:read', 'storage:write', 'auth:manage', 'graphql:execute'],
+    riskLevel: 'High',
+    useCases: ['Backend services', 'Server-to-server communication', 'API integrations', 'Data processing'],
+  },
+  service_role: {
+    name: 'Service Role Key',
+    icon: Shield,
+    color: 'red',
+    description: 'Bypasses row-level security for admin tasks. Use with extreme caution.',
+    warning: 'WARNING: This is a service role key that bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code. Only use this key in trusted server-side environments for admin operations.',
+    defaultScopes: ['db:select', 'db:insert', 'db:update', 'db:delete', 'storage:read', 'storage:write', 'auth:manage', 'graphql:execute', 'realtime:subscribe', 'realtime:publish'],
+    riskLevel: 'Very High',
+    useCases: ['Administrative tasks', 'Data migrations', 'Background jobs', 'Trusted operations'],
+  },
+  mcp: {
+    name: 'MCP Token',
+    icon: Server,
+    color: 'teal',
+    description: 'AI/IDE integration token for Model Context Protocol.',
+    warning: 'Share this token only with trusted AI tools and IDEs. Scope depends on access level selected.',
+    defaultScopes: ['db:select', 'storage:read', 'realtime:subscribe'],
+    riskLevel: 'Medium',
+    useCases: ['AI-powered code generation', 'IDE integrations', 'Automated workflows', 'AI-assisted operations'],
+  },
+}
+
+/**
+ * All available scopes organized by service
+ */
+const SCOPES_BY_SERVICE = {
+  'Database (db)': ['db:select', 'db:insert', 'db:update', 'db:delete'],
+  'Storage': ['storage:read', 'storage:write'],
+  'Auth': ['auth:signin', 'auth:signup', 'auth:manage'],
+  'Realtime': ['realtime:subscribe', 'realtime:publish'],
+  'GraphQL': ['graphql:execute'],
+}
+
+/**
+ * Scope descriptions for US-011
+ */
+const SCOPE_DESCRIPTIONS: Record<string, string> = {
+  'db:select': 'Read data from database',
+  'db:insert': 'Insert new records',
+  'db:update': 'Update existing records',
+  'db:delete': 'Delete records',
+  'storage:read': 'Read/download files',
+  'storage:write': 'Upload files',
+  'auth:signin': 'Sign in users',
+  'auth:signup': 'Register new users',
+  'auth:manage': 'Full user management',
+  'realtime:subscribe': 'Subscribe to real-time updates',
+  'realtime:publish': 'Publish real-time messages',
+  'graphql:execute': 'Execute GraphQL queries',
+}
+
 export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -156,6 +235,11 @@ export default function ProjectDetailPage() {
   // US-006: Key usage stats
   const [keyUsageStats, setKeyUsageStats] = useState<Record<string, KeyUsageStats>>({})
   const [usageStatsLoading, setUsageStatsLoading] = useState<Record<string, boolean>>({})
+  // US-011: Enhanced key creation state
+  const [selectedKeyType, setSelectedKeyType] = useState<'public' | 'secret' | 'service_role' | 'mcp'>('public')
+  const [selectedScopes, setSelectedScopes] = useState<string[]>([])
+  const [showScopeDetails, setShowScopeDetails] = useState(false)
+  const [showUsageExamples, setShowUsageExamples] = useState(false)
 
   useEffect(() => {
     if (project) {
@@ -289,6 +373,11 @@ export default function ProjectDetailPage() {
     setNewKeyName('')
     setNewKeyEnvironment('live')
     setKeyError('')
+    // US-011: Reset enhanced key creation state
+    setSelectedKeyType('public')
+    setSelectedScopes(KEY_TYPE_CONFIG.public.defaultScopes)
+    setShowScopeDetails(false)
+    setShowUsageExamples(false)
     setShowCreateKeyModal(true)
   }
 
@@ -297,6 +386,11 @@ export default function ProjectDetailPage() {
     setNewKeyName('')
     setNewKeyEnvironment('live')
     setKeyError('')
+    // US-011: Reset enhanced key creation state
+    setSelectedKeyType('public')
+    setSelectedScopes(KEY_TYPE_CONFIG.public.defaultScopes)
+    setShowScopeDetails(false)
+    setShowUsageExamples(false)
   }
 
   const handleCreateApiKey = async (e: React.FormEvent) => {
@@ -305,6 +399,12 @@ export default function ProjectDetailPage() {
 
     if (!newKeyName.trim()) {
       setKeyError('Please enter a name for this API key')
+      return
+    }
+
+    // US-011: Validate scopes
+    if (selectedScopes.length === 0) {
+      setKeyError('Please select at least one scope for this API key')
       return
     }
 
@@ -318,7 +418,13 @@ export default function ProjectDetailPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: newKeyName.trim(), environment: newKeyEnvironment }),
+        // US-011: Include key_type in request
+        body: JSON.stringify({
+          name: newKeyName.trim(),
+          key_type: selectedKeyType,
+          environment: newKeyEnvironment,
+          scopes: selectedScopes,
+        }),
       })
 
       const data = await res.json()
@@ -328,6 +434,8 @@ export default function ProjectDetailPage() {
       }
 
       setNewKey(data)
+      // US-011: Show usage examples after creation
+      setShowUsageExamples(true)
       closeCreateKeyModal()
       fetchApiKeys()
     } catch (err: any) {
@@ -431,6 +539,40 @@ export default function ProjectDetailPage() {
     } finally {
       setRevokeSubmitting(false)
     }
+  }
+
+  // US-011: Handle key type selection change
+  const handleKeyTypeChange = (keyType: 'public' | 'secret' | 'service_role' | 'mcp') => {
+    setSelectedKeyType(keyType)
+    // Pre-populate scopes based on key type
+    setSelectedScopes(KEY_TYPE_CONFIG[keyType].defaultScopes)
+  }
+
+  // US-011: Handle scope checkbox change
+  const handleScopeToggle = (scope: string) => {
+    setSelectedScopes(prev =>
+      prev.includes(scope)
+        ? prev.filter(s => s !== scope)
+        : [...prev, scope]
+    )
+  }
+
+  // US-011: Select all scopes for a service
+  const selectAllScopesForService = (serviceScopes: string[]) => {
+    setSelectedScopes(prev => {
+      const newScopes = [...prev]
+      serviceScopes.forEach(scope => {
+        if (!newScopes.includes(scope)) {
+          newScopes.push(scope)
+        }
+      })
+      return newScopes
+    })
+  }
+
+  // US-011: Deselect all scopes for a service
+  const deselectAllScopesForService = (serviceScopes: string[]) => {
+    setSelectedScopes(prev => prev.filter(s => !serviceScopes.includes(s)))
   }
 
   if (loading) {
