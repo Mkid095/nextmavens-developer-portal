@@ -23,6 +23,7 @@ import {
   safeErrorResponse,
 } from '@/lib/secure-logger'
 import { logSecretRotation } from '@/lib/audit-logger'
+import { emitEvent } from '@/features/webhooks'
 
 // Schema for rotating a secret
 const rotateSecretSchema = z.object({
@@ -203,6 +204,27 @@ export async function POST(
         rotationReason: rotation_reason || 'Not provided',
         rotatedBy: developer.id,
         gracePeriodEndsAt: oldSecretWithExpiration.rows[0]?.grace_period_ends_at,
+      })
+
+      // US-007: Emit secret.rotated event to notify registered consumers
+      // Fire and forget - don't block the response on webhook delivery
+      emitEvent(currentSecret.project_id, 'secret.rotated', {
+        project_id: currentSecret.project_id,
+        secret_id: newSecret.id,
+        secret_name: currentSecret.name,
+        new_version: newSecret.version,
+        rotated_from: currentSecret.id,
+        rotation_reason: rotation_reason || 'Not provided',
+        rotated_at: newSecret.created_at,
+        rotated_by: developer.id,
+        grace_period_ends_at: oldSecretWithExpiration.rows[0]?.grace_period_ends_at,
+      }).catch((error) => {
+        // Don't fail the request if webhook delivery fails
+        secureError('Failed to emit secret.rotated webhook', {
+          error: String(error),
+          secretId: newSecret.id,
+          secretName: currentSecret.name,
+        })
       })
 
       return NextResponse.json({

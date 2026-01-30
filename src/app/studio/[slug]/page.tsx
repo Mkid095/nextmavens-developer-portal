@@ -452,88 +452,97 @@ export default function StudioPage() {
             <div className="flex gap-6 h-full">
               {/* Main SQL Editor Section */}
               <div className={`flex flex-col gap-6 ${showQueryHistory ? 'flex-1' : 'w-full'}`}>
-              {/* US-011: Permission banner showing user's role and allowed operations */}
-              {!permissionsLoading && (
-                <div className={`flex items-start gap-3 p-4 rounded-lg border ${
-                  userRole === 'viewer'
-                    ? 'bg-blue-50 border-blue-200'
-                    : userRole === 'developer'
-                      ? 'bg-amber-50 border-amber-200'
-                      : 'bg-emerald-50 border-emerald-200'
-                }`}>
-                  <Shield className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                {/* US-011: Permission banner showing user's role and allowed operations */}
+                {!permissionsLoading && (
+                  <div className={`flex items-start gap-3 p-4 rounded-lg border ${
                     userRole === 'viewer'
-                      ? 'text-blue-600'
+                      ? 'bg-blue-50 border-blue-200'
                       : userRole === 'developer'
-                        ? 'text-amber-600'
-                        : 'text-emerald-600'
-                  }`} />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-900">
-                      SQL Query Permissions
-                    </p>
-                    <p className="text-xs text-slate-700 mt-1">
-                      Your role: <strong className="capitalize">{userRole || 'unknown'}</strong>
-                      {userRole === 'viewer' && (
-                        <span> • You can only execute <strong>SELECT</strong> queries</span>
-                      )}
-                      {userRole === 'developer' && (
-                        <span> • You can execute <strong>SELECT, INSERT, UPDATE</strong> queries</span>
-                      )}
-                      {(userRole === 'admin' || userRole === 'owner') && (
-                        <span> • You have <strong>full access</strong> to all SQL operations</span>
-                      )}
-                    </p>
+                        ? 'bg-amber-50 border-amber-200'
+                        : 'bg-emerald-50 border-emerald-200'
+                  }`}>
+                    <Shield className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                      userRole === 'viewer'
+                        ? 'text-blue-600'
+                        : userRole === 'developer'
+                          ? 'text-amber-600'
+                          : 'text-emerald-600'
+                    }`} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">
+                        SQL Query Permissions
+                      </p>
+                      <p className="text-xs text-slate-700 mt-1">
+                        Your role: <strong className="capitalize">{userRole || 'unknown'}</strong>
+                        {userRole === 'viewer' && (
+                          <span> • You can only execute <strong>SELECT</strong> queries</span>
+                        )}
+                        {userRole === 'developer' && (
+                          <span> • You can execute <strong>SELECT, INSERT, UPDATE</strong> queries</span>
+                        )}
+                        {(userRole === 'admin' || userRole === 'owner') && (
+                          <span> • You have <strong>full access</strong> to all SQL operations</span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* US-005: SQL Editor with read-only mode */}
-              <SqlEditor
-                value={sqlQuery}
-                onChange={setSqlQuery}
-                onExecute={handleExecuteQuery}
-                userRole={userRole}
-                height="300px"
-              />
+                {/* US-005: SQL Editor with read-only mode */}
+                <SqlEditor
+                  value={sqlQuery}
+                  onChange={setSqlQuery}
+                  onExecute={handleExecuteQuery}
+                  userRole={userRole}
+                  height="300px"
+                />
 
-              {/* Error display */}
-              {queryError && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm font-medium text-red-900">Query Error</p>
-                  <p className="text-sm text-red-700 mt-1">{queryError}</p>
-                </div>
-              )}
-
-              {/* Loading indicator */}
-              {isExecuting && (
-                <div className="flex items-center justify-center py-8">
-                  <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
-                  <span className="ml-3 text-sm text-slate-600">Executing query...</span>
-                </div>
-              )}
-
-              {/* Query results */}
-              {queryResults && !isExecuting && (
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-slate-900">
-                      Query Results
-                    </h3>
-                    <span className="text-xs text-slate-500">
-                      {queryResults.rowCount} row{queryResults.rowCount !== 1 ? 's' : ''} • {queryResults.executionTime}ms
-                    </span>
+                {/* Error display */}
+                {queryError && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm font-medium text-red-900">Query Error</p>
+                    <p className="text-sm text-red-700 mt-1">{queryError}</p>
                   </div>
-                  <ResultsTable
-                    columns={queryResults.columns || []}
-                    rows={queryResults.rows || []}
-                    rowCount={queryResults.rowCount || 0}
+                )}
+
+                {/* Loading indicator */}
+                {isExecuting && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
+                    <span className="ml-3 text-sm text-slate-600">Executing query...</span>
+                  </div>
+                )}
+
+                {/* Query results */}
+                {queryResults && !isExecuting && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-slate-900">
+                        Query Results
+                      </h3>
+                      <span className="text-xs text-slate-500">
+                        {queryResults.rowCount} row{queryResults.rowCount !== 1 ? 's' : ''} • {queryResults.executionTime}ms
+                      </span>
+                    </div>
+                    <ResultsTable
+                      columns={queryResults.columns || []}
+                      rows={queryResults.rows || []}
+                      rowCount={queryResults.rowCount || 0}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* US-004: Query History Panel */}
+              {showQueryHistory && (
+                <div className="w-80 flex-shrink-0">
+                  <QueryHistoryPanel
+                    onSelectQuery={handleSelectQueryFromHistory}
                   />
                 </div>
               )}
             </div>
-            ) : (
-            <TablesView
+          ) : activeNav === 'users' ? (
             selectedUserId ? (
               <UserDetail
                 key={selectedUserId}

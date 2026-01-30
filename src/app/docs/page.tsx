@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio, Code2, AlertCircle, Key } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio, Code2, AlertCircle, Key, FileText, Tag } from 'lucide-react'
 
 const chapters = [
   {
@@ -109,6 +109,24 @@ const chapters = [
     color: 'teal',
     tools: ['11 AI-powered tools'],
     path: '/mcp',
+  },
+  {
+    id: 'versioning',
+    title: 'Versioning Strategy',
+    description: 'API/SDK versioning, deprecation policy, and migration guides',
+    icon: Tag,
+    color: 'blue',
+    tools: ['API versioning', 'Semver', 'Deprecation'],
+    path: '/docs/versioning',
+  },
+  {
+    id: 'changelog',
+    title: 'Changelog',
+    description: 'Track the latest updates, improvements, and fixes',
+    icon: FileText,
+    color: 'purple',
+    tools: ['Version history', 'RSS feed', 'PR links'],
+    path: '/docs/changelog',
   },
 ]
 

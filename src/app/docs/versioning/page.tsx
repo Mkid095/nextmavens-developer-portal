@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Tag, ArrowLeft, ArrowRight, BookOpen, Github, FileText } from 'lucide-react'
+import { Tag, ArrowLeft, ArrowRight, BookOpen, Github, FileText, FileText as FileTextIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 
@@ -628,6 +628,10 @@ export default function VersioningPage() {
           <Link href="/docs/infrastructure" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
             <ArrowLeft className="w-4 h-4" />
             Infrastructure Docs
+          </Link>
+          <Link href="/docs/changelog" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
+            Changelog
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </main>
