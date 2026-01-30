@@ -44,6 +44,7 @@ import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKey
 import DeletionPreviewModal from '@/components/DeletionPreviewModal'
 import CodeBlockEnhancer from '@/components/docs/CodeBlockEnhancer'
 import SupportRequestModal from '@/components/SupportRequestModal'
+import SupportRequestDetailModal from '@/components/SupportRequestDetailModal'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Project {
@@ -101,7 +102,7 @@ interface TabConfig {
   icon: LucideIcon
 }
 
-type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'feature-flags'
+type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'feature-flags' | 'support'
 
 const tabs: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Settings },
@@ -112,6 +113,7 @@ const tabs: TabConfig[] = [
   { id: 'graphql', label: 'GraphQL', icon: Code2 },
   { id: 'api-keys', label: 'API Keys', icon: Key },
   { id: 'feature-flags', label: 'Feature Flags', icon: ShieldAlert },
+  { id: 'support', label: 'Support', icon: LifeBuoy },
 ]
 
 /**
@@ -258,6 +260,13 @@ export default function ProjectDetailPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
   // US-004: Support request modal
   const [showSupportModal, setShowSupportModal] = useState(false)
+  // US-006: Support requests list and detail modal
+  const [supportRequests, setSupportRequests] = useState<any[]>([])
+  const [supportRequestsLoading, setSupportRequestsLoading] = useState(false)
+  const [supportRequestsError, setSupportRequestsError] = useState<string | null>(null)
+  const [supportStatusFilter, setSupportStatusFilter] = useState<string>('all')
+  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null)
+  const [showDetailModal, setShowDetailModal] = useState(false)
   // US-011: Feature Flags state
   const [featureFlags, setFeatureFlags] = useState<any[]>([])
   const [flagsLoading, setFlagsLoading] = useState(false)
@@ -290,6 +299,13 @@ export default function ProjectDetailPage() {
       fetchFeatureFlags()
     }
   }, [activeTab, project?.id])
+
+  // US-006: Fetch support requests when tab changes to support or filter changes
+  useEffect(() => {
+    if (activeTab === 'support') {
+      fetchSupportRequests()
+    }
+  }, [activeTab, supportStatusFilter, project?.id])
 
   const fetchProject = async () => {
     try {
@@ -355,6 +371,39 @@ export default function ProjectDetailPage() {
     } finally {
       setFlagsLoading(false)
     }
+  }
+
+  // US-006: Fetch support requests
+  const fetchSupportRequests = async () => {
+    if (!project?.id) return
+
+    setSupportRequestsLoading(true)
+    setSupportRequestsError(null)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const statusParam = supportStatusFilter !== 'all' ? `&status=${supportStatusFilter}` : ''
+      const res = await fetch(`/api/support/requests?project_id=${project.id}${statusParam}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setSupportRequests(data.requests || [])
+      } else {
+        const errorData = await res.json()
+        setSupportRequestsError(errorData.error || 'Failed to fetch support requests')
+      }
+    } catch (err) {
+      console.error('Failed to fetch support requests:', err)
+      setSupportRequestsError('Failed to fetch support requests')
+    } finally {
+      setSupportRequestsLoading(false)
+    }
+  }
+
+  // US-006: Handle clicking on a support request to view details
+  const handleViewRequestDetails = (requestId: string) => {
+    setSelectedRequestId(requestId)
+    setShowDetailModal(true)
   }
 
   // US-006: Fetch key usage statistics

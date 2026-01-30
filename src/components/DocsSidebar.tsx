@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen, Database, Shield, HardDrive, Globe, DatabaseBackup, ChevronRight, ChevronLeft, Code, Zap, X } from 'lucide-react'
+import { BookOpen, Database, Shield, HardDrive, Globe, DatabaseBackup, ChevronRight, ChevronLeft, Code, Zap, X, Tag } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 // Helper to detect Mac OS
@@ -125,6 +125,16 @@ const sidebarSections: SidebarSection[] = [
     path: '/docs/infrastructure',
     children: [
       { title: 'Overview', path: '/docs/infrastructure' },
+    ],
+  },
+  {
+    id: 'versioning',
+    title: 'Versioning',
+    icon: Tag,
+    color: 'purple',
+    path: '/docs/versioning',
+    children: [
+      { title: 'Overview', path: '/docs/versioning' },
     ],
   },
 ]

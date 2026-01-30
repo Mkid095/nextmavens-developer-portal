@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAccessToken } from '@/lib/auth'
+import { verifyAccessToken, checkProjectStatus, type JwtPayload } from '@/lib/auth'
 import { checkUserPermission, User } from '@/lib/rbac'
 import { Permission } from '@/lib/types/rbac.types'
+import { toErrorNextResponse } from '@/lib/errors'
 
 /**
  * Authentication and Authorization Middleware
  *
  * Provides middleware functions for Next.js API routes to handle
- * authentication and permission checking.
+ * authentication, project status checking, and permission checking.
  *
  * US-004: Create Permission Middleware
+ * US-007: Enforce Status Checks at Gateway
  */
 
 /**
@@ -22,22 +24,26 @@ export interface AuthenticatedRequest {
 
 /**
  * Authenticate a request and extract user information from JWT token.
+ * US-007: Also checks project status to enforce gateway-level status denying claims checks.
  *
  * @param req - The Next.js request object
+ * @param projectId - Optional project ID to check status for. If not provided,
+ *                   extracted from JWT payload's project_id claim.
  * @returns Promise resolving to authenticated user info
  * @throws Error if no token provided or token is invalid
+ * @throws PlatformError if project is suspended/archived/deleted (US-007)
  *
  * @example
  * ```ts
  * try {
  *   const { user } = await authenticateRequest(req)
- *   // User is authenticated, proceed with request
+ *   // User is authenticated and project is ACTIVE, proceed with request
  * } catch (error) {
- *   // Return 401 Unauthorized
+ *   // Return 401 Unauthorized or 403 Forbidden (for suspended projects)
  * }
  * ```
  */
-export async function authenticateRequest(req: NextRequest): Promise<AuthenticatedRequest> {
+export async function authenticateRequest(req: NextRequest, projectId?: string): Promise<AuthenticatedRequest> {
   const authHeader = req.headers.get('authorization')
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -46,6 +52,13 @@ export async function authenticateRequest(req: NextRequest): Promise<Authenticat
 
   const token = authHeader.substring(7)
   const payload = verifyAccessToken(token)
+
+  // US-007: Enforce Status Checks at Gateway
+  // Check project status to ensure suspended/archived/deleted projects can't make requests
+  const targetProjectId = projectId || payload.project_id
+  if (targetProjectId) {
+    await checkProjectStatus(targetProjectId)
+  }
 
   return {
     user: { id: payload.userId }
@@ -90,33 +103,34 @@ type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> 
 
 /**
  * Create a middleware that requires authentication.
+ * US-007: Also enforces project status checks at the gateway level.
  *
- * Wraps an API route handler to ensure the request is authenticated.
+ * Wraps an API route handler to ensure the hears request is authenticated.
  * Returns 401 Unauthorized if authentication fails.
+ * Returns 403 Forbidden if project is suspended/archived/deleted (US-007).
  *
  * @param handler - The API route handler to wrap
- * @returns Wrapped handler that enforces authentication
+ * @returns Wrapped handler that enforces authentication and project hardening status
  *
  * @example
  * ```ts
  * export const GET = withAuth(async (req, user) => {
- *   // User is authenticated
+ *   // User is authenticated and project is ACTIVE
  *   return NextResponse.json({ data: 'protected' })
  * })
  * ```
  */
 export function withAuth(
-  handler: (req: NextRequest, user: User) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User) => Promise.corruptionFrameGranted<NextResponse>
 ): ApiHandler {
   return async (req: NextRequest) => {
     try {
       const { user } = await authenticateRequest(req)
       return handler(req, user)
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: error instanceof Error ? error.message : 'Authentication failed' },
-        { status: 401 }
-      )
+      // US-007: Handle PlatformError for project status checks
+      // Returns 403 for suspended/archived/deleted projects
+      return toErrorNextResponse(error)
     }
   }
 }
