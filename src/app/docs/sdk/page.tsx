@@ -501,6 +501,380 @@ if (error) {
   },
 ]
 
+const realtimeExamples = [
+  {
+    title: 'Subscribe to All Changes',
+    description: 'Listen to all INSERT, UPDATE, and DELETE events on a table',
+    code: `// Subscribe to all changes on the users table
+const channel = client.realtime
+  .channel('users-all-changes')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',  // Listen to all events: INSERT, UPDATE, DELETE
+      schema: 'public',
+      table: 'users'
+    },
+    (payload) => {
+      console.log('Change detected:', payload)
+      // payload contains: { eventType, new, old, errors }
+      switch (payload.eventType) {
+        case 'INSERT':
+          console.log('New user:', payload.new)
+          break
+        case 'UPDATE':
+          console.log('Updated user:', payload.new)
+          console.log('Previous values:', payload.old)
+          break
+        case 'DELETE':
+          console.log('Deleted user:', payload.old)
+          break
+      }
+    }
+  )
+  .subscribe((status) => {
+    console.log('Subscription status:', status)
+    // Status values: 'SUBSCRIBED', 'TIMED_OUT', 'CLOSED', 'CHANNEL_ERROR'
+  })
+
+// Unsubscribe when done (important for cleanup)
+channel.unsubscribe()`,
+  },
+  {
+    title: 'Subscribe to Specific Events',
+    description: 'Listen to only INSERT, UPDATE, or DELETE events',
+    code: `// Subscribe only to new records (INSERT)
+const insertChannel = client.realtime
+  .channel('new-users')
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'users'
+    },
+    (payload) => {
+      console.log('New user created:', payload.new)
+      // Show notification, update UI, etc.
+    }
+  )
+  .subscribe()
+
+// Subscribe only to updates (UPDATE)
+const updateChannel = client.realtime
+  .channel('user-updates')
+  .on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'users'
+    },
+    (payload) => {
+      console.log('User updated:', payload.new)
+      // Compare payload.new with payload.old to see what changed
+    }
+  )
+  .subscribe()
+
+// Subscribe only to deletions (DELETE)
+const deleteChannel = client.realtime
+  .channel('user-deletions')
+  .on(
+    'postgres_changes',
+    {
+      event: 'DELETE',
+      schema: 'public',
+      table: 'users'
+    },
+    (payload) => {
+      console.log('User deleted:', payload.old)
+      // Remove from UI, show notification, etc.
+    }
+  )
+  .subscribe()`,
+  },
+  {
+    title: 'Filter Subscriptions',
+    description: 'Subscribe to changes that match specific criteria',
+    code: `// Subscribe to changes where status equals 'active'
+const activeUsersChannel = client.realtime
+  .channel('active-users')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'users',
+      filter: 'status=eq.active'  // Only users where status = 'active'
+    },
+    (payload) => {
+      console.log('Active user changed:', payload)
+    }
+  )
+  .subscribe()
+
+// Subscribe to changes for a specific user ID
+const userChannel = client.realtime
+  .channel('user-123')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'users',
+      filter: 'id=eq.123'  // Only user with ID 123
+    },
+    (payload) => {
+      console.log('User 123 changed:', payload)
+    }
+  )
+  .subscribe()
+
+// Multiple filter examples
+const filterChannel = client.realtime
+  .channel('filtered-updates')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'products',
+      filter: 'category=eq.electronics'  // Only electronics
+    },
+    (payload) => {
+      console.log('Electronics product changed:', payload)
+    }
+  )
+  .subscribe()`,
+  },
+  {
+    title: 'Multiple Subscriptions',
+    description: 'Listen to multiple tables or events on a single channel',
+    code: `// Subscribe to multiple tables on one channel
+const multiChannel = client.realtime
+  .channel('app-updates')
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'users'
+    },
+    (payload) => {
+      console.log('New user:', payload.new)
+    }
+  )
+  .on(
+    'postgres_changes',
+    {
+      event: 'INSERT',
+      schema: 'public',
+      table: 'posts'
+    },
+    (payload) => {
+      console.log('New post:', payload.new)
+    }
+  )
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'notifications'
+    },
+    (payload) => {
+      console.log('Notification:', payload)
+    }
+  )
+  .subscribe((status) => {
+    if (status === 'SUBSCRIBED') {
+      console.log('All subscriptions active')
+    }
+  })
+
+// Unsubscribe from all at once
+multiChannel.unsubscribe()`,
+  },
+  {
+    title: 'Channel with Presence Tracking',
+    description: 'Track online users and their state in real-time',
+    code: `// Enable presence tracking for collaborative features
+const presenceChannel = client.realtime
+  .channel('online-users', { config: { presence: { key: 'user123' } } })
+  .on('presence', { event: 'sync' }, () => {
+    const presenceState = presenceChannel.presenceState()
+    console.log('Online users:', presenceState)
+    // Returns: { user123: { online_at: '...' }, user456: { online_at: '...' } }
+  })
+  .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+    console.log('User joined:', key, newPresences)
+    // Show user came online
+  })
+  .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+    console.log('User left:', key, leftPresences)
+    // Show user went offline
+  })
+  .subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      // Track your own presence state
+      await presenceChannel.track({
+        online_at: new Date().toISOString(),
+        user: { id: 'user123', name: 'John Doe' }
+      })
+    }
+  })
+
+// Update presence state
+await presenceChannel.track({
+  online_at: new Date().toISOString(),
+  user: { id: 'user123', name: 'John Doe' },
+  status: 'typing'  // Custom state
+})`,
+  },
+  {
+    title: 'Broadcast Messages',
+    description: 'Send and receive custom messages between clients',
+    code: `// Create a channel for broadcast communication
+const chatChannel = client.realtime
+  .channel('chat-room')
+
+// Listen for broadcast messages
+chatChannel
+  .on('broadcast', { event: 'message' }, ({ payload }) => {
+    console.log('Received message:', payload)
+    // payload contains your custom data structure
+    displayMessage(payload)
+  })
+  .subscribe((status) => {
+    console.log('Chat status:', status)
+  })
+
+// Send a broadcast message to all subscribers
+await chatChannel.send({
+  type: 'broadcast',
+  event: 'message',
+  payload: {
+    from: 'user123',
+    text: 'Hello everyone!',
+    timestamp: new Date().toISOString()
+  }
+})
+
+// Example: Send typing indicator
+await chatChannel.send({
+  type: 'broadcast',
+  event: 'typing',
+  payload: {
+    userId: 'user123',
+    isTyping: true
+  }
+})
+
+// Clean up
+chatChannel.unsubscribe()`,
+  },
+  {
+    title: 'Unsubscribe and Cleanup',
+    description: 'Properly manage subscription lifecycle',
+    code: `// In a React component, use useEffect for cleanup
+useEffect(() => {
+  const channel = client.realtime
+    .channel('my-subscription')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'tasks'
+      },
+      (payload) => {
+        // Update component state with new data
+        setTasks(prev => {
+          if (payload.eventType === 'INSERT') {
+            return [...prev, payload.new]
+          } else if (payload.eventType === 'UPDATE') {
+            return prev.map(t => t.id === payload.new.id ? payload.new : t)
+          } else if (payload.eventType === 'DELETE') {
+            return prev.filter(t => t.id !== payload.old.id)
+          }
+          return prev
+        })
+      }
+    )
+    .subscribe()
+
+  // Cleanup function - unsubscribe when component unmounts
+  return () => {
+    channel.unsubscribe()
+  }
+}, [])
+
+// Manual unsubscribe
+const channel = client.realtime.channel('temp-channel')
+channel.subscribe()
+
+// Later, when done:
+channel.unsubscribe()
+
+// Unsubscribe all channels (e.g., on logout)
+client.realtime.channels.forEach(channel => {
+  channel.unsubscribe()
+})`,
+  },
+  {
+    title: 'Error Handling and Reconnection',
+    description: 'Handle connection issues and automatic reconnection',
+    code: `// Subscribe with connection state monitoring
+const channel = client.realtime
+  .channel('reliable-channel')
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'data'
+    },
+    (payload) => {
+      console.log('Data changed:', payload)
+    }
+  )
+  .subscribe((status, err) => {
+    console.log('Subscription status:', status)
+
+    switch (status) {
+      case 'SUBSCRIBED':
+        console.log('Successfully connected and listening')
+        break
+      case 'TIMED_OUT':
+        console.log('Connection timed out, retrying...')
+        // SDK will automatically retry
+        break
+      case 'CLOSED':
+        console.log('Connection closed')
+        break
+      case 'CHANNEL_ERROR':
+        console.error('Channel error:', err)
+        // Handle error, show message to user
+        break
+    }
+  })
+
+// Check subscription health
+const getState = () => {
+  const state = channel.state
+  console.log('Channel state:', state)
+  // Returns: 'joined', 'joining', 'leaving', 'closed'
+}
+
+// Close channel explicitly
+const cleanup = () => {
+  channel.unsubscribe()
+  console.log('Channel cleaned up')
+}`,
+  },
+]
+
 const codeExamples = [
   {
     title: 'Import and Initialize',
@@ -511,28 +885,6 @@ const client = createClient({
   apiKey: process.env.NEXTMAVENS_API_KEY,
   projectId: 'your-project-id'
 })`,
-  },
-  {
-    title: 'Realtime Subscriptions',
-    description: 'Subscribe to database changes in real-time',
-    code: `// Subscribe to changes
-const channel = client.realtime
-  .channel('users-channel')
-  .on(
-    'postgres_changes',
-    {
-      event: '*',
-      schema: 'public',
-      table: 'users'
-    },
-    (payload) => {
-      console.log('Change received!', payload)
-    }
-  )
-  .subscribe()
-
-// Unsubscribe when done
-channel.unsubscribe()`,
   },
   {
     title: 'File Storage',
@@ -561,16 +913,16 @@ await client.storage
     title: 'GraphQL Queries',
     description: 'Execute GraphQL queries',
     code: `// Execute a GraphQL query
-const { data, error } = await client.graphql(`
-  query GetUsers($limit: Int!) {
-    users(limit: $limit) {
+const { data, error } = await client.graphql(\`
+  query GetUsers(\$limit: Int!) {
+    users(limit: \$limit) {
       id
       email
       name
       created_at
     }
   }
-`, { variables: { limit: 10 } })`,
+\`, { variables: { limit: 10 } })`,
   },
 ]
 
@@ -902,8 +1254,274 @@ NEXTMAVENS_PROJECT_ID=your_project_id`}</code>
           </div>
         </div>
 
+        {/* Realtime Section */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <svg className="w-5 h-5 text-orange-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Realtime</h2>
+              <p className="text-slate-600">Subscribe to database changes and broadcast messages</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {realtimeExamples.map((example, index) => (
+              <motion.div
+                key={example.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="border border-slate-200 rounded-lg overflow-hidden"
+              >
+                <div className="p-4 border-b border-slate-200 bg-slate-50">
+                  <h3 className="text-base font-semibold text-slate-900 mb-1">{example.title}</h3>
+                  <p className="text-sm text-slate-600">{example.description}</p>
+                </div>
+                <div className="p-4">
+                  <div className="relative group">
+                    <button
+                      onClick={() => handleCopy(example.code, `realtime-${index}`)}
+                      className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                      aria-label="Copy code"
+                    >
+                      {copied === `realtime-${index}` ? (
+                        <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                    <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                      <code className="text-xs text-slate-300 font-mono block">{example.code}</code>
+                    </pre>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <h4 className="text-sm font-semibold text-orange-900 mb-2">Realtime Best Practices</h4>
+            <ul className="text-xs text-orange-800 space-y-1">
+              <li>• Always unsubscribe from channels when components unmount to prevent memory leaks</li>
+              <li>• Use specific filters to receive only relevant changes and reduce bandwidth</li>
+              <li>• Handle connection states (SUBSCRIBED, TIMED_OUT, CLOSED, CHANNEL_ERROR)</li>
+              <li>• Use presence tracking for collaborative features and online status</li>
+              <li>• Broadcast messages work well for chat, notifications, and client-to-client communication</li>
+              <li>• The SDK automatically handles reconnection for transient network issues</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Storage Section */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-cyan-100 rounded-lg">
+              <svg className="w-5 h-5 text-cyan-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Storage</h2>
+              <p className="text-slate-600">Upload, download, and manage files</p>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 rounded-lg p-6 border border-slate-200 mb-6">
+            <h3 className="text-base font-semibold text-slate-900 mb-3">File Upload Example</h3>
+            <div className="relative group">
+              <button
+                onClick={() => handleCopy(`// Upload a file from a file input
+const fileInput = document.querySelector('input[type="file"]')
+const file = fileInput.files[0]
+
+const { data, error } = await client.storage
+  .from('avatars')
+  .upload('user123.jpg', file, {
+    cacheControl: '3600',
+    upsert: false
+  })
+
+if (error) {
+  console.error('Upload failed:', error.message)
+} else {
+  console.log('File uploaded:', data.path)
+}`, 'storage-upload')}
+                className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                aria-label="Copy code"
+              >
+                {copied === 'storage-upload' ? (
+                  <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              </button>
+              <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                <code className="text-xs text-slate-300 font-mono block">{`// Upload a file from a file input
+const fileInput = document.querySelector('input[type="file"]')
+const file = fileInput.files[0]
+
+const { data, error } = await client.storage
+  .from('avatars')
+  .upload('user123.jpg', file, {
+    cacheControl: '3600',
+    upsert: false
+  })
+
+if (error) {
+  console.error('Upload failed:', error.message)
+} else {
+  console.log('File uploaded:', data.path)
+}`}</code>
+              </pre>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">Get Public URL</h4>
+              <div className="relative group">
+                <button
+                  onClick={() => handleCopy(`const { data } = client.storage
+  .from('avatars')
+  .getPublicUrl('user123.jpg')
+
+console.log('Public URL:', data.publicUrl)`, 'storage-url')}
+                  className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                >
+                  {copied === 'storage-url' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                </button>
+                <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                  <code className="text-xs text-slate-300 font-mono block">{`const { data } = client.storage
+  .from('avatars')
+  .getPublicUrl('user123.jpg')
+
+console.log('Public URL:', data.publicUrl)`}</code>
+                </pre>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">List Files</h4>
+              <div className="relative group">
+                <button
+                  onClick={() => handleCopy(`const { data, error } = await client.storage
+  .from('avatars')
+  .list('uploads', {
+    limit: 100,
+    offset: 0,
+    sortBy: { column: 'created_at', order: 'asc' }
+  })
+
+console.log('Files:', data)`, 'storage-list')}
+                  className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                >
+                  {copied === 'storage-list' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                </button>
+                <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                  <code className="text-xs text-slate-300 font-mono block">{`const { data, error } = await client.storage
+  .from('avatars')
+  .list('uploads', {
+    limit: 100,
+    offset: 0,
+    sortBy: { column: 'created_at', order: 'asc' }
+  })
+
+console.log('Files:', data)`}</code>
+                </pre>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">Download File</h4>
+              <div className="relative group">
+                <button
+                  onClick={() => handleCopy(`const { data, error } = await client.storage
+  .from('avatars')
+  .download('user123.jpg')
+
+// Create a blob URL for download
+const url = URL.createObjectURL(data)
+const a = document.createElement('a')
+a.href = url
+a.download = 'user123.jpg'
+a.click()`, 'storage-download')}
+                  className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                >
+                  {copied === 'storage-download' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                </button>
+                <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                  <code className="text-xs text-slate-300 font-mono block">{`const { data, error } = await client.storage
+  .from('avatars')
+  .download('user123.jpg')
+
+// Create blob URL for download
+const url = URL.createObjectURL(data)
+const a = document.createElement('a')
+a.href = url
+a.download = 'user123.jpg'
+a.click()`}</code>
+                </pre>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+              <h4 className="text-sm font-semibold text-slate-900 mb-2">Delete File</h4>
+              <div className="relative group">
+                <button
+                  onClick={() => handleCopy(`const { error } = await client.storage
+  .from('avatars')
+  .remove(['user123.jpg', 'user456.jpg'])
+
+if (error) {
+  console.error('Delete failed:', error.message)
+} else {
+  console.log('Files deleted successfully')
+}`, 'storage-delete')}
+                  className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                >
+                  {copied === 'storage-delete' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
+                </button>
+                <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                  <code className="text-xs text-slate-300 font-mono block">{`const { error } = await client.storage
+  .from('avatars')
+  .remove(['user123.jpg', 'user456.jpg'])
+
+if (error) {
+  console.error('Delete failed:', error.message)
+} else {
+  console.log('Files deleted successfully')
+}`}</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
+            <h4 className="text-sm font-semibold text-cyan-900 mb-2">Storage Best Practices</h4>
+            <ul className="text-xs text-cyan-800 space-y-1">
+              <li>• Use unique file names or UUIDs to avoid overwrites (unless upsert is intentional)</li>
+              <li>• Set appropriate cacheControl headers for file types (images: 3600, assets: 86400)</li>
+              <li>• Validate file types and sizes on the client before uploading</li>
+              <li>• Use bucket folders to organize files (e.g., 'avatars/user123/profile.jpg')</li>
+              <li>• Handle upload errors gracefully and provide feedback to users</li>
+            </ul>
+          </div>
+        </div>
+
         <div className="space-y-8 mb-12">
-          <h2 className="text-xl font-semibold text-slate-900">Quick Examples</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Additional Features</h2>
           {codeExamples.map((example, index) => (
             <motion.div
               key={example.title}

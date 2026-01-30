@@ -173,8 +173,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: GET /api/studio/[projectId]/tables/[table]/foreign-keys endpoint created at src/app/api/studio/[projectId]/tables/[table]/foreign-keys/route.ts. Queries information_schema.table_constraints joined with information_schema.key_column_usage and information_schema.constraint_column_usage. Returns constraint_name, column_name, foreign_table_name, and foreign_column_name. Filters for tenant_{slug} schema and specific table. JWT authentication with project_id claim verification. Table name validation (regex check) to prevent SQL injection. Table existence check before querying foreign keys. Foreign keys ordered by constraint_name and ordinal_position. Typecheck passes."
     },
     {
       "id": "US-008",
