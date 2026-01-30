@@ -53,8 +53,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: POST /api/support/request endpoint at src/app/api/support/request/route.ts. Accepts project_id, subject, description. Validates project ownership. Auto-attaches context: project info (id, name, status, tenant_slug), recent errors (last 10 error-level logs), current usage metrics (with percentages), logs snippet (last 20 lines). Returns request_id and status. Proper error handling with authentication. Typecheck passes."
     },
     {
       "id": "US-003",
