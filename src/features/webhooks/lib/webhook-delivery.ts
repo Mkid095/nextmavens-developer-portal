@@ -319,8 +319,8 @@ export async function createEventLog(
     const result = await pool.query(
       `
       INSERT INTO control_plane.event_log
-        (project_id, webhook_id, event_type, payload, status)
-      VALUES ($1, $2, $3, $4, 'pending')
+        (project_id, webhook_id, event_type, payload, status, retry_count)
+      VALUES ($1, $2, $3, $4, 'pending', 0)
       RETURNING id
       `,
       [project_id, webhook_id, event_type, JSON.stringify(payload)]
