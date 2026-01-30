@@ -108,8 +108,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created src/lib/middleware/storage-scope.ts with storage path prefixing and validation. Path format: project_id:/path (e.g., 'abc-123:/uploads/image.png'). validateStoragePath() checks prefix and blocks cross-project access with 403. Updated /api/storage/upload route to use buildStoragePath() and validateStoragePath(). Path traversal protection built-in. Typecheck passes."
     },
     {
       "id": "US-005",

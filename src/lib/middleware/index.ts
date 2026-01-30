@@ -49,3 +49,18 @@ export {
   ChannelType,
   type RealtimeSubscription,
 } from './realtime-scope';
+
+export {
+  validateStoragePathFormat,
+  validateStoragePath,
+  buildStoragePath,
+  extractProjectIdFromPath,
+  extractStoragePath,
+  handleFileUpload,
+  handleFileDownload,
+  isSystemPath,
+  generateExamplePaths,
+  createStorageFile,
+  StorageScopeError,
+  type StorageFile,
+} from './storage-scope';
