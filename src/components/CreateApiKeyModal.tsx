@@ -179,6 +179,14 @@ export default function CreateApiKeyModal({ isOpen, onClose, onCreateKey, projec
       return
     }
 
+    // US-006: Show warning confirmation for MCP write/admin tokens
+    if (selectedKeyType.type === 'mcp' && (mcpAccessLevel === 'rw' || mcpAccessLevel === 'admin')) {
+      if (!writeWarningConfirmed) {
+        setStep('confirm-write')
+        return
+      }
+    }
+
     setSubmitting(true)
     setError('')
 
@@ -278,6 +286,7 @@ const client = createClient({
                   <p className="text-sm text-slate-500">
                     {step === 'type' && 'Choose the type of key you need'}
                     {step === 'config' && 'Configure your key settings'}
+                    {step === 'confirm-write' && 'Confirm write access'}
                     {step === 'success' && 'Your key has been created'}
                   </p>
                 </div>
@@ -413,7 +422,10 @@ const client = createClient({
                           <button
                             key={level.value}
                             type="button"
-                            onClick={() => setMcpAccessLevel(level.value)}
+                            onClick={() => {
+                              setMcpAccessLevel(level.value)
+                              setWriteWarningConfirmed(false)
+                            }}
                             className={`p-4 rounded-xl border-2 text-left transition-all ${
                               mcpAccessLevel === level.value
                                 ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200'
