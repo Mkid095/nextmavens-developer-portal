@@ -27,8 +27,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration 009_create_quotas_table.sql created with quotas table in control_plane schema. All required columns: project_id (UUID FK to projects.id), service (VARCHAR 50 with CHECK constraint for db_queries/storage_mb/realtime_connections/function_invocations/auth_users), monthly_limit (INTEGER), hard_cap (INTEGER), reset_at (TIMESTAMPTZ), created_at, updated_at. Composite primary key on (project_id, service). Indexes on project_id, service, and reset_at. Migration record inserted into schema_migrations. Typecheck passes."
     },
     {
       "id": "US-002",
