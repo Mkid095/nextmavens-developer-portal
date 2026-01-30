@@ -133,8 +133,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated checkAllProjectsForSuspension() in src/features/abuse-controls/lib/suspensions.ts to check environment config. Added import for getEnvironmentConfig and Environment type. Query now fetches environment column from projects table. For each project, gets envConfig.auto_suspend_enabled and skips suspension check if false (dev and staging). Only prod environment (auto_suspend_enabled=true) gets auto-suspended. Added logging for skipped projects. Typecheck passes."
     },
     {
       "id": "US-006",

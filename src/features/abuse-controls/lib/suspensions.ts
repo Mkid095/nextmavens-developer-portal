@@ -13,6 +13,7 @@ import { getProjectQuota } from './quotas'
 import { sendSuspensionNotification } from './notifications'
 import { logProjectAction } from '@nextmavens/audit-logs-database'
 import { invalidateSnapshot } from '@/lib/snapshot'
+import { getEnvironmentConfig, type Environment } from '@/lib/environment'
 
 /**
  * Suspend a project due to cap violation
@@ -298,6 +299,8 @@ export async function isCapExceeded(
  * This function is designed to be called by a background job/cron.
  * It iterates through all projects and checks each against their configured caps.
  *
+ * US-005: Skip auto-suspend for dev and staging environments based on environment config
+ *
  * @returns Array of suspension records for newly suspended projects
  */
 export async function checkAllProjectsForSuspension(): Promise<
@@ -308,10 +311,10 @@ export async function checkAllProjectsForSuspension(): Promise<
   try {
     console.log('[Suspensions] Starting cap violation check for all projects')
 
-    // Get all active projects
+    // Get all active projects with their environment
     const projectsResult = await pool.query(
       `
-      SELECT id, project_name
+      SELECT id, project_name, environment
       FROM projects
       WHERE status = 'active'
       `
@@ -322,10 +325,24 @@ export async function checkAllProjectsForSuspension(): Promise<
 
     const newlySuspended: SuspensionRecord[] = []
     let suspensionsMade = 0
+    let skippedForEnvironment = 0
 
     // Check each project for cap violations
     for (const project of projects) {
       const projectId = project.id
+      const projectEnv = (project.environment || 'prod') as Environment
+
+      // Get environment config to check if auto-suspend is enabled
+      const envConfig = getEnvironmentConfig(projectEnv)
+
+      // Skip auto-suspend for dev and staging environments
+      if (!envConfig.auto_suspend_enabled) {
+        console.log(
+          `[Suspensions] Skipping project ${projectId} in ${projectEnv} environment (auto-suspend disabled)`
+        )
+        skippedForEnvironment++
+        continue
+      }
 
       try {
         // Check all cap types for this project
@@ -375,7 +392,7 @@ export async function checkAllProjectsForSuspension(): Promise<
     }
 
     console.log(
-      `[Suspensions] Cap violation check complete. ${suspensionsMade} project(s) suspended.`
+      `[Suspensions] Cap violation check complete. ${suspensionsMade} project(s) suspended. ${skippedForEnvironment} project(s) skipped (dev/staging environment).`
     )
 
     return newlySuspended
