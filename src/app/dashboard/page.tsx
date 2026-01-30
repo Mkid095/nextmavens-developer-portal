@@ -18,6 +18,8 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react'
+import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKeyModal'
+import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Developer {
   id: string
@@ -31,6 +33,9 @@ interface ApiKey {
   name: string
   public_key: string
   created_at: string
+  key_type?: string
+  key_prefix?: string
+  environment?: string
 }
 
 interface Project {
@@ -170,17 +175,7 @@ export default function DashboardPage() {
     setError('')
   }
 
-  const handleCreateApiKey = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-
-    if (!apiKeyName.trim()) {
-      setError('Please enter a name for this API key')
-      return
-    }
-
-    setSubmitting(true)
-
+  const handleCreateApiKey = async (data: CreateKeyData) => {
     try {
       const token = localStorage.getItem('accessToken')
       const res = await fetch('/api/api-keys', {
@@ -189,26 +184,29 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name: apiKeyName.trim(), environment: keyEnvironment }),
+        body: JSON.stringify({
+          name: data.name,
+          key_type: data.key_type,
+          environment: data.environment,
+          scopes: data.scopes,
+        }),
       })
 
-      const data = await res.json()
+      const responseData = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to create API key')
+        throw new Error(responseData.error || 'Failed to create API key')
       }
 
-      setCreatedSecretKey(data.secretKey)
-      setCreatedKeyName(apiKeyName.trim())
+      setCreatedSecretKey(responseData.secretKey)
+      setCreatedKeyName(data.name)
       setShowApiKeyModal(false)
       setShowSecretModal(true)
       fetchApiKeys()
       addToast('success', 'API key created successfully')
     } catch (err: any) {
-      setError(err.message || 'Failed to create API key')
       addToast('error', err.message || 'Failed to create API key')
-    } finally {
-      setSubmitting(false)
+      throw err
     }
   }
 

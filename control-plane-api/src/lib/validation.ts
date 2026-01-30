@@ -177,3 +177,33 @@ export type TimePeriod = z.infer<typeof timePeriodEnum>
 export type GetUsageQuery = z.infer<typeof getUsageQuerySchema>
 export type CheckQuotaInput = z.infer<typeof checkQuotaSchema>
 export type UpdateQuotaInput = z.infer<typeof updateQuotaSchema>
+
+// Job type enum for background jobs
+export const jobTypeEnum = z.enum([
+  'provision_project',
+  'rotate_key',
+  'deliver_webhook',
+  'export_backup',
+  'check_usage_limits',
+  'auto_suspend',
+], {
+  errorMap: () => ({ message: 'Job type must be one of: provision_project, rotate_key, deliver_webhook, export_backup, check_usage_limits, auto_suspend' }),
+})
+
+// Job status enum
+export const jobStatusEnum = z.enum(['pending', 'running', 'failed', 'completed'], {
+  errorMap: () => ({ message: 'Job status must be one of: pending, running, failed, completed' }),
+})
+
+// Query parameters for listing jobs
+export const listJobsQuerySchema = z.object({
+  project_id: z.string().uuid('Invalid project ID format').optional(),
+  type: jobTypeEnum.optional(),
+  status: jobStatusEnum.optional(),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').default('50'),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+})
+
+export type JobType = z.infer<typeof jobTypeEnum>
+export type JobStatus = z.infer<typeof jobStatusEnum>
+export type ListJobsQuery = z.infer<typeof listJobsQuerySchema>
