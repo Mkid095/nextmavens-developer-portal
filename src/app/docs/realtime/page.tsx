@@ -1650,6 +1650,325 @@ ws.onmessage = (event) => {
           </div>
         </motion.div>
 
+        {/* Troubleshooting */}
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl font-bold text-slate-100 mb-6">Troubleshooting</h2>
+
+          <div className="prose prose-invert max-w-none mb-8">
+            <p className="text-slate-300 text-lg leading-relaxed mb-4">
+              Common issues and their solutions to help you debug realtime connection problems.
+            </p>
+          </div>
+
+          {/* Connection Issues */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-amber-400" />
+              Connection Issues
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">Connection closes immediately after opening</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Invalid JWT token, expired token, or missing authentication</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Verify JWT token is valid and not expired</li>
+                    <li>Check token includes project_id claim</li>
+                    <li>Ensure token has required scope (realtime:subscribe)</li>
+                    <li>Try refreshing token from control plane API</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">403 Forbidden when subscribing to channels</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Project ID mismatch, insufficient permissions, wrong channel format</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Verify project_id in JWT matches channel prefix</li>
+                    <li>Use correct channel format: project_id:table_name</li>
+                    <li>Check user has permission to access the project</li>
+                    <li>Ensure realtime service is enabled for project</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">Connection drops frequently or randomly</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Network instability, server-side issues, heartbeat timeout</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Implement reconnection logic with exponential backoff</li>
+                    <li>Check network connectivity and firewall rules</li>
+                    <li>Verify heartbeat messages are being received</li>
+                    <li>Check if project has exceeded connection limit (50 connections)</li>
+                    <li>Monitor browser console for WebSocket error codes</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Subscription Issues */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Radio className="w-5 h-5 text-orange-400" />
+              Subscription Issues
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">Not receiving data changes for subscribed table</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Wrong channel name, invalid filter, no data changes occurring</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Verify channel name format: project_id:table_name</li>
+                    <li>Check filter syntax uses proper format (eq., gte., lte.)</li>
+                    <li>Test filter works by running same query in database</li>
+                    <li>Ensure table is in public schema or include schema prefix</li>
+                    <li>Check that INSERT/UPDATE/DELETE operations are happening on the table</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">Receiving duplicate events for the same change</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Multiple subscriptions to same table, client sending duplicate messages</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Check for duplicate phx_join messages in your code</li>
+                    <li>Ensure you're not creating multiple WebSocket connections</li>
+                    <li>Add duplicate detection using event ID or timestamp</li>
+                    <li>Track seen events in a Set to filter duplicates</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">Filter not working as expected</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Invalid SQL syntax, wrong filter format, case sensitivity</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Use PostgREST filter syntax: column=value (eq.123, gte.100)</li>
+                    <li>String comparisons are case-sensitive (use ILIKE for case-insensitive)</li>
+                    <li>Multiple conditions: use AND/OR operators</li>
+                    <li>Test filter in Database Explorer before using in realtime</li>
+                    <li>Escape special characters: use LIKE operator with % wildcards</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Performance Issues */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-purple-400" />
+              Performance Issues
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">High latency or slow message delivery</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Network latency, server overload, large message payloads</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Check message payload size - max 64KB per message</li>
+                    <li>Optimize subscriptions by using specific filters</li>
+                    <li>Reduce number of subscribed tables (max 10 per connection)</li>
+                    <li>Monitor network latency using ping/pong messages</li>
+                    <li>Consider using separate connections for critical updates</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">Rate limit errors (429)</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Exceeding 100 messages/second limit, too many broadcasts</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Implement message batching or debouncing</li>
+                    <li>Reduce broadcast frequency from server code</li>
+                    <li>Use database events instead of broadcasts when possible</li>
+                    <li>Implement client-side message queuing</li>
+                    <li>Contact support to increase rate limit if needed</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <div className="flex items-start gap-3">
+                  <span className="text-red-400 font-semibold">Problem:</span>
+                  <div className="flex-1">
+                    <p className="text-slate-300">High memory usage in browser</p>
+                    <p className="text-sm text-slate-400 mt-2">Possible causes: Accumulating message history, large presence state, memory leaks</p>
+                  </div>
+                </div>
+                <div className="mt-3 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                  <p className="text-sm font-semibold text-emerald-300 mb-2">Solution:</p>
+                  <ul className="text-sm text-emerald-200/80 space-y-1">
+                    <li>Limit message history buffer size (keep last 100 messages)</li>
+                    <li>Clean up presence state when users leave</li>
+                    <li>Remove event listeners when disconnecting</li>
+                    <li>Use WeakMap for storing user state</li>
+                    <li>Implement periodic cleanup for old data</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Debug Tips */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-400" />
+              Debug Logging Tips
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-sm font-semibold text-slate-200 mb-2">Enable WebSocket Debug Logging</p>
+                <pre className="bg-slate-900 rounded-lg p-3">
+                  <code className="text-xs text-slate-300">{`// Browser development tools
+// 1. Open DevTools (F12)
+// 2. Go to Console tab
+// 3. Enable verbose logging:
+ws.addEventListener('message', (event) => {
+  console.log('WebSocket message:', event.data);
+});
+
+// 4. Enable WebSocket logging in Chrome:
+// - Navigate to chrome://websockets
+// - Find your connection
+// - View detailed log of all frames`}</code>
+                </pre>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-sm font-semibold text-slate-200 mb-2">Server-Side Logging</p>
+                <pre className="bg-slate-900 rounded-lg p-3">
+                  <code className="text-xs text-slate-300">{`// Enable detailed logging in development
+import { setLogLevel } from '@nextmavens/realtime';
+
+setLogLevel('debug');
+
+// This logs all connection lifecycle events, subscriptions,
+// and message payloads to your server console`}</code>
+                </pre>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-sm font-semibold text-slate-200 mb-2">Check Connection State</p>
+                <pre className="bg-slate-900 rounded-lg p-3">
+                  <code className="text-xs text-slate-300">{`// Monitor connection state
+setInterval(() => {
+  console.log('WebSocket state:', ws.readyState);
+  console.log('Buffered amount:', ws.bufferedAmount);
+
+  if (ws.readyState !== WebSocket.OPEN) {
+    console.warn('Connection not open!');
+  }
+}, 5000);`}</code>
+                </pre>
+              </div>
+
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-sm font-semibold text-slate-200 mb-2">Verify Subscription</p>
+                <pre className="bg-slate-900 rounded-lg p-3">
+                  <code className="text-xs text-slate-300">{`// Check if subscription was successful
+ws.send(JSON.stringify({
+  event: 'phx_join',
+  topic: 'project_id:table_name',
+  payload: { token: 'YOUR_JWT_TOKEN' },
+  ref: 'debug_1'
+}));
+
+// Should receive phx_reply with status: 'ok'
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  if (msg.ref === 'debug_1') {
+    console.log('Subscription result:', msg.payload);
+  }
+};`}</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* Getting Help */}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-300 mb-3 flex items-center gap-2">
+              <MessageSquare className="w-5 h-5" />
+              Still Having Issues?
+            </h3>
+            <div className="space-y-3">
+              <ul className="text-sm text-blue-200/80 space-y-1">
+                <li>• Check the <a href="/docs/infrastructure" className="text-emerald-400 hover:underline">Infrastructure documentation</a> for system status</li>
+                <li>• Review <a href="/docs" className="text-emerald-400 hover:underline">API documentation</a> for error codes</li>
+                <li>• Enable debug logging and capture error messages</li>
+                <li>• Check the <a href="https://github.com/nextmavens" className="text-emerald-400 hover:underline">GitHub issues</a> for similar problems</li>
+              </ul>
+              <div className="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+                <p className="text-xs text-slate-400 mb-2">Need Support?</p>
+                <p className="text-sm text-slate-300">
+                  Contact us at <a href="mailto:support@nextmavens.cloud" className="text-emerald-400 hover:underline">support@nextmavens.cloud</a> with:
+                </p>
+                <ul className="text-xs text-slate-400 mt-2 space-y-1">
+                  <li>Project ID and name</li>
+                  <li>Error messages or codes</li>
+                 >                  <li>Steps to reproduce</li>
+                  <li>Browser and environment details</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Resources */}
         <motion.div variants={itemVariants} className="mb-16">
           <h2 className="text-2xl font-bold text-slate-100 mb-6">Resources</h2>

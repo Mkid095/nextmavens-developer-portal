@@ -184,16 +184,38 @@ export async function POST(
       validateReadonlyQuery(trimmedQuery)
     }
 
-    // US-010: Check database.write permission for write operations
-    // If readonly is false and query is a write operation, check permission
-    if (!readonly && isWriteQuery(trimmedQuery)) {
-      // Authenticate request to get user ID
-      const user = await authenticateRequest(req)
+    // US-011: Enforce Studio permissions - check permission for ALL queries
+    // Authenticate request to get user ID
+    const user = await authenticateRequest(req)
 
-      // Get organization ID from project
-      const organizationId = await getOrganizationId(params.projectId)
+    // Get organization ID from project
+    const organizationId = await getOrganizationId(params.projectId)
 
-      // Check database.write permission
+    // Check permissions based on query type
+    if (isReadQuery(trimmedQuery)) {
+      // SELECT queries require database.read permission
+      // All authenticated users (Viewer, Developer, Admin, Owner) have database.read
+      const permissionResult = await checkUserPermission(
+        { id: user.id },
+        organizationId,
+        Permission.DATABASE_READ
+      )
+
+      if (!permissionResult.granted) {
+        throw permissionDeniedError(
+          `You do not have permission to read from the database. ` +
+          `Your role '${permissionResult.role}' does not have the 'database.read' permission. ` +
+          `Please contact your organization owner to request this permission.`,
+          {
+            required_permission: 'database.read',
+            your_role: permissionResult.role,
+            query_type: extractSqlCommand(trimmedQuery),
+          }
+        )
+      }
+    } else if (isWriteQuery(trimmedQuery)) {
+      // INSERT/UPDATE/DELETE queries require database.write permission
+      // Admin and Owner roles have database.write permission
       const permissionResult = await checkUserPermission(
         { id: user.id },
         organizationId,
@@ -204,7 +226,28 @@ export async function POST(
         throw permissionDeniedError(
           `You do not have permission to perform write operations on the database. ` +
           `Your role '${permissionResult.role}' does not have the 'database.write' permission. ` +
-          `Please contact your organization owner to request this permission.`,
+          `Developers have read-only access. Please contact your organization owner to request write access.`,
+          {
+            required_permission: 'database.write',
+            your_role: permissionResult.role,
+            query_type: extractSqlCommand(trimmedQuery),
+          }
+        )
+      }
+    }
+    // DDL and other operations also require database.write permission
+    else if (!readonly) {
+      const permissionResult = await checkUserPermission(
+        { id: user.id },
+        organizationId,
+        Permission.DATABASE_WRITE
+      )
+
+      if (!permissionResult.granted) {
+        throw permissionDeniedError(
+          `You do not have permission to perform this operation on the database. ` +
+          `Your role '${permissionResult.role}' does not have the 'database.write' permission. ` +
+          `DDL operations require write access. Please contact your organization owner to request this permission.`,
           {
             required_permission: 'database.write',
             your_role: permissionResult.role,
