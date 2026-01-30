@@ -134,8 +134,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Error capture fully implemented in src/lib/provisioning/state-machine.ts. Error messages captured in error_message column (lines 111, 150, 210). Error details captured in error_details JSONB with error_type, stack_trace, and context (lines 132-141, 569-579). Error details include: error_type (error constructor name), stack_trace (full error stack), context (projectId, stepName, stepDescription, stepOrder, retryCount, maxRetries). Typecheck passes. Note: UI display of errors is covered by US-007 (Create Provisioning Progress UI)."
     },
     {
       "id": "US-009",

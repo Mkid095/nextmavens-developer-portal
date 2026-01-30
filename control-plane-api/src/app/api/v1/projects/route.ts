@@ -24,13 +24,8 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-<<<<<<< Updated upstream
 // Helper function to validate project ownership/access
 // US-012: Validates that the user has access to the project:
-=======
-// Helper function to validate ownership
-// Validates that the user has access to the project:
->>>>>>> Stashed changes
 // - For personal projects (organization_id IS NULL): only the owner can access
 // - For org projects (organization_id IS NOT NULL): all org members can access
 async function validateProjectOwnership(
@@ -39,13 +34,7 @@ async function validateProjectOwnership(
 ): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(
-<<<<<<< Updated upstream
     'SELECT id, developer_id, project_name, organization_id, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, created_at FROM projects WHERE id = $1',
-=======
-    `SELECT p.id, p.developer_id, p.project_name, p.organization_id, p.tenant_id, p.webhook_url, p.allowed_origins, p.rate_limit, p.status, p.environment, p.created_at
-     FROM projects p
-     WHERE p.id = $1`,
->>>>>>> Stashed changes
     [projectId]
   )
 
@@ -106,13 +95,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Build query with filters
-<<<<<<< Updated upstream
     // US-012: Organization scoping - Show personal projects only to owner,
     // and organization projects to all org members
-=======
-    // Organization scoping: Show personal projects (org_id IS NULL) only to owner,
-    // and org projects to all organization members
->>>>>>> Stashed changes
     const conditions: string[] = [
       `(
         -- Personal projects: only visible to owner

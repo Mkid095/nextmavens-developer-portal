@@ -38,6 +38,7 @@ import {
   LifeBuoy,
   Lock,
   Edit3,
+  Users,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import QuotaWarningBanner from '@/components/QuotaWarningBanner'
@@ -1209,6 +1210,17 @@ export default function ProjectDetailPage() {
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
               </div>
 
+              {/* US-011: Add Quick Actions */}
+              <div className="mb-6 flex gap-3">
+                <Link
+                  href={`/studio/${project?.slug}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Server className="w-4 h-4" />
+                  Open Studio
+                </Link>
+              </div>
+
               <ServiceTab
                 serviceName="Database"
                 overview="A powerful PostgreSQL-powered data service with auto-generated REST & GraphQL APIs. Store, query, and manage your application data with full SQL capabilities while enjoying the convenience of instant API generation."
@@ -1341,6 +1353,21 @@ curl -X POST "${endpoints.rest}/rest/v1/users" \\
                   </div>
                 }
                 docsUrl="https://docs.nextmavens.cloud/database"
+                additionalSections={
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-emerald-900 mb-3">Quick Actions</h3>
+                    <div className="flex flex-wrap gap-3">
+                      <Link
+                        href={`/studio/${project?.slug}/database`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
+                      >
+                        <Database className="w-4 h-4" />
+                        <span>Open Studio</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                }
             />
           )}
 
@@ -1822,6 +1849,17 @@ const client = createClient({
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
               </div>
 
+              {/* US-011: Add Quick Actions */}
+              <div className="mb-6 flex gap-3">
+                <Link
+                  href={`/studio/${project?.slug}/graphql/playground`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Code2 className="w-4 h-4" />
+                  Open GraphQL Playground
+                </Link>
+              </div>
+
               <ServiceTab
                 serviceName="GraphQL"
                 overview="A powerful GraphQL API automatically generated from your database schema. Query your data with flexible, type-safe GraphQL operations. No manual API development required - the schema reflects your database structure in real-time."
@@ -2025,6 +2063,23 @@ result, err := graphql.Mutate(mutation)`,
                 </div>
               }
               docsUrl="https://docs.nextmavens.cloud/graphql"
+              additionalSections={
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-900 mb-3">Quick Actions</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href={endpoints.graphql}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
+                    >
+                      <Code2 className="w-4 h-4" />
+                      <span>Open GraphQL Playground</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+              }
             />
           )}
 
@@ -2044,6 +2099,17 @@ result, err := graphql.Mutate(mutation)`,
                   />
                 </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              {/* US-011: Add Quick Actions */}
+              <div className="mb-6 flex gap-3">
+                <Link
+                  href={`/studio/${project?.slug}/auth/users`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Shield className="w-4 h-4" />
+                  View Users
+                </Link>
               </div>
 
               <ServiceTab
@@ -2191,6 +2257,21 @@ export AUTH_URL="${endpoints.auth}"`,
                 </div>
               }
               docsUrl="https://docs.nextmavens.cloud/auth"
+              additionalSections={
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-900 mb-3">Quick Actions</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href={`/studio/${project?.slug}/auth/users`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>View Users</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              }
             />
           )}
 
@@ -2210,6 +2291,17 @@ export AUTH_URL="${endpoints.auth}"`,
                   />
                 </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              {/* US-011: Add Quick Actions */}
+              <div className="mb-6 flex gap-3">
+                <Link
+                  href={`/studio/${project?.slug}/storage/buckets`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <HardDrive className="w-4 h-4" />
+                  Create Bucket
+                </Link>
               </div>
 
               <ServiceTab
@@ -2378,6 +2470,21 @@ echo "https://cdn.nextmavens.cloud/$PROJECT_ID/uploads/avatars/1234567890_profil
                 </div>
               }
               docsUrl="https://docs.nextmavens.cloud/storage"
+              additionalSections={
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-900 mb-3">Quick Actions</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href={`/studio/${project?.slug}/storage/buckets`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
+                    >
+                      <HardDrive className="w-4 h-4" />
+                      <span>Create Bucket</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              }
             />
           )}
 

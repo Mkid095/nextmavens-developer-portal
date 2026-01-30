@@ -16,10 +16,13 @@ import {
   HardDrive,
   Activity,
   Users,
+  Terminal,
 } from 'lucide-react'
 import { TablesView, type TableData } from '@/features/studio/components/TablesView'
 import { UserList } from '@/features/auth-users/components/UserList'
 import { UserDetail } from '@/features/auth-users/components/UserDetail'
+import { SqlEditor } from '@/features/sql-editor'
+import { ResultsTable } from '@/features/sql-editor/components/ResultsTable'
 
 interface DatabaseTable {
   name: string
@@ -28,6 +31,7 @@ interface DatabaseTable {
 
 const navItems = [
   { id: 'tables', label: 'Tables', icon: Table },
+  { id: 'sql', label: 'SQL Query', icon: Terminal },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'api-keys', label: 'API Keys', icon: Shield },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -44,6 +48,12 @@ export default function StudioPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [usersKey, setUsersKey] = useState(0)
+
+  // US-005: SQL Query state
+  const [sqlQuery, setSqlQuery] = useState('')
+  const [queryResults, setQueryResults] = useState<any>(null)
+  const [queryError, setQueryError] = useState<string | null>(null)
+  const [isExecuting, setIsExecuting] = useState(false)
 
   useEffect(() => {
     fetchTables()
@@ -106,6 +116,66 @@ export default function StudioPage() {
   const handleUserUpdated = () => {
     // Trigger a refresh of the user list
     setUsersKey(prev => prev + 1)
+  }
+
+  /**
+   * US-005: Execute SQL query with readonly mode
+   * Passes readonly parameter to API endpoint
+   */
+  const handleExecuteQuery = async (query: string, readonly: boolean) => {
+    setIsExecuting(true)
+    setQueryError(null)
+    setQueryResults(null)
+
+    try {
+      const token = localStorage.getItem('accessToken')
+      // First, get the project ID from the slug
+      const projectRes = await fetch(`/api/projects?slug=${params.slug}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!projectRes.ok) {
+        throw new Error('Failed to get project info')
+      }
+
+      const projectData = await projectRes.json()
+      const projectId = projectData.projects?.[0]?.id
+
+      if (!projectId) {
+        throw new Error('Project not found')
+      }
+
+      // Execute query with readonly parameter
+      const res = await fetch(`/api/studio/${projectId}/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ query, readonly }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        // Handle validation errors for readonly mode
+        if (data.error) {
+          setQueryError(data.error)
+        } else {
+          setQueryError('Query execution failed')
+        }
+        return
+      }
+
+      if (data.success) {
+        setQueryResults(data.data)
+      }
+    } catch (err: any) {
+      console.error('Query execution failed:', err)
+      setQueryError(err.message || 'Query execution failed')
+    } finally {
+      setIsExecuting(false)
+    }
   }
 
   return (
@@ -192,7 +262,9 @@ export default function StudioPage() {
               </Link>
               <div>
                 <h1 className="text-lg font-semibold text-slate-900">
-                  {activeNav === 'users' ? 'Users' : selectedTable || 'Select a table'}
+                  {activeNav === 'users' ? 'Users' :
+                   activeNav === 'sql' ? 'SQL Query' :
+                   selectedTable || 'Select a table'}
                 </h1>
                 {tableData && activeNav === 'tables' && (
                   <p className="text-sm text-slate-500">
@@ -209,20 +281,72 @@ export default function StudioPage() {
                     User details
                   </p>
                 )}
+                {activeNav === 'sql' && (
+                  <p className="text-sm text-slate-500">
+                    Execute SQL queries on your database
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
-                <Plus className="w-4 h-4" />
-                <span className="text-sm font-medium">New Row</span>
-              </button>
+              {activeNav === 'tables' && (
+                <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-medium">New Row</span>
+                </button>
+              )}
             </div>
           </div>
         </header>
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-auto p-6">
-          {activeNav === 'users' ? (
+          {activeNav === 'sql' ? (
+            <div className="flex flex-col gap-6">
+              {/* US-005: SQL Editor with read-only mode */}
+              <SqlEditor
+                value={sqlQuery}
+                onChange={setSqlQuery}
+                onExecute={handleExecuteQuery}
+                height="300px"
+              />
+
+              {/* Error display */}
+              {queryError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm font-medium text-red-900">Query Error</p>
+                  <p className="text-sm text-red-700 mt-1">{queryError}</p>
+                </div>
+              )}
+
+              {/* Loading indicator */}
+              {isExecuting && (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
+                  <span className="ml-3 text-sm text-slate-600">Executing query...</span>
+                </div>
+              )}
+
+              {/* Query results */}
+              {queryResults && !isExecuting && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-slate-900">
+                      Query Results
+                    </h3>
+                    <span className="text-xs text-slate-500">
+                      {queryResults.rowCount} row{queryResults.rowCount !== 1 ? 's' : ''} • {queryResults.executionTime}ms
+                    </span>
+                  </div>
+                  <ResultsTable
+                    columns={queryResults.columns || []}
+                    rows={queryResults.rows || []}
+                    rowCount={queryResults.rowCount || 0}
+                  />
+                </div>
+              )}
+            </div>
+          ) : activeNav === 'users' ? (
             selectedUserId ? (
               <UserDetail
                 key={selectedUserId}

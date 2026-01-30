@@ -8,6 +8,14 @@ export interface ServiceStatus {
   message: string | null
 }
 
+export interface IncidentUpdate {
+  id: string
+  incident_id: string
+  message: string
+  status: string
+  created_at: string
+}
+
 export interface Incident {
   id: string
   service: string
@@ -19,6 +27,7 @@ export interface Incident {
   resolved_at: string | null
   affected_services: unknown
   created_at: string
+  updates?: IncidentUpdate[]
 }
 
 export interface StatusResponse {
