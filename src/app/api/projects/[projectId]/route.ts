@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest } from '@/lib/middleware'
+import { withCorrelationId, getCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
 import { SuspensionManager } from '@/features/abuse-controls/lib/data-layer'
 import { logProjectAction, userActor } from '@nextmavens/audit-logs-database'
 
@@ -12,6 +13,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
+  // Apply correlation ID to request
+  const correlationId = withCorrelationId(req)
+
   try {
     const developer = await authenticateRequest(req)
     const projectId = params.projectId
@@ -70,7 +74,8 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({ project: response })
+    const res = NextResponse.json({ project: response })
+    return setCorrelationHeader(res, correlationId)
   } catch (error: any) {
     console.error('[Projects API] Get project error:', error)
     return NextResponse.json(
@@ -88,6 +93,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
+  // Apply correlation ID to request
+  const correlationId = withCorrelationId(req)
+
   try {
     const developer = await authenticateRequest(req)
     const projectId = params.projectId
