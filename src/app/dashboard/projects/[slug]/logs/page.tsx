@@ -170,54 +170,22 @@ export default function LogsPage() {
     if (dateRange && dateRangeOptions.some(opt => opt.value === dateRange)) setDateRangeFilter(dateRange)
   }, [searchParams])
 
-  // Update URL when filters change
-  const updateFilters = useCallback((updates: {
-    service?: ServiceFilter
-    level?: LevelFilter
-    dateRange?: string
-    start_date?: string
-    end_date?: string
-  }) => {
-    const params = new URLSearchParams(searchParams.toString())
-
-    if (updates.service !== undefined) {
-      params.set('service', updates.service)
-    }
-    if (updates.level !== undefined) {
-      params.set('level', updates.level)
-    }
-    if (updates.dateRange !== undefined) {
-      params.set('dateRange', updates.dateRange)
-    }
-    if (updates.start_date !== undefined) {
-      if (updates.start_date) {
-        params.set('start_date', updates.start_date)
-      } else {
-        params.delete('start_date')
-      }
-    }
-    if (updates.end_date !== undefined) {
-      if (updates.end_date) {
-        params.set('end_date', updates.end_date)
-      } else {
-        params.delete('end_date')
-      }
-    }
-
-    router.replace(`/dashboard/projects/${params.slug}/logs?${params.toString()}`, { scroll: false })
-  }, [searchParams, router, params.slug])
-
   useEffect(() => {
     fetchProject()
-    if (project?.id) {
-      connectToLogStream()
-    }
+  }, [params.slug])
+
+  // SSE connection for real-time logs
+  useEffect(() => {
+    if (!project) return
+
+    connectToLogStream()
+
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close()
       }
     }
-  }, [params.slug, project?.id, serviceFilter, levelFilter, dateRangeFilter, customStartDate, customEndDate])
+  }, [project, serviceFilter, levelFilter, dateRangeFilter, customStartDate, customEndDate])
 
   const fetchProject = async () => {
     try {
@@ -381,6 +349,7 @@ export default function LogsPage() {
     }
   }
 
+  // Client-side filtering for search (filters are applied server-side via SSE)
   const filteredLogs = logs.filter((log) => {
     const matchesSearch =
       searchQuery === '' ||
@@ -388,10 +357,7 @@ export default function LogsPage() {
       log.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (log.request_id && log.request_id.toLowerCase().includes(searchQuery.toLowerCase()))
 
-    const matchesService = serviceFilter === 'all' || log.service === serviceFilter
-    const matchesLevel = levelFilter === 'all' || log.level === levelFilter
-
-    return matchesSearch && matchesService && matchesLevel
+    return matchesSearch
   })
 
   const handleDownload = () => {
@@ -563,6 +529,43 @@ export default function LogsPage() {
               )}
             </div>
 
+            {/* Date Range Filter */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowDateRangeDropdown(!showDateRangeDropdown)
+                  setShowServiceDropdown(false)
+                  setShowLevelDropdown(false)
+                }}
+                className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition min-w-[160px] justify-between"
+              >
+                <Calendar className="w-4 h-4 text-slate-500" />
+                <span className="text-sm">
+                  {dateRangeOptions.find((opt) => opt.value === dateRangeFilter)?.label}
+                </span>
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              </button>
+
+              {showDateRangeDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 min-w-[200px]">
+                  {dateRangeOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setDateRangeFilter(option.value)
+                        setShowDateRangeDropdown(false)
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition ${
+                        dateRangeFilter === option.value ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Download Button */}
             <button
               onClick={handleDownload}
@@ -607,6 +610,8 @@ export default function LogsPage() {
               <p className="text-sm text-slate-500 mt-1">
                 {searchQuery || serviceFilter !== 'all' || levelFilter !== 'all'
                   ? 'Try adjusting your filters'
+                  : connecting
+                  ? 'Connecting to log stream...'
                   : 'Logs will appear here as they are generated'}
               </p>
             </div>

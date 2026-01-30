@@ -4,15 +4,17 @@
  *
  * SECURITY: Requires operator or admin role
  * US-006: Uses standardized error format for consistent error responses
+ * US-004: Applies correlation ID middleware for request tracing
  */
 
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { authenticateRequest } from '@/lib/auth'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 import type { EndUserListQuery } from '@/lib/types/auth-user.types'
 import { validationError, authenticationError, permissionDeniedError, internalError } from '@/lib/errors'
+import { withCorrelationId, getCorrelationId, setCorrelationHeader, CORRELATION_HEADER } from '@/lib/middleware/correlation'
 
 /**
  * Query parameter validation schema
