@@ -163,8 +163,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created signature verification library at src/features/webhooks/lib/webhook-signature.ts (270+ lines) with verifyWebhookSignature(), generateSignature(), extractSignature(), and parseVerifiedWebhook() helper functions. Verification uses HMAC-SHA256 with constant-time comparison to prevent timing attacks. The X-Webhook-Signature header (format: sha256=<hex>) is already sent by webhook-delivery.ts (line 103). Documentation created at docs/webhooks-signature-verification.md with comprehensive guide including how signature verification works, headers reference, verification steps, and example code in Node.js/TypeScript (Express, Next.js), Python (Flask), and Go. Includes security best practices (constant-time comparison, timestamp checks, proper status codes, idempotency handling) and troubleshooting section. Typecheck passes."
     },
     {
       "id": "US-007",
