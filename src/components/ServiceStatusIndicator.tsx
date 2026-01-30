@@ -16,6 +16,11 @@ export type ServiceToggleCallback = (service: ServiceType, newStatus: ServiceSta
 
 interface ServiceStatusIndicatorProps {
   /**
+   * The service type (database, auth, storage, realtime, graphql)
+   */
+  service: ServiceType
+
+  /**
    * The current status of the service
    */
   status: ServiceStatus
@@ -24,7 +29,7 @@ interface ServiceStatusIndicatorProps {
    * Optional callback when the status indicator is clicked
    * Used to toggle service on/off
    */
-  onToggle?: () => void
+  onToggle?: ServiceToggleCallback
 
   /**
    * Whether the status is currently being updated
@@ -32,9 +37,14 @@ interface ServiceStatusIndicatorProps {
   isUpdating?: boolean
 
   /**
-   * The name of the service for accessibility
+   * Size variant for the indicator
    */
-  serviceName: string
+  size?: 'sm' | 'md' | 'lg'
+
+  /**
+   * Whether to show the toggle button alongside the status badge
+   */
+  showToggle?: boolean
 }
 
 /**
