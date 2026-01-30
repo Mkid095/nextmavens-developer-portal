@@ -4,6 +4,7 @@ import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import { updateProjectSchema, type UpdateProjectInput } from '@/lib/validation'
 import { toErrorNextResponse, ErrorCode, isPlatformError } from '@/lib/errors'
+import { invalidateSnapshot } from '@/lib/snapshot/cache'
 
 // Helper function to validate ownership
 async function validateProjectOwnership(
@@ -166,6 +167,9 @@ export async function PUT(
 
     const updatedProject = updateResult.rows[0]
 
+    // Invalidate snapshot cache so data plane services get updated project state
+    invalidateSnapshot(projectId)
+
     // Get tenant slug for response
     const tenantResult = await pool.query(
       'SELECT slug FROM tenants WHERE id = $1',
@@ -237,6 +241,9 @@ export async function DELETE(
        RETURNING id, project_name, status`,
       [now, gracePeriodEnd, projectId]
     )
+
+    // Invalidate snapshot cache so data plane services get updated project status
+    invalidateSnapshot(projectId)
 
     return NextResponse.json({
       success: true,

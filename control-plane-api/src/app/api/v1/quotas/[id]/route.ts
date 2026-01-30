@@ -7,6 +7,7 @@ import {
   listUsageQuerySchema,
   type UpdateQuotasInput,
 } from '@/lib/validation'
+import { invalidateSnapshot } from '@/lib/snapshot/cache'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -226,6 +227,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
         ]
       )
 
+      // Invalidate snapshot cache so data plane services get updated quotas
+      invalidateSnapshot(projectId)
+
       return NextResponse.json({
         success: true,
         data: {
@@ -275,6 +279,9 @@ export async function PUT(req: NextRequest, context: RouteContext) {
          RETURNING *`,
         values
       )
+
+      // Invalidate snapshot cache so data plane services get updated quotas
+      invalidateSnapshot(projectId)
 
       return NextResponse.json({
         success: true,
