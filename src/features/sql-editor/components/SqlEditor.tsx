@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
-import { Play, ShieldAlert, Lock, History, Zap, Wand2 } from 'lucide-react'
+import { Play, ShieldAlert, Lock, History, Zap, Wand2, Bookmark } from 'lucide-react'
 import { addQueryToHistory } from './QueryHistory'
 import { format } from 'sql-formatter'
+import { saveQuery } from './SavedQueries'
 
 type UserRole = 'owner' | 'admin' | 'developer' | 'viewer' | null
 
@@ -36,6 +37,7 @@ interface SqlEditorProps {
  * - Query history integration (US-004)
  * - Query plan (EXPLAIN) button (US-008)
  * - SQL formatting button and shortcut (US-009)
+ * - Save query button (US-010)
  *
  * US-001: Create SQL Editor Component
  * US-005: Implement Read-Only Mode
@@ -43,6 +45,7 @@ interface SqlEditorProps {
  * US-004: Implement Query History
  * US-008: Show Query Stats (EXPLAIN support)
  * US-009: Format SQL
+ * US-010: Save Queries
  */
 export function SqlEditor({
   value = '',
@@ -249,6 +252,37 @@ export function SqlEditor({
     }
   }
 
+  /**
+   * US-010: Save the current query with a name
+   * Prompts the user for a query name and saves to localStorage
+   */
+  const handleSaveQuery = () => {
+    if (!query.trim()) {
+      return
+    }
+
+    const name = prompt('Enter a name for this query:', extractSqlCommand(query) + ' Query')
+    if (name === null) {
+      // User cancelled
+      return
+    }
+
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      alert('Please enter a name for the query')
+      return
+    }
+
+    try {
+      saveQuery(query, trimmedName)
+      // Optional: Show success feedback
+      console.log('Query saved:', trimmedName)
+    } catch (error) {
+      console.error('Failed to save query:', error)
+      alert('Failed to save query')
+    }
+  }
+
   return (
     <div className="flex flex-col gap-2">
       {/* Toolbar */}
@@ -295,6 +329,16 @@ export function SqlEditor({
           </label>
         </div>
         <div className="flex items-center gap-2">
+          {/* US-010: Save Query button */}
+          <button
+            onClick={handleSaveQuery}
+            disabled={!query.trim() || readOnly}
+            className="flex items-center gap-2 px-3 py-1.5 bg-violet-600 text-white text-sm font-medium rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            title="Save this query for later use"
+          >
+            <Bookmark className="w-4 h-4" />
+            Save
+          </button>
           {/* US-009: Format SQL button */}
           <button
             onClick={handleFormat}
