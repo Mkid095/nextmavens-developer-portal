@@ -55,7 +55,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: src/lib/usage/database-tracking.ts (270+ lines) with recordDatabaseMetric, recordDatabaseMetrics, trackDatabaseQuery, getDatabaseUsageStats, and getCurrentDatabaseUsage functions. src/lib/usage/usage-middleware.ts (220+ lines) with withUsageTracking and withUsageTrackingCustom middleware wrappers for automatic tracking. All tracking is async (fire-and-forget) to avoid blocking requests. Integrates with JWT authentication to extract project_id. src/features/abuse-controls/lib/enforcement.ts updated to query usage_metrics table instead of returning 0, and to record metrics to usage_metrics table. Typecheck passes."
+      "notes": "Completed: control-plane-api/src/lib/database-usage-tracking.ts (270+ lines) with recordDatabaseUsage, recordDatabaseUsageBatch, recordDatabaseUsageAsync (fire-and-forget), withDatabaseUsageTracking, getDatabaseUsageStats functions. Tracks db_query, db_row_read, db_row_written metrics. Integrated into control-plane-api/src/lib/tenant-db.ts TenantQueryExecutor.query() and transaction() methods. All tracking is async (fire-and-forget) to avoid blocking requests. Records to usage_metrics table in control_plane schema. Typecheck passes."
     },
     {
       "id": "US-003",
