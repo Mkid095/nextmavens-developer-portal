@@ -152,8 +152,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Schema defined in src/lib/snapshot/schema.ts with comprehensive Zod validation. Schema includes: version (VersionStringSchema), project (SnapshotProjectSchema with id/status/environment/tenant_id/created_at/updated_at), services (ServicesSchema with auth/graphql/realtime/storage/database/functions), limits (RateLimitSchema with per-minute/hour/day), quotas (QuotasSchema with db_queries/realtime_connections/storage_uploads/function_invocations). Schema validation implemented via validateSnapshot() and validateSnapshotResponse() functions, called in route.ts. Documentation created at docs/snapshot-schema.md (266 lines) with full schema spec, examples, version increment logic, and client guidelines. Version increment logic defined in cache.ts with invalidateSnapshot() function, automatic triggers documented (project status changes, quota changes, service enablement changes), version format v{n} with monotonic increment. Typecheck passes."
     },
     {
       "id": "US-006",
