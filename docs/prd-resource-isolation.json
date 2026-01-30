@@ -187,8 +187,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Auth tokens include project_id claim (US-001). Login validates project ownership by checking developer_id matches. Cross-project auth rejected with 403 ('Invalid project_id or access denied'). Typecheck passes."
     },
     {
       "id": "US-008",
