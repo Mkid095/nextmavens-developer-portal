@@ -525,7 +525,7 @@ export class RealtimeServiceSnapshotClient {
    */
   clearCache(): void {
     snapshotCache.clear()
-    console.log('[Realtime Service Snapshot] Cleared all cache')
+    console.log(formatLogMessage('Cleared all cache'))
   }
 
   /**
@@ -535,7 +535,7 @@ export class RealtimeServiceSnapshotClient {
    */
   resetConnectionCount(projectId: string): void {
     activeConnections.delete(projectId)
-    console.log(`[Realtime Service Snapshot] Reset connection count for project ${projectId}`)
+    console.log(formatLogMessage(`Reset connection count for project ${projectId}`))
   }
 
   /**
@@ -543,7 +543,7 @@ export class RealtimeServiceSnapshotClient {
    */
   clearAllConnectionCounts(): void {
     activeConnections.clear()
-    console.log('[Realtime Service Snapshot] Cleared all connection counts')
+    console.log(formatLogMessage('Cleared all connection counts'))
   }
 
   /**
@@ -742,7 +742,7 @@ export function cleanupExpiredRealtimeCacheEntries(): number {
   }
 
   if (cleaned > 0) {
-    console.log(`[Realtime Service Snapshot] Cleaned up ${cleaned} expired cache entries`)
+    console.log(formatLogMessage(`Cleaned up ${cleaned} expired cache entries`))
   }
 
   return cleaned

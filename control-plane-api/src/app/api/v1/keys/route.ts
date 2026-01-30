@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
       projectId = projectResult.rows[0].id
     }
 
-    // Validate project ownership
+    // Validate project ownership and get project details
     const ownershipCheck = await validateProjectOwnership(projectId, developer)
     if (!ownershipCheck.valid) {
       return errorResponse('FORBIDDEN', 'You do not have access to this project', 403)
@@ -192,8 +192,11 @@ export async function POST(req: NextRequest) {
     // Get scopes (use provided or defaults)
     const scopes = validatedData.scopes || DEFAULT_API_KEY_SCOPES[validatedData.key_type]
 
-    // Generate key prefix based on type and environment
-    const keyPrefix = getKeyPrefix(validatedData.key_type, validatedData.environment)
+    // US-010: Generate key prefix based on type and PROJECT environment
+    // The key prefix is determined by the project's environment, not the requested key environment
+    const projectEnvironment = ownershipCheck.project.environment || 'prod'
+    const keyPrefix = getKeyPrefix(validatedData.key_type, projectEnvironment)
+    const keyEnvironment = mapProjectEnvironmentToKeyEnvironment(projectEnvironment)
 
     // Generate API key pair
     const publicKey = generateApiKey('public')
@@ -216,7 +219,7 @@ export async function POST(req: NextRequest) {
       `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, name, scopes, environment)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, key_type, key_prefix, scopes, environment, name, created_at`,
-      [projectId, validatedData.key_type, keyPrefix, hashedSecretKey, validatedData.name, JSON.stringify(scopes), validatedData.environment]
+      [projectId, validatedData.key_type, keyPrefix, hashedSecretKey, validatedData.name, JSON.stringify(scopes), keyEnvironment]
     )
 
     const apiKey = dbResult.rows[0]
