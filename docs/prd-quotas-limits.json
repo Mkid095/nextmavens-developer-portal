@@ -81,8 +81,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created POST /api/usage/check endpoint at src/app/api/usage/check/route.ts. Validates request (project_id, service, amount). Gets quota config from control_plane.quotas table. Aggregates current usage from control_plane.usage_snapshots table. Returns allowed boolean, usage_percentage, reset_at, current_usage, monthly_limit, hard_cap. Returns 403 if project is suspended or over hard cap with reason. Includes comprehensive validation, project existence check, and suspension status check. Typecheck passes."
     },
     {
       "id": "US-004",
