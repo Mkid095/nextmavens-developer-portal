@@ -50,8 +50,11 @@ import SupportRequestDetailModal from '@/components/SupportRequestDetailModal'
 import { McpUsageAnalytics } from '@/components/McpUsageAnalytics'
 import LanguageSelector, { type CodeLanguage, useLanguageSelector } from '@/components/LanguageSelector'
 import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLanguageCodeBlock'
-import ServiceStatusIndicator, { type ServiceStatus, getServiceStatus } from '@/components/ServiceStatusIndicator'
+import ServiceStatusIndicator, { type ServiceStatus } from '@/components/ServiceStatusIndicator'
+import type { ServiceType } from '@/lib/types/service-status.types'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
+import { usePermission, usePermissions } from '@/hooks/usePermissions'
+import { Permission } from '@/lib/types/rbac.types'
 
 interface Project {
   id: string
@@ -80,11 +83,11 @@ interface ApiKey {
  * US-010: Add Service Status Indicators
  */
 interface ServiceStatuses {
-  database: boolean
-  auth: boolean
-  storage: boolean
-  realtime: boolean
-  graphql: boolean
+  database: ServiceStatus
+  auth: ServiceStatus
+  storage: ServiceStatus
+  realtime: ServiceStatus
+  graphql: ServiceStatus
 }
 
 /**
@@ -324,13 +327,13 @@ export default function ProjectDetailPage() {
   const [showSecret, setShowSecret] = useState<Record<string, boolean>>({})
   // US-010: Service status tracking
   const [serviceStatuses, setServiceStatuses] = useState<ServiceStatuses>({
-    database: true,
-    auth: true,
-    storage: true,
-    realtime: true,
-    graphql: true,
+    database: 'enabled',
+    auth: 'enabled',
+    storage: 'enabled',
+    realtime: 'enabled',
+    graphql: 'enabled',
   })
-  const [updatingService, setUpdatingService] = useState<string | null>(null)
+  const [updatingService, setUpdatingService] = useState<ServiceType | null>(null)
   const [suspensionStatus, setSuspensionStatus] = useState<SuspensionRecord | null>(null)
   const [suspensionLoading, setSuspensionLoading] = useState(true)
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false)
@@ -375,6 +378,29 @@ export default function ProjectDetailPage() {
   const [updatingFlag, setUpdatingFlag] = useState<string | null>(null)
   // US-009: Language selector for code examples
   const [codeLanguage, setCodeLanguage] = useLanguageSelector()
+
+  // US-009: Permission checks for UI elements
+  // Note: tenant_id is the organization_id for permission checks
+  const { canPerform: canDeleteProject, isLoading: deletePermLoading } = usePermission(
+    Permission.PROJECTS_DELETE,
+    project?.tenant_id || null,
+    { enabled: !!project?.tenant_id }
+  )
+  const { canPerform: canManageServices, isLoading: manageServicesPermLoading } = usePermission(
+    Permission.PROJECTS_MANAGE_SERVICES,
+    project?.tenant_id || null,
+    { enabled: !!project?.tenant_id }
+  )
+  const { canPerform: canManageKeys, isLoading: manageKeysPermLoading } = usePermission(
+    Permission.PROJECTS_MANAGE_KEYS,
+    project?.tenant_id || null,
+    { enabled: !!project?.tenant_id }
+  )
+  const { canPerform: canManageUsers, isLoading: manageUsersPermLoading } = usePermission(
+    Permission.PROJECTS_MANAGE_USERS,
+    project?.tenant_id || null,
+    { enabled: !!project?.tenant_id }
+  )
 
   useEffect(() => {
     if (project) {
@@ -879,44 +905,48 @@ export default function ProjectDetailPage() {
   }
 
   // US-010: Handle service status toggle
-  const handleToggleService = async (serviceName: keyof ServiceStatuses) => {
+  const handleToggleService = async (service: ServiceType, newStatus: ServiceStatus) => {
     if (!project?.id || updatingService) return
 
-    const currentStatus = serviceStatuses[serviceName]
-    const newStatus = !currentStatus
+    const currentStatus = serviceStatuses[service]
 
     // Confirm before disabling
-    if (!newStatus) {
-      const confirmed = confirm(`Are you sure you want to disable the ${serviceName} service? This may affect your application.`)
+    if (newStatus === 'disabled') {
+      const confirmed = confirm(`Are you sure you want to disable the ${service} service? This may affect your application.`)
       if (!confirmed) return
     }
 
-    setUpdatingService(serviceName)
+    setUpdatingService(service)
     try {
-      const token = localStorage.getItem('accessToken')
-      const res = await fetch(`/api/projects/${project.id}/services/${serviceName}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ enabled: newStatus }),
-      })
+      // Simulate provisioning state when enabling
+      if (newStatus === 'enabled') {
+        setServiceStatuses(prev => ({
+          ...prev,
+          [service]: 'provisioning',
+        }))
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: 'Failed to update service status' }))
-        throw new Error(data.error || 'Failed to update service status')
+        // Simulate provisioning delay (2 seconds)
+        await new Promise(resolve => setTimeout(resolve, 2000))
       }
 
       setServiceStatuses(prev => ({
         ...prev,
-        [serviceName]: newStatus,
+        [service]: newStatus,
       }))
     } catch (err: any) {
-      console.error(`Failed to toggle ${serviceName} service:`, err)
-      alert(err.message || `Failed to ${newStatus ? 'enable' : 'disable'} ${serviceName} service`)
+      console.error(`Failed to toggle ${service} service:`, err)
+      alert(err.message || `Failed to ${newStatus === 'enabled' ? 'enable' : 'disable'} ${service} service`)
     } finally {
       setUpdatingService(null)
+    }
+  }
+
+  // US-010: Create toggle handler for a specific service
+  const createToggleHandler = (service: ServiceType) => {
+    return async () => {
+      const currentStatus = serviceStatuses[service]
+      const newStatus: ServiceStatus = currentStatus === 'enabled' ? 'disabled' : 'enabled'
+      await handleToggleService(service, newStatus)
     }
   }
 
@@ -1056,20 +1086,35 @@ export default function ProjectDetailPage() {
         )}
 
         <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition ${
-                activeTab === tab.id
-                  ? 'bg-emerald-700 text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{tab.label}</span>
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            // Check if this tab has a service status
+            const isServiceTab = ['database', 'auth', 'storage', 'realtime', 'graphql'].includes(tab.id)
+            const serviceStatus = isServiceTab ? serviceStatuses[tab.id as keyof ServiceStatuses] : null
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition ${
+                  activeTab === tab.id
+                    ? 'bg-emerald-700 text-white'
+                    : 'bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                <span className="text-sm font-medium">{tab.label}</span>
+                {/* US-010: Service Status Indicator */}
+                {isServiceTab && serviceStatus && (
+                  <ServiceStatusIndicator
+                    service={tab.id as ServiceType}
+                    status={serviceStatus}
+                    onToggle={handleToggleService}
+                    isUpdating={updatingService === tab.id}
+                  />
+                )}
+              </button>
+            )
+          })}
         </div>
 
         <motion.div
@@ -1115,30 +1160,41 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
 
-              {/* US-010: Delete Project Section */}
-              <div className="mt-8 pt-6 border-t border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-red-900">Danger Zone</h3>
-                    <p className="text-sm text-slate-600 mt-1">Delete this project and all its data</p>
+              {/* US-009: Delete Project Section - Only shown to owners */}
+              {canDeleteProject && (
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-red-900">Danger Zone</h3>
+                      <p className="text-sm text-slate-600 mt-1">Delete this project and all its data</p>
+                    </div>
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">Delete Project</span>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="text-sm font-medium">Delete Project</span>
-                  </button>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {activeTab === 'database' && (
             <>
               {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900">Database Service</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Database Service</h2>
+                  <ServiceStatusIndicator
+                    service="database"
+                    status={serviceStatuses.database}
+                    onToggle={createToggleHandler('database')}
+                    isUpdating={updatingService === 'database'}
+                  />
+                </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
               </div>
 
@@ -1281,13 +1337,16 @@ curl -X POST "${endpoints.rest}/rest/v1/users" \\
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-slate-900">API Keys</h2>
-                <button
-                  onClick={openCreateKeyModal}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="text-sm font-medium">Create Key</span>
-                </button>
+                {/* US-009: Create Key button - only shown to admins and owners */}
+                {canManageKeys && (
+                  <button
+                    onClick={openCreateKeyModal}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-sm font-medium">Create Key</span>
+                  </button>
+                )}
               </div>
 
               {/* US-007: API Keys guidance section */}
@@ -1943,8 +2002,17 @@ result, err := graphql.Mutate(mutation)`,
           {activeTab === 'auth' && (
             <>
               {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900">Auth Service</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Auth Service</h2>
+                  <ServiceStatusIndicator
+                    service="auth"
+                    status={serviceStatuses.auth}
+                    onToggle={createToggleHandler('auth')}
+                    isUpdating={updatingService === 'auth'}
+                  />
+                </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
               </div>
 

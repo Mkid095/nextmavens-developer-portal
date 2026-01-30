@@ -1,18 +1,13 @@
 'use client'
 
-import { Loader2, CheckCircle, XCircle, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Loader2, CheckCircle, XCircle } from 'lucide-react'
 import type { ServiceStatus, ServiceType } from '@/lib/types/service-status.types'
-import { getServiceStatusDisplay, getServiceLabel, canToggleServiceStatus } from '@/lib/types/service-status.types'
+import { getServiceStatusDisplay, getServiceLabel } from '@/lib/types/service-status.types'
 
 /**
  * Re-export ServiceStatus and ServiceType for convenience
  */
 export type { ServiceStatus, ServiceType } from '@/lib/types/service-status.types'
-
-/**
- * Service toggle callback type
- */
-export type ServiceToggleCallback = (service: ServiceType, newStatus: ServiceStatus) => Promise<void> | void
 
 interface ServiceStatusIndicatorProps {
   /**
@@ -29,22 +24,12 @@ interface ServiceStatusIndicatorProps {
    * Optional callback when the status indicator is clicked
    * Used to toggle service on/off
    */
-  onToggle?: ServiceToggleCallback
+  onToggle?: () => void | Promise<void>
 
   /**
    * Whether the status is currently being updated
    */
   isUpdating?: boolean
-
-  /**
-   * Size variant for the indicator
-   */
-  size?: 'sm' | 'md' | 'lg'
-
-  /**
-   * Whether to show the toggle button alongside the status badge
-   */
-  showToggle?: boolean
 }
 
 /**
@@ -60,71 +45,32 @@ interface ServiceStatusIndicatorProps {
  * US-010: Add Service Status Indicators
  */
 export default function ServiceStatusIndicator({
+  service,
   status,
   onToggle,
   isUpdating = false,
-  serviceName,
 }: ServiceStatusIndicatorProps) {
-  const getStatusConfig = () => {
-    switch (status) {
-      case 'enabled':
-        return {
-          icon: CheckCircle,
-          label: 'Enabled',
-          bgColor: 'bg-emerald-50',
-          textColor: 'text-emerald-700',
-          iconColor: 'text-emerald-600',
-          borderColor: 'border-emerald-200',
-          cursor: onToggle ? 'cursor-pointer' : 'cursor-default',
-        }
-      case 'disabled':
-        return {
-          icon: XCircle,
-          label: 'Disabled',
-          bgColor: 'bg-red-50',
-          textColor: 'text-red-700',
-          iconColor: 'text-red-600',
-          borderColor: 'border-red-200',
-          cursor: onToggle ? 'cursor-pointer' : 'cursor-default',
-        }
-      case 'provisioning':
-        return {
-          icon: Loader2,
-          label: 'Provisioning',
-          bgColor: 'bg-amber-50',
-          textColor: 'text-amber-700',
-          iconColor: 'text-amber-600',
-          borderColor: 'border-amber-200',
-          cursor: 'cursor-default',
-        }
-    }
-  }
-
-  const config = getStatusConfig()
-  const Icon = config.icon
+  const display = getServiceStatusDisplay(status)
+  const serviceLabel = getServiceLabel(service)
 
   const handleClick = () => {
-    if (onToggle && !isUpdating && status !== 'provisioning') {
+    if (onToggle && !isUpdating && display.canToggle) {
       onToggle()
     }
   }
 
+  const Icon = status === 'provisioning' ? Loader2 : status === 'enabled' ? CheckCircle : XCircle
+
   return (
     <button
       onClick={handleClick}
-      disabled={!onToggle || isUpdating || status === 'provisioning'}
-      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${config.bgColor} ${config.textColor} ${config.borderColor} ${config.cursor} transition hover:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed`}
-      title={
-        status === 'provisioning'
-          ? `${serviceName} is being provisioned`
-          : onToggle
-            ? `Click to ${status === 'enabled' ? 'disable' : 'enable'} ${serviceName}`
-            : `${serviceName} is ${config.label.toLowerCase()}`
-      }
-      aria-label={`${serviceName} status: ${config.label}`}
+      disabled={!onToggle || isUpdating || !display.canToggle}
+      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${display.bgClass} ${display.colorClass} border-opacity-20 transition hover:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed`}
+      title={onToggle && display.canToggle ? `Click to ${status === 'enabled' ? 'disable' : 'enable'} ${serviceLabel}` : display.tooltip}
+      aria-label={`${serviceLabel} status: ${display.label}`}
     >
-      <Icon className={`w-4 h-4 ${status === 'provisioning' ? 'animate-spin' : ''} ${config.iconColor}`} />
-      <span className="text-sm font-medium">{config.label}</span>
+      <Icon className={`w-4 h-4 ${status === 'provisioning' ? 'animate-spin' : ''}`} />
+      <span className="text-sm font-medium">{display.label}</span>
     </button>
   )
 }

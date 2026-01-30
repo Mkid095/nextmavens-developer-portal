@@ -436,6 +436,16 @@ export class ControlPlaneClient {
   }
 
   /**
+   * List all members of an organization
+   */
+  async listOrganizationMembers(
+    orgId: string,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: any[] }> {
+    return this.request<{ success: boolean; data: any[] }>(`/api/v1/orgs/${orgId}/members`, {}, req)
+  }
+
+  /**
    * Remove a member from an organization
    */
   async removeOrganizationMember(
@@ -445,6 +455,20 @@ export class ControlPlaneClient {
   ): Promise<{ success: boolean; message: string }> {
     return this.request<{ success: boolean; message: string }>(`/api/v1/orgs/${orgId}/members/${userId}`, {
       method: 'DELETE',
+    }, req)
+  }
+
+  /**
+   * Invite a member to an organization by email
+   */
+  async inviteOrganizationMember(
+    orgId: string,
+    request: { email: string; role: 'owner' | 'admin' | 'developer' | 'viewer' },
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: { id: string; org_id: string; email: string; role: string; status: string; invited_by: string; created_at: string; expires_at: string } }> {
+    return this.request<{ success: boolean; data: { id: string; org_id: string; email: string; role: string; status: string; invited_by: string; created_at: string; expires_at: string } }>(`/api/v1/orgs/${orgId}/members`, {
+      method: 'POST',
+      body: JSON.stringify(request),
     }, req)
   }
 

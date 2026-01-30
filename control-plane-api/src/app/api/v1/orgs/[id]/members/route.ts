@@ -22,6 +22,86 @@ function generateInvitationToken(): string {
   return crypto.randomBytes(32).toString('hex')
 }
 
+// Extract organization ID from URL path
+function getOrgIdFromRequest(req: NextRequest): string {
+  const url = new URL(req.url)
+  const pathParts = url.pathname.split('/')
+  const orgIdIndex = pathParts.indexOf('orgs') + 1
+  return pathParts[orgIdIndex]
+}
+
+// GET /v1/orgs/:id/members - List all members of an organization
+// Returns all members including pending invitations
+export async function GET(req: NextRequest) {
+  try {
+    await authenticateRequest(req)
+
+    const url = new URL(req.url)
+    const pathParts = url.pathname.split('/')
+    const orgIdIndex = pathParts.indexOf('orgs') + 1
+    const orgId = pathParts[orgIdIndex]
+
+    const pool = getPool()
+
+    // Get all members including pending invitations
+    const membersResult = await pool.query(
+      `SELECT
+         om.id,
+         om.org_id,
+         om.user_id,
+         om.email,
+         om.role,
+         om.status,
+         om.invited_by,
+         om.joined_at,
+         om.created_at,
+         om.token_expires_at,
+         d.name as user_name,
+         d.email as user_email
+       FROM control_plane.organization_members om
+       LEFT JOIN developers d ON om.user_id = d.id
+       WHERE om.org_id = $1
+       ORDER BY
+         CASE om.role
+           WHEN 'owner' THEN 1
+           WHEN 'admin' THEN 2
+           WHEN 'developer' THEN 3
+           WHEN 'viewer' THEN 4
+         END,
+         om.created_at ASC`,
+      [orgId]
+    )
+
+    const members = membersResult.rows.map(row => ({
+      id: row.id,
+      org_id: row.org_id,
+      user_id: row.user_id,
+      email: row.email || row.user_email,
+      name: row.user_name,
+      role: row.role,
+      status: row.status,
+      invited_by: row.invited_by,
+      joined_at: row.joined_at,
+      created_at: row.created_at,
+      token_expires_at: row.token_expires_at,
+    }))
+
+    return NextResponse.json({
+      success: true,
+      data: members,
+    }, { status: 200 })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'No token provided') {
+      return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
+    }
+    if (error instanceof Error && error.message === 'Invalid token') {
+      return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
+    }
+    console.error('Error listing members:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to list members', 500)
+  }
+}
+
 // POST /v1/orgs/:id/members - Invite member to organization by email
 // US-008: Only owners can manage users (invite members)
 export const POST = requirePermission(

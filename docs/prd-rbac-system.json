@@ -232,8 +232,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created client-side permission checking infrastructure. Added API endpoint at src/app/api/permissions/check/route.ts for checking user permissions. Created React hooks (usePermission, usePermissions) in src/hooks/usePermissions.ts for client-side permission checks. Updated project detail page (src/app/dashboard/projects/[slug]/page.tsx) to conditionally render buttons based on permissions: Delete project button now only shows for owners (canDeleteProject), Create Key button only shows for admins/owners (canManageKeys). The permission checks use project.tenant_id as the organization_id. Note: Manage services and manage users buttons were not present in the current UI implementation, but the permission infrastructure is in place for when they are added. Typecheck passes."
     },
     {
       "id": "US-010",
