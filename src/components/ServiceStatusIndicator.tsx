@@ -30,6 +30,12 @@ interface ServiceStatusIndicatorProps {
    * Whether the status is currently being updated
    */
   isUpdating?: boolean
+
+  /**
+   * Whether the user has permission to manage services
+   * US-009: Update UI Based on Permissions
+   */
+  canManage?: boolean
 }
 
 /**
@@ -49,12 +55,13 @@ export default function ServiceStatusIndicator({
   status,
   onToggle,
   isUpdating = false,
+  canManage = true,
 }: ServiceStatusIndicatorProps) {
   const display = getServiceStatusDisplay(status)
   const serviceLabel = getServiceLabel(service)
 
   const handleClick = () => {
-    if (onToggle && !isUpdating && display.canToggle) {
+    if (onToggle && !isUpdating && display.canToggle && canManage) {
       onToggle()
     }
   }
@@ -64,9 +71,9 @@ export default function ServiceStatusIndicator({
   return (
     <button
       onClick={handleClick}
-      disabled={!onToggle || isUpdating || !display.canToggle}
+      disabled={!onToggle || isUpdating || !display.canToggle || !canManage}
       className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${display.bgClass} ${display.colorClass} border-opacity-20 transition hover:opacity-80 disabled:opacity-60 disabled:cursor-not-allowed`}
-      title={onToggle && display.canToggle ? `Click to ${status === 'enabled' ? 'disable' : 'enable'} ${serviceLabel}` : display.tooltip}
+      title={onToggle && display.canToggle && canManage ? `Click to ${status === 'enabled' ? 'disable' : 'enable'} ${serviceLabel}` : display.tooltip}
       aria-label={`${serviceLabel} status: ${display.label}`}
     >
       <Icon className={`w-4 h-4 ${status === 'provisioning' ? 'animate-spin' : ''}`} />

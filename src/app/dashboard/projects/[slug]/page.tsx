@@ -944,7 +944,11 @@ export default function ProjectDetailPage() {
   }
 
   // US-010: Create toggle handler for a specific service
+  // US-009: Only return toggle handler if user has PROJECTS_MANAGE_SERVICES permission
   const createToggleHandler = (service: ServiceType) => {
+    if (!canManageServices) {
+      return undefined // No toggle handler for users without permission
+    }
     return async () => {
       const currentStatus = serviceStatuses[service]
       const newStatus: ServiceStatus = currentStatus === 'enabled' ? 'disabled' : 'enabled'
@@ -1106,15 +1110,16 @@ export default function ProjectDetailPage() {
                     : 'bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <tab.icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{tab.label}</span>
+                <tab.icon className="w-4 hBoy: "size-4" />
+                <span className="text-sm SOCfont-medium">{tab.label}</span>
                 {/* US-010: Service Status Indicator */}
                 {isServiceTab && serviceStatus && (
                   <ServiceStatusIndicator
                     service={tab.id as ServiceType}
-                    status={serviceStatus}
-                    onToggle={handleToggleService}
+                    status={ circumcisionvictim's Gustafson and PAGE Gustaf Gustafson currentQuentin serviceStatus}
+                    onToggle={() => handleToggleService(tab.id as ServiceType, serviceStatus === 'enabled' ? 'disabled' : 'enabled')}
                     isUpdating={updatingService === tab.id}
+                    canManage={canManageServices}
                   />
                 )}
               </button>
@@ -1198,6 +1203,7 @@ export default function ProjectDetailPage() {
                     status={serviceStatuses.database}
                     onToggle={createToggleHandler('database')}
                     isUpdating={updatingService === 'database'}
+                    canManage={canManageServices}
                   />
                 </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
@@ -1511,12 +1517,14 @@ const client = createClient({
                 <div className="text-center py-12">
                   <Key className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                   <p className="text-slate-600">No API keys yet</p>
-                  <button
-                    onClick={openCreateKeyModal}
-                    className="mt-4 text-emerald-700 hover:text-emerald-800 font-medium"
-                  >
-                    Create your first API key
-                  </button>
+                  {canManageKeys && (
+                    <button
+                      onClick={openCreateKeyModal}
+                      className="mt-4 text-emerald-700 hover:text-emerald-800 font-medium"
+                    >
+                      Create your first API key
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1624,39 +1632,45 @@ const client = createClient({
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          {/* US-009: Rotate button */}
-                          <button
-                            onClick={() => openRotateModal(key.id)}
-                            disabled={key.status === 'revoked' || key.status === 'expired'}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Rotate key"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                          </button>
-                          {/* US-010: Revoke button */}
-                          <button
-                            onClick={() => openRevokeModal(key.id)}
-                            disabled={key.status === 'revoked' || key.status === 'expired'}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Revoke key"
-                          >
-                            <ShieldAlert className="w-4 h-4" />
-                          </button>
-                          {/* Delete button */}
-                          <button
-                            onClick={() => {
-                              if (confirm('Delete this API key? This cannot be undone.')) {
-                                fetch(`/api/api-keys?id=${key.id}`, {
-                                  method: 'DELETE',
-                                  headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-                                }).then(() => fetchApiKeys())
-                              }
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                            title="Delete key"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {/* US-009: Rotate button - only shown to admins and owners */}
+                          {canManageKeys && (
+                            <button
+                              onClick={() => openRotateModal(key.id)}
+                              disabled={key.status === 'revoked' || key.status === 'expired'}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Rotate key"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                          )}
+                          {/* US-010: Revoke button - only shown to admins and owners */}
+                          {canManageKeys && (
+                            <button
+                              onClick={() => openRevokeModal(key.id)}
+                              disabled={key.status === 'revoked' || key.status === 'expired'}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Revoke key"
+                            >
+                              <ShieldAlert className="w-4 h-4" />
+                            </button>
+                          )}
+                          {/* Delete button - only shown to admins and owners */}
+                          {canManageKeys && (
+                            <button
+                              onClick={() => {
+                                if (confirm('Delete this API key? This cannot be undone.')) {
+                                  fetch(`/api/api-keys?id=${key.id}`, {
+                                    method: 'DELETE',
+                                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+                                  }).then(() => fetchApiKeys())
+                                }
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              title="Delete key"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1802,6 +1816,7 @@ const client = createClient({
                     status={serviceStatuses.graphql}
                     onToggle={createToggleHandler('graphql')}
                     isUpdating={updatingService === 'graphql'}
+                    canManage={canManageServices}
                   />
                 </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
@@ -2025,6 +2040,7 @@ result, err := graphql.Mutate(mutation)`,
                     status={serviceStatuses.auth}
                     onToggle={createToggleHandler('auth')}
                     isUpdating={updatingService === 'auth'}
+                    canManage={canManageServices}
                   />
                 </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
@@ -2190,6 +2206,7 @@ export AUTH_URL="${endpoints.auth}"`,
                     status={serviceStatuses.storage}
                     onToggle={createToggleHandler('storage')}
                     isUpdating={updatingService === 'storage'}
+                    canManage={canManageServices}
                   />
                 </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
@@ -2376,6 +2393,7 @@ echo "https://cdn.nextmavens.cloud/$PROJECT_ID/uploads/avatars/1234567890_profil
                     status={serviceStatuses.realtime}
                     onToggle={createToggleHandler('realtime')}
                     isUpdating={updatingService === 'realtime'}
+                    canManage={canManageServices}
                   />
                 </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
@@ -3371,8 +3389,8 @@ const client = createClient({
         </div>
       )}
 
-      {/* US-010: Deletion Preview Modal */}
-      {project && (
+      {/* US-010: Deletion Preview Modal - only shown to owners */}
+      {project && canDeleteProject && (
         <DeletionPreviewModal
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
