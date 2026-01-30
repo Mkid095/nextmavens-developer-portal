@@ -8,10 +8,15 @@
  * US-009: Update Storage Service Errors (Standardized Error Format)
  * US-004: Track Storage Usage (prd-usage-tracking.json)
  * US-007: Emit Events on Actions (prd-webhooks-events.json)
+ * US-007: Add Correlation ID to Storage Service (prd-observability.json)
+ * - Correlation middleware applied to all storage API routes
+ * - Correlation ID propagated in response headers
+ * - All log entries include correlation ID
  */
 
 import { NextRequest } from 'next/server'
 import { authenticateRequest, JwtPayload } from '@/lib/middleware'
+import { withCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
 import { checkFeature } from '@/lib/features'
 import {
   validateStoragePath,
@@ -30,14 +35,18 @@ import { trackStorageUpload } from '@/lib/usage/storage-tracking'
 import { emitEvent } from '@/features/webhooks'
 
 export async function POST(req: NextRequest) {
+  // US-007: Apply correlation ID middleware and extract correlation ID
+  const correlationId = withCorrelationId(req)
   try {
     // Check if storage is enabled
     const storageEnabled = await checkFeature('storage_enabled')
     if (!storageEnabled) {
-      return serviceDisabledError(
+      const errorResponse = serviceDisabledError(
         'File storage is temporarily disabled. Downloads are still available. Please try again later.',
         'storage'
       ).toNextResponse()
+      // US-007: Set correlation ID in response header
+      return setCorrelationHeader(errorResponse, correlationId)
     }
 
     const auth = await authenticateRequest(req) as JwtPayload
@@ -48,20 +57,22 @@ export async function POST(req: NextRequest) {
 
     // Validation
     if (!file_name || file_size === undefined || !content_type) {
-      return validationError('file_name, file_size, and content_type are required', {
+      const errorResponse = validationError('file_name, file_size, and content_type are required', {
         missing_fields: !file_name ? ['file_name'] : [],
         ...(file_size === undefined ? ['file_size'] : []),
         ...(!content_type ? ['content_type'] : []),
       }).toNextResponse()
+      return setCorrelationHeader(errorResponse, correlationId)
     }
 
     // Check file size (max 100MB)
     const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
     if (file_size > MAX_FILE_SIZE) {
-      return quotaExceededError('File size exceeds maximum allowed size of 100MB', auth.project_id, {
+      const errorResponse = quotaExceededError('File size exceeds maximum allowed size of 100MB', auth.project_id, {
         max_size: MAX_FILE_SIZE,
         requested_size: file_size,
       }).toNextResponse()
+      return setCorrelationHeader(errorResponse, correlationId)
     }
 
     // US-004: Build and validate storage path with project_id prefix
@@ -74,44 +85,53 @@ export async function POST(req: NextRequest) {
       validateStoragePath(scopedPath, auth.project_id)
     } catch (error: any) {
       if (error.message === StorageScopeError.CROSS_PROJECT_PATH) {
-        return permissionDeniedError(
+        const errorResponse = permissionDeniedError(
           'Access to other project files not permitted',
           auth.project_id,
           { requested_path: scopedPath }
         ).toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
       }
-      return validationError('Invalid storage path', {
+      const errorResponse = validationError('Invalid storage path', {
         path: scopedPath,
         error: error.message,
       }).toNextResponse()
+      return setCorrelationHeader(errorResponse, correlationId)
     }
 
     // TODO: Implement actual file upload to Telegram storage service
     // For now, return a placeholder response with the scoped path
     const uploadedAt = new Date().toISOString()
+    const responseData = {
+      success: true,
+      message: 'File upload endpoint ready for integration with Telegram storage service',
+      file: {
+        name: file_name,
+        size: file_size,
+        type: content_type,
+        path: scopedPath,
+        uploaded_at: uploadedAt,
+      },
+      note: 'This is a placeholder. The actual storage service integration will be implemented separately.',
+    }
+
     const response = new Response(
-      JSON.stringify({
-        success: true,
-        message: 'File upload endpoint ready for integration with Telegram storage service',
-        file: {
-          name: file_name,
-          size: file_size,
-          type: content_type,
-          path: scopedPath,
-          uploaded_at: uploadedAt,
-        },
-        note: 'This is a placeholder. The actual storage service integration will be implemented separately.',
-      }),
+      JSON.stringify(responseData),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
 
+    // US-007: Set correlation ID in response header
+    const responseWithCorrelationId = setCorrelationHeader(response, correlationId)
+
     // US-004: Track storage usage (fire and forget)
     // Track the upload after sending response to avoid blocking
+    // US-007: Include correlation ID in log
     trackStorageUpload(auth.project_id, file_size).catch(err => {
-      console.error('[Storage API] Failed to track upload usage:', err)
+      console.error(`[Storage API] [${correlationId}] Failed to track upload usage:`, err)
     })
 
     // US-007: Emit file.uploaded event (fire and forget)
+    // US-007: Include correlation ID in log
     emitEvent(auth.project_id, 'file.uploaded', {
       project_id: auth.project_id,
       file_name: file_name,
@@ -120,18 +140,21 @@ export async function POST(req: NextRequest) {
       storage_path: scopedPath,
       uploaded_at: uploadedAt,
     }).catch(err => {
-      console.error('[Storage API] Failed to emit file.uploaded event:', err)
+      console.error(`[Storage API] [${correlationId}] Failed to emit file.uploaded event:`, err)
     })
 
-    return response
+    return responseWithCorrelationId
   } catch (error: any) {
-    console.error('[Storage API] Upload error:', error)
+    // US-007: Include correlation ID in error log
+    console.error(`[Storage API] [${correlationId}] Upload error:`, error)
 
     if (error.message === 'No token provided' || error.message === 'Invalid token') {
-      return authenticationError('Authentication required').toNextResponse()
+      const errorResponse = authenticationError('Authentication required').toNextResponse()
+      return setCorrelationHeader(errorResponse, correlationId)
     }
 
-    return internalError('Failed to upload file').toNextResponse()
+    const errorResponse = internalError('Failed to upload file').toNextResponse()
+    return setCorrelationHeader(errorResponse, correlationId)
   }
 }
 
@@ -140,10 +163,18 @@ export async function POST(req: NextRequest) {
  *
  * List files or demonstrate storage path format.
  *
+ * US-007: Add Correlation ID to Storage Service (prd-observability.json)
+ * - Correlation ID middleware applied
+ * - Correlation ID propagated in response headers
+ * - All log entries include correlation ID
+ *
  * Note: Downloads are NOT blocked by storage_enabled flag.
  * This implements the read-only mode requirement.
  */
 export async function GET(req: NextRequest) {
+  // US-007: Apply correlation ID middleware
+  const correlationId = withCorrelationId(req)
+
   try {
     const auth = await authenticateRequest(req) as JwtPayload
 
@@ -157,26 +188,33 @@ export async function GET(req: NextRequest) {
     // Note: Downloads are NOT blocked by storage_enabled flag
     // This implements the read-only mode requirement
 
-    // TODO: Implement actual file listing from Telegram storage service
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'File listing endpoint ready for integration with Telegram storage service',
-        project_id: auth.project_id,
-        path_format: 'project_id:/path',
-        example_paths: examplePaths,
-        files: [],
-        note: 'This is a placeholder. The actual storage service integration will be implemented separately.',
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
-  } catch (error: any) {
-    console.error('[Storage API] List error:', error)
-
-    if (error.message === 'No token provided' || error.message === 'Invalid token') {
-      return authenticationError('Authentication required').toNextResponse()
+    const responseData = {
+      success: true,
+      message: 'File listing endpoint ready for integration with Telegram storage service',
+      project_id: auth.project_id,
+      path_format: 'project_id:/path',
+      example_paths: examplePaths,
+      files: [],
+      note: 'This is a placeholder. The actual storage service integration will be implemented separately.',
     }
 
-    return internalError('Failed to list files').toNextResponse()
+    const response = new Response(
+      JSON.stringify(responseData),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+
+    // US-007: Set correlation ID in response header
+    return setCorrelationHeader(response, correlationId)
+  } catch (error: any) {
+    // US-007: Include correlation ID in error log
+    console.error(`[Storage API] [${correlationId}] List error:`, error)
+
+    if (error.message === 'No token provided' || error.message === 'Invalid token') {
+      const errorResponse = authenticationError('Authentication required').toNextResponse()
+      return setCorrelationHeader(errorResponse, correlationId)
+    }
+
+    const errorResponse = internalError('Failed to list files').toNextResponse()
+    return setCorrelationHeader(errorResponse, correlationId)
   }
 }

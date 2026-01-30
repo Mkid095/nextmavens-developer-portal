@@ -186,8 +186,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated storage service snapshot client to support correlation IDs. Added to src/lib/storage-service/snapshot-client.ts:\n- Imported correlation utilities (generateCorrelationId, CORRELATION_HEADER)\n- Added RequestContext interface and request context tracking to StorageServiceSnapshotClient class\n- Added setCorrelationId() method to set correlation ID from incoming requests\n- Added getCorrelationId() method to get current correlation ID\n- Added clearContext() method to clear context between requests\n- Added formatLog() helper to include correlation ID in all log messages\n- Updated fetchSnapshot() to propagate x-request-id header to control plane\n- Updated all console.log/error statements to use formatLog() with correlation ID\n- Exported convenience functions: setStorageCorrelationId(), getStorageCorrelationId(), clearStorageContext()\n- Updated src/lib/storage-service/index.ts to export new correlation functions\n\nAlso updated storage service API routes to apply correlation ID middleware:\n- Modified src/app/api/storage/upload/route.ts: Applied withCorrelationId() at request start for POST and GET handlers. Set correlation ID in all response headers via setCorrelationId(). Updated all console.log/error statements to include correlation ID.\n- Modified src/app/api/storage/download/route.ts: Applied withCorrelationId() at request start for POST and GET handlers. Set correlation ID in all response headers via setCorrelationHeader(). Updated all console.log/error statements to include correlation ID.\n\nAll storage service logs now include correlation ID for storage operation tracing. x-request-id header is propagated to control plane snapshot endpoint and to all API responses. Typecheck passes."
     },
     {
       "id": "US-008",

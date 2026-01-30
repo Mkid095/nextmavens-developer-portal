@@ -288,14 +288,14 @@ export class StorageServiceSnapshotClient {
 
     if (!snapshot) {
       // Fail closed - deny if snapshot unavailable
-      console.error(`[Storage Service Snapshot] Snapshot unavailable for project ${projectId}`)
+      console.error(this.formatLog(`Snapshot unavailable for project ${projectId}`))
       return false
     }
 
     const isEnabled = snapshot.services.storage?.enabled ?? false
 
     if (!isEnabled) {
-      console.log(`[Storage Service Snapshot] Storage service not enabled for project ${projectId}`)
+      console.log(this.formatLog(`Storage service not enabled for project ${projectId}`))
     }
 
     return isEnabled
@@ -431,7 +431,7 @@ export class StorageServiceSnapshotClient {
    */
   invalidateCache(projectId: string): void {
     snapshotCache.delete(projectId)
-    console.log(`[Storage Service Snapshot] Invalidated cache for project ${projectId}`)
+    console.log(this.formatLog(`Invalidated cache for project ${projectId}`))
   }
 
   /**
@@ -439,7 +439,7 @@ export class StorageServiceSnapshotClient {
    */
   clearCache(): void {
     snapshotCache.clear()
-    console.log('[Storage Service Snapshot] Cleared all cache')
+    console.log(this.formatLog('Cleared all cache'))
   }
 
   /**
@@ -587,10 +587,47 @@ export function cleanupExpiredStorageCacheEntries(): number {
   }
 
   if (cleaned > 0) {
-    console.log(`[Storage Service Snapshot] Cleaned up ${cleaned} expired cache entries`)
+    const correlationId = storageServiceSnapshotClient.getCorrelationId()
+    console.log(`[Storage Service Snapshot] [${correlationId}] Cleaned up ${cleaned} expired cache entries`)
   }
 
   return cleaned
+}
+
+/**
+ * Set the correlation ID for the current storage service request
+ * Call this at the start of each request to enable tracing
+ * @param correlationId - The correlation ID from x-request-id header
+ *
+ * @example
+ * ```typescript
+ * import { setStorageCorrelationId } from '@/lib/storage-service'
+ * import { withCorrelationId } from '@/lib/middleware/correlation'
+ *
+ * export async function POST(req: NextRequest) {
+ *   const correlationId = withCorrelationId(req)
+ *   setStorageCorrelationId(correlationId)
+ *   // ... rest of handler
+ * }
+ * ```
+ */
+export function setStorageCorrelationId(correlationId: string): void {
+  storageServiceSnapshotClient.setCorrelationId(correlationId)
+}
+
+/**
+ * Get the current correlation ID
+ * @returns The correlation ID
+ */
+export function getStorageCorrelationId(): string {
+  return storageServiceSnapshotClient.getCorrelationId()
+}
+
+/**
+ * Clear the request context (call between requests)
+ */
+export function clearStorageContext(): void {
+  storageServiceSnapshotClient.clearContext()
 }
 
 // Start periodic cleanup every 5 minutes

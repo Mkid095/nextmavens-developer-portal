@@ -22,6 +22,7 @@ export enum ScopeErrorType {
   INVALID_TOKEN = 'INVALID_TOKEN',
   KEY_REVOKED = 'KEY_REVOKED',
   MCP_WRITE_DENIED = 'MCP_WRITE_DENIED', // US-007: MCP read-only token denied write operation
+  MCP_AUTH_DENIED = 'MCP_AUTH_DENIED', // US-012: MCP non-admin token denied auth operation
 }
 
 /**
