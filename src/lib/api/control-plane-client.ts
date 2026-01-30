@@ -264,6 +264,18 @@ export class ControlPlaneClient {
   }
 
   /**
+   * Restore a soft-deleted project
+   */
+  async restoreProject(
+    projectId: string,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ message: string; project: any }> {
+    return this.request<{ message: string; project: any }>(`/api/v1/projects/${projectId}/restore`, {
+      method: 'POST',
+    }, req)
+  }
+
+  /**
    * List API keys for the authenticated user
    */
   async listApiKeys(

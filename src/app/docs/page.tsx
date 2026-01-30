@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio, Code2, AlertCircle } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio, Code2, AlertCircle, Key } from 'lucide-react'
 
 const chapters = [
   {
@@ -10,6 +10,15 @@ const chapters = [
     color: 'emerald',
     tools: ['Postgres-native', 'JWT auth', 'Multi-tenant'],
     path: '/docs/platform-philosophy',
+  },
+  {
+    id: 'api-keys',
+    title: 'API Keys',
+    description: 'Understanding key types, scopes, and when to use each',
+    icon: Key,
+    color: 'indigo',
+    tools: ['Public', 'Secret', 'Service Role', 'MCP'],
+    path: '/docs/api-keys',
   },
   {
     id: 'sdk',
@@ -163,6 +172,7 @@ export default function DocsPage() {
                 slate: 'bg-slate-100 text-slate-700',
                 green: 'bg-green-100 text-green-700',
                 red: 'bg-red-100 text-red-700',
+                indigo: 'bg-indigo-100 text-indigo-700',
               }[chapter.color]
 
               return (
