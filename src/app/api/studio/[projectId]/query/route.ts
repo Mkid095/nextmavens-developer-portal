@@ -106,6 +106,33 @@ function extractColumns(result: { rows: any[] }): string[] {
 }
 
 /**
+ * Check if a query is a write operation (INSERT, UPDATE, DELETE)
+ */
+function isWriteQuery(query: string): boolean {
+  const command = extractSqlCommand(query)
+  return ['INSERT', 'UPDATE', 'DELETE'].includes(command)
+}
+
+/**
+ * Get organization ID (tenant_id) for a project
+ */
+async function getOrganizationId(projectId: string): Promise<string> {
+  const { getPool } = await import('@/lib/db')
+  const pool = getPool()
+
+  const result = await pool.query(
+    `SELECT tenant_id FROM control_plane.projects WHERE id = $1`,
+    [projectId]
+  )
+
+  if (result.rows.length === 0) {
+    throw new Error('Project not found')
+  }
+
+  return result.rows[0].tenant_id
+}
+
+/**
  * POST /api/studio/:projectId/query
  *
  * Execute SQL queries on the tenant-specific schema
@@ -140,6 +167,36 @@ export async function POST(
     // Validate readonly mode
     if (readonly) {
       validateReadonlyQuery(trimmedQuery)
+    }
+
+    // US-010: Check database.write permission for write operations
+    // If readonly is false and query is a write operation, check permission
+    if (!readonly && isWriteQuery(trimmedQuery)) {
+      // Authenticate request to get user ID
+      const user = await authenticateRequest(req)
+
+      // Get organization ID from project
+      const organizationId = await getOrganizationId(params.projectId)
+
+      // Check database.write permission
+      const permissionResult = await checkUserPermission(
+        { id: user.id },
+        organizationId,
+        Permission.DATABASE_WRITE
+      )
+
+      if (!permissionResult.granted) {
+        throw permissionDeniedError(
+          `You do not have permission to perform write operations on the database. ` +
+          `Your role '${permissionResult.role}' does not have the 'database.write' permission. ` +
+          `Please contact your organization owner to request this permission.`,
+          {
+            required_permission: 'database.write',
+            your_role: permissionResult.role,
+            query_type: extractSqlCommand(trimmedQuery),
+          }
+        )
+      }
     }
 
     // Get schema-scoped pool

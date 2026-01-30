@@ -33,6 +33,7 @@ export interface Project {
   deletion_scheduled_at?: string | null
   grace_period_ends_at?: string | null
   recoverable_until?: string | null
+  organization_id?: string | null
 }
 
 export interface CreateProjectRequest {

@@ -75,22 +75,37 @@ export async function GET(req: NextRequest) {
     }
 
     // Build query with filters
-    const conditions: string[] = ['developer_id = $1']
+    // US-012: Organization scoping - Show personal projects only to owner,
+    // and organization projects to all org members
+    const conditions: string[] = [
+      `(
+        -- Personal projects: only visible to owner
+        (p.organization_id IS NULL AND p.developer_id = $1)
+        OR
+        -- Org projects: visible to all org members
+        (p.organization_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM control_plane.organization_members om
+          WHERE om.org_id = p.organization_id
+            AND om.user_id = $1
+            AND om.status = 'accepted'
+        ))
+      )`
+    ]
     const values: any[] = [developer.id]
     let paramIndex = 2
 
     if (query.status) {
-      conditions.push(`status = $${paramIndex++}`)
+      conditions.push(`p.status = $${paramIndex++}`)
       values.push(query.status)
     }
 
     if (query.environment) {
-      conditions.push(`environment = $${paramIndex++}`)
+      conditions.push(`p.environment = $${paramIndex++}`)
       values.push(query.environment)
     }
 
     if (query.organization_id) {
-      conditions.push(`organization_id = $${paramIndex++}`)
+      conditions.push(`p.organization_id = $${paramIndex++}`)
       values.push(query.organization_id)
     }
 
@@ -104,6 +119,7 @@ export async function GET(req: NextRequest) {
         p.id, p.project_name, p.tenant_id, p.webhook_url,
         p.allowed_origins, p.rate_limit, p.status, p.environment, p.created_at,
         p.deleted_at, p.deletion_scheduled_at, p.grace_period_ends_at,
+        p.organization_id,
         t.slug as tenant_slug
       FROM projects p
       JOIN tenants t ON p.tenant_id = t.id
@@ -130,6 +146,7 @@ export async function GET(req: NextRequest) {
         deletion_scheduled_at: p.deletion_scheduled_at,
         grace_period_ends_at: p.grace_period_ends_at,
         recoverable_until: p.grace_period_ends_at,
+        organization_id: p.organization_id,
       })),
       meta: {
         limit,
