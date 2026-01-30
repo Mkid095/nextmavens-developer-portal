@@ -270,8 +270,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created migration 015_create_api_usage_logs_table.sql for api_usage_logs table with efficient indexes. Added key-usage-tracking.ts module with logApiUsage, getKeyUsageStats, and cleanupOldUsageLogs functions. Updated auth.ts to import usage tracking and expose logApiKeyUsage function. Updated control-plane-api usage endpoint to reference usage_stats table with US-009 comments. Existing usage-tracking.service.ts already provides complete implementation with recordKeyUsage, getKeyUsageStats, cleanupOldUsageStats, and getProjectKeyUsageStats functions. All acceptance criteria met: last_used updated on each use (auth.ts updateKeyUsage), usage_stats table tracks request count, request counts by 7/30 day periods, success/error rate tracking. Typecheck passes."
     },
     {
       "id": "US-010",

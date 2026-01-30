@@ -214,8 +214,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Grace period already set to 30 days in US-007 (deletion-preview/route.ts line 116). Background job created at src/features/deletion-preview/lib/grace-period-job.ts with runGracePeriodJob() function. API endpoint created at src/app/api/admin/grace-period/run/route.ts. Job checks for expired grace periods and performs hard delete (drops tenant schema, deletes all related records, sets deleted_at). Returns projectsNeedingNotification array for 7-day warning (projects within 7 days of grace_period_ends_at). Typecheck passes."
     },
     {
       "id": "US-009",
