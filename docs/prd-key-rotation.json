@@ -182,8 +182,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created runKeyExpirationJob() function in src/features/key-rotation/lib/key-expiration-job.ts. Checks all API keys with expires_at < NOW() and sets status to 'expired'. Created POST /api/admin/key-expiration/run endpoint for cron job trigger. Includes comprehensive logging and error handling. Typecheck passes."
     },
     {
       "id": "US-008",
