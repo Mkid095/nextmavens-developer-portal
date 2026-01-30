@@ -293,8 +293,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Default MCP scopes already exclude auth - mcp_ro has no auth scopes, mcp_rw has no auth scopes, only mcp_admin has auth:manage. Added specific auth operation blocking in enforceMcpScopeRestrictions() in src/lib/scope-enforcement.ts. Added isAuthOperation() function that checks for auth:manage, auth:signin, auth:signup. Added getMcpAccessLevelFromPrefix() helper. When an MCP token attempts an auth operation: if accessLevel !== 'admin', throws MCP_AUTH_DENIED error with message 'MCP ro/rw token cannot perform auth operations. User management is restricted to MCP admin tokens (mcp_admin_) only.' This provides a clear, specific error for auth access attempts. Typecheck passes."
     },
     {
       "id": "US-011",
