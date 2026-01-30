@@ -62,6 +62,8 @@ export interface WebhookDeliveryResult {
   success: boolean
   statusCode?: number
   error?: string
+  delivered?: boolean
+  duration?: number
 }
 
 /**

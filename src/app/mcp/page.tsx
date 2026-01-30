@@ -14,6 +14,9 @@ import {
   Code2,
   ChevronRight,
   Loader2,
+  Github,
+  BookOpen,
+  Settings,
 } from 'lucide-react'
 import { useState } from 'react'
 

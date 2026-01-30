@@ -14,7 +14,7 @@
     "test:notifications": "tsx scripts/test-notifications.ts"
   },
   "dependencies": {
-    "@nextmavens/audit-logs-database": "git+https://github.com/Mkid095/nextmavens-database.git",
+    "@nextmavens/audit-logs-database": "git+https://github.com/Mkid095/nextmavens-database.git#8ce2b12",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.0",
     "framer-motion": "^12.29.2",
