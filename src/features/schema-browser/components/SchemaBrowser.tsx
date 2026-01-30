@@ -90,6 +90,8 @@ export function SchemaBrowser({
   const [loadingIndexes, setLoadingIndexes] = useState<Set<string>>(new Set())
   const [tableForeignKeys, setTableForeignKeys] = useState<Map<string, DatabaseForeignKey[]>>(new Map())
   const [loadingForeignKeys, setLoadingForeignKeys] = useState<Set<string>>(new Set())
+  const [tableRowCounts, setTableRowCounts] = useState<Map<string, number>>(new Map())
+  const [loadingRowCounts, setLoadingRowCounts] = useState<Set<string>>(new Set())
 
   // Filter tables based on search query
   const filteredTables = useMemo(() => {
@@ -185,6 +187,58 @@ export function SchemaBrowser({
       }
     })
   }, [expandedTables, projectId, tableForeignKeys, loadingForeignKeys])
+
+  // Fetch row counts for all tables when schema data is loaded
+  useEffect(() => {
+    if (!schemaData || schemaData.tables.length === 0) {
+      return
+    }
+
+    schemaData.tables.forEach(async (table) => {
+      // Skip if we already fetched row count for this table
+      if (tableRowCounts.has(table.name)) {
+        return
+      }
+
+      // Skip if table already has row_count from the server
+      if (table.row_count !== undefined) {
+        setTableRowCounts(prev => new Map(prev).set(table.name, table.row_count!))
+        return
+      }
+
+      // Skip if already loading
+      if (loadingRowCounts.has(table.name)) {
+        return
+      }
+
+      // Mark as loading
+      setLoadingRowCounts(prev => new Set(prev).add(table.name))
+
+      try {
+        const response = await fetch(
+          `/api/studio/${projectId}/tables/${table.name}/row-count`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          setTableRowCounts(prev => new Map(prev).set(table.name, data.rowCount))
+        }
+      } catch (error) {
+        console.error(`Failed to fetch row count for ${table.name}:`, error)
+      } finally {
+        setLoadingRowCounts(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(table.name)
+          return newSet
+        })
+      }
+    })
+  }, [schemaData, projectId, tableRowCounts, loadingRowCounts])
 
   const toggleTable = (tableName: string) => {
     const newExpanded = new Set(expandedTables)
@@ -334,6 +388,8 @@ export function SchemaBrowser({
           const isExpanded = expandedTables.has(table.name)
           const isSelected = selectedTable === table.name
           const DataTypeIcon = getDataTypeIcon(table.columns?.[0]?.data_type || '')
+          const rowCount = table.row_count ?? tableRowCounts.get(table.name)
+          const isLoadingRowCount = loadingRowCounts.has(table.name)
 
           return (
             <div key={table.name} className="select-none">
@@ -353,9 +409,11 @@ export function SchemaBrowser({
                 <span className="text-sm font-medium text-slate-900 flex-1 text-left">
                   {table.name}
                 </span>
-                {table.row_count !== undefined && (
-                  <span className="text-xs text-slate-400">{table.row_count} rows</span>
-                )}
+                {isLoadingRowCount ? (
+                  <div className="w-12 h-3 border border-slate-200 rounded animate-pulse bg-slate-100" />
+                ) : rowCount !== undefined ? (
+                  <span className="text-xs text-slate-400">{rowCount.toLocaleString()} rows</span>
+                ) : null}
               </button>
 
               {/* Columns (Expandable) */}

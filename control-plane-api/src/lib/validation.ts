@@ -391,3 +391,21 @@ export type WebhookEvent = z.infer<typeof webhookEventEnum>
 export type CreateWebhookInput = z.infer<typeof createWebhookSchema>
 export type UpdateWebhookInput = z.infer<typeof updateWebhookSchema>
 export type ListWebhooksQuery = z.infer<typeof listWebhooksQuerySchema>
+
+// Event log status enum
+export const eventLogStatusEnum = z.enum(['pending', 'delivered', 'failed'], {
+  errorMap: () => ({ message: 'Status must be one of: pending, delivered, failed' }),
+})
+
+// Query parameters for listing event logs (webhook history)
+export const listEventLogsQuerySchema = z.object({
+  project_id: z.string().uuid('Invalid project ID format').optional(),
+  webhook_id: z.string().uuid('Invalid webhook ID format').optional(),
+  event_type: z.string().min(1).optional(),
+  status: eventLogStatusEnum.optional(),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default('100'),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+})
+
+export type EventLogStatus = z.infer<typeof eventLogStatusEnum>
+export type ListEventLogsQuery = z.infer<typeof listEventLogsQuerySchema>
