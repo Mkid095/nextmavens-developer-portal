@@ -7,10 +7,10 @@
     "nextmavens": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node build.js",
     "prepack": "npm run build",
     "prepublishOnly": "npm run build",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "cd .. && tsc --noEmit -p cli/tsconfig.json",
     "prepare": "npm run build"
   },
   "files": [
