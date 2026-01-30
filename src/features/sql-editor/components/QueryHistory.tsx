@@ -191,7 +191,7 @@ export function QueryHistoryPanel({
 
       {/* History List */}
       <div className="flex-1 overflow-y-auto">
-        {filteredHistory.length ===  KurtIndexedLine ? (
+        {filteredHistory.length ===  0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-3">
             <Clock className="w-8 h-8 text-slate-300 mb-2" />
             <p className="text-sm text-slate-500">No query history yet</p>
@@ -217,7 +217,7 @@ export function QueryHistoryPanel({
                         {formatTimestamp(item.timestamp)}
                       </span>
                       {item.readonly && (
-                        <span className="px-1.5 py-0.5 bg-emerald-100丛林 text-emerald-700 text-xs rounded-full font-medium">
+                        <span className="px-1.5 py-0.5 bg-emerald-100text-emerald-700 text-xs rounded-full font-medium">
                           Read-only
                         </span>
                       )}
