@@ -94,3 +94,105 @@ export async function GET(
     )
   }
 }
+
+/**
+ * PUT handler for updating support request status
+ * US-009: Send Support Notifications - Sends email when status changes
+ */
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const developer = await authenticateRequest(req)
+    const { id } = params
+    const body = (await req.json()) as UpdateStatusRequest
+    const pool = getPool()
+
+    // Validate status
+    const validStatuses = ['open', 'in_progress', 'resolved', 'closed']
+    if (!body.status || !validStatuses.includes(body.status)) {
+      return NextResponse.json(
+        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+        { status: 400 }
+      )
+    }
+
+    // Get current status for notification
+    const currentResult = await pool.query(
+      `SELECT sr.status, p.developer_id
+       FROM control_plane.support_requests sr
+       JOIN projects p ON sr.project_id = p.id
+       WHERE sr.id = $1`,
+      [id]
+    )
+
+    if (currentResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Support request not found' },
+        { status: 404 }
+      )
+    }
+
+    // Verify ownership
+    if (currentResult.rows[0].developer_id !== developer.id) {
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      )
+    }
+
+    const previousStatus = currentResult.rows[0].status
+
+    // Update support request status
+    const updateValues: any[] = [body.status, id]
+    let updateQuery = `UPDATE control_plane.support_requests SET status = $1`
+
+    // Set resolved_at when status is resolved
+    if (body.status === 'resolved') {
+      updateQuery += `, resolved_at = NOW()`
+    } else if (previousStatus === 'resolved' && body.status !== 'resolved') {
+      // Clear resolved_at if moving away from resolved
+      updateQuery += `, resolved_at = NULL`
+    }
+
+    // Store previous status for notifications
+    updateQuery += `, previous_status = $2 WHERE id = $3 RETURNING id, status`
+    updateValues.splice(1, 0, previousStatus)
+
+    const result = await pool.query(updateQuery, updateValues)
+
+    if (result.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Support request not found' },
+        { status: 404 }
+      )
+    }
+
+    const updatedRequest = result.rows[0]
+
+    // US-009: Send notification email when status changes (only if status actually changed)
+    if (previousStatus !== body.status) {
+      // Fire and forget - don't block the response on email delivery
+      sendSupportRequestNotification(id, 'status_changed').catch(err => {
+        console.error('[Support Request] Failed to send notification email:', err)
+      })
+    }
+
+    return NextResponse.json({
+      success: true,
+      request_id: updatedRequest.id,
+      status: updatedRequest.status,
+      previous_status: previousStatus,
+    })
+  } catch (error: unknown) {
+    const err = error as { message?: string }
+    console.error('[Support Request] Error updating support request:', error)
+    return NextResponse.json(
+      {
+        error: err.message === 'No token provided' ? 'Authentication required' : 'Failed to update support request. Please try again later.'
+      },
+      { status: err.message === 'No token provided' ? 401 : 500 }
+    )
+  }
+}
