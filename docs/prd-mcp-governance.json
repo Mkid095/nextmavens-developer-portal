@@ -109,8 +109,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added explicit opt-in for write access when creating MCP tokens. Implemented: (1) MCP access level selector (ro/rw/admin) in the create key modal, (2) Warning modal shown when creating write-enabled (rw/admin) MCP tokens with warning text \"This AI can modify your data. Only grant to trusted systems.\" and \"This AI has full administrative access\" for admin tokens, (3) Checkbox to confirm understanding of risks, (4) Confirmation required before token creation (user must check the box and click \"Confirm & Create\" button, which is disabled until checkbox is checked), (5) In-line warning banners for rw/admin access levels in the main form, (6) Info banner for read-only tokens, (7) Modified handleCreateApiKey to show modal and include mcp_access_level in API request. Typecheck passes."
     },
     {
       "id": "US-007",

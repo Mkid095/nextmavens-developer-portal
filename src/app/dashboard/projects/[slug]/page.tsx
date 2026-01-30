@@ -255,6 +255,10 @@ export default function ProjectDetailPage() {
   const [selectedScopes, setSelectedScopes] = useState<string[]>([])
   const [showScopeDetails, setShowScopeDetails] = useState(false)
   const [showUsageExamples, setShowUsageExamples] = useState(false)
+  // US-006: MCP governance - access level and warning modal
+  const [mcpAccessLevel, setMcpAccessLevel] = useState<'ro' | 'rw' | 'admin'>('ro')
+  const [showMcpWriteWarning, setShowMcpWriteWarning] = useState(false)
+  const [mcpWriteConfirmed, setMcpWriteConfirmed] = useState(false)
   // US-010: Deletion preview modal
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
@@ -496,6 +500,10 @@ export default function ProjectDetailPage() {
     setSelectedScopes(KEY_TYPE_CONFIG.public.defaultScopes)
     setShowScopeDetails(false)
     setShowUsageExamples(false)
+    // US-006: Reset MCP governance state
+    setMcpAccessLevel('ro')
+    setShowMcpWriteWarning(false)
+    setMcpWriteConfirmed(false)
   }
 
   const handleCreateApiKey = async (e: React.FormEvent) => {
@@ -513,23 +521,42 @@ export default function ProjectDetailPage() {
       return
     }
 
+    // US-006: Check if MCP token with write/admin access - show warning modal
+    if (selectedKeyType === 'mcp' && (mcpAccessLevel === 'rw' || mcpAccessLevel === 'admin')) {
+      if (!showMcpWriteWarning) {
+        setShowMcpWriteWarning(true)
+        return
+      }
+      if (!mcpWriteConfirmed) {
+        setKeyError('Please confirm that you understand the risks of granting write access')
+        return
+      }
+    }
+
     setKeySubmitting(true)
 
     try {
       const token = localStorage.getItem('accessToken')
+      // US-006: Prepare request body with mcp_access_level for MCP tokens
+      const requestBody: any = {
+        name: newKeyName.trim(),
+        key_type: selectedKeyType,
+        environment: newKeyEnvironment,
+        scopes: selectedScopes,
+      }
+
+      // Add mcp_access_level for MCP tokens
+      if (selectedKeyType === 'mcp') {
+        requestBody.mcp_access_level = mcpAccessLevel
+      }
+
       const res = await fetch('/api/api-keys', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        // US-011: Include key_type in request
-        body: JSON.stringify({
-          name: newKeyName.trim(),
-          key_type: selectedKeyType,
-          environment: newKeyEnvironment,
-          scopes: selectedScopes,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       const data = await res.json()
@@ -1960,6 +1987,81 @@ const subscription = socket
                 </div>
               </div>
 
+              {/* US-006: MCP Access Level Selector - shown only for MCP tokens */}
+              {selectedKeyType === 'mcp' && (
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    MCP Access Level
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMcpAccessLevel('ro')
+                        setSelectedScopes(['db:select', 'storage:read', 'realtime:subscribe'])
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition ${
+                        mcpAccessLevel === 'ro'
+                          ? 'border-teal-500 bg-teal-50'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Eye className="w-4 h-4 text-teal-600" />
+                        <h4 className="font-semibold text-slate-900 text-sm">Read-Only</h4>
+                      </div>
+                      <p className="text-xs text-slate-600">Safe for AI assistants</p>
+                      <p className="text-xs text-slate-500 mt-1">db:select, storage:read</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMcpAccessLevel('rw')
+                        setSelectedScopes(['db:select', 'db:insert', 'db:update', 'storage:read', 'storage:write', 'realtime:subscribe', 'graphql:execute'])
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition ${
+                        mcpAccessLevel === 'rw'
+                          ? 'border-amber-500 bg-amber-50'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <RefreshCw className="w-4 h-4 text-amber-600" />
+                        <h4 className="font-semibold text-slate-900 text-sm">Read-Write</h4>
+                      </div>
+                      <p className="text-xs text-slate-600">Can modify data</p>
+                      <p className="text-xs text-slate-500 mt-1">+ insert, update, write</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMcpAccessLevel('admin')
+                        setSelectedScopes(['db:select', 'db:insert', 'db:update', 'db:delete', 'storage:read', 'storage:write', 'realtime:subscribe', 'realtime:publish', 'graphql:execute', 'auth:manage'])
+                      }}
+                      className={`p-3 rounded-xl border-2 text-left transition ${
+                        mcpAccessLevel === 'admin'
+                          ? 'border-red-500 bg-red-50'
+                          : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <ShieldAlert className="w-4 h-4 text-red-600" />
+                        <h4 className="font-semibold text-slate-900 text-sm">Admin</h4>
+                      </div>
+                      <p className="text-xs text-slate-600">Full access</p>
+                      <p className="text-xs text-slate-500 mt-1">+ delete, auth, publish</p>
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    {mcpAccessLevel === 'ro' && 'Read-only access - safe for most AI assistants'}
+                    {mcpAccessLevel === 'rw' && 'Read-write access - AI can modify your data'}
+                    {mcpAccessLevel === 'admin' && 'Admin access - AI has full control including deletion'}
+                  </p>
+                </div>
+              )}
+
               {/* Step 3: Environment Selector */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -2082,6 +2184,50 @@ const subscription = socket
                 </div>
               )}
 
+              {/* US-006: Warning for MCP tokens with write access */}
+              {selectedKeyType === 'mcp' && (mcpAccessLevel === 'rw' || mcpAccessLevel === 'admin') && (
+                <div className={`mb-6 p-4 border rounded-lg ${
+                  mcpAccessLevel === 'admin'
+                    ? 'bg-red-50 border-red-200'
+                    : 'bg-amber-50 border-amber-200'
+                }`}>
+                  <div className="flex items-start gap-3">
+                    <ShieldAlert className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                      mcpAccessLevel === 'admin' ? 'text-red-600' : 'text-amber-600'
+                    }`} />
+                    <div>
+                      <h4 className={`font-semibold mb-1 ${
+                        mcpAccessLevel === 'admin' ? 'text-red-900' : 'text-amber-900'
+                      }`}>
+                        {mcpAccessLevel === 'admin' ? 'Admin MCP Token Warning' : 'Write Access Warning'}
+                      </h4>
+                      <p className={`text-sm ${
+                        mcpAccessLevel === 'admin' ? 'text-red-800' : 'text-amber-800'
+                      }`}>
+                        {mcpAccessLevel === 'admin'
+                          ? 'This AI has full administrative access including deletion and user management. Only grant to trusted AI ops tools in secure environments.'
+                          : 'This AI can modify your data. Only grant to trusted systems.'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* US-006: Info for MCP read-only tokens */}
+              {selectedKeyType === 'mcp' && mcpAccessLevel === 'ro' && (
+                <div className="mb-6 p-4 bg-teal-50 border border-teal-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-teal-900 mb-1">Read-Only MCP Token</h4>
+                      <p className="text-sm text-teal-800">
+                        This token has read-only access and is safe for AI assistants and code generation tools.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {keyError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
                   <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -2123,6 +2269,121 @@ const subscription = socket
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* US-006: MCP Write Access Warning Modal */}
+      {showMcpWriteWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowMcpWriteWarning(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-slate-900">
+                {mcpAccessLevel === 'admin' ? 'Admin MCP Token' : 'Write Access Confirmation'}
+              </h2>
+              <button
+                onClick={() => setShowMcpWriteWarning(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className={`p-4 border rounded-lg mb-4 ${
+                mcpAccessLevel === 'admin'
+                  ? 'bg-red-50 border-red-200'
+                  : 'bg-amber-50 border-amber-200'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <ShieldAlert className={`w-6 h-6 flex-shrink-0 mt-0.5 ${
+                    mcpAccessLevel === 'admin' ? 'text-red-600' : 'text-amber-600'
+                  }`} />
+                  <div>
+                    <h3 className={`font-semibold mb-2 ${
+                      mcpAccessLevel === 'admin' ? 'text-red-900' : 'text-amber-900'
+                    }`}>
+                      {mcpAccessLevel === 'admin'
+                        ? 'This AI has full administrative access'
+                        : 'This AI can modify your data'}
+                    </h3>
+                    <p className={`text-sm mb-2 ${
+                      mcpAccessLevel === 'admin' ? 'text-red-800' : 'text-amber-800'
+                    }`}>
+                      {mcpAccessLevel === 'admin'
+                        ? 'You are creating an admin MCP token. This AI will have full access including:'
+                        : 'You are granting write access to an AI tool. This AI will be able to:'}
+                    </p>
+                    <ul className={`text-sm list-disc list-inside ${
+                      mcpAccessLevel === 'admin' ? 'text-red-800' : 'text-amber-800'
+                    }`}>
+                      {mcpAccessLevel === 'admin' ? (
+                        <>
+                          <li>Delete any data in your database</li>
+                          <li>Manage users and authentication</li>
+                          <li>Modify any settings</li>
+                          <li>Access all services</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>Insert and update database records</li>
+                          <li>Upload and modify storage files</li>
+                          <li>Execute GraphQL mutations</li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+                <p className="text-sm text-slate-700 mb-3">
+                  Only grant this access to <strong>trusted AI systems</strong> in <strong>secure environments</strong>.
+                </p>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={mcpWriteConfirmed}
+                    onChange={(e) => setMcpWriteConfirmed(e.target.checked)}
+                    className="mt-0.5 rounded border-slate-300 text-emerald-700 focus:ring-emerald-700"
+                  />
+                  <span className="text-sm text-slate-700">
+                    I understand the risks and only grant this access to trusted systems
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMcpWriteWarning(false)
+                  setMcpWriteConfirmed(false)
+                }}
+                className="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition"
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (mcpWriteConfirmed) {
+                    setShowMcpWriteWarning(false)
+                    // Proceed with key creation by calling handleCreateApiKey again
+                    handleCreateApiKey({ preventDefault: () => {} } as React.FormEvent)
+                  }
+                }}
+                disabled={!mcpWriteConfirmed}
+                className="flex-1 px-4 py-3 bg-emerald-900 text-white rounded-xl font-medium hover:bg-emerald-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirm & Create
+              </button>
+            </div>
           </div>
         </div>
       )}

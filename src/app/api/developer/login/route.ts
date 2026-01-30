@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { getPool } from '@/lib/db'
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth'
+import { trackAuthSignin } from '@/lib/usage/auth-tracking'
 
 export async function POST(req: NextRequest) {
   try {
@@ -66,6 +67,12 @@ export async function POST(req: NextRequest) {
     // Generate tokens with project_id
     const accessToken = generateAccessToken(developer, project_id)
     const refreshToken = generateRefreshToken(developer.id)
+
+    // US-005: Track auth signin (fire and forget)
+    // Track against the project_id being used for this login
+    trackAuthSignin(project_id).catch(err => {
+      console.error('[Developer Portal] Failed to track signin usage:', err)
+    })
 
     return NextResponse.json({
       developer: {

@@ -143,8 +143,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added comprehensive Channel Prefixing & Isolation section to src/app/docs/realtime/page.tsx. Includes: Full Channel Format section explaining project_id:table_name structure with detailed descriptions of project_id prefix (extracted from JWT for isolation) and table_name suffix (with optional schema prefix), Valid vs Invalid Channel Names comparison showing valid examples (abc123xyz:users, abc123xyz:public.products, abc123xyz:user_notifications) and invalid examples (users - missing prefix, def456uvw:orders - wrong project, abc123xyz: - missing table_name), Cross-Project Access Protection section documenting 403 Forbidden error with example request/response showing project ID mismatch rejection, and Automatic Project ID Resolution note explaining client SDK auto-prefixing behavior. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-007",

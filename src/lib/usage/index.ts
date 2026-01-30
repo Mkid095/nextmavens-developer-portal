@@ -1,9 +1,9 @@
 /**
  * Usage Tracking Module
  *
- * Exports all usage tracking functionality for database, storage, and other services.
+ * Exports all usage tracking functionality for database, storage, auth, and other services.
  *
- * US-002, US-004 from prd-usage-tracking.json
+ * US-002, US-004, US-005 from prd-usage-tracking.json
  */
 
 export {
@@ -26,6 +26,17 @@ export {
   type StorageMetricType,
   type StorageUsageMetric,
 } from './storage-tracking'
+
+export {
+  recordAuthMetric,
+  recordAuthMetrics,
+  trackAuthSignup,
+  trackAuthSignin,
+  getAuthUsageStats,
+  getCurrentAuthUsage,
+  type AuthMetricType,
+  type AuthUsageMetric,
+} from './auth-tracking'
 
 export {
   withUsageTracking,

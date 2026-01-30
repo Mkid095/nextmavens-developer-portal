@@ -10,6 +10,7 @@ import {
   RateLimitIdentifierType,
   type RateLimitIdentifier,
 } from '@/features/abuse-controls/lib/rate-limiter'
+import { trackAuthSignup } from '@/lib/usage/auth-tracking'
 
 // Rate limiting configuration for signup
 const SIGNUPS_PER_HOUR_PER_ORG = 3
@@ -147,6 +148,13 @@ export async function POST(req: NextRequest) {
     )
 
     const developer = result.rows[0]
+
+    // US-005: Track auth signup (fire and forget)
+    // Use developer ID as the project identifier for signup tracking
+    // since signups happen before a project is created
+    trackAuthSignup(developer.id).catch(err => {
+      console.error('[Developer Portal] Failed to track signup usage:', err)
+    })
 
     return NextResponse.json(
       {
