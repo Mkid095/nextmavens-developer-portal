@@ -108,8 +108,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: POST /api/webhooks endpoint implemented at control-plane-api/src/app/api/v1/webhooks/route.ts (lines 144-209). Accepts project_id, event, target_url (plus optional secret, enabled). Validates request body using Zod schema. Validates project ownership via validateProjectOwnership_reload tentamen undefined. Generates secret using randomBytes(32).toString('hex') if not provided. Returns webhook with secret shown once. Typecheck passes."
     },
     {
       "id": "US-005",

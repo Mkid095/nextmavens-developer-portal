@@ -2092,6 +2092,217 @@ export default function PlatformPhilosophyPage() {
           </div>
         </div>
 
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-blue-100 rounded-xl">
+              <GitBranch className="w-6 h-6 text-blue-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">Comparison to Alternatives</h2>
+              <p className="text-slate-600">How NextMavens compares to Supabase, Firebase, and AWS Amplify</p>
+            </div>
+          </div>
+
+          <p className="text-slate-600 leading-relaxed mb-8">
+            NextMavens isn't built in isolation. We learn from existing platforms, make deliberate trade-offs,
+            and offer a different set of priorities. Understanding these comparisons helps you choose the right
+            platform for your needs.
+          </p>
+
+          {comparisonData.map((platform, index) => {
+            const Icon = platform.icon
+            return (
+              <motion.div
+                key={platform.platform}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white rounded-xl p-8 border border-slate-200 mb-8"
+              >
+                <div className="flex items-center gap-4 mb-6">
+                  <div className={`p-3 bg-${platform.color}-100 rounded-xl`}>
+                    <Icon className={`w-6 h-6 text-${platform.color}-700`} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-semibold text-slate-900">{platform.platform}</h3>
+                    <p className="text-slate-600">{platform.description}</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6 mb-6">
+                  <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
+                    <h4 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Similarities
+                    </h4>
+                    <ul className="space-y-2">
+                      {platform.similarities.map((item, i) => (
+                        <li key={i} className="text-sm text-emerald-800 flex items-start gap-2">
+                          <span className="mt-1">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                      <GitBranch className="w-4 h-4" />
+                      Key Differences
+                    </h4>
+                    <ul className="space-y-2">
+                      {platform.differences.map((item, i) => (
+                        <li key={i} className="text-sm text-blue-800 flex items-start gap-2">
+                          <span className="mt-1">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                    <h4 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Trade-offs
+                    </h4>
+                    <ul className="space-y-2">
+                      {platform.tradeoffs.map((item, i) => (
+                        <li key={i} className="text-sm text-amber-800 flex items-start gap-2">
+                          <span className="mt-1">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <p className="text-sm text-slate-700">
+                    <strong className="text-slate-900">When to choose NextMavens over {platform.platform}:</strong> {platform.whenToChooseNextMavens}
+                  </p>
+                </div>
+              </motion.div>
+            )
+          })}
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Feature Comparison Matrix</h3>
+            <p className="text-slate-600 mb-8">
+              Side-by-side comparison of key features across platforms. Each platform makes different architectural
+              decisions—choose based on what matters most for your use case.
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900">Feature</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-emerald-700">NextMavens</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-emerald-600">Supabase</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-orange-600">Firebase</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-blue-600">AWS Amplify</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {featureComparison.map((row, i) => (
+                    <tr key={i} className="border-b border-slate-100">
+                      <td className="py-3 px-4 text-sm text-slate-700 font-medium">{row.feature}</td>
+                      <td className="py-3 px-4 text-sm text-emerald-700">{row.nextmavens}</td>
+                      <td className="py-3 px-4 text-sm text-slate-600">{row.supabase}</td>
+                      <td className="py-3 px-4 text-sm text-slate-600">{row.firebase}</td>
+                      <td className="py-3 px-4 text-sm text-slate-600">{row.amplify}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Honest Assessment: When NOT to Choose NextMavens</h3>
+            <p className="text-slate-600 mb-8">
+              NextMavens makes specific trade-offs. Here's when other platforms might be a better fit.
+            </p>
+
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-orange-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Mobile-First Applications</h4>
+                  <p className="text-slate-600">
+                    Firebase has better mobile SDKs, offline-first sync, and push notification integration.
+                    If you're building a mobile app with minimal web presence, Firebase may be a better choice.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Server className="w-5 h-5 text-blue-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Enterprise AWS Ecosystem</h4>
+                  <p className="text-slate-600">
+                    If your company is heavily invested in AWS, uses advanced AWS services, or has enterprise
+                    agreements with Amazon, AWS Amplify provides deeper integration and better compliance with
+                    existing infrastructure.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <Database className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Mature Ecosystem Requirements</h4>
+                  <p className="text-slate-600">
+                    Supabase has a larger community, more third-party integrations, and battle-tested production
+                    deployments. If you need platform stability and extensive tooling, Supabase may be more suitable.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Code className="w-5 h-5 text-purple-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">NoSQL / Document-Based Workloads</h4>
+                  <p className="text-slate-600">
+                    NextMavens is SQL-first. If your data model is hierarchical, document-based, or you need
+                    flexible schemas without migrations, Firebase Firestore or MongoDB-based platforms may fit better.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-blue-50 rounded-xl p-8 border border-blue-200 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-blue-700" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">The Bottom Line</h4>
+                <p className="text-slate-700 leading-relaxed mb-4">
+                  NextMavens is deliberately opinionated: Postgres-native, multi-tenant by default, JWT-first auth,
+                  and operational simplicity. These choices make NextMavens ideal for teams building multi-tenant SaaS
+                  applications who value database-driven architecture, minimal operational complexity, and security
+                  by default. Choose NextMavens when these principles align with your goals. Choose another platform
+                  when your priorities differ—there's no one-size-fits-all solution.
+                </p>
+                <Link
+                  href="/docs"
+                  className="inline-flex items-center gap-2 text-blue-700 font-medium hover:text-blue-800"
+                >
+                  Explore All Documentation
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-12 flex items-center justify-between">
           <Link href="/docs" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
             <ArrowLeft className="w-4 h-4" />
