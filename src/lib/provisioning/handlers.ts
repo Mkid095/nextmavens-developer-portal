@@ -10,6 +10,8 @@
 
 import type { Pool } from 'pg'
 import type { StepHandler, StepExecutionResult } from './steps'
+import { getAllSteps, isProvisioningComplete } from './state-machine'
+import { isValidTransition } from '@/lib/types/project-lifecycle.types'
 
 /**
  * Service health check result
@@ -318,6 +320,41 @@ export const verifyServicesHandler: StepHandler = async (
     const allServicesHealthy = healthResults.every((result) => result.healthy)
 
     if (allServicesHealthy) {
+      // PRD: US-010 - Auto-transition CREATED → ACTIVE after provisioning completes
+      // Check if project status is 'created' and all provisioning steps are complete
+      if (project.status === 'created') {
+        try {
+          // Get all provisioning steps to verify completion
+          const allSteps = await getAllSteps(pool, projectId)
+
+          // Check if all steps are complete (success or skipped)
+          if (isProvisioningComplete(allSteps)) {
+            // Validate state transition: created → active
+            if (isValidTransition('created', 'active')) {
+              // Update project status to active
+              await pool.query(
+                `
+                UPDATE projects
+                SET status = 'active',
+                    updated_at = NOW()
+                WHERE id = $1
+                `,
+                [projectId]
+              )
+              console.log(
+                `[Provisioning] Project ${projectId} automatically transitioned from CREATED to ACTIVE after provisioning completed`
+              )
+            }
+          }
+        } catch (statusError) {
+          // Log error but don't fail the provisioning step
+          console.error(
+            `[Provisioning] Failed to auto-transition project status:`,
+            statusError
+          )
+        }
+      }
+
       return {
         success: true,
       }

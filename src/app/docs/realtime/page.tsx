@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Radio, Database, Zap, Shield, CheckCircle2, BookOpen, MessageSquare, Users, RefreshCw, Clock, Power, Lock, UserPlus, UserMinus, Signal } from 'lucide-react';
+import { ArrowLeft, Radio, Database, Zap, Shield, CheckCircle2, BookOpen, MessageSquare, Users, RefreshCw, Clock, Power, Lock, UserPlus, UserMinus, Signal, Megaphone, Send } from 'lucide-react';
 import Link from 'next/link';
 import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy';
 
@@ -1402,6 +1402,250 @@ function updateOnlineCount() {
     \`\${count} user\${count !== 1 ? 's' : ''} online\`;
 }`}</code>
               </pre>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Broadcast */}
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl font-bold text-slate-100 mb-6">Broadcast</h2>
+
+          <div className="prose prose-invert max-w-none mb-8">
+            <p className="text-slate-300 text-lg leading-relaxed mb-4">
+              Broadcast enables server-side push of messages to all subscribed clients. Unlike database-driven subscriptions
+              that respond to data changes, broadcast allows you to send arbitrary messages from your server code to clients
+              in real-time.
+            </p>
+          </div>
+
+          {/* Server-Side Broadcast API */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Send className="w-5 h-5 text-emerald-400" />
+              Server-Side Broadcast API
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Use the broadcast API to send messages from your server to all connected clients:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`import { broadcast } from '@nextmavens/realtime';
+
+// Broadcast a message to all subscribers of a channel
+await broadcast({
+  channel: 'realtime:notifications',
+  event: 'announcement',
+  payload: {
+    title: 'System Maintenance',
+    message: 'Scheduled maintenance in 1 hour',
+    severity: 'info',
+    timestamp: new Date().toISOString()
+  }
+});
+
+// Broadcast to a specific project's channel
+await broadcast({
+  channel: 'abc123xyz:notifications',
+  event: 'alert',
+  payload: {
+    type: 'security',
+    message: 'New login detected from unknown device'
+  }
+});`}</code>
+            </pre>
+            <div className="grid md:grid-cols-2 gap-4 mt-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-400 mb-1">channel</p>
+                <p className="text-sm text-slate-300">Target channel for broadcast (format: project_id:table_name or realtime:table_name)</p>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-400 mb-1">event</p>
+                <p className="text-sm text-slate-300">Event name for the broadcast message (custom event names supported)</p>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-400 mb-1">payload</p>
+                <p className="text-sm text-slate-300">JSON-serializable data to send to clients (max 64KB)</p>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-xs text-slate-400 mb-1">Rate Limit</p>
+                <p className="text-sm text-slate-300">Max 100 broadcasts/second per project</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Client Broadcast Examples */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Radio className="w-5 h-5 text-blue-400" />
+              Client-Side Broadcast Handling
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Clients receive broadcast messages through their existing WebSocket connections:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`// Subscribe to broadcast channel
+const subscribe = {
+  event: 'phx_join',
+  topic: 'realtime:notifications',
+  payload: { token: 'YOUR_JWT_TOKEN' },
+  ref: '1'
+};
+
+ws.send(JSON.stringify(subscribe));
+
+// Listen for broadcast events
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.event === 'announcement') {
+    const { title, message, severity, timestamp } = msg.payload;
+    showNotification(title, message, severity);
+  }
+
+  if (msg.event === 'alert') {
+    const { type, message } = msg.payload;
+    showAlert(type, message);
+  }
+
+  if (msg.event === 'update') {
+    const { data } = msg.payload;
+    updateUI(data);
+  }
+};`}</code>
+            </pre>
+          </div>
+
+          {/* Use Cases */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Megaphone className="w-5 h-5 text-purple-400" />
+              Common Use Cases
+            </h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Notifications */}
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-purple-300 mb-2 flex items-center gap-2">
+                  <Megaphone className="w-4 h-4" />
+                  Push Notifications
+                </h4>
+                <p className="text-xs text-purple-200/80 mb-3">
+                  Send real-time notifications to all connected users without database changes.
+                </p>
+                <pre className="bg-slate-900/50 rounded p-3">
+                  <code className="text-xs text-purple-200/80">{`await broadcast({
+  channel: 'realtime:notifications',
+  event: 'notification',
+  payload: {
+    title: 'New Message',
+    body: 'You have a new message from Alice',
+    icon: 'message',
+    click_url: '/messages/123'
+  }
+});`}</code>
+                </pre>
+              </div>
+
+              {/* Announcements */}
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-blue-300 mb-2 flex items-center gap-2">
+                  <Send className="w-4 h-4" />
+                  System Announcements
+                </h4>
+                <p className="text-xs text-blue-200/80 mb-3">
+                  Broadcast important system-wide announcements to all users.
+                </p>
+                <pre className="bg-slate-900/50 rounded p-3">
+                  <code className="text-xs text-blue-200/80">{`await broadcast({
+  channel: 'realtime:announcements',
+  event: 'maintenance',
+  payload: {
+    title: 'Scheduled Maintenance',
+    message: 'System will be down for maintenance in 30 minutes',
+    scheduled_at: '2024-02-01T02:00:00Z',
+    duration_minutes: 30
+  }
+});`}</code>
+                </pre>
+              </div>
+
+              {/* Live Updates */}
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-emerald-300 mb-2 flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
+                  Live Score Updates
+                </h4>
+                <p className="text-xs text-emerald-200/80 mb-3">
+                  Push live game scores, stock prices, or auction bids in real-time.
+                </p>
+                <pre className="bg-slate-900/50 rounded p-3">
+                  <code className="text-xs text-emerald-200/80">{`await broadcast({
+  channel: 'realtime:scores',
+  event: 'score_update',
+  payload: {
+    game_id: 'nfl-2024-01-15',
+    team_home: { name: 'Chiefs', score: 24 },
+    team_away: { name: 'Eagles', score: 21 },
+    quarter: 4,
+    time_remaining: '2:35'
+  }
+});`}</code>
+                </pre>
+              </div>
+
+              {/* Collaborative Updates */}
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-orange-300 mb-2 flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Collaborative Updates
+                </h4>
+                <p className="text-xs text-orange-200/80 mb-3">
+                  Signal collaborative actions like document edits or cursor movements.
+                </p>
+                <pre className="bg-slate-900/50 rounded p-3">
+                  <code className="text-xs text-orange-200/80">{`await broadcast({
+  channel: 'realtime:collab',
+  event: 'user_action',
+  payload: {
+    user_id: 'user_123',
+    action: 'cursor_move',
+    position: { x: 450, y: 230 },
+    timestamp: Date.now()
+  }
+});`}</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* Broadcast vs Database Events */}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-300 mb-3 flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Broadcast vs Database Events
+            </h3>
+            <p className="text-blue-200/80 text-sm mb-4">
+              Understanding when to use broadcast versus database-driven subscriptions:
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-sm font-semibold text-emerald-300 mb-2">Use Database Events When:</p>
+                <ul className="text-xs text-slate-300 space-y-1">
+                  <li>• Data is stored in database tables</li>
+                  <li>• Changes need to be persisted</li>
+                  <li>• Multiple services need access to data</li>
+                  <li>• Audit trail is required</li>
+                  <li>• Filtering by SQL WHERE clauses</li>
+                </ul>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <p className="text-sm font-semibold text-blue-300 mb-2">Use Broadcast When:</p>
+                <ul className="text-xs text-slate-300 space-y-1">
+                  <li>• Sending transient notifications</li>
+                  <li>• Real-time signals without persistence</li>
+                  <li>• Custom event types needed</li>
+                  <li>• Low-latency push required</li>
+                  <li>• Server-initiated communication</li>
+                </ul>
+              </div>
             </div>
           </div>
         </motion.div>

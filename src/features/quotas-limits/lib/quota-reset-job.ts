@@ -18,6 +18,9 @@
 
 import { getPool } from '@/lib/db'
 import { sendHtmlEmail } from '@/features/abuse-controls/lib/email-service'
+import { unsuspendProject } from '@/features/abuse-controls/lib/suspensions'
+import type { SuspensionRecord } from '@/features/abuse-controls/types'
+import { SuspensionType } from '@/features/abuse-controls/types'
 
 /**
  * Quota that needs to be reset
@@ -56,6 +59,8 @@ export interface QuotaResetJobResult {
   notificationsSent: number
   /** Number of notifications that failed */
   notificationsFailed: number
+  /** Number of projects auto-resumed (manual suspensions only) */
+  projectsResumed: number
   /** Error message if job failed */
   error?: string
 }
@@ -292,6 +297,7 @@ export async function runQuotaResetJob(retentionMonths: number = 3): Promise<Quo
         snapshotsArchived,
         notificationsSent: 0,
         notificationsFailed: 0,
+        projectsResumed: 0,
       }
     }
 
@@ -399,6 +405,39 @@ export async function runQuotaResetJob(retentionMonths: number = 3): Promise<Quo
     // Archive old usage snapshots
     const snapshotsArchived = await archiveOldUsageSnapshots(retentionMonths)
 
+    // PRD: US-010 - Auto-resume manually suspended projects after quota reset
+    // Find all suspended projects with manual suspension type and resume them
+    let projectsResumed = 0
+    try {
+      const suspendedProjectsResult = await pool.query(`
+        SELECT
+          s.id,
+          s.project_id,
+          p.name as project_name,
+          s.suspension_type
+        FROM control_plane.suspensions s
+        INNER JOIN control_plane.projects p ON s.project_id = p.id
+        WHERE s.resolved_at IS NULL
+          AND s.suspension_type = 'manual'
+          AND p.status = 'suspended'
+      `)
+
+      const manuallySuspendedProjects = suspendedProjectsResult.rows
+      console.log(`[Quota Reset Job] Found ${manuallySuspendedProjects.length} manually suspended projects to auto-resume`)
+
+      for (const project of manuallySuspendedProjects) {
+        try {
+          await unsuspendProject(project.project_id, 'Auto-resumed after quota reset (manual suspension)')
+          projectsResumed++
+          console.log(`[Quota Reset Job] Auto-resumed project ${project.project_name} (${project.project_id})`)
+        } catch (error) {
+          console.error(`[Quota Reset Job] Failed to auto-resume project ${project.project_id}:`, error)
+        }
+      }
+    } catch (error) {
+      console.error('[Quota Reset Job] Error auto-resuming suspended projects:', error)
+    }
+
     const endTime = new Date()
     const durationMs = endTime.getTime() - startTime.getTime()
 
@@ -410,6 +449,7 @@ export async function runQuotaResetJob(retentionMonths: number = 3): Promise<Quo
     console.log(`[Quota Reset Job] Snapshots archived: ${snapshotsArchived}`)
     console.log(`[Quota Reset Job] Notifications sent: ${notificationsSent}`)
     console.log(`[Quota Reset Job] Notifications failed: ${notificationsFailed}`)
+    console.log(`[Quota Reset Job] Projects auto-resumed: ${projectsResumed}`)
 
     if (quotasReset.length > 0) {
       console.log(`[Quota Reset Job] Reset quotas:`)
@@ -432,6 +472,7 @@ export async function runQuotaResetJob(retentionMonths: number = 3): Promise<Quo
       snapshotsArchived,
       notificationsSent,
       notificationsFailed,
+      projectsResumed,
     }
   } catch (error) {
     const endTime = new Date()
@@ -455,6 +496,7 @@ export async function runQuotaResetJob(retentionMonths: number = 3): Promise<Quo
       snapshotsArchived: 0,
       notificationsSent: 0,
       notificationsFailed: 0,
+      projectsResumed: 0,
       error: errorMessage,
     }
   }
