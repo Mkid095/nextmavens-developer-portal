@@ -3,14 +3,16 @@
  * GET /api/auth/users - List all users with optional filtering
  *
  * SECURITY: Requires operator or admin role
+ * US-006: Uses standardized error format for consistent error responses
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { authenticateRequest } from '@/lib/auth'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 import type { EndUserListQuery } from '@/lib/types/auth-user.types'
+import { validationError, authenticationError, permissionDeniedError, internalError } from '@/lib/errors'
 
 /**
  * Query parameter validation schema
@@ -111,10 +113,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     // Generic error handling to prevent information leakage
     if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Bad Request', message: 'Invalid query parameters' },
-        { status: 400 }
-      )
+      return validationError('Invalid query parameters').toNextResponse()
     }
 
     // Log security-relevant errors for monitoring
@@ -129,15 +128,18 @@ export async function GET(req: NextRequest) {
       error.message === 'Invalid token' ||
       error.name === 'AuthorizationError'
     )) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: 'Authentication required' },
-        { status: 401 }
-      )
+      return authenticationError('Authentication required').toNextResponse()
     }
 
-    return NextResponse.json(
-      { error: 'Internal Server Error', message: 'Failed to list users' },
-      { status: 500 }
-    )
+    // Handle authorization errors with PERMISSION_DENIED code
+    if (error instanceof Error && (
+      error.message === 'Insufficient permissions' ||
+      error.message === 'Forbidden' ||
+      error.name === 'AuthorizationError'
+    )) {
+      return permissionDeniedError('Insufficient permissions to list users').toNextResponse()
+    }
+
+    return internalError('Failed to list users').toNextResponse()
   }
 }

@@ -6,6 +6,7 @@
  * US-002: Implement Correlation ID Middleware
  * US-002: Scope Database Queries (prd-resource-isolation.json)
  * US-003: Prefix Realtime Channels (prd-resource-isolation.json)
+ * US-004: Prefix Storage Paths (prd-resource-isolation.json)
  */
 
 export {
