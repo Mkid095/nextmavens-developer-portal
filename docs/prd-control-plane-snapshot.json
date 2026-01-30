@@ -259,7 +259,7 @@
       },
       "priority": 2,
       "passes": true,
-      "notes": "Completed: Snapshot versioning already implemented in control-plane-api/src/lib/snapshot/. The version field is included in all snapshot responses (types.ts line 73). Version counter is stored in snapshotVersions Map and increments when invalidateSnapshot() is called (cache.ts lines 84-92). Added automatic snapshot invalidation to project update endpoint (control-plane-api/src/app/api/v1/projects/[id]/route.ts) - calls invalidateSnapshot() after PUT (project changes) and DELETE (status changes). Added automatic snapshot invalidation to quota update endpoint (control-plane-api/src/app/api/v1/quotas/[id]/route.ts) - calls invalidateSnapshot() after PUT (quota changes). Version is generated using generateVersion() which calls getSnapshotVersion() from cache (builder.ts lines 24-27). Data plane services (auth, graphql, realtime, storage) can compare versions on cache refresh by checking the version field in the snapshot. Typecheck passes."
+      "notes": "Completed: Snapshot versioning implemented in control-plane-api/src/lib/snapshot/. The version field is included in all snapshot responses (types.ts). Version counter is stored in snapshotVersions Map and increments when invalidateSnapshot() is called. Automatic snapshot invalidation on project changes (PUT, DELETE), status changes, and quota changes. Added version tracking and comparison to all data plane service snapshot clients (auth, graphql, realtime, storage, api-gateway) - they now log version changes when refreshing cache and store version with cached entries. Version is generated using generateVersion() which calls getSnapshotVersion() from cache. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

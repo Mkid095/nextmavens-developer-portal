@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import { toErrorNextResponse, ErrorCode, isPlatformError } from '@/lib/errors'
+import { invalidateSnapshot } from '@/lib/snapshot/cache'
 
 // Helper function to validate ownership
 async function validateProjectOwnership(
@@ -76,6 +77,9 @@ export async function POST(
        RETURNING id, project_name, status`,
       [projectId]
     )
+
+    // Invalidate snapshot cache so data plane services get updated project status
+    invalidateSnapshot(projectId)
 
     return NextResponse.json({
       success: true,

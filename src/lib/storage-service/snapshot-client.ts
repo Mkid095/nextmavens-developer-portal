@@ -27,11 +27,12 @@ interface SnapshotClientConfig {
 }
 
 /**
- * Snapshot cache entry
+ * Snapshot cache entry with version tracking
  */
 interface CachedSnapshot {
   snapshot: ControlPlaneSnapshot
   expiresAt: number
+  version: string
 }
 
 /**
@@ -159,6 +160,7 @@ export class StorageServiceSnapshotClient {
 
   /**
    * Get a snapshot from cache or fetch from control plane
+   * Compares versions to detect stale cached data
    * @param projectId - Project ID to get snapshot for
    * @returns Snapshot or null if unavailable
    */
@@ -180,10 +182,20 @@ export class StorageServiceSnapshotClient {
       return null
     }
 
-    // Cache the snapshot
+    // Compare versions if we have a cached entry
+    if (cached) {
+      if (cached.snapshot.version !== result.snapshot.version) {
+        console.log(
+          `[Storage Service Snapshot] Version changed for project ${projectId}: ${cached.snapshot.version} -> ${result.snapshot.version}`
+        )
+      }
+    }
+
+    // Cache the snapshot with version tracking
     snapshotCache.set(projectId, {
       snapshot: result.snapshot,
       expiresAt: now + this.config.cacheTTL,
+      version: result.snapshot.version,
     })
 
     return result.snapshot

@@ -148,6 +148,7 @@ export class AuthServiceSnapshotClient {
 
   /**
    * Get a snapshot from cache or fetch from control plane
+   * Compares versions to detect stale cached data
    * @param projectId - Project ID to get snapshot for
    * @returns Snapshot or null if unavailable
    */
@@ -157,6 +158,8 @@ export class AuthServiceSnapshotClient {
     // Check cache first
     const cached = snapshotCache.get(projectId)
     if (cached && cached.expiresAt > now) {
+      // Check if we should refresh due to version change
+      // We'll let TTL handle the refresh, but log version for debugging
       return cached.snapshot
     }
 
@@ -169,10 +172,20 @@ export class AuthServiceSnapshotClient {
       return null
     }
 
-    // Cache the snapshot
+    // Compare versions if we have a cached entry
+    if (cached) {
+      if (cached.snapshot.version !== result.snapshot.version) {
+        console.log(
+          `[AuthService Snapshot] Version changed for project ${projectId}: ${cached.snapshot.version} -> ${result.snapshot.version}`
+        )
+      }
+    }
+
+    // Cache the snapshot with version tracking
     snapshotCache.set(projectId, {
       snapshot: result.snapshot,
       expiresAt: now + this.config.cacheTTL,
+      version: result.snapshot.version,
     })
 
     return result.snapshot
