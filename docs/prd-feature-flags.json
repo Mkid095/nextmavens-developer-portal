@@ -263,8 +263,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added FEATURE_FLAG_ENABLED and FEATURE_FLAG_DISABLED to AuditLogType enum in audit-logger.ts. Created logFeatureFlagEnabled() and logFeatureFlagDisabled() helper functions that log flag name, old value, new value, scope, scope_id to audit_logs. Modified setFeatureFlag() in features.ts to return old value (boolean | null) by querying existing flag before update. Updated PATCH /api/admin/feature-flags/[name] endpoint to call logFeatureFlagEnabled/logFeatureFlagDisabled when flag value changes, capturing developer.id, IP address, and user agent from request. Typecheck passes."
     },
     {
       "id": "US-011",

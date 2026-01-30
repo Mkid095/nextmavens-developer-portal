@@ -56,7 +56,9 @@ export default function DashboardPage() {
   const [developer, setDeveloper] = useState<Developer | null>(null)
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [projects, setProjects] = useState<Project[]>([])
+  const [deletedProjects, setDeletedProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [projectFilter, setProjectFilter] = useState<'active' | 'deleted'>('active')
   const [copied, setCopied] = useState<string | null>(null)
   const [toasts, setToasts] = useState<Toast[]>([])
 

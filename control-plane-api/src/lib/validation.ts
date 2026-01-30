@@ -55,7 +55,7 @@ export const updateProjectSchema = z.object({
 
 // Query parameters for listing projects
 export const listProjectsQuerySchema = z.object({
-  status: z.enum(['active', 'suspended', 'archived']).optional(),
+  status: z.enum(['active', 'suspended', 'archived', 'deleted']).optional(),
   environment: environmentEnum.optional(),
   limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').optional(),
   offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').optional(),

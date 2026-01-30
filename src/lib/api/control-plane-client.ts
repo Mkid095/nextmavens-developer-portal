@@ -13,11 +13,16 @@ export interface Project {
   slug: string
   tenant_id: string
   status: 'active' | 'suspended' | 'archived' | 'deleted'
+  environment?: string
   webhook_url?: string
   allowed_origins?: string[]
   rate_limit?: number
   created_at: string
   updated_at?: string
+  deleted_at?: string | null
+  deletion_scheduled_at?: string | null
+  grace_period_ends_at?: string | null
+  recoverable_until?: string | null
 }
 
 export interface CreateProjectRequest {
@@ -222,9 +227,16 @@ export class ControlPlaneClient {
    * List all projects for the authenticated user
    */
   async listProjects(
+    options?: { status?: 'active' | 'suspended' | 'archived' | 'deleted' },
     req?: { headers: { get: (name: string) => string | null } }
   ): Promise<{ projects: Project[] }> {
-    return this.request<{ projects: Project[] }>('/api/v1/projects', {}, req)
+    const params = new URLSearchParams()
+    if (options?.status) {
+      params.append('status', options.status)
+    }
+    const queryString = params.toString()
+    const endpoint = `/api/v1/projects${queryString ? `?${queryString}` : ''}`
+    return this.request<{ projects: Project[] }>(endpoint, {}, req)
   }
 
   /**

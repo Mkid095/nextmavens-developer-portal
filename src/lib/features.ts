@@ -212,6 +212,7 @@ export function checkFeatureSync(
  * @param enabled - Whether the feature should be enabled
  * @param scope - The scope of the flag (global, project, org)
  * @param scopeId - The ID of the project or org (required for non-global scopes)
+ * @returns The old value of the flag (or null if it didn't exist)
  */
 export async function setFeatureFlag(
   name: string,
@@ -219,8 +220,26 @@ export async function setFeatureFlag(
   scope: FeatureFlagScope = 'global',
   scopeId?: string,
   metadata: Record<string, unknown> = {}
-): Promise<void> {
+): Promise<boolean | null> {
   const pool = getPool();
+
+  // First, get the old value if it exists
+  const selectQuery = `
+    SELECT enabled
+    FROM control_plane.feature_flags
+    WHERE name = $1 AND scope = $2
+  `;
+
+  let oldValue: boolean | null = null;
+  try {
+    const selectResult = await pool.query<{ enabled: boolean }>(selectQuery, [name, scope]);
+    if (selectResult.rows.length > 0) {
+      oldValue = selectResult.rows[0].enabled;
+    }
+  } catch (error) {
+    // Ignore error, flag might not exist yet
+    console.debug(`[Feature Flags] No existing flag found for "${name}" at scope "${scope}"`);
+  }
 
   const query = `
     INSERT INTO control_plane.feature_flags (name, enabled, scope, metadata)
@@ -235,6 +254,8 @@ export async function setFeatureFlag(
 
   // Invalidate cache for this flag
   invalidateFlagCache(name);
+
+  return oldValue;
 }
 
 /**

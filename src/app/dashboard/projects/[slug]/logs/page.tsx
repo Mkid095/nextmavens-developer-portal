@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+'use client'
+
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import {
@@ -17,6 +19,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Info,
+  Calendar,
 } from 'lucide-react'
 
 interface Project {
@@ -56,7 +59,16 @@ const levelOptions: { value: LevelFilter; label: string }[] = [
   { value: 'error', label: 'Error' },
 ]
 
-// Mock log data for demonstration
+// Quick date range options
+const dateRangeOptions: { value: string; label: string; hours?: number }[] = [
+  { value: '1h', label: 'Last 1 hour', hours: 1 },
+  { value: '24h', label: 'Last 24 hours', hours: 24 },
+  { value: '7d', label: 'Last 7 days', hours: 24 * 7 },
+  { value: '30d', label: 'Last 30 days', hours: 24 * 30 },
+  { value: 'custom', label: 'Custom range' },
+]
+
+// Mock log data for demonstration - will be replaced with real-time streaming
 const mockLogs: LogEntry[] = [
   {
     id: '1',
@@ -126,22 +138,91 @@ const mockLogs: LogEntry[] = [
 export default function LogsPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const eventSourceRef = useRef<EventSource | null>(null)
+
   const [project, setProject] = useState<Project | null>(null)
-  const [logs, setLogs] = useState<LogEntry[]>(mockLogs)
+  const [logs, setLogs] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all')
   const [levelFilter, setLevelFilter] = useState<LevelFilter>('all')
+  const [dateRangeFilter, setDateRangeFilter] = useState('24h')
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
   const [showServiceDropdown, setShowServiceDropdown] = useState(false)
   const [showLevelDropdown, setShowLevelDropdown] = useState(false)
+  const [showDateRangeDropdown, setShowDateRangeDropdown] = useState(false)
+  const [showCustomDateRange, setShowCustomDateRange] = useState(false)
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadSuccess, setDownloadSuccess] = useState(false)
+  const [streamConnected, setStreamConnected] = useState(false)
+
+  // Initialize filters from URL
+  useEffect(() => {
+    const service = searchParams.get('service') as ServiceFilter | null
+    const level = searchParams.get('level') as LevelFilter | null
+    const dateRange = searchParams.get('dateRange')
+    const start = searchParams.get('start_date')
+    const end = searchParams.get('end_date')
+
+    if (service) setServiceFilter(service)
+    if (level) setLevelFilter(level)
+    if (dateRange) setDateRangeFilter(dateRange)
+    if (start) setCustomStartDate(start)
+    if (end) setCustomEndDate(end)
+  }, [searchParams])
+
+  // Update URL when filters change
+  const updateFilters = useCallback((updates: {
+    service?: ServiceFilter
+    level?: LevelFilter
+    dateRange?: string
+    start_date?: string
+    end_date?: string
+  }) => {
+    const params = new URLSearchParams(searchParams.toString())
+
+    if (updates.service !== undefined) {
+      params.set('service', updates.service)
+    }
+    if (updates.level !== undefined) {
+      params.set('level', updates.level)
+    }
+    if (updates.dateRange !== undefined) {
+      params.set('dateRange', updates.dateRange)
+    }
+    if (updates.start_date !== undefined) {
+      if (updates.start_date) {
+        params.set('start_date', updates.start_date)
+      } else {
+        params.delete('start_date')
+      }
+    }
+    if (updates.end_date !== undefined) {
+      if (updates.end_date) {
+        params.set('end_date', updates.end_date)
+      } else {
+        params.delete('end_date')
+      }
+    }
+
+    router.replace(`/dashboard/projects/${params.slug}/logs?${params.toString()}`, { scroll: false })
+  }, [searchParams, router, params.slug])
 
   useEffect(() => {
     fetchProject()
-  }, [params.slug])
+    if (project?.id) {
+      connectToLogStream()
+    }
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+    }
+  }, [params.slug, project?.id, serviceFilter, levelFilter, dateRangeFilter, customStartDate, customEndDate])
 
   const fetchProject = async () => {
     try {

@@ -7,12 +7,19 @@
  * Requires admin or operator role.
  *
  * US-008: Create Admin Feature Flag UI
+ * US-010: Audit Feature Flag Changes
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/middleware'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
-import { setFeatureFlag, invalidateFlagCache, type FeatureFlagScope } from '@/lib/features'
+import { setFeatureFlag, type FeatureFlagScope } from '@/lib/features'
+import {
+  logFeatureFlagEnabled,
+  logFeatureFlagDisabled,
+  extractClientIP,
+  extractUserAgent,
+} from '@/features/abuse-controls/lib/audit-logger'
 
 interface UpdateFlagRequest {
   enabled: boolean
@@ -50,14 +57,44 @@ export async function PATCH(
       )
     }
 
-    // Update the feature flag
-    await setFeatureFlag(
+    // Update the feature flag and get the old value
+    const oldValue = await setFeatureFlag(
       flagName,
       body.enabled,
       body.scope || 'global',
       body.scopeId,
       body.metadata
     )
+
+    // Log the change to audit logs
+    // Only log if the value actually changed
+    if (oldValue !== null && oldValue !== body.enabled) {
+      const ipAddress = extractClientIP(req)
+      const userAgent = extractUserAgent(req)
+      const scope = body.scope || 'global'
+
+      if (body.enabled) {
+        await logFeatureFlagEnabled(
+          flagName,
+          developer.id,
+          oldValue,
+          scope,
+          body.scopeId,
+          ipAddress,
+          userAgent
+        )
+      } else {
+        await logFeatureFlagDisabled(
+          flagName,
+          developer.id,
+          oldValue,
+          scope,
+          body.scopeId,
+          ipAddress,
+          userAgent
+        )
+      }
+    }
 
     return NextResponse.json({
       success: true,

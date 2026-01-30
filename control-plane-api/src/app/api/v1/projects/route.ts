@@ -97,6 +97,7 @@ export async function GET(req: NextRequest) {
       `SELECT
         p.id, p.project_name, p.tenant_id, p.webhook_url,
         p.allowed_origins, p.rate_limit, p.status, p.environment, p.created_at,
+        p.deleted_at, p.deletion_scheduled_at, p.grace_period_ends_at,
         t.slug as tenant_slug
       FROM projects p
       JOIN tenants t ON p.tenant_id = t.id
@@ -119,6 +120,10 @@ export async function GET(req: NextRequest) {
         rate_limit: p.rate_limit,
         status: p.status,
         created_at: p.created_at,
+        deleted_at: p.deleted_at,
+        deletion_scheduled_at: p.deletion_scheduled_at,
+        grace_period_ends_at: p.grace_period_ends_at,
+        recoverable_until: p.grace_period_ends_at,
       })),
       meta: {
         limit,

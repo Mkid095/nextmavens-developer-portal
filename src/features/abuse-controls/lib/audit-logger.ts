@@ -25,6 +25,10 @@ export enum AuditLogType {
   BACKGROUND_JOB = 'background_job',
   /** Manual intervention */
   MANUAL_INTERVENTION = 'manual_intervention',
+  /** Feature flag enabled */
+  FEATURE_FLAG_ENABLED = 'feature_flag.enabled',
+  /** Feature flag disabled */
+  FEATURE_FLAG_DISABLED = 'feature_flag.disabled',
 }
 
 /**
@@ -346,4 +350,80 @@ export function extractClientIP(req: Request): string {
  */
 export function extractUserAgent(req: Request): string {
   return req.headers.get('user-agent') || 'Unknown'
+}
+
+/**
+ * Log a feature flag enabled action
+ *
+ * @param flagName - The name of the feature flag
+ * @param developerId - The developer who enabled the flag
+ * @param oldValue - The previous value of the flag
+ * @param scope - The scope of the flag (global, project, org)
+ * @param scopeId - The ID of the project or org (for non-global scopes)
+ * @param ipAddress - Optional IP address
+ * @param userAgent - Optional user agent
+ */
+export async function logFeatureFlagEnabled(
+  flagName: string,
+  developerId: string,
+  oldValue: boolean,
+  scope: string,
+  scopeId?: string,
+  ipAddress?: string,
+  userAgent?: string
+): Promise<void> {
+  await logAuditEntry({
+    log_type: AuditLogType.FEATURE_FLAG_ENABLED,
+    severity: AuditLogLevel.INFO,
+    developer_id: developerId,
+    action: 'Feature flag enabled',
+    details: {
+      flag_name: flagName,
+      old_value: oldValue,
+      new_value: true,
+      scope,
+      scope_id: scopeId || null,
+    },
+    ip_address: ipAddress,
+    user_agent: userAgent,
+    occurred_at: new Date(),
+  })
+}
+
+/**
+ * Log a feature flag disabled action
+ *
+ * @param flagName - The name of the feature flag
+ * @param developerId - The developer who disabled the flag
+ * @param oldValue - The previous value of the flag
+ * @param scope - The scope of the flag (global, project, org)
+ * @param scopeId - The ID of the project or org (for non-global scopes)
+ * @param ipAddress - Optional IP address
+ * @param userAgent - Optional user agent
+ */
+export async function logFeatureFlagDisabled(
+  flagName: string,
+  developerId: string,
+  oldValue: boolean,
+  scope: string,
+  scopeId?: string,
+  ipAddress?: string,
+  userAgent?: string
+): Promise<void> {
+  await logAuditEntry({
+    log_type: AuditLogType.FEATURE_FLAG_DISABLED,
+    severity: AuditLogLevel.WARNING,
+    developer_id: developerId,
+    action: 'Feature flag disabled',
+    details: {
+      flag_name: flagName,
+      old_value: oldValue,
+      new_value: false,
+      scope,
+      scope_id: scopeId || null,
+    },
+    ip_address: ipAddress,
+    user_agent: userAgent,
+    occurred_at: new Date(),
+  })
 }
