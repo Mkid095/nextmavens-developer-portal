@@ -253,8 +253,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented US-010: Admin Support UI - Created GET /api/admin/support/requests endpoint that lists all support requests with filtering by status and project_id, pagination support. Created GET/PUT /api/admin/support/requests/[id] for viewing details and updating status with admin notes. Added migration 025_add_admin_notes_to_support_requests.sql. Created admin dashboard page at src/app/admin/support/page.tsx with: list all requests (open, in_progress, resolved, closed), filter by status buttons (all, open, in_progress, resolved, closed), search by subject/email/project, click to view details modal with full context, update status (open/in_progress/resolved/closed), add admin notes, pagination. Status changes trigger notification emails to users (US-009). Uses requireOperatorOrAdmin for authorization. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

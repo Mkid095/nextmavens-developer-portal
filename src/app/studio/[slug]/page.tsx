@@ -252,8 +252,9 @@ export default function StudioPage() {
    * - Developers can SELECT/INSERT/UPDATE
    * - Admins/Owners have full access
    * US-004: Add query to history after successful execution
+   * US-008: Support explain mode for query plan analysis
    */
-  const handleExecuteQuery = async (query: string, readonly: boolean) => {
+  const handleExecuteQuery = async (query: string, readonly: boolean, explain?: boolean) => {
     // US-011: Check if user can execute this query based on their role
     if (!canExecuteQuery(query, readonly)) {
       const command = extractSqlCommand(query.trim())
@@ -290,14 +291,14 @@ export default function StudioPage() {
         throw new Error('Project not found')
       }
 
-      // Execute query with readonly parameter
+      // US-008: Execute query with readonly and explain parameters
       const res = await fetch(`/api/studio/${projectId}/query`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ query, readonly }),
+        body: JSON.stringify({ query, readonly, explain }),
       })
 
       const data = await res.json()

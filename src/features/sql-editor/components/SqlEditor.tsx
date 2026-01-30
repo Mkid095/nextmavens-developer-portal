@@ -2,15 +2,16 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
-import { Play, ShieldAlert, Lock, History } from 'lucide-react'
+import { Play, ShieldAlert, Lock, History, Zap, Wand2 } from 'lucide-react'
 import { addQueryToHistory } from './QueryHistory'
+import { format } from 'sql-formatter'
 
 type UserRole = 'owner' | 'admin' | 'developer' | 'viewer' | null
 
 interface SqlEditorProps {
   value?: string
   onChange?: (value: string) => void
-  onExecute?: (query: string, readonly: boolean) => void
+  onExecute?: (query: string, readonly: boolean, explain?: boolean) => void
   onLoadQuery?: (query: string) => void
   readOnly?: boolean
   placeholder?: string
@@ -33,11 +34,15 @@ interface SqlEditorProps {
  * - Read-only mode (default)
  * - RBAC permission enforcement (US-011)
  * - Query history integration (US-004)
+ * - Query plan (EXPLAIN) button (US-008)
+ * - SQL formatting button and shortcut (US-009)
  *
  * US-001: Create SQL Editor Component
  * US-005: Implement Read-Only Mode
  * US-011: Enforce Studio Permissions
  * US-004: Implement Query History
+ * US-008: Show Query Stats (EXPLAIN support)
+ * US-009: Format SQL
  */
 export function SqlEditor({
   value = '',
@@ -55,6 +60,8 @@ export function SqlEditor({
   // US-005: Read-only mode state (checked by default for safety)
   const [readonlyMode, setReadonlyMode] = useState(true)
   const [showWarning, setShowWarning] = useState(false)
+  // US-008: Explain mode state for query plan analysis
+  const [explainMode, setExplainMode] = useState(false)
 
   /**
    * US-011: Check if user can disable readonly mode based on their role
@@ -137,6 +144,14 @@ export function SqlEditor({
       }
     )
 
+    // US-009: Add Ctrl+Shift+F shortcut to format SQL
+    editor.addCommand(
+      window.monaco?.KeyMod.CtrlCmd | window.monaco?.KeyMod.Shift | window.monaco?.KeyCode.KEY_F,
+      () => {
+        handleFormat()
+      }
+    )
+
     // Focus editor on mount
     editor.focus()
   }
@@ -151,7 +166,8 @@ export function SqlEditor({
       // US-004: Add query to history
       addQueryToHistory(query.trim(), readonlyMode)
       // US-005: Pass readonly mode to execute handler
-      onExecute(query.trim(), readonlyMode)
+      // US-008: Pass explain mode for query plan
+      onExecute(query.trim(), readonlyMode, explainMode)
     }
   }
 
@@ -160,7 +176,61 @@ export function SqlEditor({
     if (onExecute && query.trim()) {
       // US-004: Add query to history
       addQueryToHistory(query.trim(), readonlyMode)
-      onExecute(query.trim(), readonlyMode)
+      // US-008: Pass explain mode for query plan
+      onExecute(query.trim(), readonlyMode, explainMode)
+    }
+  }
+
+  /**
+   * US-008: Execute query with EXPLAIN ANALYZE
+   */
+  const handleExplain = () => {
+    if (onExecute && query.trim()) {
+      // US-004: Add query to history
+      addQueryToHistory(query.trim(), readonlyMode)
+      // Execute with explain mode enabled
+      onExecute(query.trim(), readonlyMode, true)
+    }
+  }
+
+  /**
+   * US-009: Format SQL query using sql-formatter library
+   * Formats the current query with proper indentation and keyword capitalization
+   */
+  const handleFormat = () => {
+    if (!query.trim()) {
+      return
+    }
+
+    try {
+      const formatted = format(query, {
+        language: 'postgresql',
+        tabWidth: 2,
+        keywordCase: 'upper',
+        identifierCase: 'lower',
+        dataTypeCase: 'lower',
+        functionCase: 'lower',
+        indentStyle: 'standard',
+        logicalOperatorNewline: 'before',
+        expressionWidth: 60,
+        linesBetweenQueries: 2,
+        denseOperators: false,
+        newlineBeforeSemicolon: true,
+      })
+
+      setQuery(formatted)
+      if (onChange) {
+        onChange(formatted)
+      }
+
+      // Update editor content
+      if (editorRef.current) {
+        const editor = editorRef.current
+        editor.setValue(formatted)
+      }
+    } catch (error) {
+      // If formatting fails (e.g., incomplete query), just keep the original
+      console.warn('SQL formatting failed:', error)
     }
   }
 
@@ -189,7 +259,7 @@ export function SqlEditor({
               SQL Editor
             </span>
             <span className="text-xs text-slate-400">
-              Press Ctrl+Enter to run
+              Ctrl+Enter to run • Ctrl+Shift+F to format
             </span>
           </div>
           {/* US-005: Read-only checkbox (checked by default) */}
@@ -224,14 +294,36 @@ export function SqlEditor({
             )}
           </label>
         </div>
-        <button
-          onClick={handleExecute}
-          disabled={!query.trim() || readOnly}
-          className="flex items-center gap-2 px-3 py-1.5 bg-emerald-700 text-white text-sm font-medium rounded-lg hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-        >
-          <Play className="w-4 h-4" />
-          Run Query
-        </button>
+        <div className="flex items-center gap-2">
+          {/* US-009: Format SQL button */}
+          <button
+            onClick={handleFormat}
+            disabled={!query.trim() || readOnly}
+            className="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            title="Format SQL (Ctrl+Shift+F)"
+          >
+            <Wand2 className="w-4 h-4" />
+            Format
+          </button>
+          {/* US-008: Explain button for query plan */}
+          <button
+            onClick={handleExplain}
+            disabled={!query.trim() || readOnly}
+            className="flex items-center gap-2 px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            title="Run EXPLAIN ANALYZE to see query execution plan"
+          >
+            <Zap className="w-4 h-4" />
+            Explain
+          </button>
+          <button
+            onClick={handleExecute}
+            disabled={!query.trim() || readOnly}
+            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-700 text-white text-sm font-medium rounded-lg hover:bg-emerald-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            <Play className="w-4 h-4" />
+            Run Query
+          </button>
+        </div>
       </div>
 
       {/* US-005: Warning banner for destructive queries in read-only mode */}

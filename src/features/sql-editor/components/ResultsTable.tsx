@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Download,
   MoreVertical,
+  Zap,
 } from 'lucide-react'
 
 export interface QueryResult {
@@ -14,6 +15,8 @@ export interface QueryResult {
   rows: Record<string, any>[]
   rowCount: number
   executionTime: number
+  rowsAffected?: number
+  queryPlan?: any
 }
 
 interface ResultsTableProps {
@@ -37,6 +40,7 @@ interface SortState {
  * column resizing, empty state handling, and CSV export.
  *
  * US-003: Create Results Table Component
+ * US-008: Show Query Stats (rowsAffected, queryPlan)
  */
 export function ResultsTable({
   result,
@@ -250,7 +254,11 @@ export function ResultsTable({
             Results
           </span>
           <span className="text-xs text-slate-500">
-            {result.executionTime}ms • 0 rows
+            {result.executionTime}ms
+            {result.rowsAffected !== undefined && (
+              <span> • {result.rowsAffected} row{result.rowsAffected !== 1 ? 's' : ''} affected</span>
+            )}
+            {result.rowsAffected === undefined && <span> • 0 rows</span>}
           </span>
         </div>
         <div className="flex items-center justify-center p-12">
@@ -275,7 +283,10 @@ export function ResultsTable({
             Results
           </span>
           <span className="text-xs text-slate-500">
-            {result.rowCount} row{result.rowCount !== 1 ? 's' : ''} • {result.executionTime}ms
+            {result.rowsAffected !== undefined
+              ? `${result.rowsAffected} row${result.rowsAffected !== 1 ? 's' : ''} affected`
+              : `${result.rowCount} row${result.rowCount !== 1 ? 's' : ''}`}
+            {' '}• {result.executionTime}ms
           </span>
         </div>
         <button
@@ -287,6 +298,23 @@ export function ResultsTable({
           Export CSV
         </button>
       </div>
+
+      {/* US-008: Query Plan Display (when available) */}
+      {result.queryPlan && (
+        <div className="border-b border-slate-200 bg-slate-50">
+          <div className="px-4 py-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="w-4 h-4 text-amber-600" />
+              <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                Query Execution Plan
+              </span>
+            </div>
+            <pre className="text-xs text-slate-700 overflow-x-auto p-3 bg-white border border-slate-200 rounded-lg">
+              {JSON.stringify(result.queryPlan, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
 
       {/* Table container */}
       <div className="overflow-x-auto" ref={tableRef}>
