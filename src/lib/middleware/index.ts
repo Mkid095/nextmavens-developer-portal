@@ -64,3 +64,45 @@ export {
   StorageScopeError,
   type StorageFile,
 } from './storage-scope';
+
+/**
+ * MCP Scope Enforcement
+ *
+ * US-007: Implement MCP Scope Enforcement
+ * - Gateway checks key type and scopes
+ * - MCP tokens limited to their scopes
+ * - Read-only tokens rejected for write operations
+ * - Returns PERMISSION_DENIED with clear message
+ */
+export {
+  // MCP scope enforcement utilities
+  enforceMcpScope,
+  gatewayMcpScopeEnforcement,
+  validateMcpScopes,
+  getMcpAccessLevel,
+  isMcpReadOnly,
+  mcpHasWriteAccess,
+  mcpHasAdminAccess,
+  requiresWriteAccess,
+  requiresAdminAccess,
+  getAllowedOperationsForMcpLevel,
+  createMcpPermissionDeniedError,
+  // Types
+  type McpScopeErrorResponse,
+} from '../mcp-scope-enforcement';
+
+/**
+ * API Key Authentication with Scope Enforcement
+ *
+ * US-007: Implement MCP Scope Enforcement
+ * Middleware for authenticating API keys and enforcing scopes at gateway level
+ */
+export {
+  authenticateApiKeyWithScope,
+  enforceScopeForApiKey,
+  createScopeErrorResponse,
+  extractApiKey,
+  withApiKeyScope,
+  withApiKeyAuth,
+  type AuthenticatedApiKey,
+} from './api-key-auth';

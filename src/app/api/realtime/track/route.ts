@@ -5,6 +5,7 @@
  * This endpoint is called by the realtime service to record message consumption.
  *
  * US-003: Track Realtime Usage (prd-usage-tracking.json)
+ * US-008: Update Realtime Service Errors to use standardized error format
  *
  * POST /api/realtime/track
  * Body: { token: string, message_count: number }
@@ -15,6 +16,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken, JwtPayload } from '@/lib/auth';
 import { withCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation';
 import { trackRealtimeMessages, recordRealtimeMetric } from '@/lib/usage/realtime-tracking';
+import {
+  toErrorNextResponse,
+  authenticationError,
+  validationError,
+} from '@/lib/errors';
 
 /**
  * POST /api/realtime/track
@@ -40,8 +46,13 @@ import { trackRealtimeMessages, recordRealtimeMetric } from '@/lib/usage/realtim
  * Error response (401):
  * ```json
  * {
- *   "error": "Missing project_id",
- *   "code": "MISSING_PROJECT_ID"
+ *   "error": {
+ *     "code": "AUTHENTICATION_ERROR",
+ *     "message": "Missing project_id",
+ *     "docs": "/docs/errors#AUTHENTICATION_ERROR",
+ *     "retryable": false,
+ *     "timestamp": "2024-01-01T00:00:00.000Z"
+ *   }
  * }
  * ```
  */
@@ -55,39 +66,23 @@ export async function POST(req: NextRequest) {
     const { token, message_count } = body;
 
     if (!token) {
-      return NextResponse.json(
-        {
-          error: 'No token provided',
-          message: 'JWT token is required for message tracking',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token is required for message tracking');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Verify JWT and extract project_id
     const auth: JwtPayload = verifyAccessToken(token);
 
     if (!auth.project_id) {
-      return NextResponse.json(
-        {
-          error: 'Missing project_id',
-          message: 'JWT token must contain project_id claim',
-          code: 'MISSING_PROJECT_ID',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Validate message_count
     const count = parseInt(message_count) || 1;
     if (count < 0) {
-      return NextResponse.json(
-        {
-          error: 'Invalid message_count',
-          message: 'message_count must be a non-negative number',
-        },
-        { status: 400 }
-      );
+      const error = validationError('message_count must be a non-negative number');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Track the messages (fire and forget - don't await)
@@ -106,32 +101,16 @@ export async function POST(req: NextRequest) {
     console.error('[Realtime API] Track error:', error);
 
     if (error.message === 'Missing project_id claim') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: 'JWT token must contain project_id claim',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: error.message || 'Token verification failed',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError(error.message || 'Token verification failed');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
-    return NextResponse.json(
-      {
-        error: 'Tracking failed',
-        message: error.message || 'Failed to track message usage',
-      },
-      { status: 500 }
-    );
+    return setCorrelationHeader(toErrorNextResponse(error), correlationId);
   }
 }
 
@@ -167,26 +146,22 @@ export async function GET(req: NextRequest) {
     const days = daysParam ? parseInt(daysParam) : 30;
 
     if (!token) {
-      return NextResponse.json(
-        {
-          error: 'No token provided',
-          message: 'JWT token is required',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token is required');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Verify JWT and extract project_id
     const auth: JwtPayload = verifyAccessToken(token);
 
     if (!auth.project_id) {
-      return NextResponse.json(
-        {
-          error: 'Missing project_id',
-          message: 'JWT token must contain project_id claim',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
+    }
+
+    // Validate days parameter
+    if (days < 1 || days > 365) {
+      const error = validationError('days parameter must be between 1 and 365');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Get usage statistics
@@ -198,13 +173,8 @@ export async function GET(req: NextRequest) {
     const result = await getRealtimeUsageStats(auth.project_id, startDate, endDate);
 
     if (!result.success || !result.data) {
-      return NextResponse.json(
-        {
-          error: 'Failed to get usage stats',
-          message: result.error || 'Unknown error',
-        },
-        { status: 500 }
-      );
+      const error = validationError(result.error || 'Unknown error');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     const response = NextResponse.json({
@@ -227,31 +197,15 @@ export async function GET(req: NextRequest) {
     console.error('[Realtime API] Get usage stats error:', error);
 
     if (error.message === 'Missing project_id claim') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: 'JWT token must contain project_id claim',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: error.message || 'Token verification failed',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError(error.message || 'Token verification failed');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
-    return NextResponse.json(
-      {
-        error: 'Failed to get usage stats',
-        message: error.message || 'An error occurred',
-      },
-      { status: 500 }
-    );
+    return setCorrelationHeader(toErrorNextResponse(error), correlationId);
   }
 }

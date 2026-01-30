@@ -3,9 +3,15 @@
  *
  * Provides utilities for enforcing API key scopes at the gateway level.
  * This ensures that keys cannot exceed their permissions.
+ *
+ * US-007: MCP Scope Enforcement
+ * - Gateway checks key type and scopes
+ * - MCP tokens limited to their scopes
+ * - Read-only tokens rejected for write operations
+ * - Returns PERMISSION_DENIED with clear message
  */
 
-import type { ApiKey, ApiKeyScope, ApiKeyService } from '@/lib/types/api-key.types'
+import type { ApiKey, ApiKeyScope, ApiKeyService, ApiKeyType } from '@/lib/types/api-key.types'
 import { getServiceFromScope } from '@/lib/types/api-key.types'
 
 /**
@@ -15,6 +21,7 @@ export enum ScopeErrorType {
   MISSING_SCOPE = 'MISSING_SCOPE',
   INVALID_TOKEN = 'INVALID_TOKEN',
   KEY_REVOKED = 'KEY_REVOKED',
+  MCP_WRITE_DENIED = 'MCP_WRITE_DENIED', // US-007: MCP read-only token denied write operation
 }
 
 /**
@@ -224,4 +231,165 @@ export function gatewayScopeEnforcement(
  */
 export function hasServiceScope(apiKey: ApiKey, service: ApiKeyService): boolean {
   return apiKey.scopes?.some(scope => scope.startsWith(`${service}:`)) ?? false
+}
+
+/**
+ * US-007: Check if an API key is an MCP token.
+ *
+ * @param apiKey - The API key to check
+ * @returns true if the key is an MCP token
+ */
+export function isMcpToken(apiKey: ApiKey): boolean {
+  return apiKey.key_type === 'mcp'
+}
+
+/**
+ * US-007: Check if an API key is an MCP read-only token.
+ *
+ * Read-only MCP tokens have scopes: db:select, storage:read, realtime:subscribe
+ * They do NOT have: db:insert, db:update, db:delete, storage:write, realtime:publish, graphql:execute, auth:manage
+ *
+ * @param apiKey - The API key to check
+ * @returns true if the key is an MCP read-only token
+ */
+export function isMcpReadOnlyToken(apiKey: ApiKey): boolean {
+  if (!isMcpToken(apiKey)) {
+    return false
+  }
+
+  // Check if the token has ONLY read-only scopes
+  const readOnlyScopes: ApiKeyScope[] = ['db:select', 'storage:read', 'realtime:subscribe']
+  const writeScopes: ApiKeyScope[] = [
+    'db:insert',
+    'db:update',
+    'db:delete',
+    'storage:write',
+    'realtime:publish',
+    'graphql:execute',
+    'auth:manage',
+    'auth:signin',
+    'auth:signup',
+  ]
+
+  const scopes = apiKey.scopes || []
+
+  // Must have at least one read-only scope
+  const hasReadOnlyScope = scopes.some(scope => readOnlyScopes.includes(scope))
+
+  // Must NOT have any write scopes
+  const hasWriteScope = scopes.some(scope => writeScopes.includes(scope))
+
+  return hasReadOnlyScope && !hasWriteScope
+}
+
+/**
+ * US-007: Check if an operation is a write operation.
+ *
+ * Write operations are: db:insert, db:update, db:delete, storage:write, realtime:publish, graphql:execute, auth:manage
+ *
+ * @param operation - The operation to check
+ * @returns true if the operation is a write operation
+ */
+export function isWriteOperation(operation: string): boolean {
+  const writeOperations: string[] = [
+    'db:insert',
+    'db:update',
+    'db:delete',
+    'storage:write',
+    'realtime:publish',
+    'graphql:execute',
+    'auth:manage',
+    'auth:signup',
+  ]
+  return writeOperations.includes(operation)
+}
+
+/**
+ * US-007: Enforce MCP scope restrictions.
+ *
+ * MCP read-only tokens are rejected for write operations with a clear error message.
+ *
+ * @param apiKey - The API key to check
+ * @param operation - The operation being performed
+ * @throws ScopeErrorResponse if MCP read-only token attempts write operation
+ */
+export function enforceMcpScopeRestrictions(apiKey: ApiKey, operation: string): void {
+  // Only enforce for MCP tokens
+  if (!isMcpToken(apiKey)) {
+    return
+  }
+
+  // Check if this is a write operation
+  if (!isWriteOperation(operation)) {
+    return
+  }
+
+  // Check if the token is read-only
+  if (isMcpReadOnlyToken(apiKey)) {
+    const error: ScopeErrorResponse = {
+      error: 'PERMISSION_DENIED',
+      code: ScopeErrorType.MCP_WRITE_DENIED,
+      required_scope: REQUIRED_SCOPES[operation] as ApiKeyScope,
+      service: getServiceFromScope(REQUIRED_SCOPES[operation] as ApiKeyScope),
+      message: `MCP read-only token cannot perform write operations. This token has read-only access and cannot execute: ${operation}. To perform write operations, use an MCP write token (mcp_rw_) or admin token (mcp_admin_).`,
+    }
+
+    throw error
+  }
+
+  // For MCP write/admin tokens, proceed with normal scope enforcement
+  // (they still need to have the required scope in their scopes array)
+}
+
+/**
+ * US-007: Enhanced scope enforcement that includes MCP restrictions.
+ *
+ * This function combines regular scope enforcement with MCP-specific restrictions.
+ * It should be used in the API Gateway to enforce both general and MCP-specific scope rules.
+ *
+ * @param apiKey - The API key to check
+ * @param operation - The operation being performed
+ * @throws ScopeErrorResponse if scope check fails
+ */
+export function enforceScopeWithMcpRestrictions(apiKey: ApiKey, operation: string): void {
+  // First, enforce MCP-specific restrictions
+  enforceMcpScopeRestrictions(apiKey, operation)
+
+  // Then, enforce regular scope requirements
+  enforceScope(apiKey, operation)
+}
+
+/**
+ * US-007: Gateway middleware for MCP scope enforcement.
+ *
+ * Use this in the API Gateway to automatically enforce MCP scope restrictions.
+ * Returns null if the check passes, or an error object if it fails.
+ *
+ * @param apiKey - The API key from the request
+ * @param operation - The operation being performed
+ * @returns NextResponse with error if scope check fails, null if passes
+ */
+export function gatewayMcpScopeEnforcement(
+  apiKey: ApiKey,
+  operation: string
+): { error: ScopeErrorResponse } | null {
+  try {
+    enforceScopeWithMcpRestrictions(apiKey, operation)
+
+    // Log successful scope check
+    logScopeCheck(apiKey, operation, true, { mcp_token: isMcpToken(apiKey) })
+
+    return null
+  } catch (error) {
+    const scopeError = error as ScopeErrorResponse
+
+    // Log failed scope check
+    logScopeCheck(apiKey, operation, false, {
+      reason: scopeError.message,
+      mcp_token: isMcpToken(apiKey),
+      mcp_read_only: isMcpReadOnlyToken(apiKey),
+    })
+
+    return { error: scopeError }
+  }
 }

@@ -6,10 +6,16 @@
  * if new WebSocket connections should be allowed.
  *
  * US-007: Apply Realtime Flag
+ * US-008: Update Realtime Service Errors to use standardized error format
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { checkFeature } from '@/lib/features'
+import {
+  toErrorNextResponse,
+  serviceDisabledError,
+  internalError,
+} from '@/lib/errors'
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,14 +23,11 @@ export async function GET(req: NextRequest) {
     const realtimeEnabled = await checkFeature('realtime_enabled')
 
     if (!realtimeEnabled) {
-      return NextResponse.json(
-        {
-          enabled: false,
-          error: 'Realtime disabled',
-          message: 'Realtime WebSocket connections are temporarily disabled. Existing connections will be allowed to close gracefully. Please try again later.',
-        },
-        { status: 503 }
+      const error = serviceDisabledError(
+        'Realtime WebSocket connections are temporarily disabled. Existing connections will be allowed to close gracefully. Please try again later.',
+        'realtime'
       )
+      return error.toNextResponse()
     }
 
     return NextResponse.json(
@@ -34,15 +37,9 @@ export async function GET(req: NextRequest) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error) {
     console.error('[Realtime API] Check error:', error)
-    return NextResponse.json(
-      {
-        enabled: false,
-        error: error.message || 'Failed to check realtime status'
-      },
-      { status: 500 }
-    )
+    return toErrorNextResponse(error)
   }
 }
 
@@ -58,14 +55,11 @@ export async function POST(req: NextRequest) {
     const realtimeEnabled = await checkFeature('realtime_enabled')
 
     if (!realtimeEnabled) {
-      return NextResponse.json(
-        {
-          enabled: false,
-          error: 'Realtime disabled',
-          message: 'Realtime WebSocket connections are temporarily disabled. Existing connections will be allowed to close gracefully. Please try again later.',
-        },
-        { status: 503 }
+      const error = serviceDisabledError(
+        'Realtime WebSocket connections are temporarily disabled. Existing connections will be allowed to close gracefully. Please try again later.',
+        'realtime'
       )
+      return error.toNextResponse()
     }
 
     // Parse request body for optional context
@@ -81,14 +75,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 200 }
     )
-  } catch (error: any) {
+  } catch (error) {
     console.error('[Realtime API] Check error:', error)
-    return NextResponse.json(
-      {
-        enabled: false,
-        error: error.message || 'Failed to check realtime status'
-      },
-      { status: 500 }
-    )
+    return toErrorNextResponse(error)
   }
 }

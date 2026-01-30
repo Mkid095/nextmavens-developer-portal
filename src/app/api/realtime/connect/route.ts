@@ -5,6 +5,7 @@
  * Validates project_id and returns connection metadata with scoped channel format.
  *
  * US-003: Prefix Realtime Channels (prd-resource-isolation.json)
+ * US-008: Update Realtime Service Errors to use standardized error format
  *
  * POST /api/realtime/connect
  * Body: { token: string }
@@ -20,6 +21,12 @@ import {
   RealtimeScopeError,
 } from '@/lib/middleware/realtime-scope';
 import { trackRealtimeConnection } from '@/lib/usage/realtime-tracking';
+import {
+  toErrorNextResponse,
+  authenticationError,
+  validationError,
+  permissionDeniedError,
+} from '@/lib/errors';
 
 /**
  * POST /api/realtime/connect
@@ -48,8 +55,13 @@ import { trackRealtimeConnection } from '@/lib/usage/realtime-tracking';
  * Error response (401):
  * ```json
  * {
- *   "error": "Missing project ID",
- *   "code": "MISSING_PROJECT_ID"
+ *   "error": {
+ *     "code": "AUTHENTICATION_ERROR",
+ *     "message": "No token provided",
+ *     "docs": "/docs/errors#AUTHENTICATION_ERROR",
+ *     "retryable": false,
+ *     "timestamp": "2024-01-01T00:00:00.000Z"
+ *   }
  * }
  * ```
  */
@@ -63,27 +75,16 @@ export async function POST(req: NextRequest) {
     const { token } = body;
 
     if (!token) {
-      return NextResponse.json(
-        {
-          error: 'No token provided',
-          message: 'JWT token is required for realtime connection',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token is required for realtime connection');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Verify JWT and extract project_id
     const auth: JwtPayload = verifyAccessToken(token);
 
     if (!auth.project_id) {
-      return NextResponse.json(
-        {
-          error: 'Missing project_id',
-          message: 'JWT token must contain project_id claim',
-          code: RealtimeScopeError.MISSING_PROJECT_ID,
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Create handshake response
@@ -97,32 +98,15 @@ export async function POST(req: NextRequest) {
     console.error('[Realtime API] Connection error:', error);
 
     if (error.message === 'Missing project_id claim') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: 'JWT token must contain project_id claim',
-          code: RealtimeScopeError.MISSING_PROJECT_ID,
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: error.message || 'Token verification failed',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError(error.message || 'Token verification failed');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
-    return NextResponse.json(
-      {
-        error: 'Connection failed',
-        message: error.message || 'Failed to establish realtime connection',
-      },
-      { status: 500 }
-    );
+    return setCorrelationHeader(toErrorNextResponse(error), correlationId);
   }
 }

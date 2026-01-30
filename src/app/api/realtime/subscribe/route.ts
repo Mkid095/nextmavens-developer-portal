@@ -5,6 +5,7 @@
  * Ensures channels are prefixed with project_id and blocks cross-project access.
  *
  * US-003: Prefix Realtime Channels (prd-resource-isolation.json)
+ * US-008: Update Realtime Service Errors to use standardized error format
  *
  * POST /api/realtime/subscribe
  * Body: { token: string, channel: string }
@@ -23,6 +24,12 @@ import {
 } from '@/lib/middleware/realtime-scope';
 import { trackRealtimeMessage, trackRealtimeConnection } from '@/lib/usage/realtime-tracking';
 import crypto from 'crypto';
+import {
+  toErrorNextResponse,
+  authenticationError,
+  validationError,
+  permissionDeniedError,
+} from '@/lib/errors';
 
 /**
  * POST /api/realtime/subscribe
@@ -50,18 +57,26 @@ import crypto from 'crypto';
  * Error response (403) - Cross-project access:
  * ```json
  * {
- *   "error": "Cross-project channel access denied",
- *   "message": "Access to other project channels not permitted",
- *   "code": "CROSS_PROJECT_CHANNEL"
+ *   "error": {
+ *     "code": "PERMISSION_DENIED",
+ *     "message": "Cross-project channel access denied",
+ *     "docs": "/docs/errors#PERMISSION_DENIED",
+ *     "retryable": false,
+ *     "timestamp": "2024-01-01T00:00:00.000Z"
+ *   }
  * }
  * ```
  *
  * Error response (400) - Invalid channel format:
  * ```json
  * {
- *   "error": "Invalid channel subscription",
- *   "message": "Channel must follow format: project_id:channel_type:identifier",
- *   "code": "INVALID_CHANNEL_FORMAT"
+ *   "error": {
+ *     "code": "VALIDATION_ERROR",
+ *     "message": "Invalid channel subscription",
+ *     "docs": "/docs/errors#VALIDATION_ERROR",
+ *     "retryable": false,
+ *     "timestamp": "2024-01-01T00:00:00.000Z"
+ *   }
  * }
  * ```
  */
@@ -75,36 +90,21 @@ export async function POST(req: NextRequest) {
     const { token, channel } = body;
 
     if (!token) {
-      return NextResponse.json(
-        {
-          error: 'No token provided',
-          message: 'JWT token is required for channel subscription',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token is required for channel subscription');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     if (!channel) {
-      return NextResponse.json(
-        {
-          error: 'No channel provided',
-          message: 'Channel name is required for subscription',
-        },
-        { status: 400 }
-      );
+      const error = validationError('Channel name is required for subscription');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Verify JWT and extract project_id
     const auth: JwtPayload = verifyAccessToken(token);
 
     if (!auth.project_id) {
-      return NextResponse.json(
-        {
-          error: 'Missing project_id',
-          message: 'JWT token must contain project_id claim',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Handle subscription with validation
@@ -132,32 +132,16 @@ export async function POST(req: NextRequest) {
     console.error('[Realtime API] Subscription error:', error);
 
     if (error.message === 'Missing project_id claim') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: 'JWT token must contain project_id claim',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: error.message || 'Token verification failed',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError(error.message || 'Token verification failed');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
-    return NextResponse.json(
-      {
-        error: 'Subscription failed',
-        message: error.message || 'Failed to subscribe to channel',
-      },
-      { status: 500 }
-    );
+    return setCorrelationHeader(toErrorNextResponse(error), correlationId);
   }
 }
 
@@ -192,26 +176,16 @@ export async function GET(req: NextRequest) {
     const token = req.nextUrl.searchParams.get('token');
 
     if (!token) {
-      return NextResponse.json(
-        {
-          error: 'No token provided',
-          message: 'JWT token is required',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token is required');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Verify JWT and extract project_id
     const auth: JwtPayload = verifyAccessToken(token);
 
     if (!auth.project_id) {
-      return NextResponse.json(
-        {
-          error: 'Missing project_id',
-          message: 'JWT token must contain project_id claim',
-        },
-        { status: 401 }
-      );
+      const error = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(error.toNextResponse(), correlationId);
     }
 
     // Generate allowed channels
@@ -234,31 +208,15 @@ export async function GET(req: NextRequest) {
     console.error('[Realtime API] Get allowed channels error:', error);
 
     if (error.message === 'Missing project_id claim') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: 'JWT token must contain project_id claim',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError('JWT token must contain project_id claim');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return NextResponse.json(
-        {
-          error: 'Invalid token',
-          message: error.message || 'Token verification failed',
-        },
-        { status: 401 }
-      );
+      const authError = authenticationError(error.message || 'Token verification failed');
+      return setCorrelationHeader(authError.toNextResponse(), correlationId);
     }
 
-    return NextResponse.json(
-      {
-        error: 'Failed to get allowed channels',
-        message: error.message || 'An error occurred',
-      },
-      { status: 500 }
-    );
+    return setCorrelationHeader(toErrorNextResponse(error), correlationId);
   }
 }
