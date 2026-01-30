@@ -76,8 +76,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: src/app/api/studio/[projectId]/tables/[table]/columns/route.ts (110+ lines). GET endpoint that queries information_schema.columns for a specific table in tenant_{slug} schema. Returns column_name, data_type, is_nullable, column_default, plus ordinal_position, character_maximum_length, numeric_precision, numeric_scale, datetime_precision. JWT authentication with project_id claim verification. Table name validation (regex check) to prevent SQL injection. Table existence check before querying columns. Columns ordered by ordinal_position. Typecheck passes."
     },
     {
       "id": "US-004",

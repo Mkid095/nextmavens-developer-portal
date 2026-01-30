@@ -81,6 +81,7 @@ export {
   validateMcpScopes,
   getMcpAccessLevel,
   isMcpReadOnly,
+  isMcpToken,
   mcpHasWriteAccess,
   mcpHasAdminAccess,
   requiresWriteAccess,
@@ -90,6 +91,31 @@ export {
   // Types
   type McpScopeErrorResponse,
 } from '../mcp-scope-enforcement';
+
+/**
+ * Scope Enforcement (base utilities)
+ *
+ * US-007: Core scope enforcement functions
+ */
+export {
+  enforceScope,
+  enforceScopeWithMcpRestrictions,
+  gatewayScopeEnforcement,
+  gatewayMcpScopeEnforcement as gatewayScopeEnforcementWithMcp,
+  hasRequiredScope,
+  hasAllRequiredScopes,
+  hasAnyRequiredScope,
+  hasServiceScope,
+  isMcpToken as isMcpTokenBase,
+  isMcpReadOnlyToken,
+  isWriteOperation,
+  logScopeCheck,
+  getMissingScopes,
+  // Types and constants
+  ScopeErrorType,
+  type ScopeErrorResponse,
+  REQUIRED_SCOPES,
+} from '../scope-enforcement';
 
 /**
  * API Key Authentication with Scope Enforcement

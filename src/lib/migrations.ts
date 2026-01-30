@@ -17,10 +17,56 @@ export interface MigrationRecord {
 }
 
 /**
- * Run all pending migrations
- * Each migration runs in its own transaction, so failures don't rollback previously applied migrations
+ * Migration options for running migrations
  */
-export async function runMigrations(): Promise<void> {
+export interface MigrationOptions {
+  /**
+   * Automatically confirm breaking migrations
+   * If false, will throw an error for breaking migrations requiring manual confirmation
+   */
+  autoConfirmBreaking?: boolean
+
+  /**
+   * Environment name (used for production detection)
+   */
+  environment?: string
+
+  /**
+   * Force run even if breaking (bypasses confirmation)
+   */
+  force?: boolean
+}
+
+/**
+ * Check if current environment is production
+ */
+function isProductionEnvironment(options?: MigrationOptions): boolean {
+  const env = options?.environment || process.env.NODE_ENV || process.env.ENVIRONMENT || 'development'
+  return env === 'production'
+}
+
+/**
+ * Log a breaking change warning
+ */
+function logBreakingChangeWarning(migration: Migration, version: string): void {
+  console.warn('')
+  console.warn('⚠️  WARNING: Breaking Change Detected!')
+  console.warn(`⚠️  Migration: ${version}`)
+  console.warn(`⚠️  Description: ${migration.description}`)
+  console.warn(`⚠️  This migration may cause issues if not properly tested.`)
+  console.warn(`⚠️  Ensure you have tested this on a staging environment first.`)
+  console.warn('')
+}
+
+/**
+ * Run all pending migrations
+ * US-004: Added breaking change warnings and confirmation
+ * Each migration runs in its own transaction, so failures don't rollback previously applied migrations
+ *
+ * @param options - Migration options
+ * @throws Error if breaking migration requires confirmation in production
+ */
+export async function runMigrations(options?: MigrationOptions): Promise<void> {
   const pool = getPool()
 
   // First, ensure schema_migrations table exists (outside migration loop)
@@ -52,9 +98,53 @@ export async function runMigrations(): Promise<void> {
 
   let successCount = 0
   let skipCount = 0
+  const isProd = isProductionEnvironment(options)
 
   for (const file of migrationFiles) {
     const version = file.split('_')[0]
+
+    // Read migration file first to check for breaking flag
+    const { readFile } = await import('fs/promises')
+    const migrationPath = join(migrationsDir, file)
+    const migrationSql = await readFile(migrationPath, 'utf-8')
+
+    // Extract breaking flag if present (looks for -- Breaking: true/false)
+    const lines = migrationSql.split('\n')
+    const breakingLine = lines.find(line =>
+      line.trim().startsWith('-- Breaking:') ||
+      line.trim().startsWith('-- breaking:')
+    )
+    const breaking = breakingLine
+      ?.replace(/^--\s*(Breaking|breaking):\s*/, '')
+      ?.trim()?.toLowerCase() === 'true'
+
+    // Extract description for warnings
+    const descriptionLine = lines.find(line =>
+      line.trim().startsWith('--') &&
+      !line.trim().startsWith('--===')
+    ) || lines[0]
+    const description = descriptionLine
+      ?.replace(/^--\s*/, '')
+      ?.trim() ||
+      `Migration ${version}`
+
+    // US-004: Check for breaking changes and warn/require confirmation
+    if (breaking) {
+      const migration: Migration = { version, description, breaking }
+      logBreakingChangeWarning(migration, version)
+
+      // In production, require explicit confirmation for breaking changes
+      if (isProd && !options?.force && !options?.autoConfirmBreaking) {
+        throw new Error(
+          `Breaking migration ${version} requires explicit confirmation. ` +
+          `Run with autoConfirmBreaking: true or force: true to proceed.`
+        )
+      }
+
+      if (!options?.autoConfirmBreaking && !options?.force) {
+        console.warn(`⚠️  Proceeding with breaking migration ${version} in non-production environment`)
+      }
+    }
 
     // Each migration gets its own transaction
     const client = await pool.connect()
@@ -75,24 +165,8 @@ export async function runMigrations(): Promise<void> {
         continue
       }
 
-      // Read and execute migration
-      const { readFile } = await import('fs/promises')
-      const migrationPath = join(migrationsDir, file)
-      const migrationSql = await readFile(migrationPath, 'utf-8')
-
       console.log(`Running migration ${version}...`)
       await client.query(migrationSql)
-
-      // Extract description from migration file (first comment line)
-      const lines = migrationSql.split('\n')
-      const descriptionLine = lines.find(line =>
-        line.trim().startsWith('--') &&
-        !line.trim().startsWith('--===')
-      ) || lines[0]
-      const description = descriptionLine
-        ?.replace(/^--\s*/, '')
-        ?.trim() ||
-        `Migration ${version}`
 
       // Extract rollback SQL if present (looks for -- Rollback: comment)
       const rollbackLine = lines.find(line =>
@@ -102,15 +176,6 @@ export async function runMigrations(): Promise<void> {
       const rollbackSql = rollbackLine
         ?.replace(/^--\s*(Rollback|rollback):\s*/, '')
         ?.trim()
-
-      // Extract breaking flag if present (looks for -- Breaking: true/false)
-      const breakingLine = lines.find(line =>
-        line.trim().startsWith('-- Breaking:') ||
-        line.trim().startsWith('-- breaking:')
-      )
-      const breaking = breakingLine
-        ?.replace(/^--\s*(Breaking|breaking):\s*/, '')
-        ?.trim()?.toLowerCase() === 'true'
 
       // Record migration
       await client.query(

@@ -14,9 +14,12 @@
 import type { ApiKey, ApiKeyScope, ApiKeyType, McpAccessLevel } from '@/lib/types/api-key.types'
 import {
   enforceScope,
-  gatewayScopeEnforcement,
+  enforceScopeWithMcpRestrictions,
   type ScopeErrorResponse,
   ScopeErrorType,
+  isMcpToken as baseIsMcpToken,
+  isMcpReadOnlyToken,
+  isWriteOperation,
 } from '@/lib/scope-enforcement'
 import { getMcpDefaultScopes } from '@/lib/types/api-key.types'
 
@@ -54,7 +57,7 @@ const ADMIN_OPERATIONS: ApiKeyScope[] = [
  * Get the MCP access level from an API key
  */
 export function getMcpAccessLevel(apiKey: ApiKey): McpAccessLevel | null {
-  if (apiKey.key_type !== 'mcp') {
+  if (!baseIsMcpToken(apiKey)) {
     return null
   }
 
@@ -74,14 +77,21 @@ export function getMcpAccessLevel(apiKey: ApiKey): McpAccessLevel | null {
  * Check if an MCP token is read-only
  */
 export function isMcpReadOnly(apiKey: ApiKey): boolean {
-  return apiKey.key_type === 'mcp' && apiKey.key_prefix.startsWith('mcp_ro_')
+  return isMcpReadOnlyToken(apiKey)
+}
+
+/**
+ * Check if an API key is an MCP token
+ */
+export function isMcpToken(apiKey: ApiKey): boolean {
+  return baseIsMcpToken(apiKey)
 }
 
 /**
  * Check if an MCP token has write access
  */
 export function mcpHasWriteAccess(apiKey: ApiKey): boolean {
-  if (apiKey.key_type !== 'mcp') {
+  if (!baseIsMcpToken(apiKey)) {
     return false
   }
 
@@ -93,7 +103,7 @@ export function mcpHasWriteAccess(apiKey: ApiKey): boolean {
  * Check if an MCP token has admin access
  */
 export function mcpHasAdminAccess(apiKey: ApiKey): boolean {
-  if (apiKey.key_type !== 'mcp') {
+  if (!baseIsMcpToken(apiKey)) {
     return false
   }
 
@@ -105,7 +115,7 @@ export function mcpHasAdminAccess(apiKey: ApiKey): boolean {
  * This ensures the token's scopes are consistent with its prefix
  */
 export function validateMcpScopes(apiKey: ApiKey): { valid: boolean; error?: string } {
-  if (apiKey.key_type !== 'mcp') {
+  if (!baseIsMcpToken(apiKey)) {
     return { valid: true }
   }
 
@@ -159,67 +169,8 @@ export interface McpScopeErrorResponse extends ScopeErrorResponse {
  * @throws McpScopeErrorResponse if the MCP token doesn't have permission
  */
 export function enforceMcpScope(apiKey: ApiKey, operation: string): void {
-  // First, validate that this is an MCP token
-  if (apiKey.key_type !== 'mcp') {
-    // Not an MCP token, use standard scope enforcement
-    return enforceScope(apiKey, operation)
-  }
-
-  // Validate MCP token prefix and scopes
-  const scopeValidation = validateMcpScopes(apiKey)
-  if (!scopeValidation.valid) {
-    const error: McpScopeErrorResponse = {
-      error: 'PERMISSION_DENIED',
-      code: ScopeErrorType.MISSING_SCOPE,
-      message: scopeValidation.error!,
-      key_type: apiKey.key_type,
-      key_prefix: apiKey.key_prefix,
-    }
-    throw error
-  }
-
-  // Check if the operation is a write operation
-  const isWriteOperation = WRITE_OPERATIONS.some((writeOp) => operation === writeOp)
-  const isAdminOperation = ADMIN_OPERATIONS.some((adminOp) => operation === adminOp)
-
-  const accessLevel = getMcpAccessLevel(apiKey)
-
-  if (isWriteOperation && accessLevel === 'ro') {
-    // Read-only token attempting write operation
-    const error: McpScopeErrorResponse = {
-      error: 'PERMISSION_DENIED',
-      code: ScopeErrorType.MISSING_SCOPE,
-      required_scope: operation as ApiKeyScope,
-      message: `This MCP read-only token does not have permission to perform write operations. ` +
-        `The operation '${operation}' requires a read-write (mcp_rw_) or admin (mcp_admin_) token. ` +
-        `Read-only tokens can only perform: ${READ_ONLY_OPERATIONS.join(', ')}.`,
-      key_type: apiKey.key_type,
-      key_prefix: apiKey.key_prefix,
-      mcp_access_level: accessLevel,
-      operation_type: 'write',
-    }
-    throw error
-  }
-
-  if (isAdminOperation && accessLevel !== 'admin') {
-    // Non-admin token attempting admin operation
-    const error: McpScopeErrorResponse = {
-      error: 'PERMISSION_DENIED',
-      code: ScopeErrorType.MISSING_SCOPE,
-      required_scope: operation as ApiKeyScope,
-      message: `This MCP token does not have permission to perform administrative operations. ` +
-        `The operation '${operation}' requires an admin (mcp_admin_) token. ` +
-        `Your token has access level: ${accessLevel}.`,
-      key_type: apiKey.key_type,
-      key_prefix: apiKey.key_prefix,
-      mcp_access_level: accessLevel,
-      operation_type: 'admin',
-    }
-    throw error
-  }
-
-  // Use standard scope enforcement for the final check
-  enforceScope(apiKey, operation)
+  // Use the enhanced scope enforcement with MCP restrictions
+  return enforceScopeWithMcpRestrictions(apiKey, operation)
 }
 
 /**
@@ -278,7 +229,7 @@ export function createMcpPermissionDeniedError(
  * Check if an operation requires write access
  */
 export function requiresWriteAccess(operation: string): boolean {
-  return WRITE_OPERATIONS.some((writeOp) => operation === writeOp)
+  return isWriteOperation(operation)
 }
 
 /**

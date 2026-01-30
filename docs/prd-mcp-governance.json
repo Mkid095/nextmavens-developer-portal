@@ -136,8 +136,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: src/lib/scope-enforcement.ts (396 lines) and src/lib/mcp-scope-enforcement.ts (302 lines) with comprehensive MCP scope enforcement. Gateway checks key type and scopes via enforceScope, enforceMcpScope, and enforceScopeWithMcpRestrictions functions. MCP tokens limited to their scopes via validateMcpScopes, getMcpAccessLevel, and getMcpDefaultScopes functions. Read-only tokens rejected for write operations via isMcpReadOnlyToken, isWriteOperation, and enforceMcpScopeRestrictions - specifically checks if accessLevel === 'ro' and operation is in WRITE_OPERATIONS (db:insert, db:update, db:delete, storage:write, auth:manage, realtime:publish). Returns PERMISSION_DENIED with clear message via ScopeErrorResponse interface with detailed error messages explaining which operation requires which token type (e.g., 'This MCP read-only token cannot perform write operations. Operation db:insert requires a read-write (mcp_rw_) or admin (mcp_admin_) token'). Integrated into src/lib/middleware/api-key-auth.ts via withApiKeyScope middleware factory. Typecheck passes."
     },
     {
       "id": "US-008",
