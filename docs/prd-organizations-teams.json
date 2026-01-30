@@ -187,8 +187,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented POST /v1/orgs/:id/accept endpoint for accepting organization invitations. Endpoint accepts invitation token in request body. Validates that the authenticated user's email matches the invitation email. Checks token expiry and returns 400 if expired. Updates organization_members record: sets user_id to authenticated user, status to 'accepted', and joined_at to current timestamp. Returns updated member details. Validates invitation exists, is pending, and matches both org_id and token. Typecheck passes."
     },
     {
       "id": "US-008",

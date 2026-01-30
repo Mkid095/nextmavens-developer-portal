@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Key, ArrowLeft, ArrowRight, Shield, Globe, Server, Eye } from 'lucide-react'
 import { motion } from 'framer-motion'
+import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 
 const keyTypes = [
   {
@@ -323,9 +324,7 @@ export default function ApiKeysDocsPage() {
 
         <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
           <h2 className="text-xl font-semibold text-slate-900 mb-4">Example Key Format</h2>
-          <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
-            <pre className="text-sm text-slate-300">
-              <code>{`// Public key for production
+          <CodeBlockWithCopy>{`// Public key for production
 pk_prod_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
 
 // Secret key for staging
@@ -335,9 +334,7 @@ sk_test_z9y8x7w6v5u4t3s2r1q0p9o8n7m6l5k4
 sr_dev_1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7
 
 // MCP read-only token
-mcp_ro_q1w2e3r4t5y6u7i8o9p0a1s2d3f4g5h6`}</code>
-            </pre>
-          </div>
+mcp_ro_q1w2e3r4t5y6u7i8o9p0a1s2d3f4g5h6`}</CodeBlockWithCopy>
         </div>
 
         <div className="bg-white rounded-xl p-8 border border-slate-200">
