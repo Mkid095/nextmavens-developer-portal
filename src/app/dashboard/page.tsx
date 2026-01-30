@@ -47,6 +47,7 @@ interface Project {
   slug: string
   created_at: string
   status?: string
+  environment?: 'prod' | 'dev' | 'staging'
   deleted_at?: string | null
   deletion_scheduled_at?: string | null
   grace_period_ends_at?: string | null
@@ -799,8 +800,27 @@ export default function DashboardPage() {
                   ) : (
                     projects.map((project) => (
                       <div key={project.id} className="p-4 bg-slate-50 rounded-lg flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-slate-900">{project.name}</div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-slate-900">{project.name}</span>
+                            {project.environment && (
+                              <span
+                                className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                                  project.environment === 'prod'
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                    : project.environment === 'dev'
+                                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                      : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                }`}
+                              >
+                                {project.environment === 'prod'
+                                  ? 'Prod'
+                                  : project.environment === 'dev'
+                                    ? 'Dev'
+                                    : 'Staging'}
+                              </span>
+                            )}
+                          </div>
                           <code className="text-xs text-slate-500">{project.slug}</code>
                         </div>
                         <Link

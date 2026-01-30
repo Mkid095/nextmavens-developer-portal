@@ -695,6 +695,19 @@ export default function ProjectDetailPage() {
         {/* Quota Warning Banner - US-005 */}
         {project && <QuotaWarningBanner projectId={project.id} />}
 
+        {/* Production Environment Warning Banner - US-009 */}
+        {project?.environment === 'prod' && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">Production Environment</h3>
+              <p className="text-xs text-amber-800 mt-1">
+                You are working in a production environment. Changes here affect live users and data. Standard rate limits and auto-suspend are enabled.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
           {tabs.map((tab) => (
             <button
