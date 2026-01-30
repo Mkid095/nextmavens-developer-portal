@@ -15,6 +15,11 @@ export const apiKeyTypeEnum = z.enum(['public', 'secret', 'service_role', 'mcp']
   errorMap: () => ({ message: 'Key type must be one of: public, secret, service_role, mcp' }),
 })
 
+// MCP access level enum
+export const mcpAccessLevelEnum = z.enum(['ro', 'rw', 'admin'], {
+  errorMap: () => ({ message: 'MCP access level must be one of: ro (read-only), rw (read-write), admin' }),
+})
+
 // API key environment enum
 export const apiKeyEnvironmentEnum = z.enum(['live', 'test', 'dev'], {
   errorMap: () => ({ message: 'Key environment must be one of: live, test, dev' }),
@@ -121,6 +126,8 @@ export const createApiKeySchema = z.object({
   key_type: apiKeyTypeEnum.default('public'),
   environment: apiKeyEnvironmentEnum.default('live'),
   scopes: z.array(apiKeyScopeEnum).optional(),
+  // MCP access level - required when key_type is 'mcp'
+  mcp_access_level: mcpAccessLevelEnum.optional(),
 })
 
 // Query parameters for listing API keys
@@ -137,6 +144,7 @@ export type ListApiKeysQuery = z.infer<typeof listApiKeysQuerySchema>
 export type ApiKeyType = z.infer<typeof apiKeyTypeEnum>
 export type ApiKeyEnvironment = z.infer<typeof apiKeyEnvironmentEnum>
 export type ApiKeyScope = z.infer<typeof apiKeyScopeEnum>
+export type McpAccessLevel = z.infer<typeof mcpAccessLevelEnum>
 
 // Service enum for usage and quotas
 export const serviceEnum = z.enum(['database', 'realtime', 'storage', 'auth', 'functions'], {

@@ -149,15 +149,26 @@ export function mapProjectEnvironmentToKeyEnvironment(
  * - Prod keys: nm_live_pk_, nm_live_sk_
  * - Dev keys: nm_dev_pk_, nm_dev_sk_
  * - Staging keys: nm_staging_pk_, nm_staging_sk_
+ * - MCP read-only: mcp_ro_
+ * - MCP read-write: mcp_rw_
+ * - MCP admin: mcp_admin_
  *
  * @param keyType - The type of API key (public, secret, service_role, mcp)
  * @param projectEnvironment - The project's environment (prod, dev, staging)
+ * @param mcpAccessLevel - The MCP access level (ro, rw, admin) - only used for MCP keys
  * @returns The key prefix string
  */
 export function getKeyPrefix(
   keyType: 'public' | 'secret' | 'service_role' | 'mcp',
-  projectEnvironment: 'prod' | 'dev' | 'staging'
+  projectEnvironment: 'prod' | 'dev' | 'staging',
+  mcpAccessLevel?: 'ro' | 'rw' | 'admin'
 ): string {
+  // MCP keys have their own prefix format: mcp_{access_level}_
+  if (keyType === 'mcp') {
+    const level = mcpAccessLevel || 'ro' // Default to read-only for MCP keys
+    return `mcp_${level}_`
+  }
+
   const keyEnvironment = mapProjectEnvironmentToKeyEnvironment(projectEnvironment)
   const typeMap = {
     public: 'pk',

@@ -355,13 +355,79 @@ A: Maintenance windows will be announced in advance. Downtime is expected during
 ### Current Status
 **Best Effort** - No formal service level agreement at this time.
 
+We are currently in the early stages of platform development and do not offer a formal SLA. However, we are committed to maintaining high availability and will communicate any significant outages through our status page (when implemented) and email notifications.
+
 ### Future Targets (Planned)
-- **Uptime Target**: 99.9% per month
-- **Exclusions**:
-  - Scheduled maintenance windows
-  - Force majeure events
-  - Customer-caused outages
-- **Credit Policy**: Service credits for outages exceeding SLA (planned)
+
+As we mature our infrastructure and implement multi-region deployment, we plan to offer the following SLA commitments:
+
+#### Uptime Target
+- **99.9% monthly uptime** (approximately 43.2 minutes of downtime per month)
+- Measured from successful API requests to Control Plane and Data Plane endpoints
+- Calculation: `(Total minutes in month - Downtime) / Total minutes in month × 100`
+
+#### SLA Exclusions
+The following are excluded from uptime calculations:
+
+1. **Scheduled Maintenance**
+   - Planned maintenance windows with at least 48 hours advance notice
+   - Maintenance scheduled during low-traffic hours (typically 02:00-06:00 UTC)
+   - Emergency maintenance for critical security patches (4 hours notice when possible)
+
+2. **Force Majeure**
+   - Natural disasters, acts of war, or terrorism
+   - Internet infrastructure failures beyond our control
+   - Third-party service outages (e.g., cloud providers, DNS services)
+   - Government actions or regulations
+
+3. **Customer-Caused Issues**
+   - Downtime resulting from customer's API implementation errors
+   - Rate limiting due to abuse or quota violations
+   - Account suspension due to terms of service violations
+   - Issues caused by customer's network or infrastructure
+
+#### Credit Policy (Planned)
+
+For eligible outages exceeding the SLA commitment, service credits will be issued as follows:
+
+| Monthly Uptime | Service Credit |
+|----------------|----------------|
+| 99.0% to <99.9% | 10% of monthly fees |
+| 95.0% to <99.0% | 25% of monthly fees |
+| <95.0% | 100% of monthly fees |
+
+**Credit Terms:**
+- Credits applied to future billing cycles
+- Maximum credit does not exceed one month of service fees
+- Credits issued within 30 days of outage confirmation
+- Customer must submit credit request within 30 days of outage
+
+### Uptime Calculation Methodology
+
+**Included in Uptime:**
+- Successful HTTP responses (2xx status codes)
+- API endpoint availability
+- Database query execution
+- Authentication service availability
+
+**Excluded from Uptime:**
+- Client-side network issues
+- Third-party integration failures
+- Feature-flagged functionality
+- Non-critical services (e.g., analytics, logging)
+
+### Monitoring & Reporting
+
+- **Status Page**: Public status page at `status.nextmavens.cloud` (planned)
+- **Incident History**: Public archive of past incidents and resolutions
+- **Uptime Metrics**: Real-time and historical uptime data
+- **Incident Notifications**: Email alerts for critical outages
+
+### Related Documentation
+
+- [Disaster Recovery](#disaster-recovery) - Recovery procedures and RTO/RPO targets
+- [Monitoring Approach](#monitoring-approach) - Health endpoints and alerting
+- [Scaling Phases](#scaling-phases) - Infrastructure maturity roadmap
 
 ---
 
