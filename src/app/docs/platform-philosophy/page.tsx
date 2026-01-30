@@ -61,6 +61,13 @@ const principles = [
     color: 'teal',
     comingSoon: false,
   },
+  {
+    icon: Bot,
+    title: 'Developer Experience',
+    description: 'Predictable errors, comprehensive docs, powerful tooling',
+    color: 'indigo',
+    comingSoon: false,
+  },
 ]
 
 const realtimeBenefits = [
