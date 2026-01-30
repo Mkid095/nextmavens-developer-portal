@@ -265,8 +265,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created organizations list page at /dashboard/organizations (src/app/dashboard/organizations/page.tsx). Lists all organizations with name, member count, and project count. Includes 'Create Organization' button with modal form for name and optional slug. Created organization detail view at /dashboard/organizations/[slug] (src/app/dashboard/organizations/[slug]/page.tsx) showing organization info, projects list, and members list with role badges. Created API endpoint /api/organizations/with-stats that fetches organizations with aggregated member and project counts. Updated control plane listProjectsQuerySchema to support organization_id filtering (control-plane-api/src/lib/validation.ts). Updated control plane projects GET route to filter by organization_id. Typecheck passes."
     },
     {
       "id": "US-011",

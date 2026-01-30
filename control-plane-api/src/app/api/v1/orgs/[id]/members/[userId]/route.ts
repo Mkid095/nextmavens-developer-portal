@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
-import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import { updateMemberRoleSchema } from '@/lib/validation'
+import { requirePermission } from '@/lib/middleware'
+import { Permission } from '@/lib/types/rbac.types'
+import type { User } from '@/lib/rbac'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
