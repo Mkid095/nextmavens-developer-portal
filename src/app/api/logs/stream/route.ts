@@ -33,6 +33,8 @@ export const dynamic = 'force-dynamic'
  * - project_id: Required - The project ID to stream logs for
  * - service: Optional - Filter by service (db, auth, realtime, storage, graphql)
  * - level: Optional - Filter by level (info, warn, error)
+ * - start_date: Optional - Filter logs after this date (ISO 8601 format)
+ * - end_date: Optional - Filter logs before this date (ISO 8601 format)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -42,6 +44,8 @@ export async function GET(request: NextRequest) {
     const projectId = searchParams.get('project_id')
     const service = searchParams.get('service')
     const level = searchParams.get('level')
+    const startDate = searchParams.get('start_date')
+    const endDate = searchParams.get('end_date')
 
     if (!projectId) {
       return new Response(
@@ -110,6 +114,16 @@ export async function GET(request: NextRequest) {
             if (level) {
               query += ` AND level = $${paramIndex++}`
               params.push(level)
+            }
+
+            if (startDate) {
+              query += ` AND timestamp >= $${paramIndex++}`
+              params.push(startDate)
+            }
+
+            if (endDate) {
+              query += ` AND timestamp <= $${paramIndex++}`
+              params.push(endDate)
             }
 
             query += ` ORDER BY timestamp ASC`

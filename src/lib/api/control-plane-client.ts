@@ -229,14 +229,14 @@ export class ControlPlaneClient {
   async listProjects(
     options?: { status?: 'active' | 'suspended' | 'archived' | 'deleted' },
     req?: { headers: { get: (name: string) => string | null } }
-  ): Promise<{ projects: Project[] }> {
+  ): Promise<{ success: boolean; data: Project[]; meta?: { limit: number; offset: number } }> {
     const params = new URLSearchParams()
     if (options?.status) {
       params.append('status', options.status)
     }
     const queryString = params.toString()
     const endpoint = `/api/v1/projects${queryString ? `?${queryString}` : ''}`
-    return this.request<{ projects: Project[] }>(endpoint, {}, req)
+    return this.request<{ success: boolean; data: Project[]; meta?: { limit: number; offset: number } }>(endpoint, {}, req)
   }
 
   /**

@@ -186,10 +186,19 @@ export async function GET(req: NextRequest) {
     await authenticateRequest(req)
     const controlPlane = getControlPlaneClient()
 
-    // Call Control Plane API to list projects
-    const response = await controlPlane.listProjects(req)
+    // Get query parameters
+    const searchParams = req.nextUrl.searchParams
+    const status = searchParams.get('status') as 'active' | 'suspended' | 'archived' | 'deleted' | null
 
-    return NextResponse.json(response)
+    // Call Control Plane API to list projects with optional status filter
+    const response = await controlPlane.listProjects(status ? { status } : undefined, req)
+
+    // Transform Control Plane API response to match expected format
+    // Control Plane returns { success: true, data: [...] }
+    // Dashboard expects { projects: [...] }
+    return NextResponse.json({
+      projects: response.data || [],
+    })
   } catch (error: any) {
     console.error('[Developer Portal] List projects error:', error)
     return NextResponse.json(

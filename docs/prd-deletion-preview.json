@@ -317,8 +317,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Fixed API response handling - Control Plane client listProjects() now correctly returns { success: true, data: Project[], meta? } matching actual API response. Updated /api/projects route to transform response from { success, data } to { projects } for dashboard consumption. Dashboard already had Active/Deleted filter tabs, deleted projects section with project name, deleted_at, recoverable_until, and Restore button. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

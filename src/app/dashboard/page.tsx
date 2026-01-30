@@ -17,6 +17,9 @@ import {
   X,
   Loader2,
   AlertCircle,
+  Trash2,
+  RefreshCw,
+  Calendar,
 } from 'lucide-react'
 import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKeyModal'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
@@ -43,6 +46,11 @@ interface Project {
   name: string
   slug: string
   created_at: string
+  status?: string
+  deleted_at?: string | null
+  deletion_scheduled_at?: string | null
+  grace_period_ends_at?: string | null
+  recoverable_until?: string | null
 }
 
 interface Toast {
@@ -86,6 +94,7 @@ export default function DashboardPage() {
     fetchDeveloperData()
     fetchApiKeys()
     fetchProjects()
+    fetchDeletedProjects()
   }, [router])
 
   const addToast = (type: 'success' | 'error', message: string) => {
@@ -155,6 +164,47 @@ export default function DashboardPage() {
       }
     } catch (err) {
       console.error('Failed to fetch projects:', err)
+    }
+  }
+
+  const fetchDeletedProjects = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch('/api/projects?status=deleted', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setDeletedProjects(data.projects || [])
+      } else if (res.status === 401) {
+        localStorage.clear()
+        router.push('/login')
+      }
+    } catch (err) {
+      console.error('Failed to fetch deleted projects:', err)
+    }
+  }
+
+  const handleRestore = async (projectId: string, projectName: string) => {
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/projects/${projectId}/restore`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (res.ok) {
+        addToast('success', `Project "${projectName}" restored successfully`)
+        fetchProjects()
+        fetchDeletedProjects()
+      } else {
+        const data = await res.json()
+        addToast('error', data.error || 'Failed to restore project')
+      }
+    } catch (err) {
+      console.error('Failed to restore project:', err)
+      addToast('error', 'Failed to restore project')
     }
   }
 
@@ -680,35 +730,98 @@ export default function DashboardPage() {
             <div className="bg-white rounded-xl border border-slate-200">
               <div className="p-6 border-b border-slate-200 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-slate-900">Projects</h2>
-                <button
-                  onClick={openCreateProjectModal}
-                  className="flex items-center gap-2 text-sm bg-emerald-900 text-white px-4 py-2 rounded-lg hover:bg-emerald-800 transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  New Project
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setProjectFilter('active')}
+                    className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg transition ${
+                      projectFilter === 'active'
+                        ? 'bg-emerald-900 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Active ({projects.length})
+                  </button>
+                  <button
+                    onClick={() => setProjectFilter('deleted')}
+                    className={`flex items-center gap-2 text-sm px-4 py-2 rounded-lg transition ${
+                      projectFilter === 'deleted'
+                        ? 'bg-red-900 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Deleted ({deletedProjects.length})
+                  </button>
+                  {projectFilter === 'active' && (
+                    <button
+                      onClick={openCreateProjectModal}
+                      className="flex items-center gap-2 text-sm bg-emerald-900 text-white px-4 py-2 rounded-lg hover:bg-emerald-800 transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                      New Project
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="p-6 space-y-4">
-                {projects.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Database className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                    <p className="text-slate-500 text-sm mb-4">No projects yet. Create one to get started.</p>
-                  </div>
-                ) : (
-                  projects.map((project) => (
-                    <div key={project.id} className="p-4 bg-slate-50 rounded-lg flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-slate-900">{project.name}</div>
-                        <code className="text-xs text-slate-500">{project.slug}</code>
-                      </div>
-                      <Link
-                        href={`/dashboard/projects/${project.slug}`}
-                        className="text-sm text-emerald-700 hover:text-emerald-800 font-medium"
-                      >
-                        Open
-                      </Link>
+                {projectFilter === 'active' ? (
+                  projects.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Database className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <p className="text-slate-500 text-sm mb-4">No projects yet. Create one to get started.</p>
                     </div>
-                  ))
+                  ) : (
+                    projects.map((project) => (
+                      <div key={project.id} className="p-4 bg-slate-50 rounded-lg flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-slate-900">{project.name}</div>
+                          <code className="text-xs text-slate-500">{project.slug}</code>
+                        </div>
+                        <Link
+                          href={`/dashboard/projects/${project.slug}`}
+                          className="text-sm text-emerald-700 hover:text-emerald-800 font-medium"
+                        >
+                          Open
+                        </Link>
+                      </div>
+                    ))
+                  )
+                ) : (
+                  deletedProjects.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Trash2 className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                      <p className="text-slate-500 text-sm">No deleted projects.</p>
+                    </div>
+                  ) : (
+                    deletedProjects.map((project) => (
+                      <div key={project.id} className="p-4 bg-red-50 rounded-lg border border-red-200">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <div className="font-medium text-slate-900">{project.name}</div>
+                            <code className="text-xs text-slate-500">{project.slug}</code>
+                          </div>
+                          <button
+                            onClick={() => handleRestore(project.id, project.name)}
+                            className="flex items-center gap-2 text-sm bg-emerald-700 text-white px-3 py-1.5 rounded-lg hover:bg-emerald-800 transition"
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            Restore
+                          </button>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-slate-600 mt-2">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            <span>Deleted: {project.deleted_at ? new Date(project.deleted_at).toLocaleDateString() : 'N/A'}</span>
+                          </div>
+                          {project.recoverable_until && (
+                            <div className="flex items-center gap-1">
+                              <span>Recoverable until: {new Date(project.recoverable_until).toLocaleDateString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )
                 )}
               </div>
             </div>

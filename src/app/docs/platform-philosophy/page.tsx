@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Lightbulb, Database, CheckCircle, AlertCircle, Code, Zap, Shield, GitBranch, Radio, Stream } from 'lucide-react'
+import { ArrowLeft, Lightbulb, Database, CheckCircle, AlertCircle, Code, Zap, Shield, GitBranch, Radio, Stream, HardDrive, FolderOpen, Cloud, ImageIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const principles = [
@@ -17,6 +17,13 @@ const principles = [
     title: 'Realtime DB-Driven',
     description: 'Change Data Capture (CDC) powered subscriptions',
     color: 'emerald',
+    comingSoon: false,
+  },
+  {
+    icon: HardDrive,
+    title: 'Storage Abstraction',
+    description: 'Telegram for raw, Cloudinary for optimized',
+    color: 'cyan',
     comingSoon: false,
   },
   {
@@ -215,6 +222,121 @@ WHERE uoc.order_count > ao.avg_count;`,
   },
 ]
 
+const storageBenefits = [
+  {
+    title: 'Transparent Dual-Provider Strategy',
+    description: 'Files automatically route to the best storage backend based on your use case. Raw files go to Telegram, optimized assets go to Cloudinary. No configuration needed.',
+    icon: HardDrive,
+    examples: [
+      'Automatic backend selection',
+      'Telegram for original/raw files',
+      'Cloudinary for optimized/web-ready assets',
+      'Unified API for all storage operations',
+    ],
+  },
+  {
+    title: 'Cost Optimization',
+    description: 'Telegram provides generous free storage (up to 2GB per file) for raw files and backups. Cloudinary optimization reduces bandwidth costs for web delivery.',
+    icon: Zap,
+    examples: [
+      'Telegram: Free storage up to 2GB/file',
+      'Cloudinary: CDN delivery + optimization',
+      'Automatic compression and format conversion',
+      'Pay only for what you deliver to users',
+    ],
+  },
+  {
+    title: 'Performance Through CDN',
+    description: 'Optimized assets are delivered through Cloudinary\'s global CDN. Raw files are served efficiently from Telegram\'s infrastructure.',
+    icon: Cloud,
+    examples: [
+      'Global edge caching',
+      'Automatic format selection (WebP/AVIF)',
+      'Responsive image generation',
+      'Video streaming optimization',
+    ],
+  },
+  {
+    title: 'Developer Simplicity',
+    description: 'One API for all storage operations. Upload, list, delete—same interface whether the file lives on Telegram or Cloudinary.',
+    icon: Code,
+    examples: [
+      'Single SDK for all storage operations',
+      'Automatic URL generation',
+      'Built-in transformation support',
+      'No manual provider management',
+    ],
+  },
+]
+
+const storageUseCases = [
+  {
+    category: 'Use Telegram For',
+    icon: FolderOpen,
+    description: 'Raw file storage and long-term archiving',
+    useCases: [
+      'User-uploaded documents (PDFs, etc.)',
+      'Database backups',
+      'Log archives',
+      'Large video files (>2GB)',
+      'Original source files',
+    ],
+    color: 'blue',
+  },
+  {
+    category: 'Use Cloudinary For',
+    icon: ImageIcon,
+    description: 'Optimized web assets and media delivery',
+    useCases: [
+      'User profile photos',
+      'Product images for e-commerce',
+      'Marketing banners and graphics',
+      'Thumbnails and previews',
+      'Responsive images',
+    ],
+    color: 'purple',
+  },
+]
+
+const storageComparison = [
+  {
+    feature: 'Storage Cost',
+    telegram: 'Free (up to 2GB/file)',
+    cloudinary: 'Usage-based (with free tier)',
+    telegramAdvantage: true,
+  },
+  {
+    feature: 'Max File Size',
+    telegram: '2GB',
+    cloudinary: '100MB (free), larger plans',
+    telegramAdvantage: true,
+  },
+  {
+    feature: 'CDN Delivery',
+    telegram: 'Limited',
+    cloudinary: 'Global edge network',
+    telegramAdvantage: false,
+  },
+  {
+    feature: 'Image Optimization',
+    telegram: 'None',
+    cloudinary: 'Automatic (WebP, AVIF, etc.)',
+    telegramAdvantage: false,
+  },
+  {
+    feature: 'Transformations',
+    telegram: 'None',
+    cloudinary: 'On-the-fly (resize, crop, filter)',
+    telegramAdvantage: false,
+  },
+  {
+    feature: 'Use Case',
+    telegram: 'Raw storage, backups, archives',
+    cloudinary: 'Web assets, media delivery',
+    telegramAdvantage: null,
+  },
+]
+
 export default function PlatformPhilosophyPage() {
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
@@ -274,6 +396,7 @@ export default function PlatformPhilosophyPage() {
               const colorClasses = {
                 blue: 'bg-blue-100 text-blue-700',
                 emerald: 'bg-emerald-100 text-emerald-700',
+                cyan: 'bg-cyan-100 text-cyan-700',
                 purple: 'bg-purple-100 text-purple-700',
                 orange: 'bg-orange-100 text-orange-700',
                 red: 'bg-red-100 text-red-700',
@@ -554,6 +677,204 @@ export default function PlatformPhilosophyPage() {
                   className="inline-flex items-center gap-2 text-emerald-700 font-medium hover:text-emerald-800"
                 >
                   Explore Realtime Documentation
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-cyan-100 rounded-xl">
+              <HardDrive className="w-6 h-6 text-cyan-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">Storage Abstraction Strategy</h2>
+              <p className="text-slate-600">Why transparent dual-provider storage is the smart choice</p>
+            </div>
+          </div>
+
+          <div className="space-y-6 mb-12">
+            {storageBenefits.map((benefit, index) => {
+              const Icon = benefit.icon
+              return (
+                <motion.div
+                  key={benefit.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-xl p-8 border border-slate-200"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="p-2 bg-cyan-100 rounded-lg">
+                      <Icon className="w-5 h-5 text-cyan-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-900 mb-2">{benefit.title}</h3>
+                      <p className="text-slate-600 leading-relaxed">{benefit.description}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    {benefit.examples.map((example) => (
+                      <div key={example} className="flex items-center gap-2 text-sm text-slate-600">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>{example}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">When to Use Which Provider</h3>
+            <p className="text-slate-600 mb-8">
+              Understanding the strengths of each provider helps you design optimal storage strategies for your application.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
+              {storageUseCases.map((useCase) => {
+                const Icon = useCase.icon
+                return (
+                  <motion.div
+                    key={useCase.category}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`rounded-xl p-6 border ${
+                      useCase.color === 'blue'
+                        ? 'border-blue-200 bg-blue-50'
+                        : 'border-purple-200 bg-purple-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className={`p-2 rounded-lg ${
+                        useCase.color === 'blue' ? 'bg-blue-100' : 'bg-purple-100'
+                      }`}>
+                        <Icon className={`w-5 h-5 ${
+                          useCase.color === 'blue' ? 'text-blue-700' : 'text-purple-700'
+                        }`} />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-900">{useCase.category}</h4>
+                        <p className="text-sm text-slate-600">{useCase.description}</p>
+                      </div>
+                    </div>
+                    <ul className="space-y-2">
+                      {useCase.useCases.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                          <CheckCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                            useCase.color === 'blue' ? 'text-blue-600' : 'text-purple-600'
+                          }`} />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )
+              })}
+            </div>
+
+            <h4 className="text-lg font-semibold text-slate-900 mb-4">Feature Comparison</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900">Feature</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-blue-700">Telegram (Raw)</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-purple-700">Cloudinary (Optimized)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {storageComparison.map((row, i) => (
+                    <tr key={i} className="border-b border-slate-100">
+                      <td className="py-3 px-4 text-sm text-slate-700 font-medium">{row.feature}</td>
+                      <td className={`py-3 px-4 text-sm ${row.telegramAdvantage === true ? 'text-emerald-700 font-semibold' : 'text-slate-600'}`}>
+                        {row.telegram}
+                      </td>
+                      <td className={`py-3 px-4 text-sm ${row.telegramAdvantage === false ? 'text-emerald-700 font-semibold' : 'text-slate-600'}`}>
+                        {row.cloudinary}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">How It Works</h3>
+            <div className="space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center font-semibold text-sm">
+                  1
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Upload via Unified API</h4>
+                  <p className="text-slate-600">
+                    Use a single upload endpoint regardless of destination. The platform intelligently routes files
+                    based on type, size, and optimization needs.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center font-semibold text-sm">
+                  2
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Automatic Backend Selection</h4>
+                  <p className="text-slate-600">
+                    Raw files (documents, backups, archives) route to Telegram. Images and media files route to
+                    Cloudinary for automatic optimization.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center font-semibold text-sm">
+                  3
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Single URL Reference</h4>
+                  <p className="text-slate-600">
+                    Get one URL that works forever. The abstraction layer handles serving from the correct backend,
+                    applying transformations when needed.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center font-semibold text-sm">
+                  4
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Transparent Delivery</h4>
+                  <p className="text-slate-600">
+                    End users receive optimized assets via CDN. Backups and archives are accessible when needed.
+                    You don't manage the complexity.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-cyan-50 rounded-xl p-8 border border-cyan-200 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-cyan-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-cyan-700" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">The Bottom Line</h4>
+                <p className="text-slate-700 leading-relaxed mb-4">
+                  By combining Telegram's generous free storage with Cloudinary's optimization and CDN, we get the
+                  best of both worlds: low-cost raw storage and high-performance web delivery. The abstraction is
+                  transparent—you upload files, we handle the rest. No manual provider management, no complex routing
+                  logic, just storage that works.
+                </p>
+                <Link
+                  href="/docs/storage"
+                  className="inline-flex items-center gap-2 text-cyan-700 font-medium hover:text-cyan-800"
+                >
+                  Explore Storage Documentation
                   <ArrowLeft className="w-4 h-4 rotate-180" />
                 </Link>
               </div>
