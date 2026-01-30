@@ -25,6 +25,10 @@ const sidebarSections: SidebarSection[] = [
     icon: BookOpen,
     color: 'emerald',
     path: '/docs',
+    children: [
+      { title: 'Introduction', path: '/docs' },
+      { title: 'Platform Philosophy', path: '/docs/platform-philosophy' },
+    ],
   },
   {
     id: 'database',
@@ -32,6 +36,10 @@ const sidebarSections: SidebarSection[] = [
     icon: Database,
     color: 'blue',
     path: '/docs/database',
+    children: [
+      { title: 'Overview', path: '/docs/database' },
+      { title: 'Limits & Quotas', path: '/docs/database/limits' },
+    ],
   },
   {
     id: 'authentication',
@@ -39,6 +47,9 @@ const sidebarSections: SidebarSection[] = [
     icon: Shield,
     color: 'purple',
     path: '/docs/auth',
+    children: [
+      { title: 'Overview', path: '/docs/auth' },
+    ],
   },
   {
     id: 'realtime',
@@ -46,6 +57,9 @@ const sidebarSections: SidebarSection[] = [
     icon: Zap,
     color: 'orange',
     path: '/docs/realtime',
+    children: [
+      { title: 'Overview', path: '/docs/realtime' },
+    ],
   },
   {
     id: 'storage',
@@ -53,6 +67,9 @@ const sidebarSections: SidebarSection[] = [
     icon: HardDrive,
     color: 'orange',
     path: '/docs/storage',
+    children: [
+      { title: 'Overview', path: '/docs/storage' },
+    ],
   },
   {
     id: 'graphql',
@@ -60,6 +77,9 @@ const sidebarSections: SidebarSection[] = [
     icon: Globe,
     color: 'emerald',
     path: '/docs/graphql',
+    children: [
+      { title: 'Overview', path: '/docs/graphql' },
+    ],
   },
   {
     id: 'sdk',
@@ -67,6 +87,9 @@ const sidebarSections: SidebarSection[] = [
     icon: Code,
     color: 'slate',
     path: '/docs/sdk',
+    children: [
+      { title: 'Overview', path: '/docs/sdk' },
+    ],
   },
   {
     id: 'mcp-integration',
@@ -74,6 +97,9 @@ const sidebarSections: SidebarSection[] = [
     icon: Globe,
     color: 'teal',
     path: '/mcp',
+    children: [
+      { title: 'Overview', path: '/mcp' },
+    ],
   },
   {
     id: 'backups',
@@ -81,6 +107,19 @@ const sidebarSections: SidebarSection[] = [
     icon: DatabaseBackup,
     color: 'blue',
     path: '/docs/backups',
+    children: [
+      { title: 'Overview', path: '/docs/backups' },
+    ],
+  },
+  {
+    id: 'infrastructure',
+    title: 'Infrastructure',
+    icon: Database,
+    color: 'slate',
+    path: '/docs/infrastructure',
+    children: [
+      { title: 'Overview', path: '/docs/infrastructure' },
+    ],
   },
 ]
 
@@ -228,67 +267,87 @@ export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, o
               const colors = colorClasses[section.color]
               const active = isActive(section.path)
               const expanded = expandedSections.has(section.id)
+              const hasChildren = section.children && section.children.length > 0
 
               return (
                 <li key={section.id}>
-                  <Link
+                  <div
                     ref={active ? activeItemRef : null}
-                    href={section.path}
-                    onClick={onMobileMenuClose}
                     className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
                       active
                         ? `${colors.bg} ${colors.text} font-bold`
                         : 'text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <div className={`p-2 rounded-lg ${colors.bg} ${colors.text} flex-shrink-0`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <AnimatePresence mode="wait">
-                      {!isCollapsed && (
-                        <motion.span
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -10 }}
-                          transition={{ duration: 0.2 }}
-                          className="flex-1 truncate"
-                        >
-                          {section.title}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-                    {active && !isCollapsed && (
+                    <Link
+                      href={section.path}
+                      onClick={onMobileMenuClose}
+                      className="flex items-center gap-3 flex-1"
+                    >
+                      <div className={`p-2 rounded-lg ${colors.bg} ${colors.text} flex-shrink-0`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <AnimatePresence mode="wait">
+                        {!isCollapsed && (
+                          <motion.span
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex-1 truncate"
+                          >
+                            {section.title}
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
+                    </Link>
+                    {hasChildren && !isCollapsed && (
+                      <button
+                        onClick={() => toggleSection(section.id)}
+                        className={`p-1 rounded transition-transform ${expanded ? 'rotate-90' : ''}`}
+                        aria-label={expanded ? 'Collapse section' : 'Expand section'}
+                      >
+                        <ChevronRight className="w-4 h-4 text-slate-500" />
+                      </button>
+                    )}
+                    {active && !isCollapsed && !hasChildren && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         className="w-2 h-2 rounded-full bg-current flex-shrink-0"
                       />
                     )}
-                  </Link>
+                  </div>
 
                   {/* Collapsible children */}
-                  {section.children && expanded && !isCollapsed && (
-                    <motion.ul
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="ml-12 mt-1 space-y-1"
-                    >
-                      {section.children.map((child) => (
-                        <li key={child.path}>
-                          <Link
-                            href={child.path}
-                            className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
-                              pathname === child.path
-                                ? `${colors.bg} ${colors.text} font-medium`
-                                : 'text-slate-600 hover:bg-slate-100'
-                            }`}
-                          >
-                            {child.title}
-                          </Link>
-                        </li>
-                      ))}
-                    </motion.ul>
+                  {hasChildren && !isCollapsed && (
+                    <AnimatePresence initial={false}>
+                      {expanded && (
+                        <motion.ul
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: 'easeInOut' }}
+                          className="ml-12 mt-1 space-y-1 overflow-hidden"
+                        >
+                          {section.children.map((child) => (
+                            <li key={child.path}>
+                              <Link
+                                href={child.path}
+                                onClick={onMobileMenuClose}
+                                className={`block px-3 py-2 text-sm rounded-lg transition-colors ${
+                                  pathname === child.path
+                                    ? `${colors.bg} ${colors.text} font-medium`
+                                    : 'text-slate-600 hover:bg-slate-100'
+                                }`}
+                              >
+                                {child.title}
+                              </Link>
+                            </li>
+                          ))}
+                        </motion.ul>
+                      )}
+                    </AnimatePresence>
                   )}
                 </li>
               )

@@ -156,8 +156,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added usage stats display to API keys list in src/app/dashboard/projects/[slug]/page.tsx. Shows last used date with relative formatting (e.g., 'Today', 'Yesterday', '3 days ago', '2 weeks ago'), total usage count with commas, and visual indicator (amber 'Inactive' badge with Clock icon) for keys not used in >30 days. Shows success/error rate (e.g., '99% success') when usage data available. Uses BarChart3 and Clock icons for visual clarity. Automatically fetches usage stats for all keys via GET /api/keys/:id/usage endpoint. Typecheck passes."
     },
     {
       "id": "US-007",
