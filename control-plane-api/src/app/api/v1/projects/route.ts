@@ -24,14 +24,17 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate ownership
+// Helper function to validate project ownership/access
+// US-012: Validates that the user has access to the project:
+// - For personal projects (organization_id IS NULL): only the owner can access
+// - For org projects (organization_id IS NOT NULL): all org members can access
 async function validateProjectOwnership(
   projectId: string,
   developer: JwtPayload
 ): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(
-    'SELECT id, developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, created_at FROM projects WHERE id = $1',
+    'SELECT id, developer_id, project_name, organization_id, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, created_at FROM projects WHERE id = $1',
     [projectId]
   )
 
@@ -40,7 +43,24 @@ async function validateProjectOwnership(
   }
 
   const project = result.rows[0]
-  if (project.developer_id !== developer.id) {
+
+  // Personal project: check if user is the owner
+  if (!project.organization_id) {
+    if (project.developer_id !== developer.id) {
+      return { valid: false, project }
+    }
+    return { valid: true, project }
+  }
+
+  // Organization project: check if user is a member
+  const membershipCheck = await pool.query(
+    `SELECT 1 FROM control_plane.organization_members
+     WHERE org_id = $1 AND user_id = $2 AND status = 'accepted'
+     LIMIT 1`,
+    [project.organization_id, developer.id]
+  )
+
+  if (membershipCheck.rows.length === 0) {
     return { valid: false, project }
   }
 
