@@ -316,3 +316,53 @@ export type ActorType = z.infer<typeof actorTypeEnum>
 export type TargetType = z.infer<typeof targetTypeEnum>
 export type AuditAction = z.infer<typeof auditActionEnum>
 export type ListAuditQuery = z.infer<typeof listAuditQuerySchema>
+
+// Webhook event type enum
+export const webhookEventEnum = z.enum([
+  'project.created',
+  'project.updated',
+  'project.deleted',
+  'project.suspended',
+  'project.activated',
+  'user.signedup',
+  'file.uploaded',
+  'key.created',
+  'key.rotated',
+  'key.revoked',
+  'quota.exceeded',
+  'webhook.delivered',
+  'webhook.failed',
+], {
+  errorMap: () => ({ message: 'Invalid webhook event type' }),
+})
+
+// Create webhook schema
+export const createWebhookSchema = z.object({
+  project_id: z.string().uuid('Invalid project ID format'),
+  event: webhookEventEnum,
+  target_url: z.string().url('Target URL must be a valid URL').max(2048, 'Target URL must be at most 2048 characters'),
+  secret: z.string().min(16, 'Secret must be at least 16 characters').max(255, 'Secret must be at most 255 characters').optional(),
+  enabled: z.boolean().optional().default(true),
+})
+
+// Update webhook schema
+export const updateWebhookSchema = z.object({
+  event: webhookEventEnum.optional(),
+  target_url: z.string().url('Target URL must be a valid URL').max(2048, 'Target URL must be at most 2048 characters').optional(),
+  secret: z.string().min(16, 'Secret must be at least 16 characters').max(255, 'Secret must be at most 255 characters').optional(),
+  enabled: z.boolean().optional(),
+})
+
+// Query parameters for listing webhooks
+export const listWebhooksQuerySchema = z.object({
+  project_id: z.string().uuid('Invalid project ID format').optional(),
+  event: webhookEventEnum.optional(),
+  enabled: z.coerce.boolean().optional(),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').default('50'),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+})
+
+export type WebhookEvent = z.infer<typeof webhookEventEnum>
+export type CreateWebhookInput = z.infer<typeof createWebhookSchema>
+export type UpdateWebhookInput = z.infer<typeof updateWebhookSchema>
+export type ListWebhooksQuery = z.infer<typeof listWebhooksQuerySchema>

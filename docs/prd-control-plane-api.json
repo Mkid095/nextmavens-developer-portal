@@ -278,8 +278,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented Webhooks API in control-plane-api. Added validation schemas (webhookEventEnum, createWebhookSchema, updateWebhookSchema, listWebhooksQuerySchema) to src/lib/validation.ts. Created POST /v1/webhooks/route.ts - Register webhook URL for events with auto-generated secret (32 bytes hex). Created GET /v1/webhooks/route.ts - List webhooks with filtering by project_id, event, enabled. Created GET /v1/webhooks/[id]/route.ts - Get webhook details (never returns secret). Created PUT /v1/webhooks/[id]/route.ts - Update webhook (event, target_url, secret, enabled). Created DELETE /v1/webhooks/[id]/route.ts - Remove webhook. All endpoints require JWT authentication with project ownership verification. Event types: project.created, project.updated, project.deleted, project.suspended, project.activated, user.signedup, file.uploaded, key.created, key.rotated, key.revoked, quota.exceeded, webhook.delivered, webhook.failed. Typecheck passes."
     },
     {
       "id": "US-010",
