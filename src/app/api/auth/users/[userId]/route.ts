@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth'
+import { withCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 import { logAuditEntry, AuditLogType, AuditLogLevel, extractClientIP, extractUserAgent } from '@/features/abuse-controls/lib/audit-logger'
@@ -15,6 +16,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { userId: string } }
 ) {
+  // Apply correlation ID to request
+  const correlationId = withCorrelationId(req)
+
   const clientIP = extractClientIP(req)
   const userAgent = extractUserAgent(req)
 
@@ -55,7 +59,8 @@ export async function GET(
       occurred_at: new Date(),
     })
 
-    return NextResponse.json(response)
+    const res = NextResponse.json(response)
+    return setCorrelationHeader(res, correlationId)
   } catch (error) {
     console.error('[Security] Error getting user:', error)
 

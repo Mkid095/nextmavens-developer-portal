@@ -52,8 +52,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created migration 004_create_organization_members_table.sql with organization_members table in control_plane schema. Includes org_id (FK to organizations.id), user_id (FK to developers.id), role (enum: owner, admin, developer, viewer), invited_by, joined_at, created_at. Composite PK on (org_id, user_id). Indexes on user_id, org_id, and role. Typecheck passes."
     },
     {
       "id": "US-003",

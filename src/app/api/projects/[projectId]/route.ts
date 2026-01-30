@@ -202,7 +202,7 @@ export async function PATCH(
       }
     )
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       message: 'Project updated successfully',
       project: {
         id: updatedProject.id,
@@ -214,6 +214,7 @@ export async function PATCH(
         updated_at: updatedProject.updated_at,
       },
     })
+    return setCorrelationHeader(res, correlationId)
   } catch (error: any) {
     console.error('[Projects API] Update project error:', error)
     return NextResponse.json(
@@ -231,6 +232,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: { projectId: string } }
 ) {
+  // Apply correlation ID to request
+  const correlationId = withCorrelationId(req)
+
   try {
     const developer = await authenticateRequest(req)
     const projectId = params.projectId
@@ -293,10 +297,11 @@ export async function DELETE(
       }
     )
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       message: 'Project deleted successfully',
       project_id: projectId,
     })
+    return setCorrelationHeader(res, correlationId)
   } catch (error: any) {
     console.error('[Projects API] Delete project error:', error)
     return NextResponse.json(
