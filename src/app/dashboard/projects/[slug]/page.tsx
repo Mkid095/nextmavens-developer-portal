@@ -34,6 +34,8 @@ import {
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import ServiceTab from '@/components/ServiceTab'
+import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKeyModal'
+import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Project {
   id: string
@@ -902,12 +904,20 @@ const client = createClient({
                       <h3 className="font-semibold text-emerald-900">New API Key Created</h3>
                       <p className="text-sm text-emerald-700">Copy these keys now. You won't see the secret key again.</p>
                     </div>
-                    <button
-                      onClick={() => setNewKey(null)}
-                      className="text-emerald-600 hover:text-emerald-800"
-                    >
-                      Close
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setShowUsageExamples(true)}
+                        className="text-sm text-emerald-700 hover:text-emerald-800 font-medium"
+                      >
+                        View Usage Examples
+                      </button>
+                      <button
+                        onClick={() => setNewKey(null)}
+                        className="text-emerald-600 hover:text-emerald-800"
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-3">
                     <div>
@@ -1468,16 +1478,19 @@ const subscription = socket
         </motion.div>
       </div>
 
-      {/* Create API Key Modal */}
+      {/* US-011: Enhanced Create API Key Modal */}
       {showCreateKeyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
           <div
             className="absolute inset-0 bg-black/50"
             onClick={closeCreateKeyModal}
           />
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-slate-900">Create API Key</h2>
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">Create API Key</h2>
+                <p className="text-sm text-slate-600 mt-1">Choose the right key type for your use case</p>
+              </div>
               <button
                 onClick={closeCreateKeyModal}
                 className="p-2 hover:bg-slate-100 rounded-lg transition"
@@ -1487,7 +1500,8 @@ const subscription = socket
             </div>
 
             <form onSubmit={handleCreateApiKey}>
-              <div className="mb-4">
+              {/* Step 1: Key Name */}
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   API Key Name
                 </label>
@@ -1495,13 +1509,81 @@ const subscription = socket
                   type="text"
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
-                  placeholder="e.g., Production App"
+                  placeholder="e.g., Production Web App"
                   className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
                   autoFocus
                 />
               </div>
 
-              <div className="mb-4">
+              {/* Step 2: Key Type Selector Cards */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-3">
+                  Select Key Type
+                </label>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {(Object.keys(KEY_TYPE_CONFIG) as Array<keyof typeof KEY_TYPE_CONFIG>).map((type) => {
+                    const config = KEY_TYPE_CONFIG[type]
+                    const IconComponent = config.icon
+                    const isSelected = selectedKeyType === type
+
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => {
+                          setSelectedKeyType(type)
+                          setSelectedScopes(config.defaultScopes)
+                        }}
+                        className={`p-4 rounded-xl border-2 text-left transition ${
+                          isSelected
+                            ? `${config.color === 'blue' ? 'border-blue-500 bg-blue-50' :
+                                config.color === 'purple' ? 'border-purple-500 bg-purple-50' :
+                                config.color === 'red' ? 'border-red-500 bg-red-50' :
+                                config.color === 'teal' ? 'border-teal-500 bg-teal-50' :
+                                'border-emerald-500 bg-emerald-50'}`
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-lg ${
+                            config.color === 'blue' ? 'bg-blue-100 text-blue-700' :
+                            config.color === 'purple' ? 'bg-purple-100 text-purple-700' :
+                            config.color === 'red' ? 'bg-red-100 text-red-700' :
+                            config.color === 'teal' ? 'bg-teal-100 text-teal-700' :
+                            'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            <IconComponent className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-slate-900">{config.name}</h3>
+                              <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                config.riskLevel === 'Low' ? 'bg-green-100 text-green-700' :
+                                config.riskLevel === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+                                config.riskLevel === 'High' ? 'bg-orange-100 text-orange-700' :
+                                'bg-red-100 text-red-700'
+                              }`}>
+                                {config.riskLevel} Risk
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-600 mb-2">{config.description}</p>
+                            <div className="flex flex-wrap gap-1">
+                              {config.useCases.slice(0, 2).map((useCase) => (
+                                <span key={useCase} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                                  {useCase}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Step 3: Environment Selector */}
+              <div className="mb-6">
                 <label className="block text-sm font-medium text-slate-700 mb-2">
                   Environment
                 </label>
@@ -1518,6 +1600,109 @@ const subscription = socket
                   The key prefix will include this environment (e.g., pk_live_, pk_test_, pk_dev_)
                 </p>
               </div>
+
+              {/* Step 4: Scope Checkboxes */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Permissions (Scopes)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowScopeDetails(!showScopeDetails)}
+                    className="text-xs text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
+                  >
+                    <Info className="w-3 h-3" />
+                    {showScopeDetails ? 'Hide' : 'Show'} details
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {Object.entries(SCOPES_BY_SERVICE).map(([service, scopes]) => (
+                    <div key={service} className="border border-slate-200 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-slate-900 mb-2">{service}</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {scopes.map((scope) => (
+                          <label
+                            key={scope}
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition ${
+                              selectedScopes.includes(scope)
+                                ? 'bg-emerald-50 border border-emerald-200'
+                                : 'hover:bg-slate-50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedScopes.includes(scope)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedScopes([...selectedScopes, scope])
+                                } else {
+                                  setSelectedScopes(selectedScopes.filter(s => s !== scope))
+                                }
+                              }}
+                              className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-700"
+                            />
+                            <div className="flex-1">
+                              <span className="text-sm text-slate-700">{scope}</span>
+                              {showScopeDetails && SCOPE_DESCRIPTIONS[scope] && (
+                                <p className="text-xs text-slate-500 mt-0.5">{SCOPE_DESCRIPTIONS[scope]}</p>
+                              )}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  {selectedScopes.length} scope(s) selected
+                </p>
+              </div>
+
+              {/* Warning for service role keys */}
+              {selectedKeyType === 'service_role' && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <ShieldAlert className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-red-900 mb-1">Service Role Key Warning</h4>
+                      <p className="text-sm text-red-800">
+                        This key bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code. Only use this key in trusted server-side environments for admin operations.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Warning for secret keys */}
+              {selectedKeyType === 'secret' && (
+                <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-amber-900 mb-1">Secret Key Warning</h4>
+                      <p className="text-sm text-amber-800">
+                        This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments where it cannot be accessed by users.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Info for public keys */}
+              {selectedKeyType === 'public' && (
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-blue-900 mb-1">Public Key</h4>
+                      <p className="text-sm text-blue-800">
+                        This key is safe for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {keyError && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
@@ -1552,7 +1737,10 @@ const subscription = socket
                       Creating...
                     </>
                   ) : (
-                    'Create Key'
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Create Key
+                    </>
                   )}
                 </button>
               </div>
@@ -1697,6 +1885,155 @@ const subscription = socket
                     Revoke Key
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* US-011: Usage Examples Modal */}
+      {showUsageExamples && newKey && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowUsageExamples(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">Usage Examples</h2>
+                <p className="text-sm text-slate-600 mt-1">Integrate your new API key into your application</p>
+              </div>
+              <button
+                onClick={() => setShowUsageExamples(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* SDK Integration */}
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-3">Using the SDK</h3>
+                <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-slate-600 mb-2">Install the SDK:</p>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">npm install nextmavens-js</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 mb-2">Initialize the client:</p>
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleCopy(`import { createClient } from 'nextmavens-js'
+
+const client = createClient({
+  apiKey: '${newKey.secretKey || newKey.apiKey.public_key}',
+  projectId: '${project.id}'
+})`, 'sdk-example')}
+                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                      >
+                        {copied === 'sdk-example' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                        <code className="text-sm text-slate-300 font-mono">{`import { createClient } from 'nextmavens-js'
+
+const client = createClient({
+  apiKey: '${newKey.secretKey || newKey.apiKey.public_key}',
+  projectId: '${project.id}'
+})`}</code>
+                      </pre>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-600 mb-2">Example query:</p>
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleCopy(`const { data, error } = await client
+  .from('users')
+  .select('*')
+  .limit(10)`, 'sdk-query')}
+                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                      >
+                        {copied === 'sdk-query' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                        <code className="text-sm text-slate-300 font-mono">{`const { data, error } = await client
+  .from('users')
+  .select('*')
+  .limit(10)`}</code>
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* REST API Integration */}
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-3">Using REST API</h3>
+                <div className="bg-slate-50 rounded-lg p-4 space-y-3">
+                  <div>
+                    <p className="text-xs text-slate-600 mb-2">Example request:</p>
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleCopy(`curl -X GET "${endpoints.rest}/rest/v1/users" \\
+  -H "apikey: ${newKey.secretKey || newKey.apiKey.public_key}" \\
+  -H "Authorization: Bearer ${newKey.secretKey || newKey.apiKey.public_key}"`, 'rest-example')}
+                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                      >
+                        {copied === 'rest-example' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                        <code className="text-sm text-slate-300 font-mono">{`curl -X GET "${endpoints.rest}/rest/v1/users" \\
+  -H "apikey: ${newKey.secretKey || newKey.apiKey.public_key}" \\
+  -H "Authorization: Bearer ${newKey.secretKey || newKey.apiKey.public_key}"`}</code>
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Environment Variable */}
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-3">Environment Variable</h3>
+                <div className="bg-slate-50 rounded-lg p-4">
+                  <p className="text-xs text-slate-600 mb-2">Add to your .env file:</p>
+                  <div className="relative group">
+                    <button
+                      onClick={() => handleCopy(`NEXTMAVENS_API_KEY=${newKey.secretKey || newKey.apiKey.public_key}`, 'env-example')}
+                      className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                    >
+                      {copied === 'env-example' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                    </button>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">NEXTMAVENS_API_KEY={newKey.secretKey || newKey.apiKey.public_key}</code>
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Information */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-1">Key Type: {newKey.apiKey.key_type}</h4>
+                    <p className="text-sm text-blue-800">
+                      {KEY_TYPE_CONFIG[newKey.apiKey.key_type as keyof typeof KEY_TYPE_CONFIG]?.warning}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowUsageExamples(false)}
+                className="flex-1 px-4 py-3 bg-emerald-900 text-white rounded-xl font-medium hover:bg-emerald-800 transition"
+              >
+                Done
               </button>
             </div>
           </div>

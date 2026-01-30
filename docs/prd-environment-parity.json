@@ -107,8 +107,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added mapSnapshotEnvironment() to src/lib/environment.ts to convert snapshot environment types (production/development/staging) to config types (prod/dev/staging). Updated checkRateLimit() in src/lib/api-gateway/snapshot-client.ts to use getEnvironmentConfig() and apply rate_limit_multiplier. Dev gets 10x, staging gets 5x, prod gets 1x. Typecheck passes."
     },
     {
       "id": "US-005",

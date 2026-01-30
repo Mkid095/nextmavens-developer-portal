@@ -15,11 +15,6 @@ export const apiKeyTypeEnum = z.enum(['public', 'secret', 'service_role', 'mcp']
   errorMap: () => ({ message: 'Key type must be one of: public, secret, service_role, mcp' }),
 })
 
-// MCP access level enum for granular permissions
-export const mcpAccessLevelEnum = z.enum(['ro', 'rw', 'admin'], {
-  errorMap: () => ({ message: 'MCP access level must be one of: ro, rw, admin' }),
-})
-
 // API key environment enum
 export const apiKeyEnvironmentEnum = z.enum(['live', 'test', 'dev'], {
   errorMap: () => ({ message: 'Key environment must be one of: live, test, dev' }),
@@ -138,57 +133,47 @@ export const metricTypeEnum = z.enum([
   'db_row_read',
   'db_row_written',
   'realtime_message',
+  'realtime_connection',
   'storage_upload',
   'storage_download',
-  'auth_request',
+  'storage_bytes',
+  'auth_signup',
+  'auth_signin',
   'function_invocation',
-], {
-  errorMap: () => ({ message: 'Invalid metric type' }),
-})
+])
 
 // Time period enum for usage queries
 export const timePeriodEnum = z.enum(['hour', 'day', 'week', 'month'], {
-  errorMap: () => ({ message: 'Time period must be one of: hour, day, week, month' }),
+  errorMap: () => ({ message: 'Time period must be one of: hour, day生活费, week, month' }),
 })
 
-// Usage check schema
-export const usageCheckSchema = z.object({
+// Get current usage metrics query schema
+export const getUsageQuerySchema = z.object({
+  project_id: z.string().uuid('Invalid project ID format'),
+  service: serviceEnum.optional(),
+  metric_type: metricTypeEnum.optional(),
+  period: timePeriodEnum.default('day'),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default('100'),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+})
+
+// Check quota schema
+export const checkQuotaSchema = z.object({
   project_id: z.string().uuid('Invalid project ID format'),
   service: serviceEnum,
-  metric: metricTypeEnum,
-  operation: z.enum(['increment', 'check']),
-  amount: z.number().int().positive().default(1),
+  quantity: z.number().int().positive('Quantity must be a positive integer'),
 })
 
-// Query parameters for listing usage
-export const listUsageQuerySchema = z.object({
-  project_id: z.string().uuid('Invalid project ID format').optional(),
-  service: serviceEnum.optional(),
-  metric: metricTypeEnum.optional(),
-  period: timePeriodEnum.default('day'),
-  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').optional(),
-  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').optional(),
-})
-
-// Quota update schema
-export const updateQuotasSchema = z.object({
-  db_queries_per_day: z.number().int().positive().optional(),
-  realtime_connections: z.number().int().positive().optional(),
-  storage_uploads_per_day: z.number().int().positive().optional(),
-  function_invocations_per_day: z.number().int().positive().optional(),
-})
-
-// Query parameters for listing quotas
-export const listQuotasQuerySchema = z.object({
-  project_id: z.string().uuid('Invalid project ID format').optional(),
-  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').optional(),
-  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').optional(),
+// Update quota schema
+export const updateQuotaSchema = z.object({
+  service: serviceEnum,
+  monthly_limit: z.number().int().min(0, 'Monthly limit must be non-negative').optional(),
+  hard_cap: z.number().int().min(0, 'Hard cap must be non-negative').optional(),
 })
 
 export type Service = z.infer<typeof serviceEnum>
 export type MetricType = z.infer<typeof metricTypeEnum>
 export type TimePeriod = z.infer<typeof timePeriodEnum>
-export type UsageCheckInput = z.infer<typeof usageCheckSchema>
-export type ListUsageQuery = z.infer<typeof listUsageQuerySchema>
-export type UpdateQuotasInput = z.infer<typeof updateQuotasSchema>
-export type ListQuotasQuery = z.infer<typeof listQuotasQuerySchema>
+export type GetUsageQuery = z.infer<typeof getUsageQuerySchema>
+export type CheckQuotaInput = z.infer<typeof checkQuotaSchema>
+export type UpdateQuotaInput = z.infer<typeof updateQuotaSchema>
