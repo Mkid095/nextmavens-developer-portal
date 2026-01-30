@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin, RefreshCw, Clock, AlertCircle, Lock, Key, FileKey, HelpCircle } from 'lucide-react'
+import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin, RefreshCw, Clock, AlertCircle, Lock, Key, FileKey, HelpCircle, BarChart3 } from 'lucide-react'
 
 export default function InfrastructureDocsPage() {
   return (
@@ -1223,6 +1223,197 @@ export default function InfrastructureDocsPage() {
               </div>
               <div className="bg-white rounded-lg px-3 py-2 border border-blue-200">
                 <span className="text-blue-900">Status: <strong className="text-green-700">Passed</strong></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SLA Section */}
+        <section id="sla" className="bg-white rounded-xl p-8 border border-slate-200 mb-8">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-6 flex items-center gap-3">
+            <CheckCircle className="w-6 h-6 text-blue-700" />
+            Service Level Agreement (SLA)
+          </h2>
+
+          <p className="text-slate-600 mb-6">
+            NextMavens is committed to providing reliable service. Our SLA defines the service levels we aim to achieve and the credit policies that apply when we don't meet those commitments.
+          </p>
+
+          {/* Current State: Best Effort */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-slate-600" />
+              Current Status: Best Effort (No Formal SLA)
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              NextMavens is currently in early access and operates on a <strong>best effort basis</strong> without a formal Service Level Agreement. We strive to maintain high availability but do not guarantee specific uptime levels or provide service credits at this stage.
+            </p>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-slate-200">
+                <div className="text-xs text-slate-500 mb-1">Current Availability</div>
+                <div className="font-semibold text-slate-900 text-lg">Best Effort</div>
+                <div className="text-xs text-slate-600 mt-1">No formal guarantee</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-slate-200">
+                <div className="text-xs text-slate-500 mb-1">Support Response</div>
+                <div className="font-semibold text-slate-900 text-lg">Community</div>
+                <div className="text-xs text-slate-600 mt-1">Email & Discord</div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-slate-200">
+                <div className="text-xs text-slate-500 mb-1">Service Credits</div>
+                <div className="font-semibold text-slate-900 text-lg">Not Available</div>
+                <div className="text-xs text-slate-600 mt-1">Coming with multi-region</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Future SLA Targets */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2">
+              <span className="text-xs bg-emerald-200 text-emerald-800 px-2 py-1 rounded">COMING SOON</span>
+              Future SLA Targets (Multi-Region Deployment)
+            </h3>
+            <p className="text-sm text-emerald-800 mb-4">
+              Once we achieve multi-region deployment with automated failover (planned Q3 2026), we will offer a formal SLA with the following commitments:
+            </p>
+
+            {/* Uptime Target */}
+            <div className="bg-white rounded-lg p-5 border border-emerald-200 mb-4">
+              <h4 className="font-semibold text-emerald-900 mb-3">Uptime Commitment: 99.9%</h4>
+              <div className="grid md:grid-cols-2 gap-4 mb-3">
+                <div>
+                  <div className="text-xs text-emerald-600 mb-1">Monthly Uptime Target</div>
+                  <div className="text-2xl font-bold text-emerald-900">99.9%</div>
+                  <div className="text-xs text-emerald-700">Maximum downtime: ~43 minutes/month</div>
+                </div>
+                <div>
+                  <div className="text-xs text-emerald-600 mb-1">Annual Uptime Target</div>
+                  <div className="text-2xl font-bold text-emerald-900">99.95%</div>
+                  <div className="text-xs text-emerald-700">Maximum downtime: ~4.38 hours/year</div>
+                </div>
+              </div>
+              <div className="bg-emerald-50 rounded p-3">
+                <div className="text-xs text-emerald-700">
+                  <strong>Calculation:</strong> 99.9% uptime = 99.9% x 24 hours x 30 days = 719.28 hours available, allowing 0.72 hours (43.2 minutes) of downtime per month
+                </div>
+              </div>
+            </div>
+
+            {/* SLA Exclusions */}
+            <div className="bg-white rounded-lg p-5 border border-emerald-200 mb-4">
+              <h4 className="font-semibold text-emerald-900 mb-3">SLA Exclusions</h4>
+              <p className="text-sm text-emerald-800 mb-3">
+                The following events are excluded from SLA calculations and do not count toward downtime:
+              </p>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-sm font-medium text-emerald-900">Scheduled Maintenance</div>
+                    <div className="text-xs text-emerald-700">Planned maintenance windows with 48h advance notice</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-sm font-medium text-emerald-900">Force Majeure</div>
+                    <div className="text-xs text-emerald-700">Events beyond our control (natural disasters, war, etc.)</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-sm font-medium text-emerald-900">Customer Actions</div>
+                    <div className="text-xs text-emerald-700">Downtime caused by customer's actions or configurations</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-600 mt-1.5 flex-shrink-0"></div>
+                  <div>
+                    <div className="text-sm font-medium text-emerald-900">Third-Party Services</div>
+                    <div className="text-xs text-emerald-700">Outages of dependent services (cloud providers, DNS, etc.)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Credit Policy */}
+            <div className="bg-white rounded-lg p-5 border border-emerald-200">
+              <h4 className="font-semibold text-emerald-900 mb-3">Service Credit Policy (Future)</h4>
+              <p className="text-sm text-emerald-800 mb-3">
+                If we fail to meet our 99.9% uptime commitment, you will be eligible for service credits based on the actual uptime achieved:
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-emerald-200">
+                      <th className="text-left py-2 text-emerald-900 font-semibold">Monthly Uptime</th>
+                      <th className="text-left py-2 text-emerald-900 font-semibold">Service Credit</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-emerald-800">
+                    <tr className="border-b border-emerald-100">
+                      <td className="py-2">&lt; 99.0%</td>
+                      <td className="py-2">25% of monthly fees</td>
+                    </tr>
+                    <tr className="border-b border-emerald-100">
+                      <td className="py-2">&lt; 98.0%</td>
+                      <td className="py-2">50% of monthly fees</td>
+                    </tr>
+                    <tr className="border-b border-emerald-100">
+                      <td className="py-2">&lt; 95.0%</td>
+                      <td className="py-2">100% of monthly fees</td>
+                    </tr>
+                    <tr>
+                      <td className="py-2">&ge; 99.9%</td>
+                      <td className="py-2 text-emerald-700 font-medium">Target met - No credit</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 bg-amber-50 border border-amber-200 rounded p-3">
+                <div className="text-xs text-amber-800">
+                  <strong>Note:</strong> Service credits are applied as account credits for future service usage and do not constitute refunds for past payments. Credits will be issued within 30 days of the month in which the outage occurred.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Monitoring and Reporting */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              Uptime Monitoring and Reporting
+            </h3>
+            <p className="text-sm text-blue-800 mb-4">
+              We maintain public uptime monitoring and provide transparent reporting on service availability.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h4 className="font-semibold text-blue-900 mb-2 text-sm">Public Status Page</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• Real-time service status</li>
+                  <li>• Incident history and details</li>
+                  <li>• Uptime metrics over time</li>
+                  <li>• RSS feed for updates</li>
+                </ul>
+                <div className="mt-3 text-xs">
+                  <a href="https://status.nextmavens.cloud" target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:text-blue-900 underline">
+                    status.nextmavens.cloud
+                  </a>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h4 className="font-semibold text-blue-900 mb-2 text-sm">Monthly SLA Reports</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• Actual uptime percentage</li>
+                  <li>• Incident summary and impact</li>
+                  <li>• Downtime breakdown (excluded/included)</li>
+                  <li>• Service credits issued (if any)</li>
+                </ul>
+                <div className="mt-3 text-xs text-blue-600">
+                  Reports available via email and dashboard
+                </div>
               </div>
             </div>
           </div>

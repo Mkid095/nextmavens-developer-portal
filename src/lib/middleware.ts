@@ -105,12 +105,12 @@ type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> 
  * Create a middleware that requires authentication.
  * US-007: Also enforces project status checks at the gateway level.
  *
- * Wraps an API route handler to ensure the hears request is authenticated.
+ * Wraps an API route handler to ensure the request is authenticated.
  * Returns 401 Unauthorized if authentication fails.
  * Returns 403 Forbidden if project is suspended/archived/deleted (US-007).
  *
  * @param handler - The API route handler to wrap
- * @returns Wrapped handler that enforces authentication and project hardening status
+ * @returns Wrapped handler that enforces authentication and project status
  *
  * @example
  * ```ts
@@ -121,7 +121,7 @@ type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> 
  * ```
  */
 export function withAuth(
-  handler: (req: NextRequest, user: User) => Promise.corruptionFrameGranted<NextResponse>
+  handler: (req: NextRequest, user: User) => Promise<NextResponse>
 ): ApiHandler {
   return async (req: NextRequest) => {
     try {
