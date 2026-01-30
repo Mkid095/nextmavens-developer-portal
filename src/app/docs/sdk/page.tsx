@@ -2045,6 +2045,41 @@ NEXTMAVENS_PROJECT_ID=your_project_id`}</code>
               </div>
             </div>
           </div>
+
+          {/* SDK Links - US-010 */}
+          <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <a
+                href="https://github.com/Mkid095/nextmavens-js"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <Github className="w-3.5 h-3.5" />
+                <span>View Source</span>
+              </a>
+              <span className="text-slate-300">|</span>
+              <a
+                href="https://github.com/Mkid095/nextmavens-js/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Report Issue</span>
+              </a>
+              <span className="text-slate-300">|</span>
+              <a
+                href="https://github.com/Mkid095/nextmavens-js/blob/main/CONTRIBUTING.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Contributing</span>
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Database Section */}
@@ -2547,6 +2582,41 @@ NEXTMAVENS_PROJECT_ID=your_project_id`}</code>
               <li>• The SDK automatically handles reconnection for transient network issues</li>
             </ul>
           </div>
+
+          {/* SDK Links - US-010 */}
+          <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <a
+                href="https://github.com/Mkid095/nextmavens-js"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <Github className="w-3.5 h-3.5" />
+                <span>View Source</span>
+              </a>
+              <span className="text-slate-300">|</span>
+              <a
+                href="https://github.com/Mkid095/nextmavens-js/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Report Issue</span>
+              </a>
+              <span className="text-slate-300">|</span>
+              <a
+                href="https://github.com/Mkid095/nextmavens-js/blob/main/CONTRIBUTING.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Contributing</span>
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Storage Section */}
@@ -2746,6 +2816,41 @@ if (error) {
               <li>• Use bucket folders to organize files (e.g., 'avatars/user123/profile.jpg')</li>
               <li>• Handle upload errors gracefully and provide feedback to users</li>
             </ul>
+          </div>
+
+          {/* SDK Links - US-010 */}
+          <div className="mt-6 pt-4 border-t border-slate-200">
+            <div className="flex flex-wrap items-center gap-4 text-xs">
+              <a
+                href="https://github.com/Mkid095/nextmavens-js"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <Github className="w-3.5 h-3.5" />
+                <span>View Source</span>
+              </a>
+              <span className="text-slate-300">|</span>
+              <a
+                href="https://github.com/Mkid095/nextmavens-js/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Report Issue</span>
+              </a>
+              <span className="text-slate-300">|</span>
+              <a
+                href="https://github.com/Mkid095/nextmavens-js/blob/main/CONTRIBUTING.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 transition"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Contributing</span>
+              </a>
+            </div>
           </div>
         </div>
 

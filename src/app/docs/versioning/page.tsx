@@ -479,6 +479,14 @@ Link: <https://api.nextmavens.cloud/v2>; rel="successor-version"`}</code>
             <li>0 months: Version sunset, support discontinued</li>
           </ul>
         </div>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <p className="text-sm text-slate-700">
+            <a href="/docs/sunset-policy.md" className="text-emerald-700 hover:text-emerald-900 font-medium underline">
+              View detailed Sunset Policy documentation
+            </a> for complete information on emergency security patches, extension requests, and best practices.
+          </p>
+        </div>
       </div>
     ),
   },
