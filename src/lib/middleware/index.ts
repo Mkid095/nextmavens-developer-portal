@@ -7,6 +7,7 @@
  * US-002: Scope Database Queries (prd-resource-isolation.json)
  * US-003: Prefix Realtime Channels (prd-resource-isolation.json)
  * US-004: Prefix Storage Paths (prd-resource-isolation.json)
+ * US-011: Implement Request Tracing
  */
 
 export {
@@ -19,6 +20,20 @@ export {
   withCorrelation,
   CORRELATION_HEADER,
 } from './correlation';
+
+/**
+ * Request Tracing Middleware
+ *
+ * US-011: Implement Request Tracing
+ * - Logs request start/end with timing
+ * - Tracks services hit during request
+ * - Updates request_traces table
+ */
+export {
+  withRequestTracing,
+  withRequestTracingEnhanced,
+  logServiceHitForRequest,
+} from './request-tracing';
 
 export {
   withSchemaScope,
