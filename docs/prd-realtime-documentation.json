@@ -73,8 +73,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added comprehensive Subscriptions section to src/app/docs/realtime/page.tsx. Includes: Overview explaining Phoenix-style subscription protocol with realtime:table_name format, Channel Format section showing valid/invalid examples (realtime:users, realtime:public.products), Subscribe to Changes example with phx_join event, payload config with events array and SQL WHERE filter, and message handling for INSERT events. Filter Examples grid showing equality (user_id = eq.123), inequality (status != eq.inactive), greater than (amount > gte.100), and LIKE pattern (email LIKE %@example.com) filters with link to Database docs. Unsubscribe section showing phx_leave event and ws.close() methods. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-004",

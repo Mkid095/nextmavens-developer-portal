@@ -242,3 +242,77 @@ export const listAuditLogsQuerySchema = z.object({
 export type AuditLogType = z.infer<typeof auditLogTypeEnum>
 export type AuditLogSeverity = z.infer<typeof auditLogSeverityEnum>
 export type ListAuditLogsQuery = z.infer<typeof listAuditLogsQuerySchema>
+
+// Actor type enum for audit logs (control_plane schema)
+export const actorTypeEnum = z.enum(['user', 'system', 'api_key', 'project'], {
+  errorMap: () => ({ message: 'Actor type must be one of: user, system, api_key, project' }),
+})
+
+// Target type enum for audit logs
+export const targetTypeEnum = z.enum([
+  'project',
+  'api_key',
+  'user',
+  'secret',
+  'organization',
+  'team',
+  'webhook',
+], {
+  errorMap: () => ({ message: 'Target type must be one of: project, api_key, user, secret, organization, team, webhook' }),
+})
+
+// Audit action enum (common actions)
+export const auditActionEnum = z.enum([
+  'project.created',
+  'project.updated',
+  'project.deleted',
+  'project.suspended',
+  'project.auto_suspended',
+  'project.activated',
+  'key.created',
+  'key.rotated',
+  'key.revoked',
+  'key.deleted',
+  'user.invited',
+  'user.removed',
+  'user.role_changed',
+  'user.enabled',
+  'user.disabled',
+  'secret.created',
+  'secret.accessed',
+  'secret.rotated',
+  'secret.deleted',
+  'webhook.created',
+  'webhook.updated',
+  'webhook.deleted',
+  'webhook.delivered',
+  'webhook.failed',
+  'organization.created',
+  'organization.updated',
+  'organization.deleted',
+  'quota.updated',
+  'suspension.created',
+  'suspension.removed',
+], {
+  errorMap: () => ({ message: 'Invalid audit action' }),
+})
+
+// Query parameters for listing audit logs (control_plane schema)
+export const listAuditQuerySchema = z.object({
+  actor_id: z.string().uuid('Invalid actor ID format').optional(),
+  actor_type: actorTypeEnum.optional(),
+  action: auditActionEnum.optional(),
+  target_type: targetTypeEnum.optional(),
+  target_id: z.string().uuid('Invalid target ID format').optional(),
+  project_id: z.string().uuid('Invalid project ID format').optional(),
+  request_id: z.string().uuid('Invalid request ID format').optional(),
+  start_date: z.string().datetime('Invalid start date format').optional(),
+  end_date: z.string().datetime('Invalid end date format').optional(),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default('100'),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+})
+
+export type ActorType = z.infer<typeof actorTypeEnum>
+export type TargetType = z.infer<typeof targetTypeEnum>
+export type AuditAction = z.infer<typeof auditActionEnum>
+export type ListAuditQuery = z.infer<typeof listAuditQuerySchema>

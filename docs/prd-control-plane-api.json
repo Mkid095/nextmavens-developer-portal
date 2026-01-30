@@ -251,8 +251,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented GET /v1/audit endpoint with filtering by actor_id, action, log_type, severity, project_id, and date_range (start_date, end_date). Returns actor details (id, name, email), action, target_type, target_id, metadata, timestamp, ip_address, user_agent. Includes pagination support with limit, offset, total count, and has_more flag. Created GET /v1/audit/export endpoint for CSV export with proper headers (Content-Type: text/csv, Content-Disposition). Added validation schemas (auditLogTypeEnum, auditLogSeverityEnum, listAuditLogsQuerySchema) to control-plane-api/src/lib/validation.ts. All endpoints require JWT authentication and project ownership validation. Typecheck passes."
     },
     {
       "id": "US-008",
