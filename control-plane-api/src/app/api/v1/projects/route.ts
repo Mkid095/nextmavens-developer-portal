@@ -89,6 +89,11 @@ export async function GET(req: NextRequest) {
       values.push(query.environment)
     }
 
+    if (query.organization_id) {
+      conditions.push(`organization_id = $${paramIndex++}`)
+      values.push(query.organization_id)
+    }
+
     const limit = query.limit || 50
     const offset = query.offset || 0
 
