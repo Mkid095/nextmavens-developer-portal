@@ -1,19 +1,22 @@
 {
   "name": "nextmavens-cli",
   "version": "1.0.0",
-  "description": "CLI tool for NextMavens platform",
-  "main": "bin/run.js",
+  "description": "CLI tool for NextMavens platform - Manage projects, databases, functions, and secrets from the command line",
+  "main": "dist/index.js",
   "bin": {
-    "nextmavens": "./bin/run.js"
+    "nextmavens": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
     "prepack": "npm run build",
-    "typecheck": "tsc --noEmit"
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build"
   },
   "files": [
-    "/bin",
-    "/src"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "dependencies": {},
   "devDependencies": {
@@ -25,7 +28,25 @@
   },
   "keywords": [
     "cli",
-    "nextmavens"
+    "nextmavens",
+    "database",
+    "serverless",
+    "edge-functions",
+    "developer-tools",
+    "platform-cli"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "author": "NextMavens",
+  "homepage": "https://nextmavens.com/docs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nextmavens/nextmavens-developer-portal.git",
+    "directory": "cli"
+  },
+  "bugs": {
+    "url": "https://github.com/nextmavens/nextmavens-developer-portal/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

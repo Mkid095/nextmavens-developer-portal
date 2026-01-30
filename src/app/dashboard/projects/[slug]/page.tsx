@@ -854,22 +854,96 @@ const auth = createAuthClient({
           )}
 
           {activeTab === 'storage' && (
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">Storage</h2>
-              <div className="space-y-4">
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <h3 className="font-medium text-slate-900 mb-2">Storage Endpoint</h3>
-                  <code className="text-sm text-slate-700">{endpoints.storage}</code>
+            <ServiceTab
+              serviceName="Storage"
+              overview="A transparent storage abstraction that automatically routes files to optimal backends. Raw files go to Telegram for permanent storage, while web-optimized assets are served through Cloudinary CDN. Zero configuration needed - just upload and we handle the rest."
+              whenToUse="Use the Storage service for all file handling needs - user uploads, images, videos, documents, backups, and static assets. Perfect for profile pictures, document management, media galleries, and any application requiring file storage with automatic optimization and CDN delivery."
+              quickStart={
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/storage</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`import { createStorageClient } from '@nextmavens/storage'
+
+const storage = createStorageClient({
+  url: '${endpoints.storage}',
+  apiKey: process.env.NEXTMAVENS_API_KEY,
+  projectId: '${project.id}'
+})`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Upload File Example</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`const file = document.querySelector('input[type="file"]').files[0]
+
+const { data, error } = await storage.upload({
+  file: file,
+  bucket: 'uploads',
+  path: \`avatars/\${Date.now()}_\${file.name}\`
+})`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Get Public URL Example</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`const { publicUrl } = storage.getPublicUrl({
+  bucket: 'uploads',
+  path: 'avatars/1234567890_profile.jpg'
+})
+
+// &lt;img src={publicUrl} alt="Profile" /&gt;`}</code>
+                    </pre>
+                  </div>
                 </div>
-                <p className="text-slate-600">
-                  Upload, manage, and serve files through the Storage service.
-                  Full documentation available in the{' '}
-                  <Link href="/docs/storage" className="text-emerald-700 hover:text-emerald-800">
-                    Storage docs
-                  </Link>.
-                </p>
-              </div>
-            </div>
+              }
+              connectionDetails={
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Storage Endpoint
+                    </label>
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleCopy(endpoints.storage, 'storage-endpoint')}
+                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                      >
+                        {copied === 'storage-endpoint' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <pre className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                        <code className="text-sm text-slate-100 font-mono">{endpoints.storage}</code>
+                      </pre>
+                    </div>
+                  </div>
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <p className="text-sm text-purple-800">
+                      <strong>Bucket Management:</strong> Manage storage buckets through the{' '}
+                      <Link href={`/studio/${project.slug}/storage/buckets`} className="underline font-medium">
+                        Studio Console
+                      </Link>
+                      . Create buckets for different file types and configure access rules.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Raw Storage</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">Telegram</code>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">CDN/Optimization</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">Cloudinary</code>
+                    </div>
+                  </div>
+                </div>
+              }
+              docsUrl="https://docs.nextmavens.cloud/storage"
+            />
           )}
 
           {activeTab === 'realtime' && (

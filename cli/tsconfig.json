@@ -11,8 +11,9 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "types": ["node"],
-    "noEmit": true
+    "outDir": "./dist",
+    "rootDir": "./src"
   },
-  "include": ["bin/**/*", "src/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
