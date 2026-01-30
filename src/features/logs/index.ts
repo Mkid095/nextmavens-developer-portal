@@ -29,3 +29,10 @@ export {
   logWarn,
   logError,
 } from './lib/write-log'
+
+// Background Jobs
+export {
+  runLogRetentionJob,
+  getLogRetentionStats,
+  type LogRetentionJobResult,
+} from './lib/log-retention-job'

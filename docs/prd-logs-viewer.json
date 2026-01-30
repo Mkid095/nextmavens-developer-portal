@@ -239,8 +239,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created runLogRetentionJob() function at src/features/logs/lib/log-retention-job.ts. Deletes logs older than 30 days (configurable) from project_logs table. Uses batch deletion (1000 per batch) to avoid long transactions. Logs job execution with comprehensive output (logs deleted, projects affected, duration). Added getLogRetentionStats() helper to preview what would be deleted. Created internal API endpoint at /api/internal/logs/retention with POST to trigger job and GET to get stats. Secured with INTERNAL_API_KEY. Typecheck passes."
     },
     {
       "id": "US-010",
