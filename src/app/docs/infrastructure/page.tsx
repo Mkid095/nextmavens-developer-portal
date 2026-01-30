@@ -84,6 +84,9 @@ export default function InfrastructureDocsPage() {
             <a href="#disaster-recovery" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Disaster Recovery
             </a>
+            <a href="#sla" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
+              <ChevronRight className="w-4 h-4" /> Service Level Agreement (SLA)
+            </a>
             <a href="#limitations" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Current Limitations
             </a>

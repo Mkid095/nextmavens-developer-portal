@@ -24,7 +24,7 @@ export interface AuthenticatedRequest {
 
 /**
  * Authenticate a request and extract user information from JWT token.
- * US-007: Also checks project status to enforce gateway-level status denying claims checks.
+ * US-007: Also checks project status to enforce gateway-level status checks.
  *
  * @param req - The Next.js request object
  * @param projectId - Optional project ID to check status for. If not provided,
