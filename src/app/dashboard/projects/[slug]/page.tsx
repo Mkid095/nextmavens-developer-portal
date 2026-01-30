@@ -2167,8 +2167,17 @@ export AUTH_URL="${endpoints.auth}"`,
           {activeTab === 'storage' && (
             <>
               {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900">Storage Service</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Storage Service</h2>
+                  <ServiceStatusIndicator
+                    service="storage"
+                    status={serviceStatuses.storage}
+                    onToggle={createToggleHandler('storage')}
+                    isUpdating={updatingService === 'storage'}
+                  />
+                </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
               </div>
 
@@ -2344,8 +2353,17 @@ echo "https://cdn.nextmavens.cloud/$PROJECT_ID/uploads/avatars/1234567890_profil
           {activeTab === 'realtime' && (
             <>
               {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900">Realtime Service</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Realtime Service</h2>
+                  <ServiceStatusIndicator
+                    service="realtime"
+                    status={serviceStatuses.realtime}
+                    onToggle={createToggleHandler('realtime')}
+                    isUpdating={updatingService === 'realtime'}
+                  />
+                </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
               </div>
 
