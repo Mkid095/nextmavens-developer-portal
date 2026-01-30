@@ -48,6 +48,8 @@ import CodeBlockEnhancer from '@/components/docs/CodeBlockEnhancer'
 import SupportRequestModal from '@/components/SupportRequestModal'
 import SupportRequestDetailModal from '@/components/SupportRequestDetailModal'
 import { McpUsageAnalytics } from '@/components/McpUsageAnalytics'
+import LanguageSelector, { type CodeLanguage, useLanguageSelector } from '@/components/LanguageSelector'
+import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLanguageCodeBlock'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Project {
@@ -349,6 +351,8 @@ export default function ProjectDetailPage() {
   const [flagsLoading, setFlagsLoading] = useState(false)
   const [flagsError, setFlagsError] = useState<string | null>(null)
   const [updatingFlag, setUpdatingFlag] = useState<string | null>(null)
+  // US-009: Language selector for code examples
+  const [codeLanguage, setCodeLanguage] = useLanguageSelector()
 
   useEffect(() => {
     if (project) {
@@ -1067,33 +1071,70 @@ export default function ProjectDetailPage() {
           )}
 
           {activeTab === 'database' && (
-            <ServiceTab
-              serviceName="Database"
-              overview="A powerful PostgreSQL-powered data service with auto-generated REST & GraphQL APIs. Store, query, and manage your application data with full SQL capabilities while enjoying the convenience of instant API generation."
-              whenToUse="Use the Database service for any application that needs persistent data storage - user profiles, content management, e-commerce catalogs, analytics data, or any structured data. Perfect for applications requiring complex queries, transactions, and relational data modeling."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install nextmavens-js</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createClient } from 'nextmavens-js'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-slate-900">Database Service</h2>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              <ServiceTab
+                serviceName="Database"
+                overview="A powerful PostgreSQL-powered data service with auto-generated REST & GraphQL APIs. Store, query, and manage your application data with full SQL capabilities while enjoying the convenience of instant API generation."
+                whenToUse="Use the Database service for any application that needs persistent data storage - user profiles, content management, e-commerce catalogs, analytics data, or any structured data. Perfect for applications requiring complex queries, transactions, and relational data modeling."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install nextmavens-js',
+                          python: 'pip install nextmavens-py',
+                          go: 'go get github.com/nextmavens/go-sdk',
+                          curl: '# No installation needed - cURL comes with most systems',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createClient } from 'nextmavens-js'
 
 const client = createClient({
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`// Query data
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens
+
+client = nextmavens.create_client(
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-sdk"
+
+func main() {
+    client := nextmavens.NewClient(nextmavens.Config{
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `// Query data
 const { data, error } = await client
   .from('users')
   .select('*')
@@ -1102,47 +1143,73 @@ const { data, error } = await client
 // Insert data
 const { data } = await client
   .from('users')
-  .insert({ email: 'user@example.com' })`}</code>
-                    </pre>
-                  </div>
-                </div>
-              }
-              connectionDetails={
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      PostgreSQL Connection String
-                    </label>
-                    <div className="relative group">
-                      <button
-                        onClick={() => handleCopy(databaseUrl, 'database-url')}
-                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
-                      >
-                        {copied === 'database-url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
-                      </button>
-                      <pre className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
-                        <code className="text-sm text-slate-100 font-mono break-all">{databaseUrl}</code>
-                      </pre>
+  .insert({ email: 'user@example.com' })`,
+                          python: `# Query data
+response = client.table('users').select('*').limit(10).execute()
+
+# Insert data
+response = client.table('users').insert({
+    'email': 'user@example.com'
+}).execute()`,
+                          go: `// Query data
+data, err := client.From("users").Select("*").Limit(10).Execute()
+
+// Insert data
+data, err := client.From("users").Insert(map[string]interface{}{
+    "email": "user@example.com",
+}).Execute()`,
+                          curl: `# Query data
+curl -X GET "${endpoints.rest}/rest/v1/users?limit=10" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Authorization: Bearer $NEXTMAVENS_API_KEY"
+
+# Insert data
+curl -X POST "${endpoints.rest}/rest/v1/users" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Authorization: Bearer $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "user@example.com"}'`,
+                        })}
+                      />
                     </div>
                   </div>
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <p className="text-sm text-amber-800">
-                      <strong>Security Warning:</strong> Keep your database credentials secure. Never commit connection strings to public repositories or expose them in client-side code.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
+                }
+                connectionDetails={
+                  <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-slate-600 mb-1">REST API</p>
-                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.rest}</code>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        PostgreSQL Connection String
+                      </label>
+                      <div className="relative group">
+                        <button
+                          onClick={() => handleCopy(databaseUrl, 'database-url')}
+                          className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                        >
+                          {copied === 'database-url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                        </button>
+                        <pre className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
+                          <code className="text-sm text-slate-100 font-mono break-all">{databaseUrl}</code>
+                        </pre>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-600 mb-1">GraphQL API</p>
-                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.graphql}</code>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm text-amber-800">
+                        <strong>Security Warning:</strong> Keep your database credentials secure. Never commit connection strings to public repositories or expose them in client-side code.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-slate-600 mb-1">REST API</p>
+                        <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.rest}</code>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-600 mb-1">GraphQL API</p>
+                        <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.graphql}</code>
+                      </div>
                     </div>
                   </div>
-                </div>
-              }
-              docsUrl="https://docs.nextmavens.cloud/database"
+                }
+                docsUrl="https://docs.nextmavens.cloud/database"
             />
           )}
 
@@ -1698,50 +1765,118 @@ const graphql = createGraphQLClient({
           )}
 
           {activeTab === 'auth' && (
-            <ServiceTab
-              serviceName="Auth"
-              overview="A complete authentication service that handles user registration, login, session management, and JWT token generation. Built-in security features including password hashing, token refresh, and session management."
-              whenToUse="Use the Auth service whenever your application needs user authentication and authorization. Perfect for user accounts, admin panels, API authentication, and any scenario requiring secure access control. Supports email/password authentication with plans for social providers (OAuth)."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/auth</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createAuthClient } from '@nextmavens/auth'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-slate-900">Auth Service</h2>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              <ServiceTab
+                serviceName="Auth"
+                overview="A complete authentication service that handles user registration, login, session management, and JWT token generation. Built-in security features including password hashing, token refresh, and session management."
+                whenToUse="Use the Auth service whenever your application needs user authentication and authorization. Perfect for user accounts, admin panels, API authentication, and any scenario requiring secure access control. Supports email/password authentication with plans for social providers (OAuth)."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install @nextmavens/auth',
+                          python: 'pip install nextmavens-auth',
+                          go: 'go get github.com/nextmavens/go-auth',
+                          curl: '# No installation needed - use cURL directly',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createAuthClient } from '@nextmavens/auth'
 
 const auth = createAuthClient({
   url: '${endpoints.auth}',
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Sign Up Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { user, error } = await auth.signUp({
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens_auth
+
+auth = nextmavens_auth.create_client(
+    url='${endpoints.auth}',
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-auth"
+
+func main() {
+    auth := goauth.NewClient(goauth.Config{
+        URL: "${endpoints.auth}",
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"
+export AUTH_URL="${endpoints.auth}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Sign Up Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { user, error } = await auth.signUp({
   email: 'user@example.com',
   password: 'secure_password'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Sign In Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { session, error } = await auth.signIn({
+})`,
+                          python: `response = auth.sign_up(
+    email='user@example.com',
+    password='secure_password'
+)`,
+                          go: `user, err := auth.SignUp(goauth.SignUpRequest{
+    Email:    "user@example.com",
+    Password: "secure_password",
+})`,
+                          curl: `curl -X POST "$AUTH_URL/v1/auth/signup" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "user@example.com", "password": "secure_password"}'`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Sign In Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { session, error } = await auth.signIn({
   email: 'user@example.com',
   password: 'secure_password'
-})`}</code>
-                    </pre>
+})`,
+                          python: `response = auth.sign_in(
+    email='user@example.com',
+    password='secure_password'
+)`,
+                          go: `session, err := auth.SignIn(goauth.SignInRequest{
+    Email:    "user@example.com",
+    Password: "secure_password",
+})`,
+                          curl: `curl -X POST "$AUTH_URL/v1/auth/signin" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "user@example.com", "password": "secure_password"}'`,
+                        })}
+                      />
+                    </div>
                   </div>
-                </div>
-              }
+                }
               connectionDetails={
                 <div className="space-y-4">
                   <div>
@@ -1786,55 +1921,139 @@ const auth = createAuthClient({
           )}
 
           {activeTab === 'storage' && (
-            <ServiceTab
-              serviceName="Storage"
-              overview="A transparent storage abstraction that automatically routes files to optimal backends. Raw files go to Telegram for permanent storage, while web-optimized assets are served through Cloudinary CDN. Zero configuration needed - just upload and we handle the rest."
-              whenToUse="Use the Storage service for all file handling needs - user uploads, images, videos, documents, backups, and static assets. Perfect for profile pictures, document management, media galleries, and any application requiring file storage with automatic optimization and CDN delivery."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/storage</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createStorageClient } from '@nextmavens/storage'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-slate-900">Storage Service</h2>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              <ServiceTab
+                serviceName="Storage"
+                overview="A transparent storage abstraction that automatically routes files to optimal backends. Raw files go to Telegram for permanent storage, while web-optimized assets are served through Cloudinary CDN. Zero configuration needed - just upload and we handle the rest."
+                whenToUse="Use the Storage service for all file handling needs - user uploads, images, videos, documents, backups, and static assets. Perfect for profile pictures, document management, media galleries, and any application requiring file storage with automatic optimization and CDN delivery."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install @nextmavens/storage',
+                          python: 'pip install nextmavens-storage',
+                          go: 'go get github.com/nextmavens/go-storage',
+                          curl: '# No installation needed - use cURL directly',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createStorageClient } from '@nextmavens/storage'
 
 const storage = createStorageClient({
   url: '${endpoints.storage}',
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Upload File Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const file = document.querySelector('input[type="file"]').files[0]
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens_storage
+
+storage = nextmavens_storage.create_client(
+    url='${endpoints.storage}',
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-storage"
+
+func main() {
+    storage := gostorage.NewClient(gostorage.Config{
+        URL: "${endpoints.storage}",
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"
+export STORAGE_URL="${endpoints.storage}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Upload File Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const file = document.querySelector('input[type="file"]').files[0]
 
 const { data, error } = await storage.upload({
   file: file,
   bucket: 'uploads',
   path: \`avatars/\${Date.now()}_\${file.name}\`
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Get Public URL Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { publicUrl } = storage.getPublicUrl({
+})`,
+                          python: `# Upload file
+with open('avatar.jpg', 'rb') as f:
+    response = storage.upload(
+        file=f,
+        bucket='uploads',
+        path='avatars/avatar.jpg'
+    )`,
+                          go: `file, err := os.Open("avatar.jpg")
+if err != nil {
+    log.Fatal(err)
+}
+defer file.Close()
+
+result, err := storage.Upload(gostorage.UploadRequest{
+    File:   file,
+    Bucket: "uploads",
+    Path:   "avatars/avatar.jpg",
+})`,
+                          curl: `# Upload file using cURL
+curl -X POST "$STORAGE_URL/v1/storage/upload" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -F "file=@avatar.jpg" \\
+  -F "bucket=uploads" \\
+  -F "path=avatars/avatar.jpg"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Get Public URL Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { publicUrl } = storage.getPublicUrl({
   bucket: 'uploads',
   path: 'avatars/1234567890_profile.jpg'
 })
 
-// &lt;img src={publicUrl} alt="Profile" /&gt;`}</code>
-                    </pre>
+// <img src={publicUrl} alt="Profile" />`,
+                          python: `# Get public URL
+public_url = storage.get_public_url(
+    bucket='uploads',
+    path='avatars/1234567890_profile.jpg'
+)
+
+# <img src="{{ public_url }}" alt="Profile" />`,
+                          go: `// Get public URL
+publicURL := storage.GetPublicURL(gostorage.PublicURLRequest{
+    Bucket: "uploads",
+    Path:   "avatars/1234567890_profile.jpg",
+})
+
+// <img src="{{ publicURL }}" alt="Profile" />`,
+                          curl: `# Get public URL (construct it manually)
+echo "https://cdn.nextmavens.cloud/$PROJECT_ID/uploads/avatars/1234567890_profile.jpg"`,
+                        })}
+                      />
+                    </div>
                   </div>
-                </div>
-              }
+                }
               connectionDetails={
                 <div className="space-y-4">
                   <div>
