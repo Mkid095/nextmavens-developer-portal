@@ -7,8 +7,9 @@
 
 /**
  * Project status enum
+ * Note: Snapshot uses lowercase to match the database schema (migration 006)
  */
-export type ProjectStatus = 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED' | 'DELETED'
+export type ProjectStatus = 'created' | 'active' | 'suspended' | 'archived' | 'deleted'
 
 /**
  * Environment type

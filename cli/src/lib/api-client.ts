@@ -1,5 +1,15 @@
 import { config } from './config';
 
+/**
+ * Project status enum matching the database schema
+ */
+export type ProjectStatus =
+  | 'created'
+  | 'active'
+  | 'suspended'
+  | 'archived'
+  | 'deleted'
+
 export interface Developer {
   id: string;
   email: string;
@@ -16,7 +26,7 @@ export interface Project {
   webhook_url?: string;
   allowed_origins?: string[];
   rate_limit?: number;
-  status: string;
+  status: ProjectStatus;
   created_at: string;
 }
 
@@ -334,7 +344,7 @@ export class ApiClient {
     return response.data;
   }
 
-  public async listProjects(options?: { status?: string; limit?: number; offset?: number }): Promise<Project[]> {
+  public async listProjects(options?: { status?: ProjectStatus; limit?: number; offset?: number }): Promise<Project[]> {
     const params = new URLSearchParams();
     if (options?.status) params.append('status', options.status);
     if (options?.limit) params.append('limit', options.limit.toString());

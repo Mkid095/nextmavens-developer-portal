@@ -27,7 +27,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Migration 006_add_project_status_column.sql created with status column, enum constraint, default value, and index. Typecheck passes."
+      "notes": "Completed: Migration 006_add_project_status_column.sql created with status column, enum constraint ('created', 'active', 'suspended', 'archived', 'deleted'), default value, index, and bug fix for UPDATE statement. Created src/lib/types/project.types.ts with ProjectStatus type, state behavior definitions, valid transitions, and helper functions. Updated CLI Project interface to use proper ProjectStatus type. Updated snapshot types to use lowercase values matching database schema. Typecheck passes."
     },
     {
       "id": "US-002",
@@ -53,8 +53,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created src/lib/types/project-lifecycle.types.ts with comprehensive state behavior definitions including ProjectStatus enum, StateBehavior interface, state behaviors map with all states (CREATED, ACTIVE, SUSPENDED, ARCHIVED, DELETED), valid transitions, and helper functions. Typecheck passes."
     },
     {
       "id": "US-003",

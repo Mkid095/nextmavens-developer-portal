@@ -766,22 +766,91 @@ const { data } = await client
           )}
 
           {activeTab === 'auth' && (
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">Authentication</h2>
-              <div className="space-y-4">
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <h3 className="font-medium text-slate-900 mb-2">Auth Endpoint</h3>
-                  <code className="text-sm text-slate-700">{endpoints.auth}</code>
+            <ServiceTab
+              serviceName="Auth"
+              overview="A complete authentication service that handles user registration, login, session management, and JWT token generation. Built-in security features including password hashing, token refresh, and session management."
+              whenToUse="Use the Auth service whenever your application needs user authentication and authorization. Perfect for user accounts, admin panels, API authentication, and any scenario requiring secure access control. Supports email/password authentication with plans for social providers (OAuth)."
+              quickStart={
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/auth</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`import { createAuthClient } from '@nextmavens/auth'
+
+const auth = createAuthClient({
+  url: '${endpoints.auth}',
+  apiKey: process.env.NEXTMAVENS_API_KEY,
+  projectId: '${project.id}'
+})`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Sign Up Example</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`const { user, error } = await auth.signUp({
+  email: 'user@example.com',
+  password: 'secure_password'
+})`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Sign In Example</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`const { session, error } = await auth.signIn({
+  email: 'user@example.com',
+  password: 'secure_password'
+})`}</code>
+                    </pre>
+                  </div>
                 </div>
-                <p className="text-slate-600">
-                  Use the Auth service to handle user registration, login, and session management.
-                  Full documentation available in the{' '}
-                  <Link href="/docs/auth" className="text-emerald-700 hover:text-emerald-800">
-                    Auth docs
-                  </Link>.
-                </p>
-              </div>
-            </div>
+              }
+              connectionDetails={
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Auth Endpoint
+                    </label>
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleCopy(endpoints.auth, 'auth-endpoint')}
+                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                      >
+                        {copied === 'auth-endpoint' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <pre className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                        <code className="text-sm text-slate-100 font-mono">{endpoints.auth}</code>
+                      </pre>
+                    </div>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      <strong>User Management:</strong> Manage users through the{' '}
+                      <Link href={`/studio/${project.slug}/auth/users`} className="underline font-medium">
+                        Studio Console
+                      </Link>
+                      {' '}or use the Auth API for programmatic access.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Token Type</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">JWT (RS256)</code>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Token Expiration</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">1 hour (refreshable)</code>
+                    </div>
+                  </div>
+                </div>
+              }
+              docsUrl="https://docs.nextmavens.cloud/auth"
+            />
           )}
 
           {activeTab === 'storage' && (
