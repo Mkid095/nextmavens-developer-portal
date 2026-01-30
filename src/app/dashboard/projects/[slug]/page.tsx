@@ -730,39 +730,105 @@ const { data } = await client
           )}
 
           {activeTab === 'graphql' && (
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">GraphQL Endpoint</h2>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    GraphQL URL
-                  </label>
-                  <div className="relative group">
-                    <button
-                      onClick={() => handleCopy(endpoints.graphql, 'graphql-url')}
-                      className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
-                    >
-                      {copied === 'graphql-url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
-                    </button>
-                    <pre className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">{endpoints.graphql}</code>
+            <ServiceTab
+              serviceName="GraphQL"
+              overview="A powerful GraphQL API automatically generated from your database schema. Query your data with flexible, type-safe GraphQL operations. No manual API development required - the schema reflects your database structure in real-time."
+              whenToUse="Use the GraphQL service when you need flexible, efficient data fetching. Perfect for frontend applications, mobile apps, and any scenario where clients need to query exactly the data they need. Ideal for complex data relationships, nested queries, and avoiding over-fetching."
+              quickStart={
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/graphql</code>
                     </pre>
                   </div>
-                </div>
-                <div>
-                  <h3 className="font-medium text-slate-900 mb-3">Example Query</h3>
-                  <pre className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
-                    <code className="text-sm text-slate-300 font-mono">{`query {
-  users(limit: 10) {
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`import { createGraphQLClient } from '@nextmavens/graphql'
+
+const graphql = createGraphQLClient({
+  url: '${endpoints.graphql}',
+  apiKey: process.env.NEXTMAVENS_API_KEY,
+  projectId: '${project.id}'
+})`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`const { data, error } = await graphql.query(\`query {
+  users(limit: 10, order_by: { created_at: desc }) {
     id
     email
     created_at
+    profiles {
+      full_name
+      avatar_url
+    }
   }
-}`}</code>
-                  </pre>
+}\`)`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Mutation Example</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`const { data, error } = await graphql.mutation(\`mutation {
+  insert_users_one(object: {
+    email: "user@example.com"
+    profiles: {
+      data: { full_name: "John Doe" }
+    }
+  }) {
+    id
+    email
+  }
+}\`)`}</code>
+                    </pre>
+                  </div>
                 </div>
-              </div>
-            </div>
+              }
+              connectionDetails={
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      GraphQL Endpoint
+                    </label>
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleCopy(endpoints.graphql, 'graphql-endpoint')}
+                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                      >
+                        {copied === 'graphql-endpoint' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <pre className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                        <code className="text-sm text-slate-100 font-mono">{endpoints.graphql}</code>
+                      </pre>
+                    </div>
+                  </div>
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+                    <p className="text-sm text-indigo-800">
+                      <strong>GraphQL Playground:</strong> Explore your GraphQL API schema and test queries using the built-in{' '}
+                      <Link href={`/studio/${project.slug}/graphql`} className="underline font-medium">
+                        GraphQL Playground
+                      </Link>
+                      .
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Schema</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">Auto-generated</code>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Subscriptions</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">WebSocket (Realtime)</code>
+                    </div>
+                  </div>
+                </div>
+              }
+              docsUrl="https://docs.nextmavens.cloud/graphql"
+            />
           )}
 
           {activeTab === 'auth' && (
@@ -947,22 +1013,100 @@ const { data, error } = await storage.upload({
           )}
 
           {activeTab === 'realtime' && (
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">Realtime</h2>
-              <div className="space-y-4">
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <h3 className="font-medium text-slate-900 mb-2">WebSocket URL</h3>
-                  <code className="text-sm text-slate-700">{endpoints.realtime}</code>
+            <ServiceTab
+              serviceName="Realtime"
+              overview="A real-time data synchronization service powered by PostgreSQL Change Data Capture (CDC). Subscribe to database changes and receive instant updates via WebSocket connections. Perfect for collaborative apps, live dashboards, and multi-user experiences."
+              whenToUse="Use the Realtime service when you need live data updates in your application. Ideal for collaborative editing, live dashboards, chat applications, notifications, activity feeds, and any scenario where users need to see changes instantly across multiple clients."
+              quickStart={
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/realtime</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`import { createRealtimeClient } from '@nextmavens/realtime'
+
+const realtime = createRealtimeClient({
+  url: '${endpoints.realtime}',
+  apiKey: process.env.NEXTMAVENS_API_KEY,
+  projectId: '${project.id}'
+})`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Connect to WebSocket</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`// Connect to the realtime service
+const { socket, error } = await realtime.connect()
+
+// Handle connection events
+socket.on('connected', () => {
+  console.log('Connected to realtime!')
+})
+
+socket.on('disconnected', () => {
+  console.log('Disconnected from realtime')
+})`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Subscribe to Table Changes</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`// Subscribe to all changes on the 'users' table
+const subscription = socket
+  .channel('users')
+  .on('INSERT', (payload) => {
+    console.log('New user:', payload.new)
+  })
+  .on('UPDATE', (payload) => {
+    console.log('User updated:', payload.new)
+  })
+  .subscribe()`}</code>
+                    </pre>
+                  </div>
                 </div>
-                <p className="text-slate-600">
-                  Connect to the Realtime service for live updates and subscriptions.
-                  Full documentation available in the{' '}
-                  <Link href="/docs" className="text-emerald-700 hover:text-emerald-800">
-                    docs
-                  </Link>.
-                </p>
-              </div>
-            </div>
+              }
+              connectionDetails={
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      WebSocket URL
+                    </label>
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleCopy(endpoints.realtime, 'realtime-endpoint')}
+                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                      >
+                        {copied === 'realtime-endpoint' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <pre className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                        <code className="text-sm text-slate-100 font-mono">{endpoints.realtime}</code>
+                      </pre>
+                    </div>
+                  </div>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
+                      <strong>Change Data Capture:</strong> Realtime uses PostgreSQL's logical replication to capture row-level changes. All INSERT, UPDATE, and DELETE operations are broadcast in real-time to subscribed clients.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Protocol</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">WebSocket</code>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">Latency</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">&lt; 100ms</code>
+                    </div>
+                  </div>
+                </div>
+              }
+              docsUrl="https://docs.nextmavens.cloud/realtime"
+            />
           )}
         </motion.div>
       </div>
