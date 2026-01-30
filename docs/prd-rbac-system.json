@@ -182,8 +182,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Applied permission checking to all key management endpoints. Updated GET /api/api-keys, POST /api/api-keys (create), and DELETE /api/api-keys (revoke) in src/app/api/api-keys/route.ts. Also updated POST /api/keys/[id]/rotate in src/app/api/keys/[id]/rotate/route.ts and DELETE /api/keys/[id]/revoke in src/app/api/keys/[id]/revoke/route.ts. All endpoints now use requirePermission middleware with Permission.PROJECTS_MANAGE_KEYS. Extracts organization ID from project's tenant_id (for create) or from key's associated project (for rotate/revoke). Only admins and owners (who have projects.manage_keys permission) can create, rotate, or revoke API keys. Returns 403 Forbidden for developers/viewers with detailed error message including required_permission field. Added helper functions getOrganizationIdFromProject() and getOrganizationIdFromKey() to resolve organization context. Typecheck passes."
     },
     {
       "id": "US-008",

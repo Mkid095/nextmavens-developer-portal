@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Radio, Database, Zap, Shield, CheckCircle2, BookOpen, MessageSquare, Users, RefreshCw, Clock, Power, Lock } from 'lucide-react';
+import { ArrowLeft, Radio, Database, Zap, Shield, CheckCircle2, BookOpen, MessageSquare, Users, RefreshCw, Clock, Power, Lock, UserPlus, UserMinus, Signal } from 'lucide-react';
 import Link from 'next/link';
 import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy';
 
@@ -1097,6 +1097,311 @@ document.getElementById('disconnect-btn')?.addEventListener('click', () => {
                 <span className="text-sm text-slate-300 text-center">RECONNECT</span>
                 <span className="text-xs text-slate-500 text-center">Retry with backoff</span>
               </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Presence */}
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl font-bold text-slate-100 mb-6">Presence</h2>
+
+          <div className="prose prose-invert max-w-none mb-8">
+            <p className="text-slate-300 text-lg leading-relaxed mb-4">
+              Presence features enable you to track online users, monitor user state, and detect when users join or leave channels.
+              Build collaborative features like cursors, typing indicators, and live user lists.
+            </p>
+          </div>
+
+          {/* Online Status Tracking */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Signal className="w-5 h-5 text-emerald-400" />
+              Track Online Status
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Use presence to track which users are currently online and active:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`// Join a presence channel
+const presenceJoin = {
+  event: 'phx_join',
+  topic: 'presence:users',
+  payload: {
+    token: 'YOUR_JWT_TOKEN',
+    user_id: 'user_123',
+    user_metadata: {
+      name: 'John Doe',
+      avatar: 'https://example.com/avatar.jpg'
+    }
+  },
+  ref: '1'
+};
+
+ws.send(JSON.stringify(presenceJoin));
+
+// Handle presence state sync
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.event === 'presence_state') {
+    // Initial presence state - all online users
+    const onlineUsers = msg.payload;
+    console.log('Online users:', onlineUsers);
+    // Render online user list
+    renderOnlineUsers(onlineUsers);
+  }
+};`}</code>
+            </pre>
+            <div className="grid md:grid-cols-3 gap-4 mt-4">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                <p className="text-xs text-emerald-300 mb-1">presence_state</p>
+                <p className="text-sm font-semibold text-emerald-200">Initial sync</p>
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <p className="text-xs text-blue-300 mb-1">presence_diff</p>
+                <p className="text-sm font-semibold text-blue-200">Incremental updates</p>
+              </div>
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                <p className="text-xs text-purple-300 mb-1">Channel Format</p>
+                <p className="text-sm font-semibold text-purple-200">presence:*</p>
+              </div>
+            </div>
+          </div>
+
+          {/* User State Tracking */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-blue-400" />
+              Track User State
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Track dynamic user state like cursor position, typing status, or current activity:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`// Track user cursor position
+const updatePresence = {
+  event: 'presence_update',
+  topic: 'presence:collaboration',
+  payload: {
+    token: 'YOUR_JWT_TOKEN',
+    user_id: 'user_123',
+    state: {
+      cursor: { x: 450, y: 230 },
+      typing: false,
+      selection: { start: 10, end: 15 },
+      current_file: 'document.txt'
+    }
+  },
+  ref: '2'
+};
+
+ws.send(JSON.stringify(updatePresence));
+
+// Listen for presence updates from other users
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.event === 'presence_diff') {
+    // Users joined or left
+    const { joins, leaves } = msg.payload;
+
+    Object.keys(joins).forEach(userId => {
+      console.log(\`User \${userId} joined\`);
+      showUserCursor(userId, joins[userId]);
+    });
+
+    Object.keys(leaves).forEach(userId => {
+      console.log(\`User \${userId} left\`);
+      removeUserCursor(userId);
+    });
+  }
+
+  if (msg.event === 'presence_update') {
+    // User state changed
+    const { user_id, state } = msg.payload;
+    updateUserCursor(user_id, state);
+  }
+};`}</code>
+            </pre>
+            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg mt-4">
+              <p className="text-sm text-blue-300">
+                <strong>Use Cases:</strong> Collaborative cursors, typing indicators, shared whiteboards, multiplayer games, live auctions.
+              </p>
+            </div>
+          </div>
+
+          {/* Join/Leave Channels */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-green-400" />
+              Join and Leave Channels
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Handle users entering and exiting presence channels:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`// Join a presence channel
+function joinPresenceChannel(channelName, userState) {
+  const joinMsg = {
+    event: 'phx_join',
+    topic: \`presence:\${channelName}\`,
+    payload: {
+      token: 'YOUR_JWT_TOKEN',
+      ...userState
+    },
+    ref: String(Date.now())
+  };
+
+  ws.send(JSON.stringify(joinMsg));
+}
+
+// Leave a presence channel
+function leavePresenceChannel(channelName) {
+  const leaveMsg = {
+    event: 'phx_leave',
+    topic: \`presence:\${channelName}\`,
+    payload: {
+      token: 'YOUR_JWT_TOKEN'
+    },
+    ref: String(Date.now())
+  };
+
+  ws.send(JSON.stringify(leaveMsg));
+}
+
+// Usage
+joinPresenceChannel('room_123', {
+  user_id: 'user_456',
+  username: 'alice',
+  avatar: 'https://example.com/alice.jpg',
+  role: 'editor'
+});
+
+// When user navigates away
+window.addEventListener('beforeunload', () => {
+  leavePresenceChannel('room_123');
+});
+
+// Handle join/leave events from other users
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.event === 'presence_diff') {
+    const { joins, leaves } = msg.payload;
+
+    // New users joined
+    Object.entries(joins).forEach(([userId, userData]) => {
+      showNotification(\`\${userData.username} joined the room\`);
+      addUserToList(userId, userData);
+    });
+
+    // Users left
+    Object.keys(leaves).forEach(userId => {
+      showNotification(\`User left the room\`);
+      removeUserFromList(userId);
+    });
+  }
+};`}</code>
+            </pre>
+            <div className="grid md:grid-cols-2 gap-4 mt-4">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                <p className="text-xs text-emerald-300 mb-1">phx_join</p>
+                <p className="text-sm text-emerald-200">User enters presence channel</p>
+              </div>
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <p className="text-xs text-red-300 mb-1">phx_leave</p>
+                <p className="text-sm text-red-200">User exits presence channel</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Presence Examples */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-400" />
+              Presence Examples
+            </h3>
+
+            {/* Typing Indicator */}
+            <div className="mb-6">
+              <p className="text-sm font-semibold text-slate-200 mb-3">Typing Indicator</p>
+              <pre className="bg-slate-900 rounded-lg p-4">
+                <code className="text-sm text-slate-300">{`// Send typing status
+function setTyping(isTyping) {
+  ws.send(JSON.stringify({
+    event: 'presence_update',
+    topic: 'presence:chat',
+    payload: {
+      token: 'YOUR_JWT_TOKEN',
+      user_id: 'user_123',
+      state: { typing: isTyping }
+    }
+  }));
+}
+
+// On textarea input
+textarea.addEventListener('input', () => {
+  setTyping(true);
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => setTyping(false), 1000);
+});
+
+// Listen for typing from others
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.event === 'presence_update') {
+    const { user_id, state } = msg.payload;
+    if (state.typing) {
+      showTypingIndicator(user_id);
+    } else {
+      hideTypingIndicator(user_id);
+    }
+  }
+};`}</code>
+              </pre>
+            </div>
+
+            {/* Online User Counter */}
+            <div>
+              <p className="text-sm font-semibold text-slate-200 mb-3">Online User Counter</p>
+              <pre className="bg-slate-900 rounded-lg p-4">
+                <code className="text-sm text-slate-300">{`let onlineUsers = new Map();
+
+// Initial presence state
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.event === 'presence_state') {
+    // Load initial online users
+    Object.entries(msg.payload).forEach(([userId, userData]) => {
+      onlineUsers.set(userId, userData);
+    });
+    updateOnlineCount();
+  }
+
+  if (msg.event === 'presence_diff') {
+    // Handle incremental changes
+    const { joins, leaves } = msg.payload;
+
+    Object.entries(joins).forEach(([userId, userData]) => {
+      onlineUsers.set(userId, userData);
+    });
+
+    Object.keys(leaves).forEach(userId => {
+      onlineUsers.delete(userId);
+    });
+
+    updateOnlineCount();
+  }
+};
+
+function updateOnlineCount() {
+  const count = onlineUsers.size;
+  document.getElementById('online-count').textContent =
+    \`\${count} user\${count !== 1 ? 's' : ''} online\`;
+}`}</code>
+              </pre>
             </div>
           </div>
         </motion.div>

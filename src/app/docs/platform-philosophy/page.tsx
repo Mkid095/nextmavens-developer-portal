@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Lightbulb, Database, CheckCircle, AlertCircle, Code, Zap, Shield, GitBranch, Radio, Stream, HardDrive, FolderOpen, Cloud, ImageIcon, Key, Lock, RefreshCw, Server, Wrench, Activity, BarChart3, Bot, Terminal, Cpu, Globe } from 'lucide-react'
+import { ArrowLeft, Lightbulb, Database, CheckCircle, AlertCircle, Code, Zap, Shield, GitBranch, Radio, Stream, HardDrive, FolderOpen, Cloud, ImageIcon, Key, Lock, RefreshCw, Server, Wrench, Activity, BarChart3, Bot, Terminal, Cpu, Globe, BookOpen, Smile, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const principles = [

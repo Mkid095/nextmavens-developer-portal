@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/middleware'
+import { getPool } from '@/lib/db'
+import { requirePermission } from '@/lib/middleware'
 import { getControlPlaneClient } from '@/lib/api/control-plane-client'
 import {
   getIdempotencyKey,
@@ -7,9 +8,48 @@ import {
   withIdempotencyWithKey,
   type IdempotencyResponse,
 } from '@/lib/idempotency'
+import { Permission } from '@/lib/types/rbac.types'
+import { User } from '@/lib/rbac'
 
 interface RouteContext {
   params: Promise<{ id: string }>
+}
+
+/**
+ * Helper function to get organization ID from an API key.
+ * Queries the api_keys table to get the developer_id, then gets the project.
+ *
+ * @param keyId - The API key ID
+ * @returns The organization ID (tenant_id)
+ * @throws Error if key not found or associated with no project
+ */
+async function getOrganizationIdFromKey(keyId: string): Promise<string> {
+  const pool = getPool()
+
+  // First, get the developer_id from the api_keys table
+  const keyResult = await pool.query(
+    'SELECT developer_id FROM api_keys WHERE id = $1',
+    [keyId]
+  )
+
+  if (keyResult.rows.length === 0) {
+    throw new Error('API key not found')
+  }
+
+  const developerId = keyResult.rows[0].developer_id
+
+  // Then, get a project owned by this developer to extract the organization (tenant_id)
+  // For now, we'll use the first project found. In a multi-org setup, this might need adjustment.
+  const projectResult = await pool.query(
+    'SELECT tenant_id FROM projects WHERE developer_id = $1 LIMIT 1',
+    [developerId]
+  )
+
+  if (projectResult.rows.length === 0) {
+    throw new Error('No project found for this key owner')
+  }
+
+  return projectResult.rows[0].tenant_id
 }
 
 /**
@@ -18,12 +58,28 @@ interface RouteContext {
  * Revoke an API key immediately by setting its status to 'revoked'.
  * This is different from deleting the key - the key record remains
  * but becomes immediately invalid for authentication.
+ * Requires PROJECTS_MANAGE_KEYS permission.
+ * Only admins and owners can revoke keys.
  *
- * US-003: Implement Revoke Key API
+ * US-007: Apply Permissions to Key Management
  */
-export async function DELETE(req: NextRequest, context: RouteContext) {
-  try {
-    await authenticateRequest(req)
+export const DELETE = requirePermission(
+  {
+    permission: Permission.PROJECTS_MANAGE_KEYS,
+    getOrganizationId: async (req: NextRequest) => {
+      // Extract keyId from URL
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const keyId = pathParts[pathParts.indexOf('keys') + 1]
+
+      if (!keyId) {
+        throw new Error('Key ID is required')
+      }
+
+      return getOrganizationIdFromKey(keyId)
+    }
+  },
+  async (req: NextRequest, user: User, context: RouteContext) => {
     const params = await context.params
     const keyId = params.id
 
@@ -71,12 +127,5 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
         ...result.headers,
       },
     })
-  } catch (error: any) {
-    console.error('[Revoke API] Revoke API key error:', error)
-    const status = error.message === 'No token provided' || error.message === 'Invalid token' ? 401 : 500
-    return NextResponse.json(
-      { error: error.message || 'Failed to revoke API key' },
-      { status }
-    )
   }
-}
+)

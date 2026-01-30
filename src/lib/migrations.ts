@@ -58,6 +58,16 @@ export interface MigrationOptions {
    * Default: 500 (0.5 seconds)
    */
   lockCheckInterval?: number
+
+  /**
+   * US-007: Dry run mode - show what migrations would be applied without actually running them
+   */
+  dryRun?: boolean
+
+  /**
+   * US-007: Verbose output for dry-run mode
+   */
+  verbose?: boolean
 }
 
 /**
@@ -424,4 +434,16 @@ export async function rollbackMigration(version: string): Promise<void> {
   } finally {
     client.release()
   }
+}
+
+/**
+ * US-007: Migration plan - describes a migration that would be applied (used for dry-run)
+ */
+export interface MigrationPlan {
+  version: string
+  description: string
+  file: string
+  breaking?: boolean
+  rollbackSql?: string
+  estimatedImpact?: string
 }
