@@ -105,7 +105,7 @@ interface TabConfig {
   icon: LucideIcon
 }
 
-type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'feature-flags' | 'support'
+type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'mcp-analytics' | 'feature-flags' | 'support'
 
 const tabs: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Settings },
@@ -115,6 +115,7 @@ const tabs: TabConfig[] = [
   { id: 'realtime', label: 'Realtime', icon: Activity },
   { id: 'graphql', label: 'GraphQL', icon: Code2 },
   { id: 'api-keys', label: 'API Keys', icon: Key },
+  { id: 'mcp-analytics', label: 'MCP Analytics', icon: BarChart3 },
   { id: 'feature-flags', label: 'Feature Flags', icon: ShieldAlert },
   { id: 'support', label: 'Support', icon: LifeBuoy },
 ]
@@ -1466,6 +1467,13 @@ const client = createClient({
                     </div>
                     )
                   })}
+                </div>
+              )}
+
+              {/* US-011: MCP Usage Analytics Section */}
+              {apiKeys.some((key) => key.key_type === 'mcp') && (
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                  <McpUsageAnalytics projectId={project.id} />
                 </div>
               )}
             </div>

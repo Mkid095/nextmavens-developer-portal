@@ -4,11 +4,13 @@
  * US-011: Implement MCP Usage Analytics
  *
  * Provides API endpoints for tracking and viewing MCP token usage analytics.
+ * Uses session-based authentication for developer portal access.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateApiKey } from '@/lib/auth'
+import { authenticateRequest } from '@/lib/middleware'
 import { getMcpTokenUsageAnalytics, exportMcpTokenUsageAnalyticsAsCsv } from '@/lib/mcp-audit-logger'
+import { getPool } from '@/lib/db'
 
 /**
  * GET /api/mcp/analytics
@@ -25,13 +27,8 @@ import { getMcpTokenUsageAnalytics, exportMcpTokenUsageAnalyticsAsCsv } from '@/
  */
 export async function GET(req: NextRequest) {
   try {
-    const apiKeyHeader = req.headers.get('x-api-key')
-
-    if (!apiKeyHeader) {
-      return NextResponse.json({ error: 'API key is required' }, { status: 401 })
-    }
-
-    const apiKey = await authenticateApiKey(apiKeyHeader)
+    // Authenticate the developer session
+    const auth = await authenticateRequest(req)
 
     const searchParams = req.nextUrl.searchParams
     const projectId = searchParams.get('project_id')
@@ -45,11 +42,17 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'project_id is required' }, { status: 400 })
     }
 
-    // Verify the API key has access to the project
-    if (apiKey.project_id !== projectId) {
+    // Verify the developer has access to the project
+    const pool = getPool()
+    const projectCheck = await pool.query(
+      'SELECT p.id FROM projects p JOIN developers d ON p.tenant_id = d.tenant_id WHERE p.id = $1 AND d.id = $2',
+      [projectId, auth.user.id]
+    )
+
+    if (projectCheck.rows.length === 0) {
       return NextResponse.json(
-        { error: 'API key does not have access to this project' },
-        { status: 403 }
+        { error: 'Project not found or access denied' },
+        { status: 404 }
       )
     }
 
@@ -72,7 +75,7 @@ export async function GET(req: NextRequest) {
       return new NextResponse(csv, {
         headers: {
           'Content-Type': 'text/csv',
-          'Content-Disposition': `attachment; filename="mcp-usage-analytics-${projectId}.csv"`,
+          'Content-Disposition': `attachment; filename="mcp-usage-analytics-${projectId}-${new Date().toISOString().split('T')[0]}.csv"`,
         },
       })
     }
@@ -86,9 +89,10 @@ export async function GET(req: NextRequest) {
     })
   } catch (error: any) {
     console.error('[MCP Analytics API] Error:', error)
+    const status = error.message === 'No token provided' || error.message === 'Invalid token' ? 401 : 500
     return NextResponse.json(
       { error: error.message || 'Failed to fetch MCP usage analytics' },
-      { status: 500 }
+      { status }
     )
   }
 }
