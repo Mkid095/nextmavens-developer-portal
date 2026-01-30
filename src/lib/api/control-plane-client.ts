@@ -78,6 +78,7 @@ export interface CreateApiKeyRequest {
   projectId?: string
   key_type?: 'public' | 'secret' | 'service_role' | 'mcp'
   environment?: 'prod' | 'dev' | 'staging'
+  mcp_access_level?: 'ro' | 'rw' | 'admin'
 }
 
 export interface CreateApiKeyResponse {

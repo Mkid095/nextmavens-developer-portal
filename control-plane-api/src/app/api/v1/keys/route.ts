@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
-import { authenticateRequest, type JwtPayload, generateApiKey, hashApiKey, getKeyPrefix, DEFAULT_API_KEY_SCOPES, mapProjectEnvironmentToKeyEnvironment } from '@/lib/auth'
+import { authenticateRequest, type JwtPayload, generateApiKey, hashApiKey, getKeyPrefix, DEFAULT_API_KEY_SCOPES, mapProjectEnvironmentToKeyEnvironment, getMcpDefaultScopes } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import {
   createApiKeySchema,
@@ -189,13 +189,25 @@ export async function POST(req: NextRequest) {
       return errorResponse('FORBIDDEN', 'You do not have access to this project', 403)
     }
 
-    // Get scopes (use provided or defaults)
-    const scopes = validatedData.scopes || DEFAULT_API_KEY_SCOPES[validatedData.key_type]
+    // US-003: Implement MCP Read-Only Token
+    // For MCP keys, validate that mcp_access_level is provided and determine scopes based on access level
+    let scopes: string[]
+    let mcpAccessLevel: 'ro' | 'rw' | 'admin' | undefined
+
+    if (validatedData.key_type === 'mcp') {
+      // Default to 'ro' (read-only) if not specified
+      mcpAccessLevel = validatedData.mcp_access_level || 'ro'
+      // Get default scopes for the specified MCP access level
+      scopes = validatedData.scopes || Array.from(getMcpDefaultScopes(mcpAccessLevel))
+    } else {
+      // For non-MCP keys, use provided scopes or default for key type
+      scopes = validatedData.scopes || DEFAULT_API_KEY_SCOPES[validatedData.key_type]
+    }
 
     // US-010: Generate key prefix based on type and PROJECT environment
     // The key prefix is determined by the project's environment, not the requested key environment
     const projectEnvironment = ownershipCheck.project.environment || 'prod'
-    const keyPrefix = getKeyPrefix(validatedData.key_type, projectEnvironment)
+    const keyPrefix = getKeyPrefix(validatedData.key_type, projectEnvironment, mcpAccessLevel)
     const keyEnvironment = mapProjectEnvironmentToKeyEnvironment(projectEnvironment)
 
     // Generate API key pair with environment-specific prefix
@@ -228,13 +240,24 @@ export async function POST(req: NextRequest) {
     const apiKey = dbResult.rows[0]
 
     // Add warning based on key type
-    const warning = validatedData.key_type === 'public'
-      ? 'This key is intended for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code.'
-      : validatedData.key_type === 'service_role'
-      ? 'WARNING: This is a service role key that bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code.'
-      : validatedData.key_type === 'secret'
-      ? 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments.'
-      : undefined
+    let warning: string | undefined
+    if (validatedData.key_type === 'public') {
+      warning = 'This key is intended for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code.'
+    } else if (validatedData.key_type === 'service_role') {
+      warning = 'WARNING: This is a service role key that bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code.'
+    } else if (validatedData.key_type === 'secret') {
+      warning = 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments.'
+    } else if (validatedData.key_type === 'mcp') {
+      // US-003: MCP token warning based on access level
+      const accessLevel = mcpAccessLevel || 'ro'
+      if (accessLevel === 'ro') {
+        warning = 'This is an MCP (Model Context Protocol) read-only token. It can read data but cannot modify it. Suitable for AI assistants and code generation tools.'
+      } else if (accessLevel === 'rw') {
+        warning = 'WARNING: This is an MCP (Model Context Protocol) read-write token. It can both read and modify your data. Only grant to trusted AI systems.'
+      } else if (accessLevel === 'admin') {
+        warning = 'CRITICAL WARNING: This is an MCP (Model Context Protocol) admin token with full access including data deletion. Only grant to highly trusted AI operations tools.'
+      }
+    }
 
     return NextResponse.json({
       success: true,
