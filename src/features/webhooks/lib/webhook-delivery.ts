@@ -420,3 +420,43 @@ export async function emitEvent(
 
   return results
 }
+
+/**
+ * Create a platform-level event log entry (without webhooks)
+ *
+ * US-007: Emit Events on Actions
+ * This function creates an event log entry for platform-level events
+ * that don't have an associated project (e.g., user.signedup).
+ * These events are logged but not delivered to webhooks since webhooks
+ * are scoped to projects.
+ *
+ * @param event_type - Event type
+ * @param payload - Event payload
+ * @returns Created event log ID or null
+ */
+export async function emitPlatformEvent(
+  event_type: string,
+  payload: Record<string, unknown>
+): Promise<string | null> {
+  const pool = getPool()
+
+  try {
+    // Create event log entry without a webhook (webhook_id is NULL)
+    // Use a special system project_id for platform events
+    const result = await pool.query(
+      `
+      INSERT INTO control_plane.event_log
+        (project_id, webhook_id, event_type, payload, status, retry_count)
+      VALUES ($1, NULL, $2, $3, 'delivered', 0)
+      RETURNING id
+      `,
+      ['00000000-0000-0000-0000-000000000000', event_type, JSON.stringify(payload)]
+    )
+
+    console.log(`[Webhook] Platform event logged: ${event_type}`)
+    return result.rows[0].id
+  } catch (error) {
+    console.error('[Webhook] Error creating platform event log:', error)
+    return null
+  }
+}

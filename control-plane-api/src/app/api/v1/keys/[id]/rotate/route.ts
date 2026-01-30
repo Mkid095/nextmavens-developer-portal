@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest, type JwtPayload, generateApiKey, hashApiKey, getKeyPrefix, DEFAULT_API_KEY_SCOPES, mapProjectEnvironmentToKeyEnvironment } from '@/lib/auth'
 import { getPool } from '@/lib/db'
+import { emitEvent } from '@/features/webhooks'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -89,6 +90,19 @@ export async function POST(req: NextRequest, context: RouteContext) {
        WHERE id = $2`,
       [newKey.id, keyId]
     )
+
+    // US-007: Emit key.rotated event (fire and forget)
+    emitEvent(existingKey.project_id, 'key.rotated', {
+      project_id: existingKey.project_id,
+      old_key_id: keyId,
+      new_key_id: newKey.id,
+      key_name: existingKey.name,
+      key_type: keyType,
+      rotated_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    }).catch(err => {
+      console.error('[Keys API] Failed to emit key.rotated event:', err)
+    })
 
     return NextResponse.json({
       success: true,

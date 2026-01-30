@@ -7,6 +7,7 @@
  * US-004: Prefix Storage Paths (prd-resource-isolation.json)
  * US-009: Update Storage Service Errors (Standardized Error Format)
  * US-004: Track Storage Usage (prd-usage-tracking.json)
+ * US-007: Emit Events on Actions (prd-webhooks-events.json)
  */
 
 import { NextRequest } from 'next/server'
@@ -26,6 +27,7 @@ import {
   internalError,
 } from '@/lib/errors'
 import { trackStorageUpload } from '@/lib/usage/storage-tracking'
+import { emitEvent } from '@/features/webhooks'
 
 export async function POST(req: NextRequest) {
   try {
@@ -86,6 +88,7 @@ export async function POST(req: NextRequest) {
 
     // TODO: Implement actual file upload to Telegram storage service
     // For now, return a placeholder response with the scoped path
+    const uploadedAt = new Date().toISOString()
     const response = new Response(
       JSON.stringify({
         success: true,
@@ -95,7 +98,7 @@ export async function POST(req: NextRequest) {
           size: file_size,
           type: content_type,
           path: scopedPath,
-          uploaded_at: new Date().toISOString(),
+          uploaded_at: uploadedAt,
         },
         note: 'This is a placeholder. The actual storage service integration will be implemented separately.',
       }),
@@ -106,6 +109,18 @@ export async function POST(req: NextRequest) {
     // Track the upload after sending response to avoid blocking
     trackStorageUpload(auth.project_id, file_size).catch(err => {
       console.error('[Storage API] Failed to track upload usage:', err)
+    })
+
+    // US-007: Emit file.uploaded event (fire and forget)
+    emitEvent(auth.project_id, 'file.uploaded', {
+      project_id: auth.project_id,
+      file_name: file_name,
+      file_size: file_size,
+      content_type: content_type,
+      storage_path: scopedPath,
+      uploaded_at: uploadedAt,
+    }).catch(err => {
+      console.error('[Storage API] Failed to emit file.uploaded event:', err)
     })
 
     return response

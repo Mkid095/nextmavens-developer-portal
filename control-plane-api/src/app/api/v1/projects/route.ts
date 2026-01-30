@@ -14,6 +14,7 @@ import {
   withIdempotencyWithKey,
   type IdempotencyResponse,
 } from '@/lib/idempotency'
+import { emitEvent } from '@/features/webhooks'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -230,6 +231,19 @@ export async function POST(req: NextRequest) {
         )
 
         const project = projectResult.rows[0]
+
+        // US-007: Emit project.created event
+        // Fire and forget - don't block the response on webhook delivery
+        emitEvent(project.id, 'project.created', {
+          project_id: project.id,
+          project_name: project.project_name,
+          tenant_id: project.tenant_id,
+          environment: project.environment,
+          developer_id: developer.id,
+          created_at: project.created_at,
+        }).catch(err => {
+          console.error('[Projects API] Failed to emit project.created event:', err)
+        })
 
         return {
           status: 201,

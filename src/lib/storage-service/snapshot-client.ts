@@ -13,9 +13,20 @@
  * - This ensures security is never compromised
  *
  * US-008: Update Storage Service to Consume Snapshot
+ * US-007: Add Correlation ID to Storage Service
+ * - Supports correlation ID propagation via x-request-id header
+ * - All logs include correlation ID for request tracing
  */
 
 import { ControlPlaneSnapshot, ProjectStatus } from '@/lib/snapshot/types'
+import { generateCorrelationId, CORRELATION_HEADER } from '@/lib/middleware/correlation'
+
+/**
+ * Request context for correlation ID tracking
+ */
+interface RequestContext {
+  correlationId?: string
+}
 
 /**
  * Configuration for the snapshot client
@@ -77,9 +88,49 @@ const snapshotCache = new Map<string, CachedSnapshot>()
  */
 export class StorageServiceSnapshotClient {
   private config: SnapshotClientConfig
+  private requestContext: RequestContext
 
   constructor(config: Partial<SnapshotClientConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
+    this.requestContext = {}
+  }
+
+  /**
+   * Set the correlation ID for the current request context
+   * This allows correlation IDs to be propagated to the control plane
+   * @param correlationId - The correlation ID from the incoming request
+   */
+  setCorrelationId(correlationId: string): void {
+    this.requestContext.correlationId = correlationId
+  }
+
+  /**
+   * Get the current correlation ID from context
+   * Generates a new one if not set
+   * @returns The correlation ID
+   */
+  getCorrelationId(): string {
+    if (!this.requestContext.correlationId) {
+      this.requestContext.correlationId = generateCorrelationId()
+    }
+    return this.requestContext.correlationId
+  }
+
+  /**
+   * Clear the request context (call between requests)
+   */
+  clearContext(): void {
+    this.requestContext = {}
+  }
+
+  /**
+   * Format a log message with correlation ID
+   * @param message - The log message
+   * @returns Formatted message with correlation ID
+   */
+  private formatLog(message: string): string {
+    const correlationId = this.getCorrelationId()
+    return `[Storage Service Snapshot] [${correlationId}] ${message}`
   }
 
   /**
@@ -90,6 +141,7 @@ export class StorageServiceSnapshotClient {
   async fetchSnapshot(projectId: string): Promise<SnapshotFetchResult> {
     try {
       const url = `${this.config.controlPlaneUrl}/api/internal/snapshot?project_id=${projectId}`
+      const correlationId = this.getCorrelationId()
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), this.config.requestTimeout)
@@ -98,6 +150,8 @@ export class StorageServiceSnapshotClient {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          // US-007: Propagate correlation ID to control plane
+          [CORRELATION_HEADER]: correlationId,
         },
       })
 
@@ -105,7 +159,7 @@ export class StorageServiceSnapshotClient {
 
       if (!response.ok) {
         if (response.status === 503) {
-          console.error('[Storage Service Snapshot] Control plane unavailable (503)')
+          console.error(this.formatLog('Control plane unavailable (503)'))
           return {
             success: false,
             error: 'Control plane unavailable',
@@ -113,14 +167,14 @@ export class StorageServiceSnapshotClient {
         }
 
         if (response.status === 404) {
-          console.error(`[Storage Service Snapshot] Project not found: ${projectId}`)
+          console.error(this.formatLog(`Project not found: ${projectId}`))
           return {
             success: false,
             error: 'Project not found',
           }
         }
 
-        console.error(`[Storage Service Snapshot] Unexpected response: ${response.status}`)
+        console.error(this.formatLog(`Unexpected response: ${response.status}`))
         return {
           success: false,
           error: `Unexpected response: ${response.status}`,
@@ -130,7 +184,7 @@ export class StorageServiceSnapshotClient {
       const data = await response.json()
 
       if (!data.snapshot) {
-        console.error('[Storage Service Snapshot] No snapshot in response')
+        console.error(this.formatLog('No snapshot in response'))
         return {
           success: false,
           error: 'Invalid response format',
@@ -143,14 +197,14 @@ export class StorageServiceSnapshotClient {
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('[Storage Service Snapshot] Request timeout')
+        console.error(this.formatLog('Request timeout'))
         return {
           success: false,
           error: 'Request timeout',
         }
       }
 
-      console.error('[Storage Service Snapshot] Fetch error:', error)
+      console.error(this.formatLog('Fetch error:'), error)
       return {
         success: false,
         error: 'Failed to fetch snapshot',
@@ -186,7 +240,7 @@ export class StorageServiceSnapshotClient {
     if (cached) {
       if (cached.snapshot.version !== result.snapshot.version) {
         console.log(
-          `[Storage Service Snapshot] Version changed for project ${projectId}: ${cached.snapshot.version} -> ${result.snapshot.version}`
+          this.formatLog(`Version changed for project ${projectId}: ${cached.snapshot.version} -> ${result.snapshot.version}`)
         )
       }
     }
@@ -211,14 +265,14 @@ export class StorageServiceSnapshotClient {
 
     if (!snapshot) {
       // Fail closed - deny if snapshot unavailable
-      console.error(`[Storage Service Snapshot] Snapshot unavailable for project ${projectId}`)
+      console.error(this.formatLog(`Snapshot unavailable for project ${projectId}`))
       return false
     }
 
     const isActive = snapshot.project.status === 'active'
 
     if (!isActive) {
-      console.log(`[Storage Service Snapshot] Project ${projectId} is not active: ${snapshot.project.status}`)
+      console.log(this.formatLog(`Project ${projectId} is not active: ${snapshot.project.status}`))
     }
 
     return isActive

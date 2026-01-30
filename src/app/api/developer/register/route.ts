@@ -11,6 +11,7 @@ import {
   type RateLimitIdentifier,
 } from '@/features/abuse-controls/lib/rate-limiter'
 import { trackAuthSignup } from '@/lib/usage/auth-tracking'
+import { emitEvent, emitPlatformEvent } from '@/features/webhooks'
 
 // Rate limiting configuration for signup
 const SIGNUPS_PER_HOUR_PER_ORG = 3
@@ -148,6 +149,18 @@ export async function POST(req: NextRequest) {
     )
 
     const developer = result.rows[0]
+
+    // US-007: Emit user.signedup event (platform event, no project_id yet)
+    // Fire and forget - don't block the response
+    emitPlatformEvent('user.signedup', {
+      user_id: developer.id,
+      email: developer.email,
+      name: developer.name,
+      organization: developer.organization,
+      created_at: developer.created_at,
+    }).catch(err => {
+      console.error('[Developer Portal] Failed to emit user.signedup event:', err)
+    })
 
     // US-005: Track auth signup (fire and forget)
     // Use developer ID as the project identifier for signup tracking

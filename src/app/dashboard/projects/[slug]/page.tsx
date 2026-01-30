@@ -19,7 +19,7 @@ import {
   Plus,
   Trash2,
   Eye,
-  EyeOff,
+  EyeOff as EyeOffIcon,
   X,
   AlertCircle,
   LucideIcon,
@@ -36,6 +36,8 @@ import {
   Loader2,
   CheckCircle,
   LifeBuoy,
+  Lock,
+  Edit3,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import QuotaWarningBanner from '@/components/QuotaWarningBanner'
@@ -221,6 +223,75 @@ const SCOPE_DESCRIPTIONS: Record<string, string> = {
   'realtime:subscribe': 'Subscribe to real-time updates',
   'realtime:publish': 'Publish real-time messages',
   'graphql:execute': 'Execute GraphQL queries',
+}
+
+/**
+ * MCP token type configuration for US-010: Add MCP Token Indicators in UI
+ */
+interface McpTokenInfo {
+  isMcp: boolean
+  label: string
+  bgColor: string
+  textColor: string
+  icon: LucideIcon
+  showWarning: boolean
+}
+
+function getMcpTokenInfo(keyPrefix: string, keyType: string): McpTokenInfo {
+  // Check if this is an MCP token
+  if (keyType !== 'mcp' || !keyPrefix.startsWith('mcp_')) {
+    return {
+      isMcp: false,
+      label: keyType,
+      bgColor: 'bg-slate-200',
+      textColor: 'text-slate-700',
+      icon: Key,
+      showWarning: false,
+    }
+  }
+
+  // Extract MCP access level from prefix (mcp_ro_, mcp_rw_, mcp_admin_)
+  const match = keyPrefix.match(/^mcp_(ro|rw|admin)_/)
+  const accessLevel = match ? match[1] : 'ro'
+
+  switch (accessLevel) {
+    case 'ro':
+      return {
+        isMcp: true,
+        label: 'MCP Read-Only',
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-700',
+        icon: EyeOffIcon,
+        showWarning: false,
+      }
+    case 'rw':
+      return {
+        isMcp: true,
+        label: 'MCP Read-Write',
+        bgColor: 'bg-amber-100',
+        textColor: 'text-amber-700',
+        icon: Edit3,
+        showWarning: true,
+      }
+    case 'admin':
+      return {
+        isMcp: true,
+        label: 'MCP Admin',
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-700',
+        icon: Lock,
+        showWarning: true,
+      }
+    default:
+      return {
+        isMcp: true,
+        label: 'MCP',
+        bgColor: 'bg-teal-100',
+        textColor: 'text-teal-700',
+        icon: Server,
+        showWarning: false,
+      }
+  }
 }
 
 export default function ProjectDetailPage() {
@@ -1268,9 +1339,23 @@ const client = createClient({
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-medium text-slate-900">{displayKey.name}</span>
-                            <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-xs rounded-full">
-                              {displayKey.key_type}
-                            </span>
+                            {(() => {
+                              const mcpInfo = getMcpTokenInfo(displayKey.key_prefix, displayKey.key_type)
+                              return (
+                                <>
+                                  <span className={`px-2 py-0.5 ${mcpInfo.bgColor} ${mcpInfo.textColor} text-xs rounded-full flex items-center gap-1`}>
+                                    <mcpInfo.icon className="w-3 h-3" />
+                                    {mcpInfo.label}
+                                  </span>
+                                  {mcpInfo.showWarning && (
+                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full flex items-center gap-1" title="This token can modify your data">
+                                      <AlertCircle className="w-3 h-3" />
+                                      Write Access
+                                    </span>
+                                  )}
+                                </>
+                              )
+                            })()}
                             {isNewKey && (
                               <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
                                 New

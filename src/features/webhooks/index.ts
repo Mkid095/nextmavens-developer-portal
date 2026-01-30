@@ -5,6 +5,7 @@
  *
  * US-006: Add Idempotency to Send Webhook
  * US-006: Implement Signature Verification
+ * US-007: Emit Events on Actions
  */
 
 // Export types
