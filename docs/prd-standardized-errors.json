@@ -136,8 +136,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Documentation URLs added to ERROR_METADATA for all error codes in format /docs/errors#{error_code}. Documentation page created at src/app/docs/errors/page.tsx with all 13 error codes documented including PROJECT_SUSPENDED, PROJECT_ARCHIVED, PROJECT_DELETED, RATE_LIMITED, QUOTA_EXCEEDED, KEY_INVALID, SERVICE_DISABLED, PERMISSION_DENIED, VALIDATION_ERROR, INTERNAL_ERROR, AUTHENTICATION_ERROR, NOT_FOUND, CONFLICT. Each error has id anchor for linking. Docs field included in all error responses via PlatformError.toResponse(). Typecheck passes."
     },
     {
       "id": "US-006",
@@ -265,8 +265,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Error documentation page created at src/app/docs/errors/page.tsx. All 13 error codes documented with code, title, HTTP status, retryable flag, description, common causes, and solutions. Page includes error response format documentation. Each error has id anchor for hash linking (#error_code). Page is linked from error responses via docs field. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

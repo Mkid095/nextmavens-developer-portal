@@ -145,7 +145,7 @@ export default function DocsPage() {
           </div>
           <p className="text-xl text-slate-600">
             Complete guide to integrating NextMavens services into your applications.
-            Learn how to use the JavaScript SDK, Database, Authentication, Storage, GraphQL, Backups, Infrastructure, Realtime, and MCP tools.
+            Learn how to use the JavaScript SDK, Database, Authentication, Storage, GraphQL, Backups, Infrastructure, Realtime, Error Codes, and MCP tools.
           </p>
         </div>
 
@@ -162,6 +162,7 @@ export default function DocsPage() {
                 teal: 'bg-teal-100 text-teal-700',
                 slate: 'bg-slate-100 text-slate-700',
                 green: 'bg-green-100 text-green-700',
+                red: 'bg-red-100 text-red-700',
               }[chapter.color]
 
               return (
