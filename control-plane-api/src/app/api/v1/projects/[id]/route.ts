@@ -3,14 +3,7 @@ import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import { updateProjectSchema, type UpdateProjectInput } from '@/lib/validation'
-
-// Helper function for standard error responses
-function errorResponse(code: string, message: string, status: number) {
-  return NextResponse.json(
-    { success: false, error: { code, message } },
-    { status }
-  )
-}
+import { toErrorNextResponse, ErrorCode, isPlatformError } from '@/lib/errors'
 
 // Helper function to validate ownership
 async function validateProjectOwnership(
@@ -48,9 +41,9 @@ export async function GET(
 
     if (!valid) {
       if (error === 'NOT_FOUND') {
-        return errorResponse('NOT_FOUND', 'Project not found', 404)
+        return toErrorNextResponse({ code: ErrorCode.NOT_FOUND, message: 'Project not found' })
       }
-      return errorResponse('FORBIDDEN', 'Access denied', 403)
+      return toErrorNextResponse({ code: ErrorCode.PERMISSION_DENIED, message: 'Access denied' }, projectId)
     }
 
     const pool = getPool()
@@ -83,14 +76,11 @@ export async function GET(
       },
     })
   } catch (error) {
-    if (error instanceof Error && error.message === 'No token provided') {
-      return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
-    }
-    if (error instanceof Error && error.message === 'Invalid token') {
-      return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
+    if (isPlatformError(error)) {
+      return error.toNextResponse()
     }
     console.error('Error getting project:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to get project', 500)
+    return toErrorNextResponse(error, params.id)
   }
 }
 

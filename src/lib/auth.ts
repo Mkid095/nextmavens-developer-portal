@@ -112,11 +112,12 @@ export function hashApiKey(key: string): string {
 /**
  * US-001: Authenticate a request and return the JWT payload.
  * Verifies that project_id claim exists in the token.
+ * @throws PlatformError with KEY_INVALID code if authentication fails
  */
 export async function authenticateRequest(req: NextRequest): Promise<JwtPayload> {
   const authHeader = req.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new Error('No token provided')
+    throw createError(ErrorCode.AUTHENTICATION_ERROR, 'No token provided')
   }
   const token = authHeader.substring(7)
   return verifyAccessToken(token)
@@ -145,7 +146,7 @@ export interface ApiKeyAuth {
  *
  * @param apiKey - The raw API key from the request (e.g., from x-api-key header)
  * @returns The API key details with developer_id
- * @throws Error if the key is invalid, expired, or revoked
+ * @throws PlatformError with KEY_INVALID code if the key is invalid, expired, or revoked
  */
 export async function authenticateApiKey(apiKey: string): Promise<ApiKeyAuth> {
   const pool = getPool()
@@ -162,19 +163,19 @@ export async function authenticateApiKey(apiKey: string): Promise<ApiKeyAuth> {
   )
 
   if (result.rows.length === 0) {
-    throw new Error('Invalid API key')
+    throw createError(ErrorCode.KEY_INVALID, 'Invalid API key')
   }
 
   const key = result.rows[0]
 
   // Check if key is revoked
   if (key.status === 'revoked') {
-    throw new Error('API key has been revoked')
+    throw createError(ErrorCode.KEY_INVALID, 'API key has been revoked')
   }
 
   // Check if key is expired
   if (key.expires_at && new Date(key.expires_at) < new Date()) {
-    throw new Error('API key has expired')
+    throw createError(ErrorCode.KEY_INVALID, 'API key has expired')
   }
 
   // Update last_used and usage_count asynchronously (fire and forget)
