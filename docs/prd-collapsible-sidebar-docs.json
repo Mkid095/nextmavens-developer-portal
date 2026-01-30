@@ -90,8 +90,8 @@
         "step5": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added nested children to all sidebar sections (Getting Started, Database, Authentication, Realtime, Storage, GraphQL, SDK, MCP Integration, Backup Strategy, Infrastructure). Sections are now collapsible with expand/collapse chevron buttons. Expanded sections state persists in localStorage. Typecheck passes."
     },
     {
       "id": "US-005",

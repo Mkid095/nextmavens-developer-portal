@@ -53,8 +53,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration 008_create_usage_snapshots_table.sql created with usage_snapshots table in control_plane schema. All required columns: id (UUID PK), project_id (UUID FK to projects.id), service (VARCHAR 50), metric_type (VARCHAR 50 with CHECK constraint for db_query/storage_upload/realtime_message/function_call/auth_signup), amount (NUMERIC), recorded_at, created_at. Indexes on (project_id, service, recorded_at DESC) for efficient aggregation, plus individual indexes on project_id, service, metric_type, and recorded_at. Migration record inserted into schema_migrations. Typecheck passes."
     },
     {
       "id": "US-003",

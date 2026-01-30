@@ -171,8 +171,21 @@ interface DocsSidebarProps {
 
 export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, onMobileMenuClose }: DocsSidebarProps) {
   const pathname = usePathname()
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['getting-started', 'database']))
   const activeItemRef = useRef<HTMLAnchorElement>(null)
+
+  // Load expanded sections from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('docs-sidebar-expanded')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        setExpandedSections(new Set(parsed))
+      } catch (e) {
+        // Use default if parsing fails
+      }
+    }
+  }, [])
 
   // Scroll active item into view when pathname changes
   useEffect(() => {
@@ -189,6 +202,8 @@ export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, o
       } else {
         newSet.add(sectionId)
       }
+      // Persist to localStorage
+      localStorage.setItem('docs-sidebar-expanded', JSON.stringify(Array.from(newSet)))
       return newSet
     })
   }
