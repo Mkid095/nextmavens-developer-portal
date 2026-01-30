@@ -166,8 +166,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented log download with JSON and text format options. Added format selector dropdown in the logs page UI. Download API endpoint at /api/logs/download supports format parameter (json/text). All filters (service, level, search, date range) are respected and sent to the server. Date range is validated client-side (max 7 days) before download. Server-side also enforces 7-day limit. Typecheck passes."
     },
     {
       "id": "US-007",
