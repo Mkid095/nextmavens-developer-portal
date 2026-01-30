@@ -81,6 +81,7 @@ export default function DashboardPage() {
   const [apiKeyName, setApiKeyName] = useState('')
   const [projectName, setProjectName] = useState('')
   const [keyEnvironment, setKeyEnvironment] = useState<'live' | 'test' | 'dev'>('live')
+  const [projectEnvironment, setProjectEnvironment] = useState<'prod' | 'dev' | 'staging'>('prod')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -264,6 +265,7 @@ export default function DashboardPage() {
 
   const openCreateProjectModal = () => {
     setProjectName('')
+    setProjectEnvironment('prod')
     setError('')
     setShowProjectModal(true)
   }
@@ -271,6 +273,7 @@ export default function DashboardPage() {
   const closeCreateProjectModal = () => {
     setShowProjectModal(false)
     setProjectName('')
+    setProjectEnvironment('prod')
     setError('')
   }
 
@@ -293,7 +296,10 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ project_name: projectName.trim() }),
+        body: JSON.stringify({
+          project_name: projectName.trim(),
+          environment: projectEnvironment,
+        }),
       })
 
       const data = await res.json()
@@ -572,6 +578,26 @@ export default function DashboardPage() {
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
                     autoFocus
                   />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Environment
+                  </label>
+                  <select
+                    value={projectEnvironment}
+                    onChange={(e) => setProjectEnvironment(e.target.value as 'prod' | 'dev' | 'staging')}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent bg-white"
+                  >
+                    <option value="prod">Production</option>
+                    <option value="dev">Development</option>
+                    <option value="staging">Staging</option>
+                  </select>
+                  <p className="text-xs text-slate-500 mt-2">
+                    <strong>Production:</strong> Stable environment with standard rate limits and auto-suspend enabled.<br />
+                    <strong>Development:</strong> For experimentation with relaxed limits (10x), no auto-suspend, and infinite webhook retries.<br />
+                    <strong>Staging:</strong> Pre-production testing with moderate limits (5x) and 5 webhook retries.
+                  </p>
                 </div>
 
                 {error && (

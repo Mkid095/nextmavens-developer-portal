@@ -192,7 +192,7 @@ async function performWebhookDelivery(
       }
     } else {
       // Failed delivery - increment consecutive failures
-      await incrementWebhookFailures(webhook.id, options.maxRetries)
+      await incrementWebhookFailures(webhook.id, webhook.project_id, options.maxRetries)
 
       return {
         status: response.status,
@@ -319,7 +319,7 @@ async function resetWebhookFailures(webhook_id: string): Promise<void> {
  * @param project_id - Project ID to determine environment
  * @param maxRetries - Maximum retry attempts before auto-disable (null = infinite)
  */
-async function incrementWebhook远了Losses(
+async function incrementWebhookFailures(
   webhook_id: string,
   project_id: string,
   maxRetries: number | null

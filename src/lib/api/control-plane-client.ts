@@ -27,6 +27,7 @@ export interface Project {
 
 export interface CreateProjectRequest {
   project_name: string
+  environment?: 'prod' | 'dev' | 'staging'
   webhook_url?: string
   allowed_origins?: string[]
 }

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const developer = await authenticateRequest(req)
     const clientIP = extractClientIP(req)
     const body = await req.json()
-    const { project_name, webhook_url, allowed_origins } = body
+    const { project_name, environment, webhook_url, allowed_origins } = body
 
     // Validation
     if (!project_name || project_name.length < 2 || project_name.length > 100) {
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
         // Call Control Plane API to create project
         try {
           const response = await controlPlane.createProject(
-            { project_name, webhook_url, allowed_origins },
+            { project_name, environment, webhook_url, allowed_origins },
             req
           )
 
