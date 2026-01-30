@@ -214,8 +214,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: The request_id column already existed in control_plane.audit_logs table (from migration 016_create_audit_logs_table.sql). Updated MCP audit logger (src/lib/mcp-audit-logger.ts) to capture request_id from x-request-id header. Added requestId field to McpAuditLogEntry interface. Updated logMcpAction() to include request_id in INSERT statement. Updated logMcpAuthFailure() to extract and log request_id. Updated withMcpAuditLogging() to extract request_id via extractCorrelationId() and pass to logMcpAction(). Updated logMcpScopeCheck() to extract and log request_id. Created new unified audit logger at src/lib/audit-logger.ts with proper schema support and request_id tracking. The audit logs API (control-plane-api/src/app/api/v1/audit/route.ts) already supported filtering by request_id (line 110-113) and returning request_id in response (line 178). Typecheck passes."
     },
     {
       "id": "US-009",

@@ -4,6 +4,16 @@
  */
 
 import type { DeletionPreviewResponse } from '@/lib/types/deletion-preview.types'
+import type {
+  Webhook,
+  CreateWebhookRequest,
+  CreateWebhookResponse,
+  UpdateWebhookRequest,
+  ListWebhooksQuery,
+  ListWebhooksResponse,
+  TestWebhookRequest,
+  TestWebhookResponse,
+} from '@/lib/types/webhook.types'
 
 // Type definitions for Control Plane API requests/responses
 
@@ -435,6 +445,86 @@ export class ControlPlaneClient {
   ): Promise<{ success: boolean; message: string }> {
     return this.request<{ success: boolean; message: string }>(`/api/v1/orgs/${orgId}/members/${userId}`, {
       method: 'DELETE',
+    }, req)
+  }
+
+  /**
+   * List webhooks for a project or all webhooks for the authenticated user
+   */
+  async listWebhooks(
+    query?: ListWebhooksQuery,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<ListWebhooksResponse> {
+    const params = new URLSearchParams()
+    if (query?.project_id) params.append('project_id', query.project_id)
+    if (query?.event) params.append('event', query.event)
+    if (query?.enabled !== undefined) params.append('enabled', query.enabled.toString())
+    if (query?.limit) params.append('limit', query.limit.toString())
+    if (query?.offset) params.append('offset', query.offset.toString())
+    const queryString = params.toString()
+    const endpoint = `/api/v1/webhooks${queryString ? `?${queryString}` : ''}`
+    return this.request<ListWebhooksResponse>(endpoint, {}, req)
+  }
+
+  /**
+   * Get a single webhook by ID
+   */
+  async getWebhook(
+    webhookId: string,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: Webhook }> {
+    return this.request<{ success: boolean; data: Webhook }>(`/api/v1/webhooks/${webhookId}`, {}, req)
+  }
+
+  /**
+   * Create a new webhook
+   */
+  async createWebhook(
+    request: CreateWebhookRequest,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: CreateWebhookResponse }> {
+    return this.request<{ success: boolean; data: CreateWebhookResponse }>('/api/v1/webhooks', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }, req)
+  }
+
+  /**
+   * Update a webhook
+   */
+  async updateWebhook(
+    webhookId: string,
+    request: UpdateWebhookRequest,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: Webhook }> {
+    return this.request<{ success: boolean; data: Webhook }>(`/api/v1/webhooks/${webhookId}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    }, req)
+  }
+
+  /**
+   * Delete a webhook
+   */
+  async deleteWebhook(
+    webhookId: string,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/api/v1/webhooks/${webhookId}`, {
+      method: 'DELETE',
+    }, req)
+  }
+
+  /**
+   * Test a webhook by sending a test event
+   */
+  async testWebhook(
+    request: TestWebhookRequest,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<TestWebhookResponse> {
+    return this.request<TestWebhookResponse>('/api/v1/webhooks/test', {
+      method: 'POST',
+      body: JSON.stringify(request),
     }, req)
   }
 }

@@ -47,6 +47,7 @@ import DeletionPreviewModal from '@/components/DeletionPreviewModal'
 import CodeBlockEnhancer from '@/components/docs/CodeBlockEnhancer'
 import SupportRequestModal from '@/components/SupportRequestModal'
 import SupportRequestDetailModal from '@/components/SupportRequestDetailModal'
+import { McpUsageAnalytics } from '@/components/McpUsageAnalytics'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Project {
