@@ -194,8 +194,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created POST /api/projects/[projectId]/archive endpoint with state transition validation (ACTIVE or SUSPENDED → ARCHIVED), authentication, ownership check, audit logging, and correlation ID support. Sets status to ARCHIVED, disables services, keys stop working (return PROJECT_ARCHIVED error), and data remains readable (readonly access). Returns archival_details including keys_disabled, services_disabled, data_access. Typecheck passes."
     },
     {
       "id": "US-008",

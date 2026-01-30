@@ -35,6 +35,7 @@ import {
   ToggleRight,
   Loader2,
   CheckCircle,
+  LifeBuoy,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import QuotaWarningBanner from '@/components/QuotaWarningBanner'
@@ -42,6 +43,7 @@ import ServiceTab from '@/components/ServiceTab'
 import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKeyModal'
 import DeletionPreviewModal from '@/components/DeletionPreviewModal'
 import CodeBlockEnhancer from '@/components/docs/CodeBlockEnhancer'
+import SupportRequestModal from '@/components/SupportRequestModal'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Project {
@@ -254,6 +256,8 @@ export default function ProjectDetailPage() {
   // US-010: Deletion preview modal
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  // US-004: Support request modal
+  const [showSupportModal, setShowSupportModal] = useState(false)
   // US-011: Feature Flags state
   const [featureFlags, setFeatureFlags] = useState<any[]>([])
   const [flagsLoading, setFlagsLoading] = useState(false)
@@ -795,6 +799,14 @@ export default function ProjectDetailPage() {
                 <p className="text-xs text-slate-500">Created {new Date(project.created_at).toLocaleDateString()}</p>
               </div>
             </div>
+            <button
+              onClick={() => setShowSupportModal(true)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              title="Request Support"
+            >
+              <LifeBuoy className="w-4 h-4" />
+              <span className="text-sm font-medium">Support</span>
+            </button>
           </div>
         </div>
       </nav>
@@ -2248,6 +2260,16 @@ const client = createClient({
           onClose={() => setShowDeleteModal(false)}
           projectId={project.id}
           onConfirmDelete={handleDeleteProject}
+        />
+      )}
+
+      {/* US-004: Support Request Modal */}
+      {project && (
+        <SupportRequestModal
+          isOpen={showSupportModal}
+          onClose={() => setShowSupportModal(false)}
+          projectId={project.id}
+          projectName={project.name}
         />
       )}
     </div>
