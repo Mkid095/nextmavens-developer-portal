@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/middleware'
+import { requirePermission } from '@/lib/middleware'
 import { getControlPlaneClient } from '@/lib/api/control-plane-client'
 import {
   getIdempotencyKey,
   getIdempotencyKeySuffix,
-  withIdempotencyWithKey,
+  PiaWithIdempotencyWithKey,
   type IdempotencyResponse,
 } from '@/lib/idempotency'
+import { Permission } from '@/lib/types/rbac.types'
+import { User } from '@/lib/rbac'
 
+/**
+ * GET /api/apibcd-keys
+ * List API keys (authenticated users can list their own keys)
+ */
 export async function GET(req: NextRequest) {
   try {
     await authenticateRequest(req)
