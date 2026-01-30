@@ -19,6 +19,8 @@ import {
   Info,
   Calendar,
   ChevronDown as ChevronDownIcon,
+  FileJson,
+  FileCode,
 } from 'lucide-react'
 
 /**
@@ -66,6 +68,7 @@ interface LogEntry {
 type ServiceFilter = 'all' | 'db' | 'auth' | 'realtime' | 'storage' | 'graphql'
 type LevelFilter = 'all' | 'info' | 'warn' | 'error'
 type DateRangeFilter = '1h' | '24h' | '7d' | '30d' | 'custom'
+type DownloadFormat = 'json' | 'text'
 
 const serviceOptions: { value: ServiceFilter; label: string }[] = [
   { value: 'all', label: 'All Services' },
@@ -115,6 +118,8 @@ export default function LogsPage() {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadSuccess, setDownloadSuccess] = useState(false)
+  const [downloadFormat, setDownloadFormat] = useState<'json' | 'text'>('json')
+  const [showDownloadFormatDropdown, setShowDownloadFormatDropdown] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [displayedLogs, setDisplayedLogs] = useState<LogEntry[]>([])
   const [pageSize] = useState(100)
@@ -379,27 +384,84 @@ export default function LogsPage() {
     }
   }, [hasMore, loadingMore, loadMore])
 
-  const handleDownload = () => {
-    setDownloading(true)
+  const handleDownload = async () => {
+    if (!project) return
 
-    // Simulate download delay
-    setTimeout(() => {
-      const dataToDownload = filteredLogs
-      const jsonContent = JSON.stringify(dataToDownload, null, 2)
-      const blob = new Blob([jsonContent], { type: 'application/json' })
+    setDownloading(true)
+    setDownloadSuccess(false)
+
+    try {
+      const token = localStorage.getItem('accessToken')
+
+      // Build query parameters for server-side download
+      const urlParams = new URLSearchParams()
+      urlParams.append('project_id', project.id)
+      urlParams.append('format', downloadFormat)
+
+      // Add service filter
+      if (serviceFilter !== 'all') {
+        urlParams.append('service', serviceFilter)
+      }
+
+      // Add level filter
+      if (levelFilter !== 'all') {
+        urlParams.append('level', levelFilter)
+      }
+
+      // Add search query
+      if (searchQuery) {
+        urlParams.append('search', searchQuery)
+      }
+
+      // Add date range filter with 7-day max validation
+      const { startDate, endDate } = getDateRange()
+      urlParams.append('start_date', startDate)
+      urlParams.append('end_date', endDate)
+
+      // Validate date range doesn't exceed 7 days
+      const start = new Date(startDate)
+      const end = new Date(endDate)
+      const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+
+      if (daysDiff > 7) {
+        alert('Date range for download cannot exceed 7 days. Please adjust your filters.')
+        setDownloading(false)
+        return
+      }
+
+      // Fetch logs from backend
+      const res = await fetch(`/api/logs/download?${urlParams.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Download failed' }))
+        throw new Error(errorData.error || 'Failed to download logs')
+      }
+
+      // Get the blob from response
+      const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `logs-${project?.slug}-${new Date().toISOString().split('T')[0]}.json`
+
+      // Set filename based on format
+      const extension = downloadFormat === 'json' ? 'json' : 'txt'
+      link.download = `${project.slug}-logs-${new Date().toISOString().split('T')[0]}.${extension}`
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      setDownloading(false)
       setDownloadSuccess(true)
       setTimeout(() => setDownloadSuccess(false), 2000)
-    }, 500)
+    } catch (error) {
+      console.error('Failed to download logs:', error)
+      alert(error instanceof Error ? error.message : 'Failed to download logs. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
   }
 
   const toggleLogExpand = (logId: string) => {
@@ -587,6 +649,56 @@ export default function LogsPage() {
                       {option.label}
                     </button>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* Download Format Selector */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowDownloadFormatDropdown(!showDownloadFormatDropdown)
+                  setShowServiceDropdown(false)
+                  setShowLevelDropdown(false)
+                  setShowDateRangeDropdown(false)
+                }}
+                className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition min-w-[140px] justify-between"
+              >
+                {downloadFormat === 'json' ? (
+                  <FileJson className="w-4 h-4 text-slate-500" />
+                ) : (
+                  <FileCode className="w-4 h-4 text-slate-500" />
+                )}
+                <span className="text-sm uppercase">{downloadFormat}</span>
+                <ChevronDown className="w-4 h-4 text-slate-400" />
+              </button>
+
+              {showDownloadFormatDropdown && (
+                <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-20 min-w-[140px]">
+                  <button
+                    onClick={() => {
+                      setDownloadFormat('json')
+                      setShowDownloadFormatDropdown(false)
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition flex items-center gap-2 ${
+                      downloadFormat === 'json' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700'
+                    }`}
+                  >
+                    <FileJson className="w-4 h-4" />
+                    JSON
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDownloadFormat('text')
+                      setShowDownloadFormatDropdown(false)
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-50 transition flex items-center gap-2 ${
+                      downloadFormat === 'text' ? 'bg-emerald-50 text-emerald-700' : 'text-slate-700'
+                    }`}
+                  >
+                    <FileCode className="w-4 h-4" />
+                    Text
+                  </button>
                 </div>
               )}
             </div>

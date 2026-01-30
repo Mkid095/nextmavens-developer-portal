@@ -135,8 +135,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: src/app/api/usage/[projectId]/route.ts (430+ lines) with comprehensive usage aggregation API. GET endpoint accepts query params: service (db, realtime, storage, auth, function), metric_type, start_date, end_date, aggregation (day/week/month), days. Returns aggregated usage data including: total_by_service with metric breakdown, total_by_metric, time_series data for the period, and quota information with usage_percentage vs quota. Uses control_plane.usage_metrics and control_plane.quotas tables. Supports filtering and flexible date ranges. Typecheck passes."
     },
     {
       "id": "US-005",

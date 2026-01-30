@@ -122,7 +122,7 @@ interface CreatedKeyDisplay {
   secretKey?: string
 }
 
-export default function CreateApiKeyModal({conutlal isOpen, onClose, onCreateKey, projectId }: CreateApiKeyModalProps) {
+export default function CreateApiKeyModal({ isOpen, onClose, onCreateKey, projectId }: CreateApiKeyModalProps) {
   const [step, setStep] = useState<'type' | 'config' | 'confirm-write' | 'success'>('type')
   const [selectedKeyType, setSelectedKeyType] = useState<KeyTypeOption | null>(null)
   const [keyName, setKeyName] = useState('')
@@ -145,6 +145,7 @@ export default function CreateApiKeyModal({conutlal isOpen, onClose, onCreateKey
       setSelectedScopes([])
       setMcpAccessLevel('ro')
       setError('')
+      setWriteWarningConfirmed(false)
       setCreatedKey(null)
     }
   }, [isOpen])

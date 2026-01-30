@@ -1,8 +1,10 @@
 /**
  * GET /api/logs/download
  *
- * Download logs for a project as a JSON file.
+ * Download logs for a project as JSON or text file.
  * Respects current filters and limits date range to 7 days max.
+ *
+ * US-006: Implement Log Download
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -19,8 +21,27 @@ interface LogEntry {
   request_id?: string
 }
 
+type DownloadFormat = 'json' | 'text'
+
 const MAX_DATE_RANGE_DAYS = 7
 const MAX_DOWNLOAD_LOGS = 10000
+
+/**
+ * Format a log entry as text
+ */
+function formatLogAsText(log: LogEntry): string {
+  const metadataStr = log.metadata ? JSON.stringify(log.metadata, null, 2) : ''
+  return `[${log.timestamp}] [${log.service.toUpperCase()}] [${log.level.toUpperCase()}]${log.request_id ? ` [${log.request_id}]` : ''}
+${log.message}${metadataStr ? '\nMetadata: ' + metadataStr : ''}
+---`
+}
+
+/**
+ * Convert logs to text format
+ */
+function logsToText(logs: LogEntry[]): string {
+  return logs.map(formatLogAsText).join('\n')
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +49,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
 
     const projectId = searchParams.get('project_id')
+    const format = (searchParams.get('format') || 'json') as DownloadFormat
     const service = searchParams.get('service')
     const level = searchParams.get('level')
     const search = searchParams.get('search')
@@ -36,6 +58,10 @@ export async function GET(request: NextRequest) {
 
     if (!projectId) {
       return NextResponse.json({ error: 'project_id is required' }, { status: 400 })
+    }
+
+    if (format !== 'json' && format !== 'text') {
+      return NextResponse.json({ error: 'format must be "json" or "text"' }, { status: 400 })
     }
 
     // Verify developer owns this project
@@ -120,17 +146,28 @@ export async function GET(request: NextRequest) {
       request_id: row.request_id,
     }))
 
-    // Create JSON file
-    const jsonContent = JSON.stringify(logs, null, 2)
-    const buffer = Buffer.from(jsonContent, 'utf-8')
-
-    // Set filename
+    // Set filename based on format
     const projectSlug = projectCheck.rows[0].slug
-    const filename = `${projectSlug}-logs-${new Date().toISOString().split('T')[0]}.json`
+    const dateStr = new Date().toISOString().split('T')[0]
+    const filename = `${projectSlug}-logs-${dateStr}.${format}`
+
+    // Generate content based on format
+    let content: string
+    let contentType: string
+
+    if (format === 'json') {
+      content = JSON.stringify(logs, null, 2)
+      contentType = 'application/json'
+    } else {
+      content = logsToText(logs)
+      contentType = 'text/plain'
+    }
+
+    const buffer = Buffer.from(content, 'utf-8')
 
     return new NextResponse(buffer, {
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': contentType,
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Length': buffer.length.toString(),
       },
