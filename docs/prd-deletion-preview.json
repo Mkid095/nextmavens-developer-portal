@@ -294,8 +294,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Background job (grace-period-job.ts) with runGracePeriodJob() function finds projects where grace_period_ends_at < NOW(). The hardDeleteProject() function drops tenant schema (DROP SCHEMA IF EXISTS tenant_{slug} CASCADE), deletes all related records (api_keys, webhooks, edge_functions, storage_buckets, secrets), and sets deleted_at = NOW() on project row. API endpoint at POST /api/admin/grace-period/run for triggering job via cron. Includes 7-day warning threshold for notifications. Transaction-based with proper rollback on error. Typecheck passes."
     },
     {
       "id": "US-012",

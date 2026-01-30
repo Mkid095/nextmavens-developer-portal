@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
+import { addApiVersionHeaders } from '@/lib/api-versioning'
 
 export async function GET(req: NextRequest) {
   const startTime = Date.now()
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   const overallStatus = dbStatus === 'healthy' ? 'healthy' : 'unhealthy'
   const statusCode = overallStatus === 'healthy' ? 200 : 503
 
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       status: overallStatus,
       version: '1.0.0',
@@ -38,4 +39,7 @@ export async function GET(req: NextRequest) {
     },
     { status: statusCode }
   )
+
+  // Add API versioning headers
+  return addApiVersionHeaders(response)
 }
