@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Lightbulb, Database, CheckCircle, AlertCircle, Code, Zap, Shield, GitBranch, Radio, Stream, HardDrive, FolderOpen, Cloud, ImageIcon } from 'lucide-react'
+import { ArrowLeft, Lightbulb, Database, CheckCircle, AlertCircle, Code, Zap, Shield, GitBranch, Radio, Stream, HardDrive, FolderOpen, Cloud, ImageIcon, Key, Lock, RefreshCw, Server } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const principles = [
@@ -31,7 +31,7 @@ const principles = [
     title: 'JWT-First Auth',
     description: 'Stateless token-based authentication',
     color: 'purple',
-    comingSoon: true,
+    comingSoon: false,
   },
   {
     icon: GitBranch,
@@ -334,6 +334,132 @@ const storageComparison = [
     telegram: 'Raw storage, backups, archives',
     cloudinary: 'Web assets, media delivery',
     telegramAdvantage: null,
+  },
+]
+
+const jwtBenefits = [
+  {
+    title: 'Stateless Architecture',
+    description: 'No server-side session storage. Each JWT contains all required information. Validated cryptographically, trusted inherently.',
+    icon: Lock,
+    examples: [
+      'No session database required',
+      'Scales horizontally without session sync',
+      'Server can be truly stateless',
+      'Reduced infrastructure complexity',
+    ],
+  },
+  {
+    title: 'Token-Based Auth Flow',
+    description: 'Clients receive JWTs after authentication. Include tokens in request headers. Stateless validation on every request.',
+    icon: Key,
+    examples: [
+      'Single token contains all claims',
+      'Authorization: Bearer <token> header',
+      'No cookie overhead or CSRF concerns',
+      'Works across domains and services',
+    ],
+  },
+  {
+    title: 'Horizontal Scalability',
+    description: 'Any server instance can validate any JWT. No sticky sessions needed. Load balance freely across your infrastructure.',
+    icon: RefreshCw,
+    examples: [
+      'No session replication between servers',
+      'Deploy without worrying about session affinity',
+      'Serverless-friendly',
+      'Simple auto-scaling',
+    ],
+  },
+  {
+    title: 'Cross-Service Compatibility',
+    description: 'Same JWT works across multiple services. API, web, mobile—all share the same auth mechanism. Single source of truth.',
+    icon: Server,
+    examples: [
+      'One token for web, mobile, and API',
+      'Microservices share validation logic',
+      'Standard OAuth 2.0 / OpenID Connect',
+      'Easy third-party integrations',
+    ],
+  },
+]
+
+const jwtComparison = [
+  {
+    aspect: 'Server State',
+    jwt: 'Stateless - no storage needed',
+    session: 'Stateful - requires session store',
+    jwtAdvantage: true,
+  },
+  {
+    aspect: 'Scalability',
+    jwt: 'Horizontal - any server handles requests',
+    session: 'Limited - requires sticky sessions or replication',
+    jwtAdvantage: true,
+  },
+  {
+    aspect: 'Performance',
+    jwt: 'Fast - crypto validation only',
+    session: 'Slower - database lookup per request',
+    jwtAdvantage: true,
+  },
+  {
+    aspect: 'Revocation',
+    jwt: 'Complex - requires token blocklist or short expiry',
+    session: 'Simple - delete from session store',
+    jwtAdvantage: false,
+  },
+  {
+    aspect: 'Token Size',
+    jwt: 'Larger - contains all claims',
+    session: 'Smaller - just a session ID',
+    jwtAdvantage: false,
+  },
+  {
+    aspect: 'Cross-Domain',
+    jwt: 'Easy - Authorization header',
+    session: 'Complex - CORS and cookie restrictions',
+    jwtAdvantage: true,
+  },
+]
+
+const authFlowSteps = [
+  {
+    step: 1,
+    title: 'Authenticate',
+    description: 'User submits credentials (email/password, OAuth, etc.) to the authentication endpoint.',
+    code: `POST /api/auth/signin
+{
+  "email": "user@example.com",
+  "password": "secure-password"
+}`,
+  },
+  {
+    step: 2,
+    title: 'Receive JWT',
+    description: 'Server validates credentials and returns a signed JWT containing user claims and metadata.',
+    code: `{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "usr_123",
+    "email": "user@example.com"
+  }
+}`,
+  },
+  {
+    step: 3,
+    title: 'Include in Requests',
+    description: 'Client includes the JWT in the Authorization header for subsequent requests.',
+    code: `GET /api/projects
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`,
+  },
+  {
+    step: 4,
+    title: 'Validate & Process',
+    description: 'Server validates JWT signature and claims. No database lookup needed for authentication.',
+    code: `// Verify signature and extract claims
+const claims = await verifyJWT(token)
+// Claims: { userId: "usr_123", email: "...", exp: ... }`,
   },
 ]
 
@@ -875,6 +1001,197 @@ export default function PlatformPhilosophyPage() {
                   className="inline-flex items-center gap-2 text-cyan-700 font-medium hover:text-cyan-800"
                 >
                   Explore Storage Documentation
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-purple-100 rounded-xl">
+              <Shield className="w-6 h-6 text-purple-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">JWT-First Authentication</h2>
+              <p className="text-slate-600">Why stateless token-based auth is the modern standard</p>
+            </div>
+          </div>
+
+          <div className="space-y-6 mb-12">
+            {jwtBenefits.map((benefit, index) => {
+              const Icon = benefit.icon
+              return (
+                <motion.div
+                  key={benefit.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-xl p-8 border border-slate-200"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Icon className="w-5 h-5 text-purple-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-900 mb-2">{benefit.title}</h3>
+                      <p className="text-slate-600 leading-relaxed">{benefit.description}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    {benefit.examples.map((example) => (
+                      <div key={example} className="flex items-center gap-2 text-sm text-slate-600">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>{example}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">JWT vs Session-Based Authentication</h3>
+            <p className="text-slate-600 mb-8">
+              Understanding the trade-offs between JWT tokens and traditional sessions helps you choose the right
+              authentication strategy for your application.
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900">Aspect</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-purple-700">JWT (Stateless)</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Sessions (Stateful)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {jwtComparison.map((row, i) => (
+                    <tr key={i} className="border-b border-slate-100">
+                      <td className="py-3 px-4 text-sm text-slate-700 font-medium">{row.aspect}</td>
+                      <td className={`py-3 px-4 text-sm ${row.jwtAdvantage === true ? 'text-emerald-700 font-semibold' : 'text-slate-600'}`}>
+                        {row.jwt}
+                      </td>
+                      <td className={`py-3 px-4 text-sm ${row.jwtAdvantage === false ? 'text-emerald-700 font-semibold' : 'text-slate-600'}`}>
+                        {row.session}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Token-Based Authentication Flow</h3>
+            <p className="text-slate-600 mb-8">
+              JWT authentication follows a simple, stateless flow. The token contains all necessary information,
+              eliminating the need for server-side session storage.
+            </p>
+
+            <div className="space-y-6">
+              {authFlowSteps.map((step) => (
+                <motion.div
+                  key={step.step}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: step.step * 0.1 }}
+                  className="bg-slate-50 rounded-xl p-6 border border-slate-200"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-semibold text-sm">
+                      {step.step}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-slate-900 mb-1">{step.title}</h4>
+                      <p className="text-sm text-slate-600 mb-3">{step.description}</p>
+                      <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                        <pre className="text-sm text-slate-300">
+                          <code>{step.code}</code>
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Why JWT-First Wins</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Zap className="w-5 h-5 text-purple-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Scales Horizontally</h4>
+                  <p className="text-slate-600">
+                    No session state to synchronize. Add more servers, load balance freely, and scale without
+                    worrying about where a user's session lives.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Key className="w-5 h-5 text-blue-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Simpler Infrastructure</h4>
+                  <p className="text-slate-600">
+                    No Redis, no Memcached, no session database. Authentication becomes a cryptographic verification
+                    problem, not a storage problem.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <Server className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Microservices Ready</h4>
+                  <p className="text-slate-600">
+                    Any service can validate the JWT without contacting a central auth service. Enables true
+                    service independence and reduces latency.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Lock className="w-5 h-5 text-orange-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">No CSRF Vulnerabilities</h4>
+                  <p className="text-slate-600">
+                    JWTs are typically stored in memory or localStorage and sent via Authorization headers.
+                    No cookies means no CSRF attack surface.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-50 rounded-xl p-8 border border-purple-200 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-purple-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-purple-700" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">The Bottom Line</h4>
+                <p className="text-slate-700 leading-relaxed mb-4">
+                  JWT-first authentication eliminates session state, simplifies infrastructure, and enables
+                  horizontal scaling. While session-based auth has its place (revocation requirements, very
+                  large tokens), JWT is the right choice for modern, stateless, cloud-native applications.
+                  Trade-offs exist, but for most applications the benefits far outweigh the complexity.
+                </p>
+                <Link
+                  href="/docs/auth"
+                  className="inline-flex items-center gap-2 text-purple-700 font-medium hover:text-purple-800"
+                >
+                  Explore Authentication Documentation
                   <ArrowLeft className="w-4 h-4 rotate-180" />
                 </Link>
               </div>
