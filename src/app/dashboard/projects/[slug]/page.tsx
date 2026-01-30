@@ -23,6 +23,8 @@ import {
   X,
   AlertCircle,
   LucideIcon,
+  RefreshCw,
+  ShieldAlert,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 
@@ -41,6 +43,10 @@ interface ApiKey {
   key_prefix: string
   public_key: string
   created_at: string
+  status?: string
+  expires_at?: string
+  last_used?: string
+  usage_count?: number
 }
 
 interface NewKeyResponse {
@@ -116,6 +122,12 @@ export default function ProjectDetailPage() {
   const [newKeyEnvironment, setNewKeyEnvironment] = useState<'live' | 'test' | 'dev'>('live')
   const [keySubmitting, setKeySubmitting] = useState(false)
   const [keyError, setKeyError] = useState('')
+  // US-008, US-009, US-010: Rotation and revocation modals
+  const [showRotateModal, setShowRotateModal] = useState(false)
+  const [showRevokeModal, setShowRevokeModal] = useState(false)
+  const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null)
+  const [rotateSubmitting, setRotateSubmitting] = useState(false)
+  const [revokeSubmitting, setRevokeSubmitting] = useState(false)
 
   useEffect(() => {
     if (project) {
@@ -249,6 +261,96 @@ export default function ProjectDetailPage() {
     navigator.clipboard.writeText(text)
     setCopied(id)
     setTimeout(() => setCopied(null), 2000)
+  }
+
+  // US-008: Open rotation warning modal
+  const openRotateModal = (keyId: string) => {
+    setSelectedKeyId(keyId)
+    setShowRotateModal(true)
+  }
+
+  const closeRotateModal = () => {
+    setShowRotateModal(false)
+    setSelectedKeyId(null)
+  }
+
+  // US-009: Handle key rotation
+  const handleRotateKey = async () => {
+    if (!selectedKeyId) return
+
+    setRotateSubmitting(true)
+
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/keys/${selectedKeyId}/rotate`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to rotate API key')
+      }
+
+      // Show the new key
+      setNewKey({
+        apiKey: data.newKey,
+        secretKey: data.secretKey,
+      })
+
+      closeRotateModal()
+      fetchApiKeys()
+    } catch (err: any) {
+      console.error('Failed to rotate key:', err)
+      alert(err.message || 'Failed to rotate API key')
+    } finally {
+      setRotateSubmitting(false)
+    }
+  }
+
+  // US-010: Open revoke confirmation modal
+  const openRevokeModal = (keyId: string) => {
+    setSelectedKeyId(keyId)
+    setShowRevokeModal(true)
+  }
+
+  const closeRevokeModal = () => {
+    setShowRevokeModal(false)
+    setSelectedKeyId(null)
+  }
+
+  // US-010: Handle key revocation
+  const handleRevokeKey = async () => {
+    if (!selectedKeyId) return
+
+    setRevokeSubmitting(true)
+
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/keys/${selectedKeyId}/revoke`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to revoke API key')
+      }
+
+      closeRevokeModal()
+      fetchApiKeys()
+    } catch (err: any) {
+      console.error('Failed to revoke key:', err)
+      alert(err.message || 'Failed to revoke API key')
+    } finally {
+      setRevokeSubmitting(false)
+    }
   }
 
   if (loading) {
@@ -531,19 +633,41 @@ export default function ProjectDetailPage() {
                             </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => {
-                            if (confirm('Delete this API key?')) {
-                              fetch(`/api/api-keys?id=${key.id}`, {
-                                method: 'DELETE',
-                                headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-                              }).then(() => fetchApiKeys())
-                            }
-                          }}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          {/* US-009: Rotate button */}
+                          <button
+                            onClick={() => openRotateModal(key.id)}
+                            disabled={key.status === 'revoked' || key.status === 'expired'}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Rotate key"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                          {/* US-010: Revoke button */}
+                          <button
+                            onClick={() => openRevokeModal(key.id)}
+                            disabled={key.status === 'revoked' || key.status === 'expired'}
+                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Revoke key"
+                          >
+                            <ShieldAlert className="w-4 h-4" />
+                          </button>
+                          {/* Delete button */}
+                          <button
+                            onClick={() => {
+                              if (confirm('Delete this API key? This cannot be undone.')) {
+                                fetch(`/api/api-keys?id=${key.id}`, {
+                                  method: 'DELETE',
+                                  headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+                                }).then(() => fetchApiKeys())
+                              }
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                            title="Delete key"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                     )
@@ -737,6 +861,148 @@ export default function ProjectDetailPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* US-008: Rotation Warning Modal */}
+      {showRotateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={closeRotateModal}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-slate-900">Rotate API Key</h2>
+              <button
+                onClick={closeRotateModal}
+                className="p-2 hover:bg-slate-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-start gap-3 mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-amber-900 mb-2">Important Information</h3>
+                  <p className="text-sm text-amber-800 mb-2">
+                    Rotating this key will create a new key version. The old key will remain active for a <strong>24-hour grace period</strong> to give you time to update your applications.
+                  </p>
+                  <p className="text-sm text-amber-800">
+                    After 24 hours, the old key will be automatically expired and will no longer work.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <h4 className="font-medium text-slate-900 mb-2">What happens next:</h4>
+                <ol className="text-sm text-slate-700 space-y-2 list-decimal list-inside">
+                  <li>A new API key will be generated</li>
+                  <li>You'll see the new key (shown once - copy it!)</li>
+                  <li>The old key will expire in 24 hours</li>
+                  <li>Update your applications to use the new key</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={closeRotateModal}
+                disabled={rotateSubmitting}
+                className="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRotateKey}
+                disabled={rotateSubmitting}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {rotateSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Rotating...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4" />
+                    Rotate Key
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* US-010: Revoke Confirmation Modal */}
+      {showRevokeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={closeRevokeModal}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-slate-900">Revoke API Key</h2>
+              <button
+                onClick={closeRevokeModal}
+                className="p-2 hover:bg-slate-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex items-start gap-3 mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <ShieldAlert className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-red-900 mb-2">Warning: Immediate Action</h3>
+                  <p className="text-sm text-red-800">
+                    Revoking this API key will <strong>immediately invalidate it</strong>. Any applications or services using this key will stop working right away.
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <h4 className="font-medium text-slate-900 mb-2">Before revoking:</h4>
+                <ul className="text-sm text-slate-700 space-y-2 list-disc list-inside">
+                  <li>Ensure no active applications are using this key</li>
+                  <li>Consider rotating instead to maintain uptime</li>
+                  <li>This action cannot be undone</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={closeRevokeModal}
+                disabled={revokeSubmitting}
+                className="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRevokeKey}
+                disabled={revokeSubmitting}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {revokeSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Revoking...
+                  </>
+                ) : (
+                  <>
+                    <ShieldAlert className="w-4 h-4" />
+                    Revoke Key
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

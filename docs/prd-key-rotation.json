@@ -205,8 +205,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created rotation warning modal in src/app/dashboard/projects/[slug]/page.tsx. Shows warning modal on rotate with amber alert explaining 24h grace period. Shows step-by-step what happens next (new key generation, 24h expiration). Requires confirmation to proceed. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -227,8 +227,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added rotate button for each key in API keys list at src/app/dashboard/projects/[slug]/page.tsx. Button uses RefreshCw icon, blue color, disabled for revoked/expired keys. Opens rotation warning modal (US-008). Calls POST /api/keys/:id/rotate endpoint. Shows new key after rotation. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -249,8 +249,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added revoke button for each key in API keys list at src/app/dashboard/projects/[slug]/page.tsx. Button uses ShieldAlert icon, orange color, disabled for revoked/expired keys. Opens confirmation modal with red warning about immediate invalidation. Shows checklist before revoking. Calls DELETE /api/keys/:id/revoke endpoint. Typecheck passes."
     }
   ],
   "relatedPRDs": [],
