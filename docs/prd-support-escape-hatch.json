@@ -81,8 +81,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Context auto-attachment already implemented in src/app/api/support/request/route.ts (lines 194-205). Includes project info (id, name, status, tenant_slug), recent errors (last 10 from project_logs with level='error'), current usage metrics (with percentages calculated from quotas and usage_snapshots), and logs snippet (last 20 lines from project_logs). Context is formatted as JSON and stored in the context column. All acceptance criteria met."
     },
     {
       "id": "US-004",
