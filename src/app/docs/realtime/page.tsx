@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Radio, Database, Zap, Shield, CheckCircle2, BookOpen, MessageSquare, Users, RefreshCw, Clock, Power, Lock, UserPlus, UserMinus, Signal, Megaphone, Send } from 'lucide-react';
+import { ArrowLeft, Radio, Database, Zap, Shield, CheckCircle2, BookOpen, MessageSquare, Users, RefreshCw, Clock, Power, Lock, UserPlus, UserMinus, Signal, Megaphone, Send, Code, Play, FileCode, Lightbulb } from 'lucide-react';
 import Link from 'next/link';
 import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy';
 
@@ -1964,6 +1964,616 @@ ws.onmessage = (event) => {
                  >                  <li>Steps to reproduce</li>
                   <li>Browser and environment details</li>
                 </ul>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Examples */}
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl font-bold text-slate-100 mb-6">Examples</h2>
+
+          <div className="prose prose-invert max-w-none mb-8">
+            <p className="text-slate-300 text-lg leading-relaxed mb-4">
+              Explore working examples demonstrating common realtime patterns. These examples show how to build collaborative
+              features, live notifications, and real-time data synchronization.
+            </p>
+          </div>
+
+          {/* Example Apps */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Play className="w-5 h-5 text-emerald-400" />
+              Example Applications
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Explore complete example applications demonstrating realtime features:
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <a
+                href="https://github.com/nextmavens/examples/tree/main/realtime-collaborative-editor"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-colors"
+              >
+                <FileCode className="w-5 h-5 text-emerald-400 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-slate-100 mb-1">Collaborative Editor</h4>
+                  <p className="text-sm text-slate-400">Real-time document editing with presence and cursors</p>
+                </div>
+              </a>
+              <a
+                href="https://github.com/nextmavens/examples/tree/main/realtime-live-chat"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-colors"
+              >
+                <FileCode className="w-5 h-5 text-emerald-400 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-slate-100 mb-1">Live Chat</h4>
+                  <p className="text-sm text-slate-400">Real-time messaging with typing indicators</p>
+                </div>
+              </a>
+              <a
+                href="https://github.com/nextmavens/examples/tree/main/realtime-live-dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-colors"
+              >
+                <FileCode className="w-5 h-5 text-emerald-400 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-slate-100 mb-1">Live Dashboard</h4>
+                  <p className="text-sm text-slate-400">Real-time metrics and analytics visualization</p>
+                </div>
+              </a>
+              <a
+                href="https://github.com/nextmavens/examples/tree/main/realtime-multiplayer-game"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-4 p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-colors"
+              >
+                <FileCode className="w-5 h-5 text-emerald-400 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-slate-100 mb-1">Multiplayer Game</h4>
+                  <p className="text-sm text-slate-400">Real-time player movement and game state sync</p>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          {/* Live Demo */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-400" />
+              Live Demo
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Try out the realtime features in our interactive demo:
+            </p>
+            <a
+              href="https://demo.nextmavens.cloud/realtime"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors"
+            >
+              <Play className="w-4 h-4" />
+              Launch Live Demo
+            </a>
+            <p className="text-xs text-slate-500 mt-2">
+              Features: Real-time data updates, presence tracking, live cursors, and broadcast messaging
+            </p>
+          </div>
+
+          {/* Code Examples - Collaborative Editing */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Code className="w-5 h-5 text-blue-400" />
+              Collaborative Editing Example
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Build a collaborative document editor with real-time cursors and presence:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`// Collaborative Document Editor with Realtime
+class CollaborativeEditor {
+  constructor(projectId, documentId, token) {
+    this.ws = new WebSocket(\`wss://realtime.nextmavens.cloud?token=\${token}\`);
+    this.documentId = documentId;
+    this.cursors = new Map(); // Track other users' cursors
+    this.content = '';
+    this.userId = this.extractUserId(token);
+    this.userName = 'Anonymous';
+
+    this.setupSubscriptions();
+    this.setupPresence();
+  }
+
+  setupSubscriptions() {
+    // Subscribe to document changes
+    this.ws.onopen = () => {
+      this.ws.send(JSON.stringify({
+        event: 'phx_join',
+        topic: \`\${projectId}:document_edits\`,
+        payload: {
+          token: 'YOUR_JWT_TOKEN',
+          config: {
+            events: ['INSERT', 'UPDATE'],
+            filter: \`document_id=eq.\${this.documentId}\`
+          }
+        },
+        ref: '1'
+      }));
+    };
+
+    // Handle content changes
+    this.ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.event === 'INSERT' || msg.event === 'UPDATE') {
+        const { record, old_record } = msg.payload;
+        if (record.document_id === this.documentId) {
+          this.applyRemoteChange(record, old_record);
+        }
+      }
+    };
+  }
+
+  setupPresence() {
+    // Join presence channel for cursors
+    this.ws.send(JSON.stringify({
+      event: 'phx_join',
+      topic: \`presence:document_\${this.documentId}\`,
+      payload: {
+        token: 'YOUR_JWT_TOKEN',
+        user_id: this.userId,
+        user_metadata: {
+          name: this.userName,
+          color: this.getRandomColor()
+        }
+      },
+      ref: '2'
+    }));
+
+    // Track other users' cursors
+    this.ws.addEventListener('message', (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.event === 'presence_state') {
+        // Initial sync of all users
+        Object.entries(msg.payload).forEach(([userId, userData]) => {
+          this.showCursor(userId, userData);
+        });
+      }
+
+      if (msg.event === 'presence_diff') {
+        const { joins, leaves } = msg.payload;
+
+        Object.keys(joins).forEach(userId => {
+          this.showCursor(userId, joins[userId]);
+        });
+
+        Object.keys(leaves).forEach(userId => {
+          this.removeCursor(userId);
+        });
+      }
+
+      if (msg.event === 'presence_update') {
+        const { user_id, state } = msg.payload;
+        if (state.cursor) {
+          this.updateCursor(user_id, state.cursor);
+        }
+      }
+    });
+  }
+
+  // Local user is typing - broadcast cursor position
+  broadcastCursor(position) {
+    this.ws.send(JSON.stringify({
+      event: 'presence_update',
+      topic: \`presence:document_\${this.documentId}\`,
+      payload: {
+        token: 'YOUR_JWT_TOKEN',
+        user_id: this.userId,
+        state: {
+          cursor: position,
+          last_updated: new Date().toISOString()
+        }
+      },
+      ref: String(Date.now())
+    }));
+  }
+
+  // Apply remote content change
+  applyRemoteChange(record, oldRecord) {
+    // Operational Transformation or CRDT logic here
+    // For simplicity, we'll just update the content
+    if (record.type === 'text_insert') {
+      this.content = this.content.slice(0, record.position) +
+                    record.text +
+                    this.content.slice(record.position);
+    } else if (record.type === 'text_delete') {
+      this.content = this.content.slice(0, record.position) +
+                    this.content.slice(record.position + record.length);
+    }
+
+    this.render();
+  }
+
+  // Save local change to database
+  async saveChange(changeType, position, text, length) {
+    await fetch(\`/api/v1/document_edits\`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': \`Bearer \${this.token}\`
+      },
+      body: JSON.stringify({
+        document_id: this.documentId,
+        type: changeType,
+        position,
+        text,
+        length
+      })
+    });
+  }
+
+  // Show cursor for another user
+  showCursor(userId, userData) {
+    const cursor = document.createElement('div');
+    cursor.className = 'remote-cursor';
+    cursor.style.cssText = \`
+      position: absolute;
+      border-left: 2px solid \${userData.user_metadata.color};
+      height: 20px;
+      pointer-events: none;
+      transition: all 0.1s ease-out;
+    \`;
+
+    const label = document.createElement('div');
+    label.className = 'cursor-label';
+    label.textContent = userData.user_metadata.name;
+    label.style.cssText = \`
+      position: absolute;
+      top: -20px;
+      left: 0;
+      background: \${userData.user_metadata.color};
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      white-space: nowrap;
+    \`;
+
+    cursor.appendChild(label);
+    document.getElementById('editor-container').appendChild(cursor);
+    this.cursors.set(userId, cursor);
+  }
+
+  updateCursor(userId, position) {
+    const cursor = this.cursors.get(userId);
+    if (cursor) {
+      cursor.style.left = \`\${position.x}px\`;
+      cursor.style.top = \`\${position.y}px\`;
+    }
+  }
+
+  removeCursor(userId) {
+    const cursor = this.cursors.get(userId);
+    if (cursor) {
+      cursor.remove();
+      this.cursors.delete(userId);
+    }
+  }
+
+  getRandomColor() {
+    const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899'];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  extractUserId(token) {
+    // Parse JWT to extract user_id
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.user_id;
+  }
+
+  render() {
+    document.getElementById('editor-content').textContent = this.content;
+  }
+}
+
+// Initialize the collaborative editor
+const editor = new CollaborativeEditor(
+  'abc123xyz',
+  'doc_456',
+  'YOUR_JWT_TOKEN'
+);
+
+// Broadcast cursor position on user input
+document.getElementById('editor-textarea').addEventListener('input', (e) => {
+  const selection = e.target.selectionStart;
+  const rect = getCaretCoordinates(e.target, selection);
+  editor.broadcastCursor({ x: rect.left, y: rect.top });
+
+  // Save changes to database
+  editor.saveChange('text_insert', selection, e.target.value, 0);
+});`}</code>
+            </pre>
+            <div className="grid md:grid-cols-3 gap-4 mt-4">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                <p className="text-xs text-emerald-300 mb-1">Database Events</p>
+                <p className="text-sm font-semibold text-emerald-200">Content sync</p>
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <p className="text-xs text-blue-300 mb-1">Presence</p>
+                <p className="text-sm font-semibold text-blue-200">Cursor tracking</p>
+              </div>
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                <p className="text-xs text-purple-300 mb-1">Real-time</p>
+                <p className="text-sm font-semibold text-purple-200">Multi-user editing</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Code Examples - Live Notifications */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Megaphone className="w-5 h-5 text-orange-400" />
+              Live Notifications Example
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Implement real-time notifications that appear instantly when events occur:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`// Real-time Notifications System
+class NotificationManager {
+  constructor(projectId, token) {
+    this.ws = new WebSocket(\`wss://realtime.nextmavens.cloud?token=\${token}\`);
+    this.notifications = [];
+    this.setupListeners();
+  }
+
+  setupListeners() {
+    this.ws.onopen = () => {
+      // Subscribe to notifications for this user
+      this.ws.send(JSON.stringify({
+        event: 'phx_join',
+        topic: \`\${projectId}:notifications\`,
+        payload: {
+          token: 'YOUR_JWT_TOKEN',
+          config: {
+            events: ['INSERT'],
+            filter: \`user_id=eq.\${this.getCurrentUserId()}\`
+          }
+        },
+        ref: '1'
+      }));
+    };
+
+    this.ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.event === 'INSERT') {
+        const notification = msg.payload.record;
+        this.showNotification(notification);
+        this.notifications.push(notification);
+      }
+    };
+  }
+
+  showNotification(notification) {
+    // Create notification element
+    const container = document.getElementById('notifications-container');
+
+    const notificationEl = document.createElement('div');
+    notificationEl.className = 'notification-slide-in';
+    notificationEl.style.cssText = \`
+      background: \${this.getNotificationColor(notification.type)};
+      border-left: 4px solid;
+      padding: 16px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      animation: slideIn 0.3s ease-out;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    \`;
+
+    notificationEl.innerHTML = \`
+      <div class="flex items-start gap-3">
+        <div class="notification-icon">
+          \${this.getNotificationIcon(notification.type)}
+        </div>
+        <div class="flex-1">
+          <p class="font-semibold text-white">\${notification.title}</p>
+          <p class="text-sm text-white/80">\${notification.message}</p>
+          \${notification.action_url ? \`<a href="\${notification.action_url}"
+            class="inline-block mt-2 text-sm underline">View Details</a>\` : ''}
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()"
+          class="text-white/60 hover:text-white">&times;</button>
+      </div>
+    \`;
+
+    container.appendChild(notificationEl);
+
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      notificationEl.style.animation = 'slideOut 0.3s ease-out';
+      setTimeout(() => notificationEl.remove(), 300);
+    }, 5000);
+
+    // Show browser notification if permitted
+    if (Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/icon-192.png',
+        tag: notification.id
+      });
+    }
+  }
+
+  getNotificationColor(type) {
+    const colors = {
+      info: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+      success: 'linear-gradient(135deg, #10b981, #059669)',
+      warning: 'linear-gradient(135deg, #f59e0b, #d97706)',
+      error: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      mention: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+      system: 'linear-gradient(135deg, #6b7280, #4b5563)'
+    };
+    return colors[type] || colors.info;
+  }
+
+  getNotificationIcon(type) {
+    const icons = {
+      info: '<svg class="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+      success: '<svg class="w-5 h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+      warning: '<svg class="w-5 h-5 text-amber-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>',
+      error: '<svg class="w-5 h-5 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
+      mention: '<svg class="w-5 h-5 text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg>',
+      system: '<svg class="w-5 h-5 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>'
+    };
+    return icons[type] || icons.info;
+  }
+
+  getCurrentUserId() {
+    // Extract user_id from your auth context
+    const token = localStorage.getItem('jwt_token');
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.user_id;
+  }
+}
+
+// Request browser notification permission
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+// Initialize notification manager
+const notificationManager = new NotificationManager(
+  'abc123xyz',
+  'YOUR_JWT_TOKEN'
+);
+
+// Server-side: Create a notification (triggers realtime event)
+async function createNotification(userId, title, message, type = 'info', actionUrl = null) {
+  const response = await fetch('/api/v1/notifications', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': \`Bearer \${getAuthToken()}\`
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      title,
+      message,
+      type,
+      action_url: actionUrl
+    })
+  });
+
+  return response.json();
+}
+
+// Example usage: Send a notification when someone mentions a user
+async function notifyUserMention(mentionedUserId, mentioningUserName, content) {
+  await createNotification(
+    mentionedUserId,
+    \`@\${mentioningUserName} mentioned you\`,
+    content.substring(0, 100) + (content.length > 100 ? '...' : ''),
+    'mention',
+    '/messages'
+  );
+}`}</code>
+            </pre>
+            <div className="grid md:grid-cols-3 gap-4 mt-4">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                <p className="text-xs text-emerald-300 mb-1">INSERT Events</p>
+                <p className="text-sm font-semibold text-emerald-200">Instant delivery</p>
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <p className="text-xs text-blue-300 mb-1">Browser API</p>
+                <p className="text-sm font-semibold text-blue-200">Native notifications</p>
+              </div>
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                <p className="text-xs text-purple-300 mb-1">Auto-dismiss</p>
+                <p className="text-sm font-semibold text-purple-200">5-second timeout</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Common Patterns */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-yellow-400" />
+              Common Realtime Patterns
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <h4 className="font-semibold text-slate-100 mb-2">Live Score Updates</h4>
+                <p className="text-sm text-slate-400 mb-3">
+                  Subscribe to game scores table for instant updates
+                </p>
+                <pre className="bg-slate-900 rounded p-2">
+                  <code className="text-xs text-slate-300">{`{
+  topic: 'abc123xyz:game_scores',
+  payload: {
+    config: {
+      events: ['UPDATE'],
+      filter: 'game_id=eq.123'
+    }
+  }
+}`}</code>
+                </pre>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <h4 className="font-semibold text-slate-100 mb-2">Stock Price Ticker</h4>
+                <p className="text-sm text-slate-400 mb-3">
+                  Real-time price updates from market data
+                </p>
+                <pre className="bg-slate-900 rounded p-2">
+                  <code className="text-xs text-slate-300">{`{
+  topic: 'abc123xyz:stock_prices',
+  payload: {
+    config: {
+      events: ['UPDATE'],
+      filter: 'symbol=in.AAPL,GOO,MSFT'
+    }
+  }
+}`}</code>
+                </pre>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <h4 className="font-semibold text-slate-100 mb-2">Auction Bidding</h4>
+                <p className="text-sm text-slate-400 mb-3">
+                  Track new bids in real-time auctions
+                </p>
+                <pre className="bg-slate-900 rounded p-2">
+                  <code className="text-xs text-slate-300">{`{
+  topic: 'abc123xyz:auction_bids',
+  payload: {
+    config: {
+      events: ['INSERT'],
+      filter: 'auction_id=eq.456'
+    }
+  }
+}`}</code>
+                </pre>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <h4 className="font-semibold text-slate-100 mb-2">Activity Feed</h4>
+                <p className="text-sm text-slate-400 mb-3">
+                  Social feed with new posts and interactions
+                </p>
+                <pre className="bg-slate-900 rounded p-2">
+                  <code className="text-xs text-slate-300">{`{
+  topic: 'abc123xyz:activities',
+  payload: {
+    config: {
+      events: ['INSERT'],
+      filter: 'user_id=in.friends'
+    }
+  }
+}`}</code>
+                </pre>
               </div>
             </div>
           </div>

@@ -29,7 +29,7 @@ export interface ExpiredSecret {
   project_id: string
   name: string
   version: number
-  expires_at: Date
+  grace_period_ends_at: Date
 }
 
 export interface ExpiringSecret {
@@ -37,7 +37,7 @@ export interface ExpiringSecret {
   project_id: string
   name: string
   version: number
-  expires_at: Date
+  grace_period_ends_at: Date
   project_owner_email?: string
   project_name?: string
 }
@@ -50,7 +50,7 @@ export interface CleanupJobResult {
   /** List of deleted secret IDs */
   deletedSecrets: Array<{ id: string; name: string; version: number }>
   /** List of secrets that were warned about */
-  warnedSecrets: Array<{ id: string; name: string; version: number; expiresAt: Date }>
+  warnedSecrets: Array<{ id: string; name: string; version: number; gracePeriodEndsAt: Date }>
   /** Error if any */
   error?: string
 }
@@ -63,7 +63,7 @@ export interface CleanupJobResult {
  * Run the grace period cleanup job
  *
  * This function:
- * 1. Deletes all inactive secrets where expires_at < NOW()
+ * 1. Deletes all inactive secrets where grace_period_ends_at < NOW()
  * 2. Sends warning emails for secrets expiring within 1 hour
  * 3. Logs all operations to audit log
  *
@@ -72,7 +72,7 @@ export interface CleanupJobResult {
 export async function runGracePeriodCleanupJob(): Promise<CleanupJobResult> {
   const pool = getPool()
   const deletedSecrets: Array<{ id: string; name: string; version: number }> = []
-  const warnedSecrets: Array<{ id: string; name: string; version: number; expiresAt: Date }> = []
+  const warnedSecrets: Array<{ id: string; name: string; version: number; gracePeriodEndsAt: Date }> = []
   let deletedCount = 0
   let warningCount = 0
 
@@ -83,9 +83,9 @@ export async function runGracePeriodCleanupJob(): Promise<CleanupJobResult> {
     const expiredResult = await pool.query(
       `DELETE FROM control_plane.secrets
        WHERE active = FALSE
-         AND expires_at IS NOT NULL
-         AND expires_at < NOW()
-       RETURNING id, project_id, name, version, expires_at`
+         AND grace_period_ends_at IS NOT NULL
+         AND grace_period_ends_at < NOW()
+       RETURNING id, project_id, name, version, grace_period_ends_at`
     )
 
     deletedCount = expiredResult.rows.length
@@ -95,23 +95,23 @@ export async function runGracePeriodCleanupJob(): Promise<CleanupJobResult> {
         name: row.name,
         version: row.version,
       })
-      console.log(`[GracePeriodJob] Deleted expired secret: ${row.name} v${row.version} (expired at ${row.expires_at})`)
+      console.log(`[GracePeriodJob] Deleted expired secret: ${row.name} v${row.version} (expired at ${row.grace_period_ends_at})`)
     }
 
     // Step 2: Find secrets expiring within warning threshold (1 hour)
     const warningResult = await pool.query(
       `SELECT
-        s.id, s.project_id, s.name, s.version, s.expires_at,
+        s.id, s.project_id, s.name, s.version, s.grace_period_ends_at,
         p.name as project_name,
         d.email as project_owner_email
        FROM control_plane.secrets s
        INNER JOIN control_plane.projects p ON s.project_id = p.id
        INNER JOIN control_plane.developers d ON p.owner_id = d.id
        WHERE s.active = FALSE
-         AND s.expires_at IS NOT NULL
-         AND s.expires_at > NOW()
-         AND s.expires_at <= NOW() + INTERVAL '${WARNING_THRESHOLD_HOURS} hours'
-       ORDER BY s.expires_at ASC`
+         AND s.grace_period_ends_at IS NOT NULL
+         AND s.grace_period_ends_at > NOW()
+         AND s.grace_period_ends_at <= NOW() + INTERVAL '${WARNING_THRESHOLD_HOURS} hours'
+       ORDER BY s.grace_period_ends_at ASC`
     )
 
     warningCount = warningResult.rows.length
@@ -123,7 +123,7 @@ export async function runGracePeriodCleanupJob(): Promise<CleanupJobResult> {
         project_id: row.project_id,
         name: row.name,
         version: row.version,
-        expires_at: row.expires_at,
+        grace_period_ends_at: row.grace_period_ends_at,
         project_owner_email: row.project_owner_email,
         project_name: row.project_name,
       }
@@ -133,10 +133,10 @@ export async function runGracePeriodCleanupJob(): Promise<CleanupJobResult> {
         id: secret.id,
         name: secret.name,
         version: secret.version,
-        expiresAt: secret.expires_at,
+        gracePeriodEndsAt: secret.grace_period_ends_at,
       })
 
-      console.log(`[GracePeriodJob] Sent warning for expiring secret: ${secret.name} v${secret.version} (expires at ${secret.expires_at})`)
+      console.log(`[GracePeriodJob] Sent warning for expiring secret: ${secret.name} v${secret.version} (expires at ${secret.grace_period_ends_at})`)
 
       // Log to audit
       await logWarningSent(secret)
@@ -189,8 +189,8 @@ export async function getGracePeriodStats(): Promise<{
     `SELECT COUNT(*) as count
      FROM control_plane.secrets
      WHERE active = FALSE
-       AND expires_at IS NOT NULL
-       AND expires_at > NOW()`
+       AND grace_period_ends_at IS NOT NULL
+       AND grace_period_ends_at > NOW()`
   )
 
   // Count expired secrets (should be deleted)
@@ -198,8 +198,8 @@ export async function getGracePeriodStats(): Promise<{
     `SELECT COUNT(*) as count
      FROM control_plane.secrets
      WHERE active = FALSE
-       AND expires_at IS NOT NULL
-       AND expires_at < NOW()`
+       AND grace_period_ends_at IS NOT NULL
+       AND grace_period_ends_at < NOW()`
   )
 
   // Count secrets expiring soon (within 1 hour)
@@ -207,9 +207,9 @@ export async function getGracePeriodStats(): Promise<{
     `SELECT COUNT(*) as count
      FROM control_plane.secrets
      WHERE active = FALSE
-       AND expires_at IS NOT NULL
-       AND expires_at > NOW()
-       AND expires_at <= NOW() + INTERVAL '1 hour'`
+       AND grace_period_ends_at IS NOT NULL
+       AND grace_period_ends_at > NOW()
+       AND grace_period_ends_at <= NOW() + INTERVAL '1 hour'`
   )
 
   return {
@@ -233,7 +233,7 @@ async function sendExpirationWarningEmail(secret: ExpiringSecret): Promise<void>
   // Import email service dynamically to avoid circular dependencies
   const { sendHtmlEmail } = await import('@/lib/email')
 
-  const expiresAt = new Date(secret.expires_at)
+  const expiresAt = new Date(secret.grace_period_ends_at)
   const timeUntilExpiration = expiresAt.getTime() - Date.now()
   const minutesUntilExpiration = Math.floor(timeUntilExpiration / (1000 * 60))
 
@@ -322,6 +322,15 @@ async function logWarningSent(secret: ExpiringSecret): Promise<void> {
   const pool = getPool()
 
   try {
+    // Update the secret to mark that warning was sent
+    await pool.query(
+      `UPDATE control_plane.secrets
+       SET grace_period_warning_sent_at = NOW()
+       WHERE id = $1`,
+      [secret.id]
+    )
+
+    // Log to audit_logs
     await pool.query(
       `INSERT INTO control_plane.audit_logs
         (actor_id, actor_type, action, target_type, target_id, metadata, created_at)
@@ -336,7 +345,7 @@ async function logWarningSent(secret: ExpiringSecret): Promise<void> {
           secret_name: secret.name,
           secret_version: secret.version,
           project_id: secret.project_id,
-          expires_at: secret.expires_at,
+          grace_period_ends_at: secret.grace_period_ends_at,
         }),
       ]
     )

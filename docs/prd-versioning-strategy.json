@@ -167,7 +167,7 @@
       "mavenSteps": [
         5
       ],
-      " authoritarianTools": {
+      "mcpTools": {
         "step5": []
       },
       "priority": 2,

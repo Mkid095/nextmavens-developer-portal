@@ -17,7 +17,8 @@ export interface Secret {
   rotation_reason?: string | null
   created_by?: string | null
   created_at: string
-  expires_at?: string | null // When inactive secret versions should be deleted (grace period)
+  grace_period_ends_at?: string | null // When inactive secret versions should be deleted (grace period)
+  grace_period_warning_sent_at?: string | null // When expiration warning was sent for this version
 }
 
 /**
@@ -32,7 +33,8 @@ export interface SecretResponse {
   rotated_from?: string | null
   rotation_reason?: string | null
   created_at: string
-  expires_at?: string | null // When inactive secret will be deleted (null for active secrets)
+  grace_period_ends_at?: string | null // When inactive secret will be deleted (null for active secrets)
+  grace_period_warning_sent_at?: string | null // When expiration warning was sent (null if not sent yet)
 }
 
 /**
