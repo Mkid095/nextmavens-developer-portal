@@ -716,6 +716,7 @@ export default function PlatformPhilosophyPage() {
                 orange: 'bg-orange-100 text-orange-700',
                 red: 'bg-red-100 text-red-700',
                 teal: 'bg-teal-100 text-teal-700',
+                amber: 'bg-amber-100 text-amber-700',
               }[principle.color]
 
               return (
