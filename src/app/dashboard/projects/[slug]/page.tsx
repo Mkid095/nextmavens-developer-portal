@@ -653,6 +653,106 @@ const { data } = await client
                 </button>
               </div>
 
+              {/* US-007: API Keys guidance section */}
+              <div className="mb-6 space-y-4">
+                {/* Key Types Explained */}
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-5">
+                  <h3 className="font-semibold text-slate-900 mb-3">Understanding API Key Types</h3>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-lg border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Key className="w-4 h-4 text-emerald-600" />
+                        <h4 className="font-medium text-slate-900">publishable</h4>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-2">Safe for client-side code. Can only read data and create resources.</p>
+                      <p className="text-xs text-slate-500"><strong>Use for:</strong> Frontend apps, mobile apps, public APIs</p>
+                    </div>
+                    <div className="bg-white rounded-lg border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Key className="w-4 h-4 text-blue-600" />
+                        <h4 className="font-medium text-slate-900">secret</h4>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-2">Full access to all operations. Never expose in client-side code.</p>
+                      <p className="text-xs text-slate-500"><strong>Use for:</strong> Backend servers, CLI tools, scripts</p>
+                    </div>
+                    <div className="bg-white rounded-lg border border-slate-200 p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Key className="w-4 h-4 text-purple-600" />
+                        <h4 className="font-medium text-slate-900">service_role</h4>
+                      </div>
+                      <p className="text-sm text-slate-600 mb-2">Bypasses row-level security. Use with extreme caution.</p>
+                      <p className="text-xs text-slate-500"><strong>Use for:</strong> Admin tasks, migrations, trusted services</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Warning */}
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-semibold text-red-900 mb-1">Security Best Practices</h4>
+                      <ul className="text-sm text-red-800 space-y-1">
+                        <li>• Never commit API keys to public repositories</li>
+                        <li>• Use environment variables to store keys</li>
+                        <li>• Rotate keys regularly (use the rotate button)</li>
+                        <li>• Revoke unused keys immediately</li>
+                        <li>• Use <strong>publishable</strong> keys in frontend code only</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Integration Code */}
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-5">
+                  <h3 className="font-semibold text-emerald-900 mb-3">Quick Integration</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-700 mb-2">Using the SDK</p>
+                      <div className="relative group">
+                        <button
+                          onClick={() => handleCopy(`import { createClient } from 'nextmavens-js'
+
+const client = createClient({
+  apiKey: process.env.NEXTMAVENS_API_KEY,
+  projectId: '${project.id}'
+})`, 'sdk-integration')}
+                          className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                        >
+                          {copied === 'sdk-integration' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                        </button>
+                        <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                          <code className="text-sm text-slate-300 font-mono">{`import { createClient } from 'nextmavens-js'
+
+const client = createClient({
+  apiKey: process.env.NEXTMAVENS_API_KEY,
+  projectId: '${project.id}'
+})`}</code>
+                        </pre>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-700 mb-2">Using REST API</p>
+                      <div className="relative group">
+                        <button
+                          onClick={() => handleCopy(`curl -X GET "${endpoints.rest}/rest/v1/users" \\
+  -H "apikey: YOUR_API_KEY" \\
+  -H "Authorization: Bearer YOUR_API_KEY"`, 'rest-integration')}
+                          className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                        >
+                          {copied === 'rest-integration' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                        </button>
+                        <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                          <code className="text-sm text-slate-300 font-mono">{`curl -X GET "${endpoints.rest}/rest/v1/users" \\
+  -H "apikey: YOUR_API_KEY" \\
+  -H "Authorization: Bearer YOUR_API_KEY"`}</code>
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {newKey && (
                 <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg">
                   <div className="flex items-start justify-between mb-3">
@@ -716,9 +816,13 @@ const { data } = await client
                     const isNewKey = newKey && newKey.apiKey.id === key.id
                     const displayKey = isNewKey ? newKey.apiKey : key
                     const hasFullKey = isNewKey || (key.public_key && key.public_key.length > 20)
+                    // US-006: Usage stats
+                    const usageStats = keyUsageStats[key.id]
+                    const loadingStats = usageStatsLoading[key.id]
+                    const inactive = isKeyInactive(key)
 
                     return (
-                    <div key={key.id} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div key={key.id} className={`p-4 rounded-lg border ${inactive ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -729,6 +833,13 @@ const { data } = await client
                             {isNewKey && (
                               <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
                                 New
+                              </span>
+                            )}
+                            {/* US-006: Visual indicator for inactive keys */}
+                            {inactive && (
+                              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Inactive
                               </span>
                             )}
                           </div>
@@ -762,6 +873,31 @@ const { data } = await client
                                 <span className="text-amber-600 ml-2"> • Only prefix stored - recreate key</span>
                               )}
                             </p>
+                            {/* US-006: Usage stats display */}
+                            {!loadingStats && usageStats && (
+                              <div className="mt-3 pt-3 border-t border-slate-200">
+                                <div className="flex flex-wrap gap-4 text-xs">
+                                  <div className="flex items-center gap-1.5 text-slate-600">
+                                    <BarChart3 className="w-3.5 h-3.5" />
+                                    <span>Used <strong className="text-slate-900">{usageStats.usageCount.toLocaleString()}</strong> times</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 text-slate-600">
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>Last: <strong className="text-slate-900">{formatLastUsed(usageStats.lastUsed)}</strong></span>
+                                  </div>
+                                  {/* US-006: Success/error rate */}
+                                  {usageStats.successErrorRate.total > 0 && (
+                                                                    <div className="flex items-center gap-1.5">
+                                      <span className={usageStats.successErrorRate.successRate >= 95 ? 'text-emerald-600' : usageStats.successErrorRate.successRate >= 80 ? 'text-amber-600' : 'text-red-600'}>
+                                        <strong>{usageStats.successErrorRate.successRate}%</strong> success
+                                      </span>
+                                      <span className="text-slate-400">•</span>
+                                      <span className="text-slate-500">{usageStats.successErrorRate.total} requests</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
