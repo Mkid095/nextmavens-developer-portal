@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Globe, ArrowLeft, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
+import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 
 const tools = [
   {
@@ -171,18 +172,10 @@ export default function GraphQLDocsPage() {
                 </div>
 
                 <h4 className="font-semibold text-slate-900 mt-6 mb-4">Example Request</h4>
-                <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
-                  <pre className="text-sm text-slate-300">
-                    <code>{JSON.stringify(tool.example, null, 2)}</code>
-                  </pre>
-                </div>
+                <CodeBlockWithCopy>{JSON.stringify(tool.example, null, 2)}</CodeBlockWithCopy>
 
                 <h4 className="font-semibold text-slate-900 mt-6 mb-4">Response</h4>
-                <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
-                  <pre className="text-sm text-slate-300">
-                    <code>{JSON.stringify({ success: true, data: tool.response }, null, 2)}</code>
-                  </pre>
-                </div>
+                <CodeBlockWithCopy>{JSON.stringify({ success: true, data: tool.response }, null, 2)}</CodeBlockWithCopy>
               </div>
             </motion.div>
           ))}

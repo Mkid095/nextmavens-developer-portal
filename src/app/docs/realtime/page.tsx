@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, Radio, Database, Zap, Shield, CheckCircle2, BookOpen, MessageSquare, Users, RefreshCw, Clock, Power } from 'lucide-react';
 import Link from 'next/link';
+import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy';
 
 export default function RealtimeDocs() {
   const concepts = [

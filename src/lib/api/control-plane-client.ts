@@ -423,6 +423,19 @@ export class ControlPlaneClient {
       body: JSON.stringify(request),
     }, req)
   }
+
+  /**
+   * Remove a member from an organization
+   */
+  async removeOrganizationMember(
+    orgId: string,
+    userId: string,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; message: string }> {
+    return this.request<{ success: boolean; message: string }>(`/api/v1/orgs/${orgId}/members/${userId}`, {
+      method: 'DELETE',
+    }, req)
+  }
 }
 
 /**
