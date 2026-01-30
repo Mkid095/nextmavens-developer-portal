@@ -45,8 +45,8 @@
         "step5": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created docs/failure-modes.md with comprehensive Auth Limits section including max users per project (100,000), rate limit (50 requests/minute), session duration (7 days), max concurrent sessions (10 per user), authentication limits (password reset requests, MFA codes, login attempts), best practices, common issues, and error handling. Typecheck passes."
     },
     {
       "id": "US-003",
