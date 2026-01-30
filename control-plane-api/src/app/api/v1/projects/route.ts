@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
-import { authenticateRequest, type Developer } from '@/lib/auth'
+import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import {
   createProjectSchema,
@@ -26,7 +26,7 @@ function errorResponse(code: string, message: string, status: number) {
 // Helper function to validate ownership
 async function validateProjectOwnership(
   projectId: string,
-  developer: Developer
+  developer: JwtPayload
 ): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(

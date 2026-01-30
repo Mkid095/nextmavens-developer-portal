@@ -28,7 +28,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Added JwtPayload interface with project_id claim. Updated generateAccessToken to accept projectId parameter. Updated verifyAccessToken to validate project_id exists and throw 'Missing project_id claim' error if missing. Updated authenticateRequest return type to JwtPayload."
+      "notes": "Completed: Updated control-plane-api/src/lib/auth.ts with JwtPayload interface including project_id claim. Updated generateAccessToken() to accept projectId parameter. Updated verifyAccessToken() to validate project_id exists and throw 'Missing project_id claim' error if missing. Updated authenticateRequest() return type to JwtPayload. Updated control-plane-api/src/app/api/v1/projects/[id]/route.ts and control-plane-api/src/app/api/v1/projects/route.ts to use JwtPayload instead of Developer. The main src/lib/auth.ts already had the US-001 implementation with JwtPayload interface. Typecheck passes."
     },
     {
       "id": "US-002",
