@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Lightbulb, Database, CheckCircle, AlertCircle, Code, Zap, Shield, GitBranch, Radio, Stream, HardDrive, FolderOpen, Cloud, ImageIcon, Key, Lock, RefreshCw, Server } from 'lucide-react'
+import { ArrowLeft, Lightbulb, Database, CheckCircle, AlertCircle, Code, Zap, Shield, GitBranch, Radio, Stream, HardDrive, FolderOpen, Cloud, ImageIcon, Key, Lock, RefreshCw, Server, Wrench, Activity, BarChart3, Bot } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const principles = [
@@ -45,6 +45,13 @@ const principles = [
     title: 'Security Principles',
     description: 'Fail closed, audit everything, zero trust',
     color: 'red',
+    comingSoon: false,
+  },
+  {
+    icon: Wrench,
+    title: 'Operational Simplicity',
+    description: 'Boring technology, minimal deps, observable by default',
+    color: 'amber',
     comingSoon: false,
   },
   {

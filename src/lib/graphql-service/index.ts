@@ -30,6 +30,10 @@ export {
   clearGraphQLSnapshotCache,
   getGraphQLSnapshotCacheStats,
   cleanupExpiredGraphQLCacheEntries,
+  // US-005: Correlation ID support for request tracing
+  setGraphQLCorrelationId,
+  getGraphQLCorrelationId,
+  clearGraphQLContext,
 } from './snapshot-client'
 
 /**
