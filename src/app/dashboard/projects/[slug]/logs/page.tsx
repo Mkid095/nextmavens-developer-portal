@@ -40,6 +40,7 @@ interface LogEntry {
 
 type ServiceFilter = 'all' | 'db' | 'auth' | 'realtime' | 'storage' | 'graphql'
 type LevelFilter = 'all' | 'info' | 'warn' | 'error'
+type DateRangeFilter = '1h' | '24h' | '7d' | '30d' | 'custom'
 
 const serviceOptions: { value: ServiceFilter; label: string }[] = [
   { value: 'all', label: 'All Services' },
@@ -58,11 +59,11 @@ const levelOptions: { value: LevelFilter; label: string }[] = [
 ]
 
 // Quick date range options
-const dateRangeOptions: { value: string; label: string; hours?: number }[] = [
-  { value: '1h', label: 'Last 1 hour', hours: 1 },
-  { value: '24h', label: 'Last 24 hours', hours: 24 },
-  { value: '7d', label: 'Last 7 days', hours: 24 * 7 },
-  { value: '30d', label: 'Last 30 days', hours: 24 * 30 },
+const dateRangeOptions: { value: DateRangeFilter; label: string }[] = [
+  { value: '1h', label: 'Last 1 hour' },
+  { value: '24h', label: 'Last 24 hours' },
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
   { value: 'custom', label: 'Custom range' },
 ]
 
@@ -146,7 +147,7 @@ export default function LogsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>('all')
   const [levelFilter, setLevelFilter] = useState<LevelFilter>('all')
-  const [dateRangeFilter, setDateRangeFilter] = useState('24h')
+  const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilter>('24h')
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
   const [showServiceDropdown, setShowServiceDropdown] = useState(false)
@@ -162,15 +163,11 @@ export default function LogsPage() {
   useEffect(() => {
     const service = searchParams.get('service') as ServiceFilter | null
     const level = searchParams.get('level') as LevelFilter | null
-    const dateRange = searchParams.get('dateRange')
-    const start = searchParams.get('start_date')
-    const end = searchParams.get('end_date')
+    const dateRange = searchParams.get('dateRange') as DateRangeFilter | null
 
-    if (service) setServiceFilter(service)
-    if (level) setLevelFilter(level)
-    if (dateRange) setDateRangeFilter(dateRange)
-    if (start) setCustomStartDate(start)
-    if (end) setCustomEndDate(end)
+    if (service && serviceOptions.some(opt => opt.value === service)) setServiceFilter(service)
+    if (level && levelOptions.some(opt => opt.value === level)) setLevelFilter(level)
+    if (dateRange && dateRangeOptions.some(opt => opt.value === dateRange)) setDateRangeFilter(dateRange)
   }, [searchParams])
 
   // Update URL when filters change
