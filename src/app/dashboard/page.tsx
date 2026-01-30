@@ -523,7 +523,7 @@ export default function DashboardPage() {
 
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
                   <p className="text-sm text-red-800">
-                    <strong>Warning:</strong> Store this secret key securely. You won't be able to see it again after closing this dialog.
+                    <strong>Warning:</strong> Store this secret key securely. You won&apos;t be able to see it again after closing this dialog.
                   </p>
                 </div>
               </div>
@@ -532,7 +532,7 @@ export default function DashboardPage() {
                 onClick={() => setShowSecretModal(false)}
                 className="w-full px-4 py-3 bg-emerald-900 text-white rounded-xl font-medium hover:bg-emerald-800 transition"
               >
-                I've saved my secret key
+                I&apos;ve saved my secret key
               </button>
             </motion.div>
           </div>

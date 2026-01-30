@@ -12,6 +12,9 @@ import {
 } from '@/features/abuse-controls/lib/rate-limiter'
 import { getPool } from '@/lib/db'
 
+// Mark as dynamic to prevent static generation
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/admin/abuse/dashboard/patterns
  * Get suspicious pattern detection statistics
