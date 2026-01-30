@@ -153,6 +153,9 @@ export default function ProjectDetailPage() {
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null)
   const [rotateSubmitting, setRotateSubmitting] = useState(false)
   const [revokeSubmitting, setRevokeSubmitting] = useState(false)
+  // US-006: Key usage stats
+  const [keyUsageStats, setKeyUsageStats] = useState<Record<string, KeyUsageStats>>({})
+  const [usageStatsLoading, setUsageStatsLoading] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (project) {
@@ -164,6 +167,15 @@ export default function ProjectDetailPage() {
     fetchProject()
     fetchApiKeys()
   }, [params.slug])
+
+  // US-006: Fetch usage stats when apiKeys change
+  useEffect(() => {
+    if (apiKeys.length > 0) {
+      apiKeys.forEach((key) => {
+        fetchKeyUsageStats(key.id)
+      })
+    }
+  }, [apiKeys])
 
   const fetchProject = async () => {
     try {
@@ -203,6 +215,49 @@ export default function ProjectDetailPage() {
     } catch (err) {
       console.error('Failed to fetch API keys:', err)
     }
+  }
+
+  // US-006: Fetch key usage statistics
+  const fetchKeyUsageStats = async (keyId: string) => {
+    setUsageStatsLoading((prev) => ({ ...prev, [keyId]: true }))
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/keys/${keyId}/usage`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        const data: KeyUsageStats = await res.json()
+        setKeyUsageStats((prev) => ({ ...prev, [keyId]: data }))
+      }
+    } catch (err) {
+      console.error(`Failed to fetch usage stats for key ${keyId}:`, err)
+    } finally {
+      setUsageStatsLoading((prev) => ({ ...prev, [keyId]: false }))
+    }
+  }
+
+  // US-006: Check if key is inactive (>30 days since last use)
+  const isKeyInactive = (key: ApiKey): boolean => {
+    if (!key.last_used) return false
+    const lastUsed = new Date(key.last_used)
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    return lastUsed < thirtyDaysAgo
+  }
+
+  // US-006: Format last used date
+  const formatLastUsed = (lastUsed: string | null | undefined): string => {
+    if (!lastUsed) return 'Never'
+    const date = new Date(lastUsed)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays} days ago`
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+    return date.toLocaleDateString()
   }
 
   const fetchSuspensionStatus = async () => {
