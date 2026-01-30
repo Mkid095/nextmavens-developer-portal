@@ -6,6 +6,7 @@
  *
  * US-004: Prefix Storage Paths (prd-resource-isolation.json)
  * US-009: Update Storage Service Errors (Standardized Error Format)
+ * US-004: Track Storage Usage (prd-usage-tracking.json)
  */
 
 import { NextRequest } from 'next/server'
@@ -24,6 +25,7 @@ import {
   authenticationError,
   internalError,
 } from '@/lib/errors'
+import { trackStorageUpload } from '@/lib/usage/storage-tracking'
 
 export async function POST(req: NextRequest) {
   try {
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
 
     // TODO: Implement actual file upload to Telegram storage service
     // For now, return a placeholder response with the scoped path
-    return new Response(
+    const response = new Response(
       JSON.stringify({
         success: true,
         message: 'File upload endpoint ready for integration with Telegram storage service',
@@ -99,6 +101,14 @@ export async function POST(req: NextRequest) {
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     )
+
+    // US-004: Track storage usage (fire and forget)
+    // Track the upload after sending response to avoid blocking
+    trackStorageUpload(auth.project_id, file_size).catch(err => {
+      console.error('[Storage API] Failed to track upload usage:', err)
+    })
+
+    return response
   } catch (error: any) {
     console.error('[Storage API] Upload error:', error)
 

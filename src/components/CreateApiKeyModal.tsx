@@ -122,8 +122,8 @@ interface CreatedKeyDisplay {
   secretKey?: string
 }
 
-export default function CreateApiKeyModal({ isOpen, onClose, onCreateKey, projectId }: CreateApiKeyModalProps) {
-  const [step, setStep] = useState<'type' | 'config' | 'success'>('type')
+export default function CreateApiKeyModal({conutlal isOpen, onClose, onCreateKey, projectId }: CreateApiKeyModalProps) {
+  const [step, setStep] = useState<'type' | 'config' | 'confirm-write' | 'success'>('type')
   const [selectedKeyType, setSelectedKeyType] = useState<KeyTypeOption | null>(null)
   const [keyName, setKeyName] = useState('')
   const [environment, setEnvironment] = useState<ApiKeyEnvironment>('prod')
@@ -131,6 +131,7 @@ export default function CreateApiKeyModal({ isOpen, onClose, onCreateKey, projec
   const [mcpAccessLevel, setMcpAccessLevel] = useState<'ro' | 'rw' | 'admin'>('ro')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [writeWarningConfirmed, setWriteWarningConfirmed] = useState(false)
   const [createdKey, setCreatedKey] = useState<CreatedKeyDisplay | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
 
