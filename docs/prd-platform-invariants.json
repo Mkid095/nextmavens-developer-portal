@@ -137,8 +137,8 @@
         "step1": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Isolation Enforcement principle documented in PLATFORM_INVARIANTS.md section 5 with clear rules for DB scoping, channel prefixes, storage paths, and 403 enforcement."
     },
     {
       "id": "US-007",
@@ -160,8 +160,8 @@
         "step1": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Universal Observability principle documented in PLATFORM_INVARIANTS.md section 6 with x-request-id requirements, log propagation patterns, and implementation examples."
     },
     {
       "id": "US-008",
@@ -183,8 +183,8 @@
         "step1": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Fail Closed Security principle documented in PLATFORM_INVARIANTS.md section 7 with clear rules for unreachable services, fail-closed patterns, and dangerous examples."
     },
     {
       "id": "US-009",
@@ -206,8 +206,8 @@
         "step1": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Secrets Never Logged principle documented in PLATFORM_INVARIANTS.md section 8 with redaction patterns, safe logging examples, and violation examples."
     },
     {
       "id": "US-010",
@@ -229,8 +229,8 @@
         "step1": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "MCP Read-Only Default principle documented in PLATFORM_INVARIANTS.md section 9 with read-only defaults, opt-in patterns, warnings, and audit requirements."
     },
     {
       "id": "US-011",
@@ -252,8 +252,8 @@
         "step1": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Soft Delete First principle documented in PLATFORM_INVARIANTS.md section 10 with 30-day grace period, deletion preview, restore capability, and implementation patterns."
     },
     {
       "id": "US-012",
@@ -273,8 +273,8 @@
         "step1": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Document copied to developer portal directory at C:\\Users\\HomePC\\Documents\\GitHub\\nextmavens-developer-portal\\PLATFORM_INVARIANTS.md for easy access. File verified and accessible."
     }
   ],
   "relatedPRDs": [],
