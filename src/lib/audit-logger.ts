@@ -26,6 +26,74 @@ import { extractCorrelationId, generateCorrelationId } from '@/lib/middleware/co
 import type { NextRequest } from 'next/server'
 
 /**
+ * US-011: Local sanitization functions for audit logging
+ * These prevent secret values from appearing in logs
+ */
+
+const SENSITIVE_KEYS = [
+  'password', 'token', 'secret', 'apiKey', 'api_key', 'authorization',
+  'cookie', 'session', 'jwt', 'private', 'credentials', 'value_encrypted',
+  'access_token', 'refresh_token', 'api_key', 'secret_key'
+]
+
+/**
+ * Sanitize metadata for audit logging
+ * Removes sensitive keys and their values
+ */
+function sanitizeAuditMetadata(metadata: Record<string, unknown> | undefined): Record<string, unknown> {
+  if (!metadata) return {}
+
+  const sanitized: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(metadata)) {
+    const lowerKey = key.toLowerCase()
+    const isSensitive = SENSITIVE_KEYS.some(sensitive => lowerKey.includes(sensitive.toLowerCase()))
+
+    if (isSensitive) {
+      // Skip sensitive fields entirely in audit logs
+      continue
+    }
+
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      sanitized[key] = sanitizeAuditMetadata(value as Record<string, unknown>)
+    } else if (Array.isArray(value)) {
+      sanitized[key] = value.map(item =>
+        typeof item === 'object' && item !== null && !Array.isArray(item)
+          ? sanitizeAuditMetadata(item as Record<string, unknown>)
+          : item
+      )
+    } else {
+      sanitized[key] = value
+    }
+  }
+
+  return sanitized
+}
+
+/**
+ * Redact secret patterns from strings
+ */
+function redactSecretPatterns(message: string): string {
+  let redacted = message
+
+  // Redact common secret patterns
+  const patterns = [
+    /(?:password|secret|token|key|api_key|apikey|access[_-]?key|auth[_-]?token|bearer|authorization)[:\s]+([^\s,}]+)/gi,
+    /"(?:password|secret|token|key|api[_-]?key|access[_-]?key|value)":\s*"([^"]+)"/gi,
+  ]
+
+  for (const pattern of patterns) {
+    redacted = redacted.replace(pattern, (match, group1) => {
+      if (group1) {
+        return match.replace(group1, '[REDACTED]')
+      }
+      return '[REDACTED]'
+    })
+  }
+
+  return redacted
+}
+
+/**
  * Audit actor types
  */
 export type AuditActorType = 'user' | 'system' | 'api_key' | 'project' | 'mcp_token'
@@ -98,17 +166,23 @@ export async function logAuditEntry(entry: AuditLogEntry): Promise<string> {
 
     const auditLogId = result.rows[0].id
 
+    // US-011: Sanitize metadata before logging to console to prevent secret leakage
+    const safeMetadata = sanitizeAuditMetadata(entry.metadata)
+
     // Log to console for immediate visibility
     console.log(`[Audit] ${entry.actor_type}:${entry.actor_id} -> ${entry.action} on ${entry.target_type}:${entry.target_id}`, {
       auditLogId,
       requestId: entry.request_id,
       projectId: entry.project_id,
-      metadata: entry.metadata,
+      metadata: safeMetadata,
     })
 
     return auditLogId
   } catch (error) {
-    console.error('[Audit Logger] Failed to log audit entry:', error)
+    // US-011: Redact potential secrets from error messages
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const safeErrorMessage = redactSecretPatterns(errorMessage)
+    console.error('[Audit Logger] Failed to log audit entry:', safeErrorMessage)
     throw error
   }
 }

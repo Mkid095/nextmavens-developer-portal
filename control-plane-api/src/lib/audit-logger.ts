@@ -22,6 +22,7 @@
 
 import { getPool } from '@/lib/db'
 import type { JwtPayload } from './auth'
+import { sanitizeObject, redactSecrets } from '@/lib/secure-logger'
 
 /**
  * Audit actor types
@@ -95,16 +96,21 @@ export async function logAuditEntry(entry: AuditLogEntry): Promise<string> {
     const auditLogId = result.rows[0].id
 
     // Log to console for immediate visibility
+    // US-011: Sanitize metadata before logging to prevent secret leakage
+    const safeMetadata = entry.metadata ? sanitizeObject(entry.metadata) : {}
     console.log(`[Audit] ${entry.actor_type}:${entry.actor_id} -> ${entry.action} on ${entry.target_type}:${entry.target_id}`, {
       auditLogId,
       requestId: entry.request_id,
       projectId: entry.project_id,
-      metadata: entry.metadata,
+      metadata: safeMetadata,
     })
 
     return auditLogId
   } catch (error) {
-    console.error('[Audit Logger] Failed to log audit entry:', error)
+    // US-011: Redact potential secrets from error messages
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const safeErrorMessage = redactSecrets(errorMessage)
+    console.error('[Audit Logger] Failed to log audit entry:', safeErrorMessage)
     throw error
   }
 }

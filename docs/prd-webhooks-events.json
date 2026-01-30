@@ -295,8 +295,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added WEBHOOK_DISABLED notification type to abuse-controls types. Implemented sendWebhookDisabledNotification() function in notifications.ts that sends email notification to project owner and org members when webhook is auto-disabled after 5 consecutive failures. Updated incrementWebhookFailures() in webhook-delivery.ts to call notification function on auto-disable. Auto-disable logic (enabled = FALSE after 5 failures) was already implemented in the SQL UPDATE statement. Manual re-enable is already available via PUT /api/webhooks/:id endpoint (US-008). Typecheck passes."
     }
   ],
   "relatedPRDs": [],
