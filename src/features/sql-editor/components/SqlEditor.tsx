@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Editor from '@monaco-editor/react'
-import { Play, ShieldAlert } from 'lucide-react'
+import { Play, ShieldAlert, Lock } from 'lucide-react'
+
+type UserRole = 'owner' | 'admin' | 'developer' | 'viewer' | null
 
 interface SqlEditorProps {
   value?: string
@@ -12,6 +14,7 @@ interface SqlEditorProps {
   placeholder?: string
   height?: string
   minHeight?: string
+  userRole?: UserRole
 }
 
 /**
@@ -26,9 +29,11 @@ interface SqlEditorProps {
  * - Query shortcut (Ctrl+Enter)
  * - Run query button
  * - Read-only mode (default)
+ * - RBAC permission enforcement (US-011)
  *
  * US-001: Create SQL Editor Component
  * US-005: Implement Read-Only Mode
+ * US-011: Enforce Studio Permissions
  */
 export function SqlEditor({
   value = '',
@@ -38,12 +43,47 @@ export function SqlEditor({
   placeholder = '-- Enter your SQL query here...\n-- Press Ctrl+Enter to execute',
   height = '400px',
   minHeight = '200px',
+  userRole = null,
 }: SqlEditorProps) {
   const editorRef = useRef<any>(null)
   const [query, setQuery] = useState(value)
   // US-005: Read-only mode state (checked by default for safety)
   const [readonlyMode, setReadonlyMode] = useState(true)
   const [showWarning, setShowWarning] = useState(false)
+
+  /**
+   * US-011: Check if user can disable readonly mode based on their role
+   * - Viewers: cannot disable readonly (always read-only)
+   * - Developers: can disable readonly for INSERT/UPDATE (but not DELETE/DDL)
+   * - Admins/Owners: can disable readonly for all operations
+   */
+  const canDisableReadonly = () => {
+    return userRole === 'admin' || userRole === 'owner' || userRole === 'developer'
+  }
+
+  /**
+   * US-011: Check if a query type is allowed for the current user role
+   */
+  const isQueryTypeAllowed = (queryText: string): boolean => {
+    const command = extractSqlCommand(queryText)
+
+    if (!userRole) {
+      return false
+    }
+
+    // Viewers can only SELECT
+    if (userRole === 'viewer') {
+      return command === 'SELECT'
+    }
+
+    // Developers can SELECT, INSERT, UPDATE
+    if (userRole === 'developer') {
+      return ['SELECT', 'INSERT', 'UPDATE'].includes(command)
+    }
+
+    // Admins and Owners can do everything
+    return true
+  }
 
   useEffect(() => {
     setQuery(value)
@@ -129,11 +169,19 @@ export function SqlEditor({
             </span>
           </div>
           {/* US-005: Read-only checkbox (checked by default) */}
-          <label className="flex items-center gap-2 cursor-pointer group">
+          {/* US-011: Enforce RBAC - viewers cannot disable readonly */}
+          <label className={`flex items-center gap-2 ${
+            !canDisableReadonly() ? 'cursor-not-allowed opacity-60' : 'cursor-pointer group'
+          }`}>
             <input
               type="checkbox"
               checked={readonlyMode}
-              onChange={(e) => setReadonlyMode(e.target.checked)}
+              onChange={(e) => {
+                if (canDisableReadonly()) {
+                  setReadonlyMode(e.target.checked)
+                }
+              }}
+              disabled={!canDisableReadonly()}
               className="w-4 h-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-700 focus:ring-offset-0 cursor-pointer"
             />
             <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900 transition">
@@ -142,6 +190,12 @@ export function SqlEditor({
             {!readonlyMode && (
               <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-xs rounded-full font-medium">
                 Write enabled
+              </span>
+            )}
+            {!canDisableReadonly() && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-100 text-slate-700 text-xs rounded-full font-medium" title={`Your role '${userRole}' cannot disable read-only mode`}>
+                <Lock className="w-3 h-3" />
+                Locked
               </span>
             )}
           </label>

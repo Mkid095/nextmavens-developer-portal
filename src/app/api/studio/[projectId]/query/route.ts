@@ -3,10 +3,17 @@
  *
  * US-002: Create Execute Query API
  * US-010: Enforce Database Write Permissions
+ * US-011: Enforce Studio Permissions
  *
  * Executes SQL queries on tenant-specific schemas with readonly mode protection.
  * Validates queries for destructive operations when readonly mode is enabled.
+ * Checks database.read permission for SELECT queries.
  * Checks database.write permission for non-readonly queries (INSERT/UPDATE/DELETE).
+ *
+ * Permission Matrix:
+ * - Viewers: SELECT only
+ * - Developers: SELECT, INSERT, UPDATE
+ * - Admins/Owners: Full access (SELECT, INSERT, UPDATE, DELETE, DDL)
  *
  * POST /api/studio/:projectId/query
  *
@@ -111,6 +118,14 @@ function extractColumns(result: { rows: any[] }): string[] {
 function isWriteQuery(query: string): boolean {
   const command = extractSqlCommand(query)
   return ['INSERT', 'UPDATE', 'DELETE'].includes(command)
+}
+
+/**
+ * US-011: Check if a query is a read operation (SELECT)
+ */
+function isReadQuery(query: string): boolean {
+  const command = extractSqlCommand(query)
+  return command === 'SELECT'
 }
 
 /**

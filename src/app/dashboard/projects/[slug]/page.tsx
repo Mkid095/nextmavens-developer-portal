@@ -54,6 +54,7 @@ import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLa
 import ServiceStatusIndicator, { type ServiceStatus } from '@/components/ServiceStatusIndicator'
 import ProjectStatusBadge from '@/components/ProjectStatusBadge'
 import StatusHistory from '@/components/StatusHistory'
+import { ProvisioningProgress } from '@/components/ProvisioningProgress'
 import type { ServiceType } from '@/lib/types/service-status.types'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 import { usePermission, usePermissions } from '@/hooks/usePermissions'
@@ -1170,6 +1171,14 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* US-007: Provisioning Progress */}
+              <div className="mt-8">
+                <ProvisioningProgress
+                  projectId={project.id}
+                  projectName={project.name}
+                />
               </div>
 
               {/* US-009: Status History Section */}
