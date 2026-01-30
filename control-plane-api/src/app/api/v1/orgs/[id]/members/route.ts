@@ -18,7 +18,7 @@ function errorResponse(code: string, message: string, status: number) {
 async function validateOrganizationOwnership(
   orgId: string,
   developer: JwtPayload
-): Promise<{ valid: boolean; organization?: any; membership?: any }> {
+): Promise<{ valid: boolean; organization?: any; membership?: any; inviter?: any }> {
   const pool = getPool()
   const result = await pool.query(
     `SELECT o.id, o.name, o.slug, o.owner_id, o.created_at,
@@ -43,7 +43,13 @@ async function validateOrganizationOwnership(
     return { valid: false, organization }
   }
 
-  return { valid: true, organization, membership: organization }
+  // Get inviter details for email
+  const inviterResult = await pool.query(
+    'SELECT id, name, email FROM developers WHERE id = $1',
+    [developer.id]
+  )
+
+  return { valid: true, organization, membership: organization, inviter: inviterResult.rows[0] }
 }
 
 // Generate secure invitation token
@@ -130,9 +136,30 @@ export async function POST(
 
     const member = result.rows[0]
 
-    // TODO: Send invitation email
-    // This will be implemented in a follow-up story
-    // For now, the invitation is created in pending state
+    // Send invitation email
+    const org = ownershipCheck.organization
+    const inviter = ownershipCheck.inviter
+
+    if (org && inviter) {
+      try {
+        const emailResult = await sendOrganizationInvitationEmail({
+          to: normalizedEmail,
+          organizationName: org.name,
+          inviterName: inviter.name || 'A team member',
+          role: validatedData.role,
+          token: invitationToken,
+          expiresAt: tokenExpiresAt,
+        })
+
+        if (!emailResult.success) {
+          console.warn(`[InviteMember] Failed to send invitation email to ${normalizedEmail}:`, emailResult.error)
+          // Don't fail the request if email fails - invitation is still created
+        }
+      } catch (emailError) {
+        console.error('[InviteMember] Error sending invitation email:', emailError)
+        // Don't fail the request if email fails - invitation is still created
+      }
+    }
 
     return NextResponse.json({
       success: true,
