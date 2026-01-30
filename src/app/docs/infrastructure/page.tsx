@@ -927,6 +927,10 @@ export default function InfrastructureDocsPage() {
             Current Limitations
           </h2>
 
+          <p className="text-amber-800 mb-6">
+            We believe in transparency about our current capabilities and what's coming next. Here are the key limitations of the current single-region deployment.
+          </p>
+
           <div className="grid md:grid-cols-2 gap-4">
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 rounded-full bg-amber-600 mt-2"></div>
@@ -952,8 +956,8 @@ export default function InfrastructureDocsPage() {
             <div className="flex items-start gap-3">
               <div className="w-2 h-2 rounded-full bg-amber-600 mt-2"></div>
               <div>
-                <strong className="text-amber-900">Disaster Recovery</strong>
-                <p className="text-sm text-amber-800">Manual backup restoration required</p>
+                <strong className="text-amber-900">Manual Backups</strong>
+                <p className="text-sm text-amber-800">Backup restoration requires manual intervention</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
@@ -968,6 +972,31 @@ export default function InfrastructureDocsPage() {
               <div>
                 <strong className="text-amber-900">Auto-scaling</strong>
                 <p className="text-sm text-amber-800">Not implemented yet</p>
+              </div>
+            </div>
+          </div>
+
+          {/* What's Coming */}
+          <div className="mt-8 pt-6 border-t border-amber-300">
+            <h3 className="text-lg font-semibold text-amber-900 mb-4 flex items-center gap-2">
+              <ArrowRight className="w-5 h-5" />
+              What's Coming Next
+            </h3>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-amber-200">
+                <div className="text-xs bg-emerald-100 text-emerald-800 px-2 py-1 rounded inline-block mb-2">Phase 1: Q2 2026</div>
+                <h4 className="font-semibold text-amber-900 mb-1">Horizontal Scaling</h4>
+                <p className="text-xs text-amber-700">Load balancing and Redis caching for multiple instances</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-amber-200">
+                <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded inline-block mb-2">Phase 2: Q3 2026</div>
+                <h4 className="font-semibold text-amber-900 mb-1">Multi-Region Deployment</h4>
+                <p className="text-xs text-amber-700">US, EU, and Asia regions with data isolation</p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-amber-200">
+                <div className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded inline-block mb-2">Phase 3: Q4 2026</div>
+                <h4 className="font-semibold text-amber-900 mb-1">Auto-Scaling</h4>
+                <p className="text-xs text-amber-700">Automatic scaling based on load metrics</p>
               </div>
             </div>
           </div>
