@@ -1,11 +1,13 @@
 /**
  * Secrets API - Rotate Secret
  * PRD: US-005 from prd-secrets-versioning.json
+ * Related: US-006 (Grace Period for Old Secrets)
  *
  * POST /api/v1/secrets/:id/rotate - Rotate a secret to a new version
  *
  * Creates a new version of the secret with a new value, links it to the
- * previous version, and marks the previous version as inactive.
+ * previous version, marks the previous version as inactive, and sets
+ * a 24-hour grace period for the old version.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -151,12 +153,12 @@ export async function POST(
       )
 
       // Mark the old version as inactive and set grace period expiration
-      // Grace period: 24 hours from rotation
+      // Grace period: 24 hours from rotation (US-006)
       const gracePeriodHours = 24
       await client.query(
         `UPDATE control_plane.secrets
          SET active = FALSE,
-             expires_at = NOW() + INTERVAL '${gracePeriodHours} hours'
+             grace_period_ends_at = NOW() + INTERVAL '${gracePeriodHours} hours'
          WHERE id = $1`,
         [currentSecret.id]
       )
@@ -165,9 +167,9 @@ export async function POST(
 
       const newSecret = newSecretResult.rows[0]
 
-      // Get the updated old secret with expires_at for the response
+      // Get the updated old secret with grace_period_ends_at for the response
       const oldSecretWithExpiration = await client.query(
-        `SELECT id, expires_at FROM control_plane.secrets WHERE id = $1`,
+        `SELECT id, grace_period_ends_at FROM control_plane.secrets WHERE id = $1`,
         [currentSecret.id]
       )
 
@@ -185,7 +187,7 @@ export async function POST(
           // Include grace period info for old version
           oldSecret: {
             id: currentSecret.id,
-            expiresAt: oldSecretWithExpiration.rows[0]?.expires_at,
+            gracePeriodEndsAt: oldSecretWithExpiration.rows[0]?.grace_period_ends_at,
           },
           gracePeriodHours: 24,
         },
