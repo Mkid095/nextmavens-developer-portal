@@ -19,6 +19,7 @@ import {
   type StepHandler,
   type StepExecutionResult,
 } from './steps'
+import { getStepHandler, hasStepHandler } from './handlers'
 
 /**
  * Result of running a provisioning step
@@ -354,17 +355,25 @@ export function getNextPendingStep(steps: ProvisioningStep[]): ProvisioningStep 
 /**
  * Get default step handler by name
  *
- * This is a placeholder for step-specific handlers.
- * In production, each step would have its own implementation.
+ * Story: US-008 - Implement Verify Services Step
+ *
+ * This function retrieves the appropriate handler for a given step.
+ * If a dedicated handler exists, it returns that handler.
+ * Otherwise, it returns a mock handler that succeeds (for backward compatibility).
  *
  * @param stepName - The step name
  * @returns Step handler function or null
  */
 function getDefaultStepHandler(stepName: string): StepHandler | null {
-  // TODO: Implement actual step handlers for each step type
-  // For now, return a mock handler that succeeds
+  // Check if a dedicated handler exists for this step
+  if (hasStepHandler(stepName)) {
+    return getStepHandler(stepName)
+  }
+
+  // For steps without dedicated handlers, return a mock handler
+  // This provides backward compatibility while handlers are being implemented
   return async (_projectId: string, _pool: Pool): Promise<StepExecutionResult> => {
-    // Simulate step execution
+    // Mock handler - simulates successful step execution
     return {
       success: true,
     }
