@@ -344,6 +344,39 @@ export function SchemaBrowser({
                   ) : null}
                 </div>
               )}
+
+              {/* Foreign Keys Section */}
+              {isExpanded && (
+                <div className="pl-10 pr-4 pb-2 space-y-1">
+                  {loadingForeignKeys.has(table.name) ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-slate-400">
+                      <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs">Loading foreign keys...</span>
+                    </div>
+                  ) : tableForeignKeys.get(table.name) && tableForeignKeys.get(table.name)!.length > 0 ? (
+                    <>
+                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 mt-2">
+                        Foreign Keys
+                      </div>
+                      {tableForeignKeys.get(table.name)!.map((fk) => (
+                        <div
+                          key={fk.constraint_name}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-50 hover:bg-slate-100 transition"
+                        >
+                          <Link2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                          <span className="text-xs font-medium text-slate-700">
+                            {fk.column_name}
+                          </span>
+                          <span className="text-xs text-slate-400">→</span>
+                          <span className="text-xs font-medium text-slate-900">
+                            {fk.foreign_table}.{fk.foreign_column}
+                          </span>
+                        </div>
+                      ))}
+                    </>
+                  ) : null}
+                </div>
+              )}
             </div>
           )
         })}

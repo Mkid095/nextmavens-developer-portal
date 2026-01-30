@@ -195,8 +195,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Foreign keys display implemented in SchemaBrowser component at src/features/schema-browser/components/SchemaBrowser.tsx. Added DatabaseForeignKey interface (constraint_name, column_name, foreign_table, foreign_column). Async fetching of foreign keys when table is expanded via useEffect hook. Foreign keys section displays below indexes with 'Foreign Keys' header. Shows column name with arrow (→) pointing to referenced table.column (e.g., 'user_id → users.id'). Link2 icon for visual representation of relationship. Loading state with spinner while fetching foreign keys. Typecheck passes."
     },
     {
       "id": "US-009",
