@@ -11,6 +11,7 @@ import {
   FileText,
   ShieldCheck,
   Star,
+  Link2,
 } from 'lucide-react'
 
 export interface DatabaseColumn {
@@ -27,10 +28,18 @@ export interface DatabaseIndex {
   is_primary: boolean
 }
 
+export interface DatabaseForeignKey {
+  constraint_name: string
+  column_name: string
+  foreign_table: string
+  foreign_column: string
+}
+
 export interface DatabaseTable {
   name: string
   columns?: DatabaseColumn[]
   indexes?: DatabaseIndex[]
+  foreign_keys?: DatabaseForeignKey[]
   row_count?: number
 }
 
@@ -53,11 +62,13 @@ interface SchemaBrowserProps {
  * - Tables list (expandable)
  * - Columns with details (expandable)
  * - Indexes with details (expandable)
+ * - Foreign keys with details (expandable)
  * - Color-coded data types
  * - Visual indicators for nullable/primary keys
  *
  * US-001: Create Schema Browser Component
  * US-006: Display Indexes
+ * US-008: Display Foreign Keys
  */
 export function SchemaBrowser({
   projectId,
@@ -70,6 +81,8 @@ export function SchemaBrowser({
   const [expandedIndexes, setExpandedIndexes] = useState<Set<string>>(new Set())
   const [tableIndexes, setTableIndexes] = useState<Map<string, DatabaseIndex[]>>(new Map())
   const [loadingIndexes, setLoadingIndexes] = useState<Set<string>>(new Set())
+  const [tableForeignKeys, setTableForeignKeys] = useState<Map<string, DatabaseForeignKey[]>>(new Map())
+  const [loadingForeignKeys, setLoadingForeignKeys] = useState<Set<string>>(new Set())
 
   // Fetch indexes when a table is expanded
   useEffect(() => {
@@ -112,6 +125,48 @@ export function SchemaBrowser({
       }
     })
   }, [expandedTables, projectId, tableIndexes, loadingIndexes])
+
+  // Fetch foreign keys when a table is expanded
+  useEffect(() => {
+    expandedTables.forEach(async (tableName) => {
+      // Skip if we already fetched foreign keys for this table
+      if (tableForeignKeys.has(tableName)) {
+        return
+      }
+
+      // Skip if already loading
+      if (loadingForeignKeys.has(tableName)) {
+        return
+      }
+
+      // Mark as loading
+      setLoadingForeignKeys(prev => new Set(prev).add(tableName))
+
+      try {
+        const response = await fetch(
+          `/api/studio/${projectId}/tables/${tableName}/foreign-keys`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          setTableForeignKeys(prev => new Map(prev).set(tableName, data.foreignKeys))
+        }
+      } catch (error) {
+        console.error(`Failed to fetch foreign keys for ${tableName}:`, error)
+      } finally {
+        setLoadingForeignKeys(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(tableName)
+          return newSet
+        })
+      }
+    })
+  }, [expandedTables, projectId, tableForeignKeys, loadingForeignKeys])
 
   const toggleTable = (tableName: string) => {
     const newExpanded = new Set(expandedTables)

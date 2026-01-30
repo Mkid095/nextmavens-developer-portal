@@ -147,8 +147,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added comprehensive Realtime section to SDK docs with 8 detailed examples covering: Subscribe to All Changes (INSERT, UPDATE, DELETE), Subscribe to Specific Events (event-specific channels), Filter Subscriptions (with eq filters), Multiple Subscriptions (multiple tables on one channel), Channel with Presence Tracking (online users, custom state), Broadcast Messages (client-to-client communication), Unsubscribe and Cleanup (proper lifecycle management with React useEffect), Error Handling and Reconnection (connection state monitoring). Each example includes code with syntax highlighting and copy buttons. Added best practices section with tips for production use. Typecheck passes."
     },
     {
       "id": "US-007",
@@ -173,8 +173,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added comprehensive Storage section to SDK docs with detailed examples covering: File Upload (with options like cacheControl and upsert), Get Public URL (for sharing files), List Files (with pagination and sorting), Download File (creating blob URLs for download), Delete File (single or multiple files). Each example includes code with syntax highlighting and copy buttons. Added best practices section with tips for file naming, cache control, validation, and organization. Typecheck passes."
     },
     {
       "id": "US-008",
