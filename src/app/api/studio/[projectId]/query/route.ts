@@ -228,6 +228,11 @@ export async function POST(
       return error.toNextResponse()
     }
 
+    // Handle permission denied errors
+    if (error.code === ErrorCode.PERMISSION_DENIED) {
+      return error.toNextResponse()
+    }
+
     // Handle all other errors
     return toErrorNextResponse(error, params.projectId)
   }
@@ -257,5 +262,10 @@ export async function GET() {
       },
     },
     destructiveCommands: Array.from(DESTRUCTIVE_COMMANDS),
+    rbac: {
+      writeOperations: 'Requires database.write permission',
+      readOperations: 'Requires database.read permission (all authenticated users)',
+      permissionDenied: '403 error with clear message explaining required permission',
+    },
   })
 }

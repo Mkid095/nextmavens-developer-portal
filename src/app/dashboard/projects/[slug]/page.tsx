@@ -51,6 +51,7 @@ import { McpUsageAnalytics } from '@/components/McpUsageAnalytics'
 import LanguageSelector, { type CodeLanguage, useLanguageSelector } from '@/components/LanguageSelector'
 import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLanguageCodeBlock'
 import ServiceStatusIndicator, { type ServiceStatus } from '@/components/ServiceStatusIndicator'
+import ProjectStatusBadge from '@/components/ProjectStatusBadge'
 import type { ServiceType } from '@/lib/types/service-status.types'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 import { usePermission, usePermissions } from '@/hooks/usePermissions'
@@ -62,6 +63,7 @@ interface Project {
   slug: string
   tenant_id: string
   created_at: string
+  status?: string
   environment?: 'prod' | 'dev' | 'staging'
 }
 
