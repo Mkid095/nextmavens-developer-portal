@@ -196,8 +196,8 @@
         "step5": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added comprehensive FAQ section to /docs/infrastructure page with 8 FAQ items covering: region support (US-East current, multi-region planned Q3 2026), scaling (vertical current, horizontal/multi-region/auto-scaling roadmap), backups (daily automated at 2AM UTC, 30-day retention, manual export/restore APIs), SLAs (best effort current, 99.9% target for multi-region), maintenance windows (48h notice, low-traffic hours), data portability (SQL export APIs), data residency (US-East current, region selector coming), and security (TLS, encryption at rest, JWT auth, per-project isolation). Each FAQ includes clear answers and links to detailed documentation sections. Added HelpCircle icon and FAQ link to table of contents. Typecheck passes."
     },
     {
       "id": "US-010",

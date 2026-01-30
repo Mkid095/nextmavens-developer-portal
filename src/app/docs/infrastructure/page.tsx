@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin, RefreshCw, Clock, AlertCircle, Lock, Key, FileKey } from 'lucide-react'
+import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin, RefreshCw, Clock, AlertCircle, Lock, Key, FileKey, HelpCircle } from 'lucide-react'
 
 export default function InfrastructureDocsPage() {
   return (
@@ -86,6 +86,9 @@ export default function InfrastructureDocsPage() {
             </a>
             <a href="#limitations" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Current Limitations
+            </a>
+            <a href="#faq" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
+              <ChevronRight className="w-4 h-4" /> FAQ
             </a>
           </div>
         </div>
@@ -1299,6 +1302,212 @@ export default function InfrastructureDocsPage() {
                 <div className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded inline-block mb-2">Phase 3: Q4 2026</div>
                 <h4 className="font-semibold text-amber-900 mb-1">Auto-Scaling</h4>
                 <p className="text-xs text-amber-700">Automatic scaling based on load metrics</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section id="faq" className="bg-white rounded-xl p-8 border border-slate-200 mb-8">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-6 flex items-center gap-3">
+            <HelpCircle className="w-6 h-6 text-blue-700" />
+            Frequently Asked Questions
+          </h2>
+
+          <p className="text-slate-600 mb-6">
+            Common questions about NextMavens infrastructure, scaling, backups, and SLAs.
+          </p>
+
+          <div className="space-y-4">
+            {/* Region Support */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition">
+                <span className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-blue-600" />
+                  What regions do you support?
+                </span>
+              </button>
+              <div className="p-4 bg-white border-t border-slate-200">
+                <p className="text-slate-600 text-sm mb-3">
+                  Currently, NextMavens is hosted in a single region (US-East). We plan to expand to multiple regions including EU and Asia in Q3 2026 as part of our multi-region deployment phase.
+                </p>
+                <Link href="#regional-isolation" className="text-sm text-blue-700 hover:text-blue-900 flex items-center gap-1">
+                  Learn more about regional data isolation
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Scaling */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition">
+                <span className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Server className="w-5 h-5 text-blue-600" />
+                  How does the platform scale?
+                </span>
+              </button>
+              <div className="p-4 bg-white border-t border-slate-200">
+                <p className="text-slate-600 text-sm mb-3">
+                  The current single-instance deployment scales vertically. Our scaling roadmap includes: Phase 1 (Q2 2026) - horizontal scaling with load balancing, Phase 2 (Q3 2026) - multi-region deployment, Phase 3 (Q4 2026) - auto-scaling based on load metrics.
+                </p>
+                <Link href="#scaling" className="text-sm text-blue-700 hover:text-blue-900 flex items-center gap-1">
+                  Learn more about the scaling roadmap
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Backups */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition">
+                <span className="font-semibold text-slate-900 flex items-center gap-2">
+                  <HardDrive className="w-5 h-5 text-blue-600" />
+                  How do I backup my data?
+                </span>
+              </button>
+              <div className="p-4 bg-white border-t border-slate-200">
+                <p className="text-slate-600 text-sm mb-3">
+                  Database backups are automatically generated daily at 2:00 AM UTC and stored securely via Telegram cloud infrastructure. You can also trigger manual backups via the admin dashboard or API. All backups are retained for 30 days by default.
+                </p>
+                <div className="space-y-2">
+                  <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700 block">POST /api/backup/export</code>
+                  <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700 block">POST /api/backup/restore</code>
+                </div>
+                <Link href="#disaster-recovery" className="text-sm text-blue-700 hover:text-blue-900 flex items-center gap-1 mt-3">
+                  Learn more about disaster recovery
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </div>
+
+            {/* SLAs */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition">
+                <span className="font-semibold text-slate-900 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-blue-600" />
+                  What are your SLAs?
+                </span>
+              </button>
+              <div className="p-4 bg-white border-t border-slate-200">
+                <p className="text-slate-600 text-sm mb-3">
+                  Currently, NextMavens operates on a <strong>best effort basis</strong> with no formal SLA. As we scale to multi-region deployment with automated failover, we plan to offer 99.9% uptime SLAs with defined credit policies for outages.
+                </p>
+                <div className="grid md:grid-cols-2 gap-3 mb-3">
+                  <div className="bg-slate-50 rounded p-3">
+                    <div className="text-xs text-slate-500 mb-1">Current RTO</div>
+                    <div className="font-semibold text-slate-900">4-24 hours</div>
+                  </div>
+                  <div className="bg-slate-50 rounded p-3">
+                    <div className="text-xs text-slate-500 mb-1">Target RTO (Multi-Region)</div>
+                    <div className="font-semibold text-slate-900">&lt;1 hour</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Maintenance Windows */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition">
+                <span className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  Are there maintenance windows?
+                </span>
+              </button>
+              <div className="p-4 bg-white border-t border-slate-200">
+                <p className="text-slate-600 text-sm mb-3">
+                  Scheduled maintenance will be announced at least 48 hours in advance via email and the status page. Maintenance windows are typically scheduled during low-traffic hours (2:00 AM - 4:00 AM UTC) on weekends. Emergency maintenance for critical security issues may be performed with minimal notice.
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                  <div className="text-xs text-blue-700">
+                    <strong>Status Page:</strong> <Link href="https://status.nextmavens.cloud" className="underline">status.nextmavens.cloud</Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Data Portability */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition">
+                <span className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Copy className="w-5 h-5 text-blue-600" />
+                  Can I export my data?
+                </span>
+              </button>
+              <div className="p-4 bg-white border-t border-slate-200">
+                <p className="text-slate-600 text-sm mb-3">
+                  Yes, you can export your database at any time via the backup export API. Exports are generated as SQL dump files that can be imported into any PostgreSQL-compatible database. You can also export logs and audit records for compliance purposes.
+                </p>
+                <div className="space-y-2 mb-3">
+                  <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700 block">POST /api/backup/export - Database export</code>
+                  <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700 block">POST /api/backup/export-logs - Logs export</code>
+                  <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-700 block">GET /api/audit/export - Audit logs export</code>
+                </div>
+              </div>
+            </div>
+
+            {/* Data Residency */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition">
+                <span className="font-semibold text-slate-900 flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-blue-600" />
+                  Where is my data stored?
+                </span>
+              </button>
+              <div className="p-4 bg-white border-t border-slate-200">
+                <p className="text-slate-600 text-sm mb-3">
+                  Currently, all data is stored in the US-East region. With our upcoming multi-region deployment (Q3 2026), you will be able to select your preferred region (US, EU, Asia) when creating a project. Your data will remain in that region and will not be transferred across borders unless you explicitly enable cross-region replication.
+                </p>
+                <div className="grid md:grid-cols-3 gap-2">
+                  <div className="bg-slate-50 rounded p-2 text-center">
+                    <div className="text-lg">🇺🇸</div>
+                    <div className="text-xs text-slate-600">US-East (Current)</div>
+                  </div>
+                  <div className="bg-slate-50 rounded p-2 text-center opacity-60">
+                    <div className="text-lg">🇪🇺</div>
+                    <div className="text-xs text-slate-600">EU (Coming Q3 2026)</div>
+                  </div>
+                  <div className="bg-slate-50 rounded p-2 text-center opacity-60">
+                    <div className="text-lg">🌏</div>
+                    <div className="text-xs text-slate-600">Asia (Coming Q3 2026)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Security */}
+            <div className="border border-slate-200 rounded-lg overflow-hidden">
+              <button className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition">
+                <span className="font-semibold text-slate-900 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-600" />
+                  How is my data secured?
+                </span>
+              </button>
+              <div className="p-4 bg-white border-t border-slate-200">
+                <p className="text-slate-600 text-sm mb-3">
+                  Security is implemented at every layer: Network isolation (firewall with only ports 80/443 open), TLS 1.2+ encryption for all connections, JWT-based authentication with HttpOnly cookies, per-project database isolation, and AES-256 encryption at rest for all persistent data.
+                </p>
+                <div className="grid md:grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 text-xs text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    TLS 1.2+ encryption
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    AES-256 at rest
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    Per-project isolation
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-700">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    JWT authentication
+                  </div>
+                </div>
+                <Link href="#security" className="text-sm text-blue-700 hover:text-blue-900 flex items-center gap-1 mt-3">
+                  Learn more about security architecture
+                  <ChevronRight className="w-4 h-4" />
+                </Link>
               </div>
             </div>
           </div>
