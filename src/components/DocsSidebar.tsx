@@ -6,6 +6,12 @@ import { useState, useEffect, useRef } from 'react'
 import { BookOpen, Database, Shield, HardDrive, Globe, DatabaseBackup, ChevronRight, ChevronLeft, Code, Zap, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// Helper to detect Mac OS
+const isMac = (): boolean => {
+  if (typeof window === 'undefined') return false
+  return navigator.platform.toUpperCase().indexOf('MAC') >= 0
+}
+
 interface SidebarSection {
   id: string
   title: string

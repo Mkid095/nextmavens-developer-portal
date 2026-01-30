@@ -225,8 +225,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Keyboard shortcut Cmd/Ctrl + B added to toggle sidebar in DocsLayout.tsx. Added keydown event listener that detects metaKey (Mac) or ctrlKey (Windows/Linux) with 'b' key. Calls handleToggle function when triggered. Added isMac() helper function to DocsSidebar.tsx to detect platform and display appropriate keyboard symbol (⌘ for Mac, Ctrl for others). Updated sidebar toggle button aria-label and title attributes to include keyboard shortcut hint. Added visual indicator below toggle button showing '⌘ + B' or 'Ctrl + B' based on platform. Typecheck passes."
     }
   ],
   "relatedPRDs": [],
