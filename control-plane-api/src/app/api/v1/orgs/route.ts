@@ -142,24 +142,41 @@ export async function POST(req: NextRequest) {
 
     const pool = getPool()
 
-    // Generate slug from organization name
-    const slug = validatedData.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
+    // Generate or use provided slug
+    let slug = validatedData.slug
+    if (!slug) {
+      // Generate slug from organization name
+      slug = validatedData.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+    }
 
-    // Check if slug already exists
-    const existingOrg = await pool.query(
-      'SELECT id FROM control_plane.organizations WHERE slug = $1',
-      [slug]
-    )
-
-    if (existingOrg.rows.length > 0) {
-      return errorResponse(
-        'DUPLICATE_ORGANIZATION',
-        'An organization with this name already exists',
-        409
+    // Ensure slug is unique - append number if duplicate exists
+    let finalSlug = slug
+    let counter = 1
+    while (true) {
+      const existingOrg = await pool.query(
+        'SELECT id FROM control_plane.organizations WHERE slug = $1',
+        [finalSlug]
       )
+
+      if (existingOrg.rows.length === 0) {
+        break
+      }
+
+      // If user provided a specific slug and it exists, return error
+      if (validatedData.slug && counter === 1) {
+        return errorResponse(
+          'DUPLICATE_ORGANIZATION',
+          'An organization with this slug already exists',
+          409
+        )
+      }
+
+      // Generate unique slug by appending counter
+      finalSlug = `${slug}-${counter}`
+      counter++
     }
 
     // Create organization
@@ -167,7 +184,7 @@ export async function POST(req: NextRequest) {
       `INSERT INTO control_plane.organizations (name, slug, owner_id)
        VALUES ($1, $2, $3)
        RETURNING id, name, slug, owner_id, created_at`,
-      [validatedData.name, slug, developer.id]
+      [validatedData.name, finalSlug, developer.id]
     )
 
     const organization = result.rows[0]

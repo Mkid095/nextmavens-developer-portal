@@ -64,6 +64,9 @@ export const listProjectsQuerySchema = z.object({
 // Organization creation schema
 export const createOrganizationSchema = z.object({
   name: z.string().min(2, 'Organization name must be at least 2 characters').max(255, 'Organization name must be at most 255 characters'),
+  slug: z.string().min(2, 'Slug must be at least 2 characters').max(100, 'Slug must be at most 100 characters')
+    .regex(/^[a-z0-9-]+$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .optional(),
 })
 
 // Organization update schema
