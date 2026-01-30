@@ -164,8 +164,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created comprehensive MCP audit logging system in src/lib/mcp-audit-logger.ts (662 lines). All MCP requests logged to audit_logs table via logMcpAction function with log_type='mcp_token_action' and actor_type='mcp_token'. Full payload captured via request_payload field (sanitized to redact sensitive fields like tokens, passwords, api_keys). AI/IDE identified from user_agent via detectAiTool function - detects Cursor, Claude, Copilot, ChatGPT, Codeium, Tabnine, Sourcegraph, Amazon Q, Windsurf, Cline, Roo Code, Continue, Aider. IDE version extracted via extractIdeVersion function - supports VSCode, JetBrains, Vim, Neovim. Project_id captured from the authenticated API key's project association. Additional functions: logMcpScopeCheck, logMcpAuthFailure, withMcpAuditLogging middleware wrapper, getMcpAuditLogs (with filtering), getMcpAuditStats, sanitizePayload. Typecheck passes."
     },
     {
       "id": "US-004",
