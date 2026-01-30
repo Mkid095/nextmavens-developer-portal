@@ -291,8 +291,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created comprehensive team management UI at /dashboard/organizations/[slug]/settings (src/app/dashboard/organizations/[slug]/settings/page.tsx, 819 lines). Features:\n- Lists all members with roles and status badges (active/pending)\n- Shows member email, name, join date, and invitation expiry\n- Invite member form with email input and role selection (owner/admin/developer/viewer)\n- Change role dropdown menu for owners to update member roles\n- Remove member button with confirmation modal\n- Resend invitation button for pending invitations\n- Permission-based UI: only owners and admins can manage members\n- Role legend with descriptions (Owner: full control, Admin: manage members/settings, Developer: use services/view logs, Viewer: read-only)\n- Toast notifications for all actions\n- Loading states and error handling\n\nBackend changes:\n- Added GET /v1/orgs/:id/members endpoint in control-plane-api (control-plane-api/src/app/api/v1/orgs/[id]/members/route.ts) that returns all members with user details, ordered by role hierarchy\n- Added GET /api/organizations/[id]/members in developer portal that forwards to control-plane\n- Added listOrganizationMembers() method to ControlPlaneClient\n\nAll acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-012",

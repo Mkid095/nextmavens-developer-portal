@@ -2,9 +2,11 @@
  * SQL Query Execution API
  *
  * US-002: Create Execute Query API
+ * US-010: Enforce Database Write Permissions
  *
  * Executes SQL queries on tenant-specific schemas with readonly mode protection.
  * Validates queries for destructive operations when readonly mode is enabled.
+ * Checks database.write permission for non-readonly queries (INSERT/UPDATE/DELETE).
  *
  * POST /api/studio/:projectId/query
  *
@@ -28,10 +30,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { withSchemaScope, ScopedPool } from '@/lib/middleware/schema-scope'
+import { authenticateRequest } from '@/lib/auth'
+import { checkUserPermission } from '@/lib/rbac'
+import { Permission } from '@/lib/types/rbac.types'
 import {
   validationError,
   toErrorNextResponse,
   ErrorCode,
+  permissionDeniedError,
 } from '@/lib/errors'
 
 /**
