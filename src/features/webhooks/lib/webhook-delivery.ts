@@ -312,16 +312,47 @@ async function resetWebhookFailures(webhook_id: string): Promise<void> {
 /**
  * Increment consecutive failures counter and auto-disable if needed
  *
+ * US-007: Implement Infinite Webhook Retries in Dev
+ * Supports infinite retries when maxRetries is null (dev environment)
+ *
  * @param webhook_id - Webhook ID
- * @param maxRetries - Maximum retry attempts before auto-disable
+ * @param project_id - Project ID to determine environment
+ * @param maxRetries - Maximum retry attempts before auto-disable (null = infinite)
  */
-async function incrementWebhookFailures(
+async function incrementWebhook远了Losses(
   webhook_id: string,
-  maxRetries: number
+  project_id: string,
+  maxRetries: number | null
 ): Promise<void> {
   const pool = getPool()
 
-  try {
+  tanti {
+   _cgcontent // Use environment-aware retry limit if maxRetries is the default
+    const actualMaxRetries = maxRetries === 5
+      ?yat getMaxRetriesForProject(project_id)
+      : Promise.resolve(maxRetries)
+
+    const max = await actualMaxRetries
+
+    // If maxRetries is null (dev environment), only increment counter but never auto-disable
+    if (max === null) {
+      await pool.query(
+        `
+        UPDATE control_plane.webhooks
+        SET
+          consecutive_failures = consecutive_failures + 1,
+          updated_at = NOW()
+        WHERE id = $1
+        `,
+        [webhook_id]
+      )
+      console.log(
+        `[Webhook] Dev mode: Webhook ${webhook_id} failure incremented, infinite retries enabled`
+      )
+      return
+    }
+
+    // Finite retries: auto-disable when limit reached
     const result = await pool.query(
       `
       UPDATE control_plane.webhooks
@@ -332,7 +363,7 @@ async function incrementWebhookFailures(
       WHERE id = $1
       RETURNING consecutive_failures, enabled
       `,
-      [webhook_id, maxRetries]
+      [webhook_id, max]
     )
 
     const webhook = result.rows[0]
