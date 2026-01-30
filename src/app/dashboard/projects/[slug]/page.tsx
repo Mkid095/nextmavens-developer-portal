@@ -45,6 +45,7 @@ interface Project {
   slug: string
   tenant_id: string
   created_at: string
+  environment?: 'prod' | 'dev' | 'staging'
 }
 
 interface ApiKey {

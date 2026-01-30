@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/middleware'
+import { requirePermission } from '@/lib/middleware'
 import { withCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
 import { getControlPlaneClient } from '@/lib/api/control-plane-client'
+import { Permission } from '@/lib/types/rbac.types'
+import { User } from '@/lib/rbac'
 
 /**
  * GET /api/projects/[projectId]
@@ -76,33 +79,56 @@ export async function PATCH(
 
 /**
  * DELETE /api/projects/[projectId]
- * Delete a project (checks if suspended)
+ * Delete a project (requires projects.delete permission)
+ *
+ * US-005: Apply Permissions to Project Deletion
+ * Only organization owners can delete projects. Returns 403 for non-owners.
  */
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { projectId: string } }
-) {
-  // Apply correlation ID to request
-  const correlationId = withCorrelationId(req)
+export const DELETE = requirePermission(
+  {
+    permission: Permission.PROJECTS_DELETE,
+    getOrganizationId: async (req: NextRequest) => {
+      // Extract project ID from the request
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const projectIdIndex = pathParts.indexOf('projects') + 1
+      const projectId = pathParts[projectIdIndex]
 
-  try {
-    await authenticateRequest(req)
-    const projectId = params.projectId
-    const controlPlane = getControlPlaneClient()
+      // Get project details to extract tenant_id (organization ID)
+      const controlPlane = getControlPlaneClient()
+      const projectData = await controlPlane.getProject(projectId, req)
 
-    // Call Control Plane API to delete project
-    const response = await controlPlane.deleteProject(projectId, req)
+      // Return the tenant_id as the organization ID
+      return projectData.project.tenant_id
+    }
+  },
+  async (req: NextRequest, user: User) => {
+    // Apply correlation ID to request
+    const correlationId = withCorrelationId(req)
 
-    const res = NextResponse.json({
-      message: 'Project deleted successfully',
-      project_id: projectId,
-    })
-    return setCorrelationHeader(res, correlationId)
-  } catch (error: any) {
-    console.error('[Projects API] Delete project error:', error)
-    return NextResponse.json(
-      { error: error.message || 'Failed to delete project' },
-      { status: error.message === 'No token provided' ? 401 : 500 }
-    )
+    try {
+      // Extract project ID from URL
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      const projectIdIndex = pathParts.indexOf('projects') + 1
+      const projectId = pathParts[projectIdIndex]
+
+      const controlPlane = getControlPlaneClient()
+
+      // Call Control Plane API to delete project
+      const response = await controlPlane.deleteProject(projectId, req)
+
+      const res = NextResponse.json({
+        message: 'Project deleted successfully',
+        project_id: projectId,
+      })
+      return setCorrelationHeader(res, correlationId)
+    } catch (error: any) {
+      console.error('[Projects API] Delete project error:', error)
+      return NextResponse.json(
+        { error: error.message || 'Failed to delete project' },
+        { status: error.message === 'No token provided' ? 401 : 500 }
+      )
+    }
   }
-}
+)

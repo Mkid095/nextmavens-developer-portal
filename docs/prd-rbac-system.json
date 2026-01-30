@@ -130,8 +130,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Applied permission checking to DELETE /api/projects/[projectId] endpoint in src/app/api/projects/[projectId]/route.ts. Uses requirePermission middleware with Permission.PROJECTS_DELETE. Extracts organization ID from project's tenant_id by fetching project details first before permission check. Only organization owners (who have projects.delete permission) can delete projects. Returns 403 Forbidden for non-owners with detailed error message including required_permission field. Typecheck passes."
     },
     {
       "id": "US-006",
