@@ -6,12 +6,20 @@ import { generateAccessToken, generateRefreshToken } from '@/lib/auth'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { email, password } = body
+    const { email, password, project_id } = body
 
     // Validation
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
+        { status: 400 }
+      )
+    }
+
+    // US-001: Require project_id in JWT
+    if (!project_id) {
+      return NextResponse.json(
+        { error: 'project_id is required' },
         { status: 400 }
       )
     }
@@ -42,8 +50,21 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Generate tokens
-    const accessToken = generateAccessToken(developer)
+    // US-001: Verify project exists and belongs to the developer
+    const projectResult = await pool.query(
+      'SELECT id FROM projects WHERE id = $1 AND developer_id = $2',
+      [project_id, developer.id]
+    )
+
+    if (projectResult.rows.length === 0) {
+      return NextResponse.json(
+        { error: 'Invalid project_id or access denied' },
+        { status: 403 }
+      )
+    }
+
+    // Generate tokens with project_id
+    const accessToken = generateAccessToken(developer, project_id)
     const refreshToken = generateRefreshToken(developer.id)
 
     return NextResponse.json({
