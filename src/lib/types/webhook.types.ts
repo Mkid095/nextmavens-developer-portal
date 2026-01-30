@@ -139,3 +139,67 @@ export interface TestWebhookResponse {
     duration: number
   }
 }
+
+/**
+ * Event log entry
+ */
+export interface EventLog {
+  id: string
+  project_id: string
+  project_name?: string
+  webhook_id: string | null
+  webhook?: {
+    id: string
+    event: string
+    target_url: string
+  }
+  event_type: string
+  status: 'pending' | 'delivered' | 'failed'
+  response_code: number | null
+  response_body: string | null
+  retry_count: number
+  delivered_at: string | null
+  created_at: string
+}
+
+/**
+ * List event logs query parameters
+ */
+export interface ListEventLogsQuery {
+  project_id?: string
+  webhook_id?: string
+  event_type?: string
+  status?: 'pending' | 'delivered' | 'failed'
+  limit?: number
+  offset?: number
+}
+
+/**
+ * List event logs response
+ */
+export interface ListEventLogsResponse {
+  success: boolean
+  data: EventLog[]
+  meta?: {
+    limit: number
+    offset: number
+    total: number
+    has_more: boolean
+  }
+}
+
+/**
+ * Retry event log request
+ */
+export interface RetryEventLogRequest {
+  event_log_id: string
+}
+
+/**
+ * Retry event log response
+ */
+export interface RetryEventLogResponse {
+  success: boolean
+  message: string
+  data?: EventLog
+}
