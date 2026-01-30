@@ -53,7 +53,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Implemented SSE endpoint at src/app/api/logs/stream/route.ts. Uses Server-Sent Events for real-time streaming (Next.js App Router doesn't natively support WebSocket). Features: project_id validation, token auth via authenticateRequest, polling every 2 seconds for new logs, service/level filtering, heartbeat to keep connection alive, proper SSE event format with 'log' events. Typecheck passes."
+      "notes": "Completed: SSE endpoint at src/app/api/logs/stream/route.ts with project_id validation, token auth, polling every 2s for new logs, service/level filtering, heartbeat. Added project_logs table migration (src/features/logs/migrations/create-project-logs-table.ts) with proper indexes for efficient queries. Created writeLog utility (src/features/logs/lib/write-log.ts) with logInfo/logWarn/logError helpers. Logs feature module (src/features/logs/index.ts) exports types, migrations, and utilities. Typecheck passes."
     },
     {
       "id": "US-003",

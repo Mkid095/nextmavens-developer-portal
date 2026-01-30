@@ -26,8 +26,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Created migration 003_create_organizations_table.sql with organizations table in control_plane schema. Includes id (UUID PK), name, slug (unique), owner_id (FK to developers.id), created_at. Indexes on owner_id and slug. Typecheck passes."
     },
     {
       "id": "US-002",
