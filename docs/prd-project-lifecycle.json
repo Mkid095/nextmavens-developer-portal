@@ -267,8 +267,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created auto-status-transitions.ts (470+ lines) with runAutoStatusTransitionsJob() function. Implements three automatic transitions: (1) CREATED → ACTIVE after provisioning completes - checks if all provisioning steps are success using isProvisioningComplete() from state-machine.ts and activates project, (2) ACTIVE → SUSPENDED when hard cap exceeded - syncs project status with existing suspensions table, (3) SUSPENDED → ACTIVE after quota reset - checks if quota reset_at has passed and resolves suspension, then reactivates project. Background job logs all transitions to audit logs with systemActor and transition metadata. API endpoint at POST /api/admin/auto-status-transitions/run for manual triggering. GET endpoint provides job documentation. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

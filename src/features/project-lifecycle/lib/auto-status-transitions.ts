@@ -18,6 +18,17 @@ import {
 import { logProjectAction } from '@nextmavens/audit-logs-database'
 
 /**
+ * System actor for background job actions
+ */
+function systemActor() {
+  return {
+    type: 'system' as const,
+    id: 'auto-status-transitions-job',
+    name: 'Auto Status Transitions Background Job',
+  }
+}
+
+/**
  * Result of a status transition operation
  */
 export interface StatusTransitionResult {
@@ -115,12 +126,21 @@ async function transitionCreatedToActive(
     }
 
     // Log to audit logs
-    await logProjectAction.autoStatusChange(
+    await logProjectAction.updated(
+      systemActor(),
       projectId,
-      'CREATED',
-      'ACTIVE',
-      'Provisioning completed successfully',
-      true
+      {
+        action: 'auto_activated',
+        previous_status: ProjectLifecycleStatus.CREATED,
+        new_status: ProjectLifecycleStatus.ACTIVE,
+        reason: 'Provisioning completed successfully',
+      },
+      {
+        metadata: {
+          source: 'auto-status-transitions-job',
+          transition_type: 'created_to_active',
+        },
+      }
     ).catch((error) => {
       console.error('[Auto Status] Failed to log to audit:', error)
     })
@@ -323,12 +343,21 @@ async function transitionSuspendedToActive(
       }
 
       // Log to audit logs
-      await logProjectAction.autoStatusChange(
+      await logProjectAction.updated(
+        systemActor(),
         projectId,
-        'SUSPENDED',
-        'ACTIVE',
-        'Quota reset - suspension cleared automatically',
-        true
+        {
+          action: 'auto_reactivated',
+          previous_status: ProjectLifecycleStatus.SUSPENDED,
+          new_status: ProjectLifecycleStatus.ACTIVE,
+          reason: 'Quota reset - suspension cleared automatically',
+        },
+        {
+          metadata: {
+            source: 'auto-status-transitions-job',
+            transition_type: 'suspended_to_active',
+          },
+        }
       ).catch((error) => {
         console.error('[Auto Status] Failed to log to audit:', error)
       })
