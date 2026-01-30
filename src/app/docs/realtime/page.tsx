@@ -2579,6 +2579,547 @@ async function notifyUserMention(mentionedUserId, mentioningUserName, content) {
           </div>
         </motion.div>
 
+        {/* Realtime Examples */}
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl font-bold text-slate-100 mb-6">Realtime Examples</h2>
+
+          <div className="prose prose-invert max-w-none mb-8">
+            <p className="text-slate-300 text-lg leading-relaxed">
+              Explore working examples and common patterns for implementing realtime features in your applications.
+              These examples demonstrate collaborative editing, live notifications, and more.
+            </p>
+          </div>
+
+          {/* Example Apps */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Play className="w-5 h-5 text-emerald-400" />
+              Example Applications
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <a
+                href="https://github.com/nextmavens/examples/tree/main/realtime-collaborative-editor"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <FileCode className="w-4 h-4 text-emerald-400" />
+                  <h4 className="font-semibold text-slate-100">Collaborative Document Editor</h4>
+                </div>
+                <p className="text-sm text-slate-400">
+                  Real-time collaborative editing with presence tracking and conflict resolution
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <span className="px-2 py-1 bg-emerald-500/10 text-emerald-300 text-xs rounded">React</span>
+                  <span className="px-2 py-1 bg-blue-500/10 text-blue-300 text-xs rounded">Realtime</span>
+                </div>
+              </a>
+              <a
+                href="https://github.com/nextmavens/examples/tree/main/realtime-live-chat"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageSquare className="w-4 h-4 text-blue-400" />
+                  <h4 className="font-semibold text-slate-100">Live Chat Application</h4>
+                </div>
+                <p className="text-sm text-slate-400">
+                  Real-time messaging with typing indicators and online user status
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <span className="px-2 py-1 bg-emerald-500/10 text-emerald-300 text-xs rounded">Next.js</span>
+                  <span className="px-2 py-1 bg-purple-500/10 text-purple-300 text-xs rounded">Presence</span>
+                </div>
+              </a>
+              <a
+                href="https://github.com/nextmavens/examples/tree/main/realtime-live-dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Code className="w-4 h-4 text-purple-400" />
+                  <h4 className="font-semibold text-slate-100">Live Analytics Dashboard</h4>
+                </div>
+                <p className="text-sm text-slate-400">
+                  Real-time data visualization with live charts and metrics
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <span className="px-2 py-1 bg-emerald-500/10 text-emerald-300 text-xs rounded">React</span>
+                  <span className="px-2 py-1 bg-orange-500/10 text-orange-300 text-xs rounded">Charts</span>
+                </div>
+              </a>
+              <a
+                href="https://github.com/nextmavens/examples/tree/main/realtime-multiplayer-game"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 hover:border-emerald-500/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="w-4 h-4 text-yellow-400" />
+                  <h4 className="font-semibold text-slate-100">Multiplayer Game</h4>
+                </div>
+                <p className="text-sm text-slate-400">
+                  Real-time multiplayer game with state synchronization
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <span className="px-2 py-1 bg-emerald-500/10 text-emerald-300 text-xs rounded">Canvas</span>
+                  <span className="px-2 py-1 bg-red-500/10 text-red-300 text-xs rounded">Game</span>
+                </div>
+              </a>
+            </div>
+          </div>
+
+          {/* Collaborative Editing Example */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-purple-400" />
+              Collaborative Editing Pattern
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Build a collaborative document editor with real-time cursor tracking:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`// Collaborative Editor with Cursor Tracking
+class CollaborativeEditor {
+  constructor(documentId, userId) {
+    this.documentId = documentId;
+    this.userId = userId;
+    this.cursors = new Map(); // Track other users' cursors
+    this.setupRealtimeConnection();
+  }
+
+  setupRealtimeConnection() {
+    // Connect to document channel
+    this.channel = subscribe({
+      channel: 'document_changes',
+      event: '*',
+      schema: 'public',
+      filter: \`document_id=eq.\${this.documentId}\`
+    });
+
+    // Listen for content changes
+    this.channel.on('UPDATE', (payload) => {
+      if (payload.new.version > payload.old.version) {
+        this.applyRemoteChange(payload.new.content);
+      }
+    });
+
+    // Connect to presence channel for cursors
+    this.presenceChannel = subscribe({
+      channel: 'document_cursors',
+      event: 'presence_state',
+      schema: 'public',
+      filter: \`document_id=eq.\${this.documentId}\`
+    });
+
+    this.presenceChannel.on('presence_state', (state) => {
+      this.updateCursors(state);
+    });
+
+    // Track local cursor position
+    this.editor.on('cursorActivity', () => {
+      this.broadcastCursorPosition();
+    });
+  }
+
+  broadcastCursorPosition() {
+    // Broadcast cursor position via presence
+    const cursorPosition = {
+      user_id: this.userId,
+      position: this.editor.getCursor().position,
+      selection: this.editor.getSelection(),
+      timestamp: Date.now()
+    };
+
+    this.presenceChannel.send('presence_diff', {
+      joins: { [this.userId]: cursorPosition },
+      leaves: {}
+    });
+  }
+
+  updateCursors(state) {
+    // Clear old cursors
+    this.cursors.forEach((cursor, userId) => {
+      if (!state[userId]) {
+        cursor.element.remove();
+        this.cursors.delete(userId);
+      }
+    });
+
+    // Add/update cursors
+    Object.entries(state).forEach(([userId, data]) => {
+      if (userId !== this.userId) {
+        this.renderRemoteCursor(userId, data);
+      }
+    });
+  }
+
+  renderRemoteCursor(userId, cursorData) {
+    // Render cursor at position
+    const cursor = this.cursors.get(userId) || this.createCursorElement(userId);
+    cursor.element.style.left = \`\${cursorData.position.x}px\`;
+    cursor.element.style.top = \`\${cursorData.position.y}px\`;
+    cursor.element.querySelector('.cursor-label').textContent = cursorData.username;
+    this.cursors.set(userId, cursor);
+  }
+
+  applyRemoteChange(content) {
+    // Apply Operational Transformation or CRDT merge
+    const currentContent = this.editor.getValue();
+    const mergedContent = this.mergeChanges(currentContent, content);
+    this.editor.setValue(mergedContent);
+  }
+
+  mergeChanges(local, remote) {
+    // Simple merge strategy (use OT library like Yjs for production)
+    // This is a simplified example
+    return local.length > remote.length ? local : remote;
+  }
+}
+
+// Usage
+const editor = new CollaborativeEditor('doc-123', 'user-456');`}</code>
+            </pre>
+            <div className="grid md:grid-cols-3 gap-4 mt-4">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                <p className="text-xs text-emerald-300 mb-1">Content Sync</p>
+                <p className="text-sm font-semibold text-emerald-200">Real-time updates</p>
+              </div>
+              <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                <p className="text-xs text-purple-300 mb-1">Presence</p>
+                <p className="text-sm font-semibold text-purple-200">Cursor tracking</p>
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <p className="text-xs text-blue-300 mb-1">Conflict</p>
+                <p className="text-sm font-semibold text-blue-200">Merge strategy</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Notifications Example */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Megaphone className="w-5 h-5 text-orange-400" />
+              Live Notifications Pattern
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Implement real-time push notifications with browser integration:
+            </p>
+            <pre className="bg-slate-900 rounded-lg p-4">
+              <code className="text-sm text-slate-300">{`// Live Notifications with Browser API
+class LiveNotificationSystem {
+  constructor(projectId, token) {
+    this.projectId = projectId;
+    this.token = token;
+    this.notifications = [];
+    this.setupConnection();
+    this.requestNotificationPermission();
+  }
+
+  setupConnection() {
+    this.ws = new WebSocket(\`wss://realtime.nextmavens.cloud?token=\${this.token}\`);
+
+    this.ws.onopen = () => {
+      // Subscribe to user's notifications
+      this.ws.send(JSON.stringify({
+        event: 'phx_join',
+        topic: \`\${this.projectId}:user_notifications\`,
+        payload: {
+          config: {
+            events: ['INSERT'],
+            filter: \`user_id=eq.\${this.getCurrentUserId()}\`
+          }
+        },
+        ref: '1'
+      }));
+    };
+
+    this.ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.event === 'INSERT' && msg.payload) {
+        this.handleNewNotification(msg.payload.record);
+      }
+    };
+  }
+
+  requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(permission => {
+        console.log('Notification permission:', permission);
+      });
+    }
+  }
+
+  handleNewNotification(notification) {
+    // Store notification
+    this.notifications.unshift(notification);
+
+    // Show browser notification
+    this.showBrowserNotification(notification);
+
+    // Show in-app notification
+    this.showInAppNotification(notification);
+
+    // Play sound (optional)
+    this.playNotificationSound(notification.type);
+  }
+
+  showBrowserNotification(notification) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      const browserNotification = new Notification(notification.title, {
+        body: notification.message,
+        icon: '/icons/notification-icon.png',
+        badge: '/icons/badge-icon.png',
+        tag: notification.id, // Prevents duplicates
+        requireInteraction: notification.important,
+        data: {
+          url: notification.action_url,
+          id: notification.id
+        }
+      });
+
+      browserNotification.onclick = () => {
+        window.focus();
+        if (notification.action_url) {
+          window.location.href = notification.action_url;
+        }
+        browserNotification.close();
+      };
+
+      // Auto-close after 5 seconds
+      setTimeout(() => browserNotification.close(), 5000);
+    }
+  }
+
+  showInAppNotification(notification) {
+    // Create in-app notification element
+    const container = document.getElementById('notification-container');
+    const notificationEl = this.createNotificationElement(notification);
+
+    container.appendChild(notificationEl);
+
+    // Animate in
+    notificationEl.style.animation = 'slideInRight 0.3s ease-out';
+
+    // Auto-dismiss
+    setTimeout(() => {
+      notificationEl.style.animation = 'slideOutRight 0.3s ease-out';
+      setTimeout(() => notificationEl.remove(), 300);
+    }, 5000);
+  }
+
+  createNotificationElement(notification) {
+    const div = document.createElement('div');
+    div.className = \`notification-item notification-\${notification.type}\`;
+    div.innerHTML = \`
+      <div class="notification-header">
+        <span class="notification-icon">\${this.getIcon(notification.type)}</span>
+        <span class="notification-title">\${notification.title}</span>
+        <button class="notification-close">&times;</button>
+      </div>
+      <p class="notification-message">\${notification.message}</p>
+      \${notification.action_url ? \`<a href="\${notification.action_url}" class="notification-action">View</a>\` : ''}
+    \`;
+    return div;
+  }
+
+  playNotificationSound(type) {
+    const audio = new Audio('/sounds/notification.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(e => console.log('Audio play failed:', e));
+  }
+
+  getCurrentUserId() {
+    // Get user ID from JWT or session
+    return localStorage.getItem('user_id');
+  }
+
+  getIcon(type) {
+    const icons = {
+      info: 'ℹ️',
+      success: '✅',
+      warning: '⚠️',
+      error: '❌',
+      mention: '@'
+    };
+    return icons[type] || '🔔';
+  }
+}
+
+// Usage
+const notifications = new LiveNotificationSystem(
+  'your-project-id',
+  'your-jwt-token'
+);`}</code>
+            </pre>
+            <div className="grid md:grid-cols-3 gap-4 mt-4">
+              <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3">
+                <p className="text-xs text-orange-300 mb-1">Browser API</p>
+                <p className="text-sm font-semibold text-orange-200">Native notifications</p>
+              </div>
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-3">
+                <p className="text-xs text-emerald-300 mb-1">In-App</p>
+                <p className="text-sm font-semibold text-emerald-200">Custom UI</p>
+              </div>
+              <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
+                <p className="text-xs text-blue-300 mb-1">Smart</p>
+                <p className="text-sm font-semibold text-blue-200">Auto-dismiss</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Common Patterns Reference */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Lightbulb className="w-5 h-5 text-yellow-400" />
+              Common Code Patterns
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <h4 className="font-semibold text-slate-100 mb-2">Reconnection with Exponential Backoff</h4>
+                <pre className="bg-slate-900 rounded p-2">
+                  <code className="text-xs text-slate-300">{`class ReconnectingWebSocket {
+  constructor(url, options = {}) {
+    this.url = url;
+    this.reconnectDelay = options.reconnectDelay || 1000;
+    this.maxReconnectDelay = options.maxReconnectDelay || 30000;
+    this.currentDelay = this.reconnectDelay;
+    this.connect();
+  }
+
+  connect() {
+    this.ws = new WebSocket(this.url);
+    this.ws.onopen = () => {
+      this.currentDelay = this.reconnectDelay;
+    };
+    this.ws.onclose = () => {
+      setTimeout(() => {
+        this.currentDelay = Math.min(
+          this.currentDelay * 2,
+          this.maxReconnectDelay
+        );
+        this.connect();
+      }, this.currentDelay);
+    };
+  }
+}`}</code>
+                </pre>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <h4 className="font-semibold text-slate-100 mb-2">Subscription Management</h4>
+                <pre className="bg-slate-900 rounded p-2">
+                  <code className="text-xs text-slate-300">{`class SubscriptionManager {
+  constructor() {
+    this.subscriptions = new Map();
+  }
+
+  subscribe(key, channel, config) {
+    // Unsubscribe existing
+    if (this.subscriptions.has(key)) {
+      this.unsubscribe(key);
+    }
+    // Create new subscription
+    const sub = subscribe({ channel, ...config });
+    this.subscriptions.set(key, sub);
+    return sub;
+  }
+
+  unsubscribe(key) {
+    const sub = this.subscriptions.get(key);
+    if (sub) {
+      sub.leave();
+      this.subscriptions.delete(key);
+    }
+  }
+
+  unsubscribeAll() {
+    this.subscriptions.forEach((sub, key) => {
+      this.unsubscribe(key);
+    });
+  }
+}`}</code>
+                </pre>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <h4 className="font-semibold text-slate-100 mb-2">Event Filtering & Routing</h4>
+                <pre className="bg-slate-900 rounded p-2">
+                  <code className="text-xs text-slate-300">{`class EventRouter {
+  constructor() {
+    this.handlers = new Map();
+  }
+
+  on(eventPattern, handler) {
+    if (!this.handlers.has(eventPattern)) {
+      this.handlers.set(eventPattern, []);
+    }
+    this.handlers.get(eventPattern).push(handler);
+  }
+
+  route(event) {
+    for (const [pattern, handlers] of this.handlers) {
+      if (this.matches(event.type, pattern)) {
+        handlers.forEach(h => h(event));
+      }
+    }
+  }
+
+  matches(eventType, pattern) {
+    if (pattern === '*') return true;
+    if (pattern.endsWith('*')) {
+      const prefix = pattern.slice(0, -1);
+      return eventType.startsWith(prefix);
+    }
+    return eventType === pattern;
+  }
+}`}</code>
+                </pre>
+              </div>
+              <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                <h4 className="font-semibold text-slate-100 mb-2">Presence Tracking</h4>
+                <pre className="bg-slate-900 rounded p-2">
+                  <code className="text-xs text-slate-300">{`class PresenceTracker {
+  constructor(channel) {
+    this.channel = channel;
+    this.users = new Map();
+    this.setupListeners();
+  }
+
+  setupListeners() {
+    this.channel.on('presence_state', (state) => {
+      Object.entries(state).forEach(([userId, data]) => {
+        this.users.set(userId, {
+          online: true,
+          ...data
+        });
+      });
+      this.renderUsers();
+    });
+
+    this.channel.on('presence_diff', (diff) => {
+      Object.keys(diff.joins).forEach(userId => {
+        this.users.set(userId, { online: true });
+      });
+      Object.keys(diff.leaves).forEach(userId => {
+        this.users.delete(userId);
+      });
+      this.renderUsers();
+    });
+  }
+
+  getOnlineCount() {
+    return this.users.size;
+  }
+}`}</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Resources */}
         <motion.div variants={itemVariants} className="mb-16">
           <h2 className="text-2xl font-bold text-slate-100 mb-6">Resources</h2>

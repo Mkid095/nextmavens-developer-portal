@@ -1,19 +1,19 @@
 /**
- * Secrets Versioning Feature
+ * Secrets Versioning Feature Module
+ * PRD: US-006 from prd-secrets-versioning.json
  *
- * Exports for the secrets versioning and grace period functionality
+ * This module provides grace period support for secret rotation.
+ * When a secret is rotated, the old version remains decryptable for 24 hours
+ * (grace period) before being permanently deleted. Warnings are sent 1 hour
+ * before expiration.
  */
 
 export {
-  runSecretsGracePeriodJob,
-  getSecretsGracePeriodStats,
-} from './lib/secrets-grace-period-job';
-
-export {
-  runSecretsWarningJob,
-  getSecretsInGracePeriod,
-} from './lib/secrets-warning-job';
-
-// Types
-export type { GracePeriodCleanupResult } from './lib/secrets-grace-period-job';
-export type { GracePeriodWarningResult } from './lib/secrets-warning-job';
+  runGracePeriodCleanupJob,
+  getGracePeriodStats,
+  type CleanupJobResult,
+  type ExpiredSecret,
+  type ExpiringSecret,
+  GRACE_PERIOD_HOURS,
+  WARNING_THRESHOLD_HOURS,
+} from './lib/grace-period-job'

@@ -99,6 +99,7 @@ export async function runGracePeriodCleanupJob(): Promise<CleanupJobResult> {
     }
 
     // Step 2: Find secrets expiring within warning threshold (1 hour)
+    // Only include secrets where warning hasn't been sent yet
     const warningResult = await pool.query(
       `SELECT
         s.id, s.project_id, s.name, s.version, s.grace_period_ends_at,
@@ -111,6 +112,7 @@ export async function runGracePeriodCleanupJob(): Promise<CleanupJobResult> {
          AND s.grace_period_ends_at IS NOT NULL
          AND s.grace_period_ends_at > NOW()
          AND s.grace_period_ends_at <= NOW() + INTERVAL '${WARNING_THRESHOLD_HOURS} hours'
+         AND s.grace_period_warning_sent_at IS NULL
        ORDER BY s.grace_period_ends_at ASC`
     )
 
