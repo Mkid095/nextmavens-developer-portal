@@ -1788,8 +1788,17 @@ const client = createClient({
           {activeTab === 'graphql' && (
             <>
               {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-slate-900">GraphQL Service</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">GraphQL Service</h2>
+                  <ServiceStatusIndicator
+                    service="graphql"
+                    status={serviceStatuses.graphql}
+                    onToggle={createToggleHandler('graphql')}
+                    isUpdating={updatingService === 'graphql'}
+                  />
+                </div>
                 <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
               </div>
 
