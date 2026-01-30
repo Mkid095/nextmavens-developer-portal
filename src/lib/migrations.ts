@@ -18,16 +18,15 @@ export interface MigrationRecord {
 
 /**
  * Run all pending migrations
+ * Each migration runs in its own transaction, so failures don't rollback previously applied migrations
  */
 export async function runMigrations(): Promise<void> {
   const pool = getPool()
-  const client = await pool.connect()
 
+  // First, ensure schema_migrations table exists (outside migration loop)
+  const setupClient = await pool.connect()
   try {
-    await client.query('BEGIN')
-
-    // Ensure schema_migrations table exists
-    await client.query(`
+    await setupClient.query(`
       CREATE TABLE IF NOT EXISTS control_plane.schema_migrations (
         version VARCHAR(50) PRIMARY KEY,
         description TEXT NOT NULL,
@@ -37,19 +36,31 @@ export async function runMigrations(): Promise<void> {
         created_at TIMESTAMPTZ DEFAULT NOW()
       )
     `)
+  } finally {
+    setupClient.release()
+  }
 
-    // Read migration files from /migrations directory
-    const { readdir } = await import('fs/promises')
-    const { join } = await import('path')
+  // Read migration files from /migrations directory
+  const { readdir } = await import('fs/promises')
+  const { join } = await import('path')
 
-    const migrationsDir = join(process.cwd(), 'migrations')
-    const files = await readdir(migrationsDir)
-    const migrationFiles = files
-      .filter(f => f.endsWith('.sql') && f.match(/^\d{3}_/))
-      .sort()
+  const migrationsDir = join(process.cwd(), 'migrations')
+  const files = await readdir(migrationsDir)
+  const migrationFiles = files
+    .filter(f => f.endsWith('.sql') && f.match(/^\d{3}_/))
+    .sort()
 
-    for (const file of migrationFiles) {
-      const version = file.split('_')[0]
+  let successCount = 0
+  let skipCount = 0
+
+  for (const file of migrationFiles) {
+    const version = file.split('_')[0]
+
+    // Each migration gets its own transaction
+    const client = await pool.connect()
+
+    try {
+      await client.query('BEGIN')
 
       // Check if migration already applied
       const existing = await client.query<MigrationRecord>(
@@ -58,7 +69,9 @@ export async function runMigrations(): Promise<void> {
       )
 
       if (existing.rows.length > 0) {
+        await client.query('ROLLBACK')
         console.log(`Migration ${version} already applied, skipping`)
+        skipCount++
         continue
       }
 
@@ -81,25 +94,44 @@ export async function runMigrations(): Promise<void> {
         ?.trim() ||
         `Migration ${version}`
 
+      // Extract rollback SQL if present (looks for -- Rollback: comment)
+      const rollbackLine = lines.find(line =>
+        line.trim().startsWith('-- Rollback:') ||
+        line.trim().startsWith('-- rollback:')
+      )
+      const rollbackSql = rollbackLine
+        ?.replace(/^--\s*(Rollback|rollback):\s*/, '')
+        ?.trim()
+
+      // Extract breaking flag if present (looks for -- Breaking: true/false)
+      const breakingLine = lines.find(line =>
+        line.trim().startsWith('-- Breaking:') ||
+        line.trim().startsWith('-- breaking:')
+      )
+      const breaking = breakingLine
+        ?.replace(/^--\s*(Breaking|breaking):\s*/, '')
+        ?.trim()?.toLowerCase() === 'true'
+
       // Record migration
       await client.query(
-        `INSERT INTO control_plane.schema_migrations (version, description, breaking)
-         VALUES ($1, $2, $3)`,
-        [version, description, false]
+        `INSERT INTO control_plane.schema_migrations (version, description, rollback_sql, breaking)
+         VALUES ($1, $2, $3, $4)`,
+        [version, description, rollbackSql || null, breaking]
       )
 
+      await client.query('COMMIT')
       console.log(`Migration ${version} applied successfully`)
+      successCount++
+    } catch (error) {
+      await client.query('ROLLBACK')
+      console.error(`Migration ${version} failed (rolled back):`, error)
+      throw error
+    } finally {
+      client.release()
     }
-
-    await client.query('COMMIT')
-    console.log('All migrations completed successfully')
-  } catch (error) {
-    await client.query('ROLLBACK')
-    console.error('Migration failed:', error)
-    throw error
-  } finally {
-    client.release()
   }
+
+  console.log(`All migrations completed: ${successCount} applied, ${skipCount} skipped`)
 }
 
 /**

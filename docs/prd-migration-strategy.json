@@ -55,8 +55,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Enhanced migration runner at src/lib/migrations.ts with transaction-per-migration support. Each migration now runs in its own transaction, so failures don't rollback previously applied migrations. The runner also extracts rollback SQL and breaking flags from migration file comments. Added README.md and template.sql to migrations directory. Typecheck passes."
     },
     {
       "id": "US-003",
@@ -104,8 +104,8 @@
         "step1": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: /migrations directory already exists with proper NNN_description.sql naming convention. Added comprehensive README.md explaining conventions, supported metadata (Breaking:, Rollback:), transaction handling, and best practices. Added 000_template.sql as template. Migration runner extracts metadata from comments. Typecheck passes."
     },
     {
       "id": "US-004",
