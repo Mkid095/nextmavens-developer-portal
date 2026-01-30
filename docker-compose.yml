@@ -1,6 +1,8 @@
 services:
   developer-portal:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: nextmavens-developer-portal
     environment:
       - PORT=3000

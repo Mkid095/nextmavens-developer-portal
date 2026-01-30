@@ -515,7 +515,7 @@ npm install`} />
                           Add MCP Server
                         </label>
                         <CodeBlock code={`claude mcp add --transport http nextmavens \\
-  --url http://localhost:3000/mcp \\
+  --url https://api.nextmavens.cloud/mcp \\
   --header "Authorization: Bearer $NEXTMAVENS_API_KEY"`} />
                       </div>
 
@@ -548,7 +548,7 @@ npm install`} />
   "mcpServers": {
     "nextmavens": {
       "type": "http",
-      "url": "http://localhost:3000/mcp",
+      "url": "https://api.nextmavens.cloud/mcp",
       "headers": {
         "Authorization": "Bearer \${env:NEXTMAVENS_API_KEY}"
       }
@@ -729,7 +729,7 @@ npm install`} />
                       {
                         title: 'Tools not appearing in Claude Code',
                         solution: 'Run `claude mcp list` to verify the server is configured. Try removing and re-adding the server.',
-                        code: 'claude mcp remove nextmavens\nclaude mcp add --transport http nextmavens http://localhost:3000/mcp'
+                        code: 'claude mcp remove nextmavens\nclaude mcp add --transport http nextmavens https://api.nextmavens.cloud/mcp'
                       },
                       {
                         title: 'Authentication errors',
@@ -739,7 +739,7 @@ npm install`} />
                       {
                         title: 'Network connection issues',
                         solution: 'Check that the MCP server is running on the correct port (default: 3000). Verify the URL in your configuration.',
-                        code: 'curl http://localhost:3000/mcp'
+                        code: 'curl https://api.nextmavens.cloud/mcp'
                       },
                     ].map((item, i) => (
                       <div key={i} className="bg-white rounded-2xl border border-slate-200 p-6">
