@@ -10,13 +10,15 @@ import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import { validateProjectOwnership } from '@/lib/tenant-middleware'
+import {
+  secureLog,
+  secureError,
+  safeErrorResponse,
+} from '@/lib/secure-logger'
 
-// Helper function for standard error responses
+// Helper function for standard error responses (using safe error response)
 function errorResponse(code: string, message: string, status: number) {
-  return NextResponse.json(
-    { success: false, error: { code, message } },
-    { status }
-  )
+  return safeErrorResponse(code, message, status)
 }
 
 /**
@@ -85,6 +87,15 @@ export async function GET(
       [secret.project_id, secretId]
     )
 
+    // Log secret versions list access without values (US-011: Prevent Secret Logging)
+    secureLog('Secret versions listed', {
+      secretId,
+      secretName: secret.name,
+      projectId: secret.project_id,
+      versionCount: result.rows.length,
+      accessedBy: developer.id,
+    })
+
     return NextResponse.json({
       success: true,
       data: result.rows.map(s => ({
@@ -109,7 +120,7 @@ export async function GET(
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('[Secrets API] List secret versions error:', error)
+    secureError('List secret versions error', { error: String(error), secretId })
     return errorResponse('INTERNAL_ERROR', 'Failed to list secret versions', 500)
   }
 }

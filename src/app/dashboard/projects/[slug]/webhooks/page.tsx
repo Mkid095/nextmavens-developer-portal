@@ -22,12 +22,16 @@ import {
   Eye,
   EyeOff,
   X,
+  History,
+  Filter,
+  ChevronDown,
 } from 'lucide-react'
 import { getControlPlaneClient } from '@/lib/api/control-plane-client'
 import type {
   Webhook,
   EventType,
   CreateWebhookRequest,
+  EventLog,
 } from '@/lib/types/webhook.types'
 
 const EVENT_TYPES: EventType[] = [
@@ -69,6 +73,13 @@ export default function WebhooksPage() {
   const [error, setError] = useState<string | null>(null)
   const [testingWebhookId, setTestingWebhookId] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<{ webhookId: string; success: boolean; message: string } | null>(null)
+
+  // Webhook history state
+  const [showHistory, setShowHistory] = useState(false)
+  const [eventLogs, setEventLogs] = useState<EventLog[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'delivered' | 'failed' | 'pending'>('all')
+  const [selectedWebhookId, setSelectedWebhookId] = useState<string | null>(null)
 
   const client = getControlPlaneClient()
 
@@ -256,6 +267,58 @@ export default function WebhooksPage() {
     }
   }
 
+  const fetchEventLogs = async (webhookId?: string) => {
+    if (!project?.id) return
+
+    setHistoryLoading(true)
+    try {
+      const headers = { headers: { get: (name: string) => {
+        if (name === 'authorization') {
+          if (typeof window !== 'undefined') {
+            return localStorage.getItem('token') || ''
+          }
+        }
+        return null
+      }}}
+
+      const query: any = { project_id: project.id }
+      if (webhookId) {
+        query.webhook_id = webhookId
+      }
+      if (historyFilter !== 'all') {
+        query.status = historyFilter
+      }
+
+      const response = await client.listEventLogs(query, headers)
+      if (response.success) {
+        setEventLogs(response.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch event logs:', err)
+      setError(err instanceof Error ? err.message : 'Failed to fetch event logs')
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  const handleShowHistory = (webhookId?: string) => {
+    setSelectedWebhookId(webhookId || null)
+    setShowHistory(true)
+    fetchEventLogs(webhookId)
+  }
+
+  const handleCloseHistory = () => {
+    setShowHistory(false)
+    setSelectedWebhookId(null)
+    setEventLogs([])
+  }
+
+  const handleRetryFailedWebhooks = async () => {
+    // This would call an API endpoint to retry failed webhook deliveries
+    // For now, just refresh the history
+    fetchEventLogs(selectedWebhookId || undefined)
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString()
   }
@@ -282,13 +345,22 @@ export default function WebhooksPage() {
                 )}
               </div>
             </div>
-            <button
-              onClick={() => setShowCreateForm(!showCreateForm)}
-              className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4" />
-              Create Webhook
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => handleShowHistory()}
+                className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700 hover:text-white"
+              >
+                <History className="h-4 w-4" />
+                View History
+              </button>
+              <button
+                onClick={() => setShowCreateForm(!showCreateForm)}
+                className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4" />
+                Create Webhook
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -518,6 +590,17 @@ export default function WebhooksPage() {
                         )}
                       </div>
 
+                      {/* View History Button */}
+                      <div className="mt-3">
+                        <button
+                          onClick={() => handleShowHistory(webhook.id)}
+                          className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                        >
+                          <History className="h-3.5 w-3.5" />
+                          View History
+                        </button>
+                      </div>
+
                       {/* Test Result */}
                       {testResult?.webhookId === webhook.id && (
                         <div className={`mt-3 rounded-lg p-3 text-sm ${
@@ -597,6 +680,160 @@ export default function WebhooksPage() {
             </li>
           </ul>
         </div>
+
+        {/* Webhook History Section */}
+        {showHistory && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 rounded-lg border border-slate-800 bg-slate-900/50"
+          >
+            <div className="px-6 py-4 border-b border-slate-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <History className="h-5 w-5 text-blue-400" />
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Webhook Delivery History</h2>
+                    <p className="text-sm text-slate-400">
+                      {selectedWebhookId ? 'History for selected webhook' : 'History for all webhooks'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleCloseHistory}
+                  className="rounded-lg border border-slate-700 p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-b border-slate-800">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-slate-400" />
+                  <span className="text-sm text-slate-400">Filter by status:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {(['all', 'delivered', 'failed', 'pending'] as const).map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setHistoryFilter(status)
+                        fetchEventLogs(selectedWebhookId || undefined)
+                      }}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        historyFilter === status
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white'
+                      }`}
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </button>
+                  ))}
+                </div>
+                <div className="ml-auto flex items-center gap-2">
+                  {historyFilter === 'failed' && (
+                    <button
+                      onClick={handleRetryFailedWebhooks}
+                      className="flex items-center gap-2 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-orange-700 transition-colors"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Retry Failed
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="divide-y divide-slate-800">
+              {historyLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                </div>
+              ) : eventLogs.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Clock className="mx-auto h-12 w-12 text-slate-600 mb-4" />
+                  <h3 className="text-lg font-medium text-white mb-2">No History Yet</h3>
+                  <p className="text-sm text-slate-400">
+                    Webhook delivery history will appear here once events are triggered
+                  </p>
+                </div>
+              ) : (
+                eventLogs.map((log) => (
+                  <div key={log.id} className="px-6 py-4 hover:bg-slate-800/30 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="inline-flex items-center rounded-md bg-purple-900/30 px-2 py-1 text-xs font-medium text-purple-300">
+                            {log.event_type}
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${
+                              log.status === 'delivered'
+                                ? 'bg-green-900/30 text-green-400'
+                                : log.status === 'failed'
+                                ? 'bg-red-900/30 text-red-400'
+                                : 'bg-yellow-900/30 text-yellow-400'
+                            }`}
+                          >
+                            {log.status === 'delivered' && <CheckCircle className="h-3 w-3" />}
+                            {log.status === 'failed' && <XCircle className="h-3 w-3" />}
+                            {log.status === 'pending' && <Clock className="h-3 w-3" />}
+                            {log.status.charAt(0).toUpperCase() + log.status.slice(1)}
+                          </span>
+                          {log.retry_count > 0 && (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-slate-400">
+                              <RefreshCw className="h-3 w-3" />
+                              Retry {log.retry_count}
+                            </span>
+                          )}
+                        </div>
+
+                        {log.webhook && (
+                          <div className="flex items-center gap-2 text-sm text-slate-400 mb-2">
+                            <Globe className="h-4 w-4 flex-shrink-0" />
+                            <code className="text-xs break-all">{log.webhook.target_url}</code>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {formatDate(log.created_at)}
+                          </div>
+                          {log.response_code && (
+                            <div className="flex items-center gap-1">
+                              HTTP {log.response_code}
+                            </div>
+                          )}
+                          {log.delivered_at && (
+                            <div className="flex items-center gap-1">
+                              Delivered {formatDate(log.delivered_at)}
+                            </div>
+                          )}
+                        </div>
+
+                        {log.response_body && (
+                          <div className="mt-2">
+                            <details className="group">
+                              <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-400">
+                                View response
+                              </summary>
+                              <pre className="mt-2 rounded bg-slate-950 p-3 text-xs text-slate-400 overflow-x-auto">
+                                {JSON.stringify(JSON.parse(log.response_body), null, 2)}
+                              </pre>
+                            </details>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   )

@@ -24,6 +24,9 @@ import type {
   ListWebhooksResponse,
   TestWebhookRequest,
   TestWebhookResponse,
+  EventLog,
+  ListEventLogsQuery,
+  ListEventLogsResponse,
 } from '@/lib/types/webhook.types'
 
 // Type definitions for Control Plane API requests/responses
@@ -577,6 +580,25 @@ export class ControlPlaneClient {
       method: 'POST',
       body: JSON.stringify(request),
     }, req)
+  }
+
+  /**
+   * List event logs (webhook delivery history)
+   */
+  async listEventLogs(
+    query?: ListEventLogsQuery,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<ListEventLogsResponse> {
+    const params = new URLSearchParams()
+    if (query?.project_id) params.append('project_id', query.project_id)
+    if (query?.webhook_id) params.append('webhook_id', query.webhook_id)
+    if (query?.event_type) params.append('event_type', query.event_type)
+    if (query?.status) params.append('status', query.status)
+    if (query?.limit) params.append('limit', query.limit.toString())
+    if (query?.offset) params.append('offset', query.offset.toString())
+    const queryString = params.toString()
+    const endpoint = `/api/v1/webhooks/history${queryString ? `?${queryString}` : ''}`
+    return this.request<ListEventLogsResponse>(endpoint, {}, req)
   }
 
   /**

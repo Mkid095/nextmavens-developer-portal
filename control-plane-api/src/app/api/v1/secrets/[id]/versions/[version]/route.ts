@@ -14,13 +14,15 @@ import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import { validateProjectOwnership } from '@/lib/tenant-middleware'
 import { decryptFromStorage } from '@/lib/crypto'
+import {
+  secureLog,
+  secureError,
+  safeErrorResponse,
+} from '@/lib/secure-logger'
 
-// Helper function for standard error responses
+// Helper function for standard error responses (using safe error response)
 function errorResponse(code: string, message: string, status: number) {
-  return NextResponse.json(
-    { success: false, error: { code, message } },
-    { status }
-  )
+  return safeErrorResponse(code, message, status)
 }
 
 /**
@@ -110,13 +112,26 @@ export async function GET(
     try {
       value = decryptFromStorage(secret.value_encrypted)
     } catch (error) {
-      console.error('[Secrets API] Decryption error:', error)
+      secureError('Decryption error', {
+        error: String(error),
+        secretId,
+        version: secret.version,
+      })
       return errorResponse(
         'DECRYPTION_ERROR',
         'Failed to decrypt secret value',
         500
       )
     }
+
+    // Log secret version access without value (US-011: Prevent Secret Logging)
+    secureLog('Secret version accessed', {
+      secretId,
+      secretName: secret.name,
+      version: secret.version,
+      projectId: secretRef.project_id,
+      accessedBy: developer.id,
+    })
 
     return NextResponse.json({
       success: true,
@@ -142,7 +157,7 @@ export async function GET(
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('[Secrets API] Get secret version error:', error)
+    secureError('Get secret version error', { error: String(error), secretId, version })
     return errorResponse('INTERNAL_ERROR', 'Failed to get secret version', 500)
   }
 }

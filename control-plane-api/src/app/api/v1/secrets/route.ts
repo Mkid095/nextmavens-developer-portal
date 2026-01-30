@@ -12,6 +12,12 @@ import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 import { validateProjectOwnership } from '@/lib/tenant-middleware'
 import { encryptForStorage } from '@/lib/crypto'
+import {
+  secureLog,
+  secureError,
+  safeErrorResponse,
+  createSafeAuditEntry,
+} from '@/lib/secure-logger'
 
 // Validation schemas using Zod
 import { z } from 'zod'
@@ -39,12 +45,9 @@ const listSecretsQuerySchema = z.object({
 type CreateSecretInput = z.infer<typeof createSecretSchema>
 type ListSecretsQuery = z.infer<typeof listSecretsQuerySchema>
 
-// Helper function for standard error responses
+// Helper function for standard error responses (using safe error response)
 function errorResponse(code: string, message: string, status: number) {
-  return NextResponse.json(
-    { success: false, error: { code, message } },
-    { status }
-  )
+  return safeErrorResponse(code, message, status)
 }
 
 /**
@@ -114,7 +117,7 @@ export async function POST(req: NextRequest) {
     try {
       valueEncrypted = encryptForStorage(value)
     } catch (error) {
-      console.error('[Secrets API] Encryption error:', error)
+      secureError('Encryption error', { error: String(error), secretName: name })
       return errorResponse(
         'ENCRYPTION_ERROR',
         'Failed to encrypt secret value',
@@ -138,6 +141,15 @@ export async function POST(req: NextRequest) {
 
     const secret = result.rows[0]
 
+    // Log secret creation without value (US-011: Prevent Secret Logging)
+    secureLog('Secret created', {
+      secretId: secret.id,
+      secretName: secret.name,
+      projectId: project_id,
+      version: secret.version,
+      createdBy: developer.id,
+    })
+
     return NextResponse.json({
       success: true,
       data: {
@@ -157,7 +169,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('[Secrets API] Create secret error:', error)
+    secureError('Create secret error', { error: String(error) })
     return errorResponse('INTERNAL_ERROR', 'Failed to create secret', 500)
   }
 }
@@ -274,7 +286,7 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('[Secrets API] List secrets error:', error)
+    secureError('List secrets error', { error: String(error) })
     return errorResponse('INTERNAL_ERROR', 'Failed to list secrets', 500)
   }
 }

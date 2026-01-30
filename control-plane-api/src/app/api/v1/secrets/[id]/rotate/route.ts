@@ -17,6 +17,11 @@ import { getPool } from '@/lib/db'
 import { validateProjectOwnership } from '@/lib/tenant-middleware'
 import { encryptForStorage } from '@/lib/crypto'
 import { z } from 'zod'
+import {
+  secureLog,
+  secureError,
+  safeErrorResponse,
+} from '@/lib/secure-logger'
 
 // Schema for rotating a secret
 const rotateSecretSchema = z.object({
@@ -30,12 +35,9 @@ const rotateSecretSchema = z.object({
 
 type RotateSecretInput = z.infer<typeof rotateSecretSchema>
 
-// Helper function for standard error responses
+// Helper function for standard error responses (using safe error response)
 function errorResponse(code: string, message: string, status: number) {
-  return NextResponse.json(
-    { success: false, error: { code, message } },
-    { status }
-  )
+  return safeErrorResponse(code, message, status)
 }
 
 /**
@@ -121,7 +123,11 @@ export async function POST(
     try {
       valueEncrypted = encryptForStorage(value)
     } catch (error) {
-      console.error('[Secrets API] Encryption error:', error)
+      secureError('Encryption error during rotation', {
+        error: String(error),
+        secretId,
+        secretName: currentSecret.name,
+      })
       return errorResponse(
         'ENCRYPTION_ERROR',
         'Failed to encrypt secret value',
@@ -173,6 +179,18 @@ export async function POST(
         [currentSecret.id]
       )
 
+      // Log secret rotation without value (US-011: Prevent Secret Logging)
+      secureLog('Secret rotated', {
+        oldSecretId: currentSecret.id,
+        newSecretId: newSecret.id,
+        secretName: currentSecret.name,
+        oldVersion: currentSecret.version,
+        newVersion: newSecret.version,
+        rotationReason: rotation_reason || 'Not provided',
+        rotatedBy: developer.id,
+        gracePeriodEndsAt: oldSecretWithExpiration.rows[0]?.grace_period_ends_at,
+      })
+
       return NextResponse.json({
         success: true,
         data: {
@@ -207,7 +225,7 @@ export async function POST(
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('[Secrets API] Rotate secret error:', error)
+    secureError('Rotate secret error', { error: String(error), secretId })
     return errorResponse('INTERNAL_ERROR', 'Failed to rotate secret', 500)
   }
 }
