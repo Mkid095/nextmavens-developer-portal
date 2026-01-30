@@ -3,6 +3,7 @@ import crypto from 'crypto'
 import { NextRequest } from 'next/server'
 import { getPool } from './db'
 import { createError, ErrorCode, type PlatformError } from './errors'
+import { logApiUsage, type ApiUsageLog } from './key-usage-tracking'
 
 const JWT_SECRET = process.env.JWT_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
@@ -201,6 +202,8 @@ export async function authenticateApiKey(apiKey: string): Promise<ApiKeyAuth> {
  * Update key usage statistics (last_used timestamp and usage_count).
  * This is called asynchronously after successful authentication.
  *
+ * US-009: Track Key Usage - last_used column updated on each use
+ *
  * @param keyId - The ID of the API key to update
  */
 async function updateKeyUsage(keyId: string): Promise<void> {
@@ -218,4 +221,38 @@ async function updateKeyUsage(keyId: string): Promise<void> {
     console.error(`[Auth] Failed to update usage for key ${keyId}:`, error)
     throw error
   }
+}
+
+/**
+ * Log API key usage with request details.
+ * This should be called after processing an API request to track usage statistics.
+ *
+ * US-009: Track Key Usage - usage_stats table tracks request count
+ *
+ * @param keyId - The API key ID
+ * @param projectId - The project ID
+ * @param endpoint - The API endpoint that was called
+ * @param method - The HTTP method
+ * @param statusCode - The HTTP status code returned
+ * @param responseTimeMs - Optional response time in milliseconds
+ */
+export async function logApiKeyUsage(
+  keyId: string,
+  projectId: string,
+  endpoint: string,
+  method: string,
+  statusCode: number,
+  responseTimeMs?: number
+): Promise<void> {
+  // Log asynchronously to avoid blocking the response
+  logApiUsage({
+    key_id: keyId,
+    project_id: projectId,
+    endpoint,
+    method,
+    status_code: statusCode,
+    response_time_ms: responseTimeMs,
+  }).catch(error => {
+    console.error('[Auth] Failed to log API key usage:', error)
+  })
 }

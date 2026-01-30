@@ -43,7 +43,7 @@ export async function GET(
 
     // Count API keys for this project
     const apiKeysResult = await pool.query(
-      `SELECT COUNT(*) as count FROM api_keys WHERE project_id = $1`,
+      `SELECT key_type, COUNT(*) as count FROM api_keys WHERE project_id = $1 GROUP BY key_type`,
       [projectId]
     )
 
@@ -155,7 +155,9 @@ export async function GET(
       will_be_deleted: {
         schemas: schemaCount,
         tables: tableCount,
-        api_keys: parseInt(apiKeysResult.rows[0]?.count || '0', 10),
+        api_keys: Object.fromEntries(
+          apiKeysResult.rows.map(row => [row.key_type, parseInt(row.count, 10)])
+        ),
         webhooks: parseInt(webhooksResult.rows[0]?.count || '0', 10),
         edge_functions: parseInt(edgeFunctionsResult.rows[0]?.count || '0', 10),
         storage_buckets: parseInt(storageBucketsResult.rows[0]?.count || '0', 10),

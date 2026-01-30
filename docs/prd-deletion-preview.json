@@ -80,8 +80,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Deletion preview queries information_schema (lines 92-99 in route.ts). Counts tables in tenant_{slug} schema. Each tenant has one schema counted (line 103). Included in will_be_deleted response (line 156). Typecheck passes."
     },
     {
       "id": "US-004",
@@ -107,8 +107,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Deletion preview queries api_keys table with GROUP BY key_type (line 45). Counts keys for project. Groups by key_type and returns as object with key_type as keys. Included in will_be_deleted response. Typecheck passes."
     },
     {
       "id": "US-005",
@@ -133,8 +133,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Deletion preview queries webhooks table (lines 57-60). Lists all webhook URLs with event types. Adds to dependencies array with type: 'webhook', target: target_url, impact: 'Will stop receiving {event} events' (lines 128-134). Typecheck passes."
     },
     {
       "id": "US-006",
@@ -160,8 +160,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Deletion preview queries storage_buckets table (lines 75-78). Lists all buckets with file_count. Counts files per bucket. Adds to dependencies array with type: 'storage', target: bucket name, impact: 'All {file_count} files in this bucket will be permanently deleted' (lines 137-144). Typecheck passes."
     },
     {
       "id": "US-007",
@@ -187,8 +187,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: DELETE /api/projects/:id endpoint implemented in control-plane-api/src/app/api/v1/projects/[id]/route.ts (lines 199-255). Sets deletion_scheduled_at = NOW() (line 232), grace_period_ends_at = NOW() + 30 days (line 233, calculated lines 225-227), status = 'DELETED' (line 234). Returns recoverable_until date (line 247). Includes validation for already deleted projects (lines 219-222). Typecheck passes."
     },
     {
       "id": "US-008",

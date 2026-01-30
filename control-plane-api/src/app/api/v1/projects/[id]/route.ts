@@ -216,19 +216,36 @@ export async function DELETE(
 
     const pool = getPool()
 
-    // Soft delete by setting status to 'archived'
-    await pool.query(
+    // Check if already deleted
+    if (project.status === 'DELETED' || project.status === 'archived') {
+      return toErrorNextResponse({ code: ErrorCode.VALIDATION_ERROR, message: 'Project is already deleted' })
+    }
+
+    // Calculate grace period (30 days from now)
+    const now = new Date()
+    const gracePeriodEnd = new Date(now)
+    gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 30)
+
+    // Soft delete by setting deletion_scheduled_at, grace_period_ends_at, and status
+    const result = await pool.query(
       `UPDATE projects
-       SET status = 'archived', updated_at = NOW()
-       WHERE id = $1`,
-      [projectId]
+       SET deletion_scheduled_at = $1,
+           grace_period_ends_at = $2,
+           status = 'DELETED',
+           updated_at = NOW()
+       WHERE id = $3
+       RETURNING id, project_name, status`,
+      [now, gracePeriodEnd, projectId]
     )
 
     return NextResponse.json({
       success: true,
       data: {
-        id: projectId,
-        message: 'Project archived successfully',
+        id: result.rows[0].id,
+        name: result.rows[0].project_name,
+        status: result.rows[0].status,
+        recoverable_until: gracePeriodEnd.toISOString(),
+        message: 'Project has been soft deleted. You can restore it within the grace period.',
       },
     })
   } catch (error) {
