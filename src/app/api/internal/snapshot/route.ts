@@ -15,22 +15,28 @@
  * Response time target: < 100ms (achieved via caching)
  *
  * US-005: Uses standardized error format for consistent error responses
+ * US-009: Schema validation on all snapshot responses
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { buildSnapshot } from '@/lib/snapshot/builder'
 import { getCachedSnapshot, setCachedSnapshot } from '@/lib/snapshot/cache'
-import { SnapshotMetadata } from '@/lib/snapshot/types'
-import { errorToHttpResponse, ProjectNotFoundError } from '@/lib/snapshot/errors'
+import { ControlPlaneSnapshot, SnapshotMetadata } from '@/lib/snapshot/types'
+import {
+  validateSnapshot,
+  validateSnapshotResponse,
+  getValidationErrorDetails
+} from '@/lib/snapshot/schema'
+import { errorToHttpResponse, ProjectNotFoundError, SnapshotBuildError } from '@/lib/snapshot/errors'
 import { validationError, notFoundError, internalError, rateLimitError } from '@/lib/errors'
 
 /**
- * Snapshot response with optional metadata
+ * Snapshot response wrapper
+ * US-009: Typed response with schema validation
  */
 interface SnapshotResponse {
-  snapshot?: unknown
-  metadata?: SnapshotMetadata
-  error?: string
+  snapshot: ControlPlaneSnapshot
+  metadata: SnapshotMetadata
 }
 
 export async function GET(req: NextRequest) {
