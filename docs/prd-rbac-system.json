@@ -50,8 +50,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "ROLE_PERMISSIONS constant already defined in src/lib/types/rbac.types.ts with correct mappings: Owner (all permissions), Admin (all except projects.delete), Developer (view_logs, use_services, database.read), Viewer (view_logs, database.read). Typecheck passes."
     },
     {
       "id": "US-003",
