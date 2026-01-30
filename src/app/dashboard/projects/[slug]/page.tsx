@@ -53,6 +53,7 @@ import LanguageSelector, { type CodeLanguage, useLanguageSelector } from '@/comp
 import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLanguageCodeBlock'
 import ServiceStatusIndicator, { type ServiceStatus } from '@/components/ServiceStatusIndicator'
 import ProjectStatusBadge from '@/components/ProjectStatusBadge'
+import StatusHistory from '@/components/StatusHistory'
 import type { ServiceType } from '@/lib/types/service-status.types'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 import { usePermission, usePermissions } from '@/hooks/usePermissions'
@@ -1169,6 +1170,11 @@ export default function ProjectDetailPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              {/* US-009: Status History Section */}
+              <div className="mt-8 pt-6 border-t border-slate-200">
+                <StatusHistory projectId={project.id} />
               </div>
 
               {/* US-009: Delete Project Section - Only shown to owners */}

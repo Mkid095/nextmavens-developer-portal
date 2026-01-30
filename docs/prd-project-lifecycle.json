@@ -240,8 +240,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created StatusHistory component (src/components/StatusHistory.tsx) and API endpoint (src/app/api/projects/[projectId]/status-history/route.ts). The component displays status change history with previous status, new status, reason, timestamp, and actor information. Links to audit log entries. Explains how to resolve suspension with resolution steps. Added to project overview section in settings. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-010",

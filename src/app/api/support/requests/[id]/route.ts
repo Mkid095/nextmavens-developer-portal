@@ -15,6 +15,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/middleware'
 import { getPool } from '@/lib/db'
+import { sendSupportRequestNotification } from '@/lib/support-notifications'
+
+interface UpdateStatusRequest {
+  status: 'open' | 'in_progress' | 'resolved' | 'closed'
+}
 
 interface SupportRequestDetail {
   id: string

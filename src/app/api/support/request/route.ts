@@ -24,6 +24,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/middleware'
 import { getPool } from '@/lib/db'
+import { sendSupportRequestNotification } from '@/lib/support-notifications'
 
 interface SupportRequestRequest {
   project_id: string
@@ -219,6 +220,12 @@ export async function POST(req: NextRequest) {
       request_id: supportRequest.id,
       status: supportRequest.status,
     }
+
+    // US-009: Send notification email when support request is created
+    // Fire and forget - don't block the response on email delivery
+    sendSupportRequestNotification(supportRequest.id, 'created').catch(err => {
+      console.error('[Support Request] Failed to send notification email:', err)
+    })
 
     return NextResponse.json(response, { status: 201 })
   } catch (error: unknown) {

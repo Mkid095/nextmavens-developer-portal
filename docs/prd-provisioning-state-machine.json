@@ -188,8 +188,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created POST /api/projects/[projectId]/provision endpoint at src/app/api/projects/[projectId]/provision/route.ts. Uses state machine via runProvisioningStep function from src/lib/provisioning/state-machine.ts. Creates all provisioning steps as PENDING in a transaction using getOrderedStepNames() from src/lib/provisioning/steps.ts. Runs steps in order via runProvisioningStepsAsync background function. Returns job_id (UUID) for tracking along with project_id, steps array with step_name, description, estimated_duration, and initial status. Includes project ownership verification, authentication, correlation ID tracking, duplicate provisioning check, and proper error handling with transaction rollback. Typecheck passes."
     },
     {
       "id": "US-006",
