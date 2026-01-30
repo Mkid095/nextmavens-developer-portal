@@ -2,8 +2,9 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { NextRequest } from 'next/server'
 import { getPool } from './db'
-import { createError, ErrorCode, type PlatformError } from './errors'
+import { createError, ErrorCode, type PlatformError, projectSuspendedError, projectArchivedError, projectDeletedError } from './errors'
 import { logApiUsage, type ApiUsageLog } from './key-usage-tracking'
+import { ProjectStatus, getErrorCodeForStatus, keysWorkForStatus } from './types/project-lifecycle.types'
 
 const JWT_SECRET = process.env.JWT_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
@@ -136,6 +137,60 @@ export async function authenticateRequest(req: NextRequest): Promise<JwtPayload>
 }
 
 /**
+ * US-007: Enforce Status Checks at Gateway
+ * Check project status and throw appropriate error if keys don't work for this status.
+ *
+ * @param projectId - The project ID to check
+ * @throws PlatformError with PROJECT_SUSPENDED, PROJECT_ARCHIVED, or PROJECT_DELETED code
+ */
+export async function checkProjectStatus(projectId: string): Promise<void> {
+  const pool = getPool()
+
+  // Query project status from database
+  const result = await pool.query(
+    `SELECT status FROM projects WHERE id = $1`,
+    [projectId]
+  )
+
+  if (result.rows.length === 0) {
+    throw createError(ErrorCode.NOT_FOUND, 'Project not found', projectId)
+  }
+
+  const status = result.rows[0].status as ProjectStatus
+
+  // Check if keys work for this status
+  if (!keysWorkForStatus(status)) {
+    // Get the appropriate error code for this status
+    const errorCode = getErrorCodeForStatus(status)
+
+    // Throw the appropriate error based on status
+    switch (status) {
+      case ProjectStatus.SUSPENDED:
+        throw projectSuspendedError(
+          'Project is suspended. API keys are disabled. Contact support for assistance.',
+          projectId
+        )
+      case ProjectStatus.ARCHIVED:
+        throw projectArchivedError(
+          'Project is archived. API keys are disabled and services are stopped.',
+          projectId
+        )
+      case ProjectStatus.DELETED:
+        throw projectDeletedError(
+          'Project has been deleted and pending permanent removal.',
+          projectId
+        )
+      default:
+        throw createError(
+          ErrorCode.PROJECT_SUSPENDED,
+          `Project is ${status}. API keys are disabled.`,
+          projectId
+        )
+    }
+  }
+}
+
+/**
  * API Key interface for authentication result
  */
 export interface ApiKeyAuth {
@@ -189,6 +244,10 @@ export async function authenticateApiKey(apiKey: string): Promise<ApiKeyAuth> {
   if (key.expires_at && new Date(key.expires_at) < new Date()) {
     throw createError(ErrorCode.KEY_INVALID, 'API key has expired')
   }
+
+  // US-007: Enforce Status Checks at Gateway
+  // Check project status and throw error if keys don't work for this status
+  await checkProjectStatus(key.project_id)
 
   // Update last_used and usage_count asynchronously (fire and forget)
   // This ensures we don't block the request waiting for the update

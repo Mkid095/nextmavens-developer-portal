@@ -386,3 +386,17 @@ export function quotaExceededError(
 ): PlatformError {
   return createError(ErrorCode.QUOTA_EXCEEDED, message, projectId, details);
 }
+
+export function projectArchivedError(
+  message: string = 'Project is archived',
+  projectId: string
+): PlatformError {
+  return createError(ErrorCode.PROJECT_ARCHIVED, message, projectId);
+}
+
+export function projectDeletedError(
+  message: string = 'Project has been deleted',
+  projectId: string
+): PlatformError {
+  return createError(ErrorCode.PROJECT_DELETED, message, projectId);
+}

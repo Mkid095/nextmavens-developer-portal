@@ -166,8 +166,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created gateway-status-check.ts with authenticateApiKeyWithStatusCheck() function that integrates project status checks with API key authentication. Status is fetched from database during authentication and checked against allowed states (CREATED, ACTIVE). SUSPENDED returns PROJECT_SUSPENDED error, ARCHIVED returns PROJECT_ARCHIVED error, DELETED returns PROJECT_DELETED error. Updated snapshot types to use uppercase status values matching snapshot builder output. Fixed snapshot builder default status to 'ACTIVE'. Typecheck passes."
     },
     {
       "id": "US-005",

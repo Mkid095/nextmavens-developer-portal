@@ -354,22 +354,20 @@ export class ApiGatewaySnapshotClient {
       const snapshot = await this.getSnapshot(projectId)
       const status = snapshot?.project.status || 'unknown'
 
-      let reason: string
-      switch (status) {
-        case 'SUSPENDED':
-          reason = 'PROJECT_SUSPENDED'
-          break
-        case 'ARCHIVED':
-          reason = 'PROJECT_ARCHIVED'
-          break
-        case 'DELETED':
-          reason = 'PROJECT_DELETED'
-          break
-        case 'CREATED':
-          // CREATED projects are allowed to make requests
-          break
-        default:
-          reason = 'PROJECT_NOT_ACTIVE'
+      // Determine the reason based on status
+      let reason: string | undefined
+
+      if (status === 'SUSPENDED') {
+        reason = 'PROJECT_SUSPENDED'
+      } else if (status === 'ARCHIVED') {
+        reason = 'PROJECT_ARCHIVED'
+      } else if (status === 'DELETED') {
+        reason = 'PROJECT_DELETED'
+      } else if (status === 'CREATED') {
+        // CREATED projects should be allowed, this shouldn't happen
+        reason = 'PROJECT_NOT_ACTIVE'
+      } else {
+        reason = 'PROJECT_NOT_ACTIVE'
       }
 
       return {

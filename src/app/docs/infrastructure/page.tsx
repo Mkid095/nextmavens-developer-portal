@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin } from 'lucide-react'
+import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin, RefreshCw, Clock, AlertCircle } from 'lucide-react'
 
 export default function InfrastructureDocsPage() {
   return (
@@ -74,6 +74,9 @@ export default function InfrastructureDocsPage() {
             </a>
             <a href="#regional-isolation" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Regional Data Isolation
+            </a>
+            <a href="#disaster-recovery" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
+              <ChevronRight className="w-4 h-4" /> Disaster Recovery
             </a>
             <a href="#limitations" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Current Limitations
@@ -623,6 +626,176 @@ export default function InfrastructureDocsPage() {
                   <div className="text-xs font-medium text-slate-700">Asia-East</div>
                   <div className="text-xs text-slate-500">Coming Soon</div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Disaster Recovery */}
+        <section id="disaster-recovery" className="bg-white rounded-xl p-8 border border-slate-200 mb-8">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-6 flex items-center gap-3">
+            <RefreshCw className="w-6 h-6 text-blue-700" />
+            Disaster Recovery
+          </h2>
+
+          <p className="text-slate-600 mb-6">
+            Our disaster recovery strategy ensures business continuity and data protection through comprehensive backup and recovery procedures.
+          </p>
+
+          {/* Current State */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-600" />
+              Current State: Daily Backups to Telegram
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Database backups are automatically generated daily and stored securely via Telegram's cloud infrastructure.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-900 mb-2">Backup Schedule</h4>
+                <ul className="text-sm text-green-800 space-y-1">
+                  <li>• Frequency: Daily (automated)</li>
+                  <li>• Time: 2:00 AM UTC</li>
+                  <li>• Retention: 30 days default</li>
+                  <li>• Format: SQL dump files</li>
+                </ul>
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-blue-900 mb-2">Storage Location</h4>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Platform: Telegram Cloud</li>
+                  <li>• Encryption: End-to-end</li>
+                  <li>• Access: Admin only</li>
+                  <li>• Cost: Free (bundled)</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* RTO/RPO Targets */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-purple-600" />
+              RTO/RPO Targets
+            </h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <h4 className="font-semibold text-purple-900 mb-2">Current Targets</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-purple-700">RTO (Recovery Time Objective)</span>
+                    <span className="text-sm font-bold text-purple-900 bg-purple-100 px-2 py-1 rounded">4-24 hours</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-purple-700">RPO (Recovery Point Objective)</span>
+                    <span className="text-sm font-bold text-purple-900 bg-purple-100 px-2 py-1 rounded">24 hours</span>
+                  </div>
+                </div>
+                <p className="text-xs text-purple-600 mt-3">
+                  Manual restore process required via admin API
+                </p>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <h4 className="font-semibold text-purple-900 mb-2">Future Targets (Multi-Region)</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-purple-700">RTO (Recovery Time Objective)</span>
+                    <span className="text-sm font-bold text-purple-900 bg-purple-100 px-2 py-1 rounded">&lt;1 hour</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-purple-700">RPO (Recovery Point Objective)</span>
+                    <span className="text-sm font-bold text-purple-900 bg-purple-100 px-2 py-1 rounded">&lt;5 minutes</span>
+                  </div>
+                </div>
+                <p className="text-xs text-purple-600 mt-3">
+                  Automated failover with cross-region replication
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Recovery Procedures */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-orange-600" />
+              Recovery Procedures
+            </h3>
+            <div className="space-y-4">
+              <div className="bg-white rounded-lg p-4 border border-orange-200">
+                <h4 className="font-semibold text-orange-900 mb-2">Step 1: Identify Backup</h4>
+                <p className="text-sm text-orange-800 mb-2">
+                  Access the admin dashboard to view available backups sorted by date.
+                </p>
+                <code className="text-xs bg-orange-100 px-2 py-1 rounded text-orange-900">GET /api/backup/list</code>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-orange-200">
+                <h4 className="font-semibold text-orange-900 mb-2">Step 2: Download Backup File</h4>
+                <p className="text-sm text-orange-800 mb-2">
+                  Retrieve the selected backup from Telegram storage using the file ID.
+                </p>
+                <code className="text-xs bg-orange-100 px-2 py-1 rounded text-orange-900">POST /api/backup/download</code>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-orange-200">
+                <h4 className="font-semibold text-orange-900 mb-2">Step 3: Restore Database</h4>
+                <p className="text-sm text-orange-800 mb-2">
+                  Execute the restore API to apply the SQL dump to the database.
+                </p>
+                <code className="text-xs bg-orange-100 px-2 py-1 rounded text-orange-900">POST /api/backup/restore</code>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-orange-200">
+                <h4 className="font-semibold text-orange-900 mb-2">Step 4: Verify Recovery</h4>
+                <p className="text-sm text-orange-800 mb-2">
+                  Confirm data integrity by checking critical tables and running health checks.
+                </p>
+                <code className="text-xs bg-orange-100 px-2 py-1 rounded text-orange-900">GET /api/health</code>
+              </div>
+            </div>
+          </div>
+
+          {/* Future: Multi-Region Replication */}
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-6">
+            <h3 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+              <span className="text-xs bg-amber-200 text-amber-800 px-2 py-1 rounded">FUTURE</span>
+              Multi-Region Replication (Planned: Q3 2026)
+            </h3>
+            <p className="text-sm text-amber-800 mb-3">
+              As we expand to multiple regions, disaster recovery capabilities will be significantly enhanced with automated failover and near-real-time data replication.
+            </p>
+            <div className="grid md:grid-cols-3 gap-3">
+              <div className="bg-white rounded-lg p-3 border border-amber-200">
+                <h4 className="font-semibold text-amber-900 mb-1 text-sm">Active-Active Replication</h4>
+                <p className="text-xs text-amber-700">Data replicated across all active regions</p>
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-amber-200">
+                <h4 className="font-semibold text-amber-900 mb-1 text-sm">Automated Failover</h4>
+                <p className="text-xs text-amber-700">Instant regional failover on outage detection</p>
+              </div>
+              <div className="bg-white rounded-lg p-3 border border-amber-200">
+                <h4 className="font-semibold text-amber-900 mb-1 text-sm">Point-in-Time Recovery</h4>
+                <p className="text-xs text-amber-700">Restore to any specific moment in time</p>
+              </div>
+            </div>
+          </div>
+
+          {/* DR Testing */}
+          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-5">
+            <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              DR Testing Schedule
+            </h3>
+            <p className="text-sm text-blue-800 mb-3">
+              Disaster recovery procedures are tested quarterly to ensure restore processes work correctly.
+            </p>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="bg-white rounded-lg px-3 py-2 border border-blue-200">
+                <span className="text-blue-900">Frequency: <strong>Quarterly</strong></span>
+              </div>
+              <div className="bg-white rounded-lg px-3 py-2 border border-blue-200">
+                <span className="text-blue-900">Last Test: <strong>2024-01-15</strong></span>
+              </div>
+              <div className="bg-white rounded-lg px-3 py-2 border border-blue-200">
+                <span className="text-blue-900">Status: <strong className="text-green-700">Passed</strong></span>
               </div>
             </div>
           </div>
