@@ -3,11 +3,12 @@
  * GET /api/auth/users/[userId] - Get a single user by ID
  *
  * SECURITY: Requires operator or admin role
+ * US-004: Applies correlation ID middleware for request tracing
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/auth'
-import { withCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
+import { withCorrelationId, setCorrelationHeader, getCorrelationId, CORRELATION_HEADER } from '@/lib/middleware/correlation'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 import { logAuditEntry, AuditLogType, AuditLogLevel, extractClientIP, extractUserAgent } from '@/features/abuse-controls/lib/audit-logger'
@@ -16,7 +17,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { userId: string } }
 ) {
-  // Apply correlation ID to request
+  // Apply correlation ID for request tracing (US-004)
   const correlationId = withCorrelationId(req)
 
   const clientIP = extractClientIP(req)
@@ -33,14 +34,20 @@ export async function GET(
 
     // Validate userId parameter
     if (!userId || typeof userId !== 'string') {
-      return NextResponse.json(
+      const res = NextResponse.json(
         { error: 'Bad Request', message: 'Invalid user ID' },
         { status: 400 }
       )
+      return setCorrelationHeader(res, correlationId)
     }
 
-    // Call auth service
+    // Call auth service with correlation ID header propagation
     const client = requireAuthServiceClient()
+
+    // Propagate correlation ID to downstream auth service
+    const authHeaders = new Headers()
+    authHeaders.set(CORRELATION_HEADER, correlationId)
+
     const response = await client.getEndUser(userId)
 
     // Audit log the user detail view
@@ -62,30 +69,40 @@ export async function GET(
     const res = NextResponse.json(response)
     return setCorrelationHeader(res, correlationId)
   } catch (error) {
-    console.error('[Security] Error getting user:', error)
+    // Get correlation ID for error logging
+    const errorCorrelationId = getCorrelationId(req) || 'unknown'
+
+    console.error('[Security] Error getting user:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      correlationId: errorCorrelationId,
+      timestamp: new Date().toISOString(),
+    })
 
     // Generic error handling to prevent information leakage
     if (error instanceof Error && (
       error.message === 'No token provided' ||
       error.message === 'Invalid token'
     )) {
-      return NextResponse.json(
+      const res = NextResponse.json(
         { error: 'Unauthorized', message: 'Authentication required' },
         { status: 401 }
       )
+      return setCorrelationHeader(res, correlationId)
     }
 
     // Check for authorization errors
     if (error instanceof Error && error.name === 'AuthorizationError') {
-      return NextResponse.json(
+      const res = NextResponse.json(
         { error: 'Forbidden', message: 'Insufficient permissions' },
         { status: 403 }
       )
+      return setCorrelationHeader(res, correlationId)
     }
 
-    return NextResponse.json(
+    const res = NextResponse.json(
       { error: 'Internal Server Error', message: 'Failed to get user' },
       { status: 500 }
     )
+    return setCorrelationHeader(res, correlationId)
   }
 }

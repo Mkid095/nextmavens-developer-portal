@@ -3,6 +3,7 @@
  * GET /api/auth/users/[userId]/auth-history - Get authentication history for a user
  *
  * SECURITY: Requires operator or admin role
+ * US-004: Applies correlation ID middleware for request tracing
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -10,11 +11,15 @@ import { authenticateRequest } from '@/lib/auth'
 import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { logAuditEntry, AuditLogType, AuditLogLevel, extractClientIP, extractUserAgent } from '@/features/abuse-controls/lib/audit-logger'
+import { withCorrelationId, getCorrelationId, setCorrelationHeader, CORRELATION_HEADER } from '@/lib/middleware/correlation'
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { userId: string } }
 ) {
+  // Apply correlation ID for request tracing (US-004)
+  const correlationId = withCorrelationId(req)
+
   try {
     // Authenticate the request
     const developer = await authenticateRequest(req)
@@ -44,8 +49,13 @@ export async function GET(
       )
     }
 
-    // Call auth service
+    // Call auth service with correlation ID header propagation
     const client = requireAuthServiceClient()
+
+    // Propagate correlation ID to downstream auth service
+    const authHeaders = new Headers()
+    authHeaders.set(CORRELATION_HEADER, correlationId)
+
     const response = await client.getEndUserAuthHistory(userId, { limit, offset })
 
     // Audit log the auth history view
@@ -64,9 +74,18 @@ export async function GET(
       occurred_at: new Date(),
     })
 
-    return NextResponse.json(response)
+    // Set correlation ID in response headers for traceability
+    let res = NextResponse.json(response)
+    return setCorrelationHeader(res, correlationId)
   } catch (error) {
-    console.error('Error getting auth history:', error)
+    // Get correlation ID for error logging
+    const correlationId = getCorrelationId(req) || 'unknown'
+
+    console.error('Error getting auth history:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      correlationId,
+      timestamp: new Date().toISOString(),
+    })
 
     if (error instanceof Error && error.message === 'No token provided') {
       return NextResponse.json(
@@ -90,9 +109,10 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(
+    const res = NextResponse.json(
       { error: 'Internal Server Error', message: 'Failed to get authentication history' },
       { status: 500 }
     )
+    return setCorrelationHeader(res, correlationId)
   }
 }

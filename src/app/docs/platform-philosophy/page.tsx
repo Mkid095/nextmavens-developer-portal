@@ -45,7 +45,7 @@ const principles = [
     title: 'Security Principles',
     description: 'Fail closed, audit everything, zero trust',
     color: 'red',
-    comingSoon: true,
+    comingSoon: false,
   },
   {
     icon: Code,
@@ -460,6 +460,188 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`,
     code: `// Verify signature and extract claims
 const claims = await verifyJWT(token)
 // Claims: { userId: "usr_123", email: "...", exp: ... }`,
+  },
+]
+
+const securityBenefits = [
+  {
+    title: 'Fail Closed, Not Open',
+    description: 'When in doubt, deny access. Default deny policies require explicit authorization. Unknown inputs, missing permissions, or validation errors result in rejection, not fallback to permissive states.',
+    icon: Shield,
+    examples: [
+      'API endpoints deny by default, require explicit auth',
+      'Firewall rules block all traffic, whitelist allowed sources',
+      'RBAC: no access unless permission explicitly granted',
+      'Validation failures return 403, not proceed with defaults',
+    ],
+  },
+  {
+    title: 'Explicit Over Implicit',
+    description: 'Make security decisions visible and intentional. No hidden permissions, no implicit access grants, no "it just works" magic that obscures who can do what.',
+    icon: Code,
+    examples: [
+      'All permissions defined in code, not inferred',
+      'Role requirements explicitly declared on endpoints',
+      'No fallback permissions or implicit role inheritance',
+      'Security decisions auditable from code review',
+    ],
+  },
+  {
+    title: 'Audit Everything',
+    description: 'Every security-relevant action is logged. Authentication, authorization, data access, configuration changes—all recorded with actor, timestamp, and context.',
+    icon: AlertCircle,
+    examples: [
+      'All auth events logged (login, logout, token refresh)',
+      'Authorization failures logged with actor and resource',
+      'Data access logged for sensitive operations',
+      'Audit logs immutable and tamper-evident',
+    ],
+  },
+  {
+    title: 'Zero Trust by Default',
+    description: 'Trust no request, regardless of source. Every request is authenticated, every authorization is checked, every input is validated. No trusted networks, no trusted clients.',
+    icon: Lock,
+    examples: [
+      'All requests require valid authentication',
+      'Internal services authenticate with each other',
+      'Network segmentation: no trusted internal zones',
+      'Input validation on all API boundaries',
+    ],
+  },
+]
+
+const securityExamples = [
+  {
+    title: 'Fail Closed API Endpoints',
+    description: 'API endpoints require explicit authentication and authorization checks',
+    code: `// Default deny: middleware rejects unauthenticated requests
+export const withAuth = (handler: Handler) => async (req: Request) => {
+  const token = req.headers.get('Authorization')?.replace('Bearer ', '')
+  if (!token) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const user = await verifyJWT(token)
+  if (!user) {
+    return Response.json({ error: 'Invalid token' }, { status: 401 })
+  }
+
+  return handler(req, user)
+}
+
+// Explicit permission check
+export const withPermission = (permission: Permission) => async (req: Request, user: User) => {
+  if (!hasPermission(user, permission)) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  // Proceed with request
+}`,
+  },
+  {
+    title: 'Explicit Authorization Declaration',
+    description: 'Permissions are declared explicitly, not inferred from context',
+    code: `// Route handlers declare required permissions explicitly
+export const DELETE = withAuth(
+  withPermission('projects.delete')(async (req, user) => {
+    // User is authenticated AND has projects.delete permission
+    // No implicit access, no role-based inference
+    const project = await deleteProject(req.params.id)
+    return Response.json(project)
+  })
+)
+
+// Invalid: Implicit role-based access
+export const DELETE = withAuth(async (req, user) => {
+  if (user.role === 'admin') {  // Implicit, hard to audit
+    await deleteProject(req.params.id)
+  }
+})`,
+  },
+  {
+    title: 'Comprehensive Audit Logging',
+    description: 'All security-relevant events are logged with full context',
+    code: `// Audit log entry includes actor, action, target, context
+await auditLog.insert({
+  actor_id: user.id,
+  actor_email: user.email,
+  action: 'project.deleted',
+  target_type: 'project',
+  target_id: project.id,
+  metadata: {
+    project_name: project.name,
+    deletion_reason: req.body.reason,
+  },
+  ip_address: req.ip,
+  user_agent: req.headers.get('user-agent'),
+  timestamp: new Date(),
+  request_id: req.id,
+})
+
+// Authorization failures also logged
+if (!hasPermission(user, 'projects.delete')) {
+  await auditLog.insert({
+    actor_id: user.id,
+    action: 'authorization.denied',
+    target_type: 'project',
+    target_id: project.id,
+    metadata: {
+      required_permission: 'projects.delete',
+      user_roles: user.roles,
+    },
+    timestamp: new Date(),
+  })
+}`,
+  },
+  {
+    title: 'Zero Trust Network Segmentation',
+    description: 'Internal services authenticate with each other, no trusted networks',
+    code: `// Service-to-service authentication
+const serviceToken = await getServiceToken('data-plane')
+const response = await fetch('http://data-plane/internal/query', {
+  headers: {
+    'Authorization': \`Bearer \${serviceToken}\`,
+    'X-Service-Name': 'api-gateway',
+  },
+})
+
+// Mutual TLS between services
+const httpsAgent = new https.Agent({
+  cert: fs.readFileSync('/certs/service.crt'),
+  key: fs.readFileSync('/certs/service.key'),
+  ca: fs.readFileSync('/certs/ca.crt'),
+  rejectUnauthorized: true,  // Fail closed: verify peer cert
+})
+
+// No trusted internal networks
+// const isInternal = req.ip.startsWith('10.')  // WRONG
+// if (isInternal) return Next()  // Trusts network, not service`,
+  },
+]
+
+const securityAntiPatterns = [
+  {
+    pattern: 'Implicit Role-Based Access',
+    problem: 'Inferring permissions from roles makes code hard to audit and introduces hidden access paths',
+    solution: 'Declare required permissions explicitly on each endpoint',
+    icon: AlertCircle,
+  },
+  {
+    pattern: 'Fail Open Configuration',
+    problem: 'Using default allow policies when security controls fail (e.g., auth service down)',
+    solution: 'Always fail closed—return errors when security controls are unavailable',
+    icon: Shield,
+  },
+  {
+    pattern: 'Hidden Admin Bypasses',
+    problem: 'Admin users bypassing all checks without audit trail or explicit permissions',
+    solution: 'Admins require explicit permissions for all actions, with full audit logging',
+    icon: Lock,
+  },
+  {
+    pattern: 'Selective Audit Logging',
+    problem: 'Only logging successful actions while ignoring failures and denied requests',
+    solution: 'Log all security events: successes, failures, and denials with full context',
+    icon: Code,
   },
 ]
 
@@ -1192,6 +1374,184 @@ export default function PlatformPhilosophyPage() {
                   className="inline-flex items-center gap-2 text-purple-700 font-medium hover:text-purple-800"
                 >
                   Explore Authentication Documentation
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-red-100 rounded-xl">
+              <AlertCircle className="w-6 h-6 text-red-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">Security Principles</h2>
+              <p className="text-slate-600">Why fail-closed and zero trust are non-negotiable</p>
+            </div>
+          </div>
+
+          <div className="space-y-6 mb-12">
+            {securityBenefits.map((benefit, index) => {
+              const Icon = benefit.icon
+              return (
+                <motion.div
+                  key={benefit.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-xl p-8 border border-slate-200"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <Icon className="w-5 h-5 text-red-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-900 mb-2">{benefit.title}</h3>
+                      <p className="text-slate-600 leading-relaxed">{benefit.description}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    {benefit.examples.map((example) => (
+                      <div key={example} className="flex items-center gap-2 text-sm text-slate-600">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>{example}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Security in Code</h3>
+            <p className="text-slate-600 mb-8">
+              These examples demonstrate how security principles translate into actual code. Fail closed,
+              explicit permissions, comprehensive audit logging, and zero trust aren't abstract concepts—
+              they're concrete implementation decisions.
+            </p>
+
+            <div className="space-y-8">
+              {securityExamples.map((example, index) => (
+                <motion.div
+                  key={example.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <h4 className="font-semibold text-slate-900 mb-2">{example.title}</h4>
+                  <p className="text-sm text-slate-600 mb-3">{example.description}</p>
+                  <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                    <pre className="text-sm text-slate-300">
+                      <code>{example.code}</code>
+                    </pre>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Anti-Patterns to Avoid</h3>
+            <p className="text-slate-600 mb-8">
+              Security failures often come from well-intentioned but dangerous patterns. Learn these anti-patterns
+              to avoid introducing vulnerabilities.
+            </p>
+
+            <div className="space-y-4">
+              {securityAntiPatterns.map((antiPattern) => {
+                const Icon = antiPattern.icon
+                return (
+                  <div key={antiPattern.pattern} className="flex items-start gap-4 p-6 bg-red-50 rounded-xl border border-red-200">
+                    <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
+                      <Icon className="w-5 h-5 text-red-700" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-slate-900 mb-1">{antiPattern.pattern}</h4>
+                      <p className="text-sm text-slate-600 mb-2"><strong>Problem:</strong> {antiPattern.problem}</p>
+                      <p className="text-sm text-emerald-700"><strong>Solution:</strong> {antiPattern.solution}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Why Security-First Wins</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Shield className="w-5 h-5 text-red-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Prevents Breaches, Not Detects Them</h4>
+                  <p className="text-slate-600">
+                    Fail-closed defaults mean attackers can't exploit configuration errors. Implicit trust is
+                    the root cause of most security breaches—eliminate it at the design level.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Code className="w-5 h-5 text-purple-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Auditable by Design</h4>
+                  <p className="text-slate-600">
+                    Explicit permissions and comprehensive logging mean you can always answer "who did what and when."
+                    Security reviews become code reviews, not separate investigations.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Lock className="w-5 h-5 text-blue-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Zero Trust Works Everywhere</h4>
+                  <p className="text-slate-600">
+                    Trusting networks, internal services, or admin accounts creates attack surfaces. Zero trust
+                    eliminates entire classes of vulnerabilities by assuming every request could be malicious.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <AlertCircle className="w-5 h-5 text-orange-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Operational Simplicity</h4>
+                  <p className="text-slate-600">
+                    Fewer "why does this work?" incidents. No hunting down hidden permissions. Clear security
+                    models reduce operational burden and mean time to resolution.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-red-50 rounded-xl p-8 border border-red-200 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-red-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-red-700" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">The Bottom Line</h4>
+                <p className="text-slate-700 leading-relaxed mb-4">
+                  Security isn't a feature you add later—it's a foundation you build on. Fail closed, explicit
+                  permissions, comprehensive audit logging, and zero trust aren't optional extras. They're non-
+                  negotiable principles that prevent entire classes of vulnerabilities. When security is implicit
+                  or permissive by default, you're not building secure systems—you're building lucky systems.
+                  Eventually, luck runs out. Foundations don't.
+                </p>
+                <Link
+                  href="/docs/errors"
+                  className="inline-flex items-center gap-2 text-red-700 font-medium hover:text-red-800"
+                >
+                  Explore Security & Error Documentation
                   <ArrowLeft className="w-4 h-4 rotate-180" />
                 </Link>
               </div>

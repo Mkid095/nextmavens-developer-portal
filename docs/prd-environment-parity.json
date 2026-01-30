@@ -187,8 +187,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented environment-aware webhook retry logic in src/features/webhooks/lib/webhook-delivery.ts. Added getProjectEnvironment() function to fetch project environment from database and map snapshot environment types to config types. Updated deliverWebhook() function to use getEnvironmentConfig() and apply max_webhook_retries setting. Dev environment gets infinite retries (null), staging gets 5 retries, prod gets 3 retries. Retry loop handles both Infinity and finite maxRetries values. Includes exponential backoff calculation with 5-minute cap. HMAC-SHA256 signature generation. Proper error handling for 4xx errors (no retry except 408, 429) and 5xx errors (retry). Typecheck passes."
     },
     {
       "id": "US-008",

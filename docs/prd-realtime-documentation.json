@@ -120,8 +120,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added comprehensive Connection Lifecycle section to src/app/docs/realtime/page.tsx. Includes: Connection States section showing four states (CONNECTING with animated yellow indicator, OPEN with green, CLOSING with orange, CLOSED with red) with visual state cards and readyState code example, Reconnection Logic section with complete ReconnectingWebSocket class implementation featuring exponential backoff (1s start, 2x multiplier, 30s max), max reconnect attempts (10), and scheduleReconnect() method, Heartbeat & Keepalive section with heartbeat message handling, 30s interval/60s timeout monitoring, client-side ping implementation, and service behavior note, Graceful Shutdown section with unsubscribe-before-close pattern, beforeunload event handler, visibility change detection, and close code 1000 usage, and Connection Lifecycle Flow diagram showing the full cycle: CONNECTING \u2192 OPEN \u2194 CLOSING \u2192 CLOSED \u21bb RECONNECT. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-006",

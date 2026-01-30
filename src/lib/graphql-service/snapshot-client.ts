@@ -11,9 +11,14 @@
  * - All operations return false (deny) when snapshot is unavailable
  * - GraphQL query execution is blocked when control plane is down
  * - This ensures security is never compromised
+ *
+ * US-005: Add Correlation ID to GraphQL Service
+ * - Supports correlation ID propagation via x-request-id header
+ * - All logs include correlation ID for request tracing
  */
 
 import { ControlPlaneSnapshot, ProjectStatus } from '@/lib/snapshot/types'
+import { generateCorrelationId, extractCorrelationId as extractCorrelationIdHeader, CORRELATION_HEADER } from '@/lib/middleware/correlation'
 
 /**
  * Configuration for the snapshot client
@@ -22,6 +27,13 @@ interface SnapshotClientConfig {
   controlPlaneUrl: string
   cacheTTL: number // milliseconds
   requestTimeout: number // milliseconds
+}
+
+/**
+ * Request context for correlation ID tracking
+ */
+interface RequestContext {
+  correlationId?: string
 }
 
 /**
@@ -73,9 +85,49 @@ const snapshotCache = new Map<string, CachedSnapshot>()
  */
 export class GraphQLServiceSnapshotClient {
   private config: SnapshotClientConfig
+  private requestContext: RequestContext
 
   constructor(config: Partial<SnapshotClientConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config }
+    this.requestContext = {}
+  }
+
+  /**
+   * Set the correlation ID for the current request context
+   * This allows correlation IDs to be propagated to the control plane
+   * @param correlationId - The correlation ID from the incoming request
+   */
+  setCorrelationId(correlationId: string): void {
+    this.requestContext.correlationId = correlationId
+  }
+
+  /**
+   * Get the current correlation ID from context
+   * Generates a new one if not set
+   * @returns The correlation ID
+   */
+  getCorrelationId(): string {
+    if (!this.requestContext.correlationId) {
+      this.requestContext.correlationId = generateCorrelationId()
+    }
+    return this.requestContext.correlationId
+  }
+
+  /**
+   * Clear the request context (call between requests)
+   */
+  clearContext(): void {
+    this.requestContext = {}
+  }
+
+  /**
+   * Format a log message with correlation ID
+   * @param message - The log message
+   * @returns Formatted message with correlation ID
+   */
+  private formatLog(message: string): string {
+    const correlationId = this.getCorrelationId()
+    return `[GraphQL Service Snapshot] [${correlationId}] ${message}`
   }
 
   /**
@@ -86,6 +138,7 @@ export class GraphQLServiceSnapshotClient {
   async fetchSnapshot(projectId: string): Promise<SnapshotFetchResult> {
     try {
       const url = `${this.config.controlPlaneUrl}/api/internal/snapshot?project_id=${projectId}`
+      const correlationId = this.getCorrelationId()
 
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), this.config.requestTimeout)
@@ -94,6 +147,8 @@ export class GraphQLServiceSnapshotClient {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
+          // US-005: Propagate correlation ID to control plane
+          [CORRELATION_HEADER]: correlationId,
         },
       })
 
@@ -101,7 +156,7 @@ export class GraphQLServiceSnapshotClient {
 
       if (!response.ok) {
         if (response.status === 503) {
-          console.error('[GraphQL Service Snapshot] Control plane unavailable (503)')
+          console.error(this.formatLog('Control plane unavailable (503)'))
           return {
             success: false,
             error: 'Control plane unavailable',
@@ -109,14 +164,14 @@ export class GraphQLServiceSnapshotClient {
         }
 
         if (response.status === 404) {
-          console.error(`[GraphQL Service Snapshot] Project not found: ${projectId}`)
+          console.error(this.formatLog(`Project not found: ${projectId}`))
           return {
             success: false,
             error: 'Project not found',
           }
         }
 
-        console.error(`[GraphQL Service Snapshot] Unexpected response: ${response.status}`)
+        console.error(this.formatLog(`Unexpected response: ${response.status}`))
         return {
           success: false,
           error: `Unexpected response: ${response.status}`,
@@ -126,7 +181,7 @@ export class GraphQLServiceSnapshotClient {
       const data = await response.json()
 
       if (!data.snapshot) {
-        console.error('[GraphQL Service Snapshot] No snapshot in response')
+        console.error(this.formatLog('No snapshot in response'))
         return {
           success: false,
           error: 'Invalid response format',
@@ -139,14 +194,14 @@ export class GraphQLServiceSnapshotClient {
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('[GraphQL Service Snapshot] Request timeout')
+        console.error(this.formatLog('Request timeout'))
         return {
           success: false,
           error: 'Request timeout',
         }
       }
 
-      console.error('[GraphQL Service Snapshot] Fetch error:', error)
+      console.error(this.formatLog('Fetch error:'), error)
       return {
         success: false,
         error: 'Failed to fetch snapshot',
@@ -182,7 +237,7 @@ export class GraphQLServiceSnapshotClient {
     if (cached) {
       if (cached.snapshot.version !== result.snapshot.version) {
         console.log(
-          `[GraphQL Service Snapshot] Version changed for project ${projectId}: ${cached.snapshot.version} -> ${result.snapshot.version}`
+          this.formatLog(`Version changed for project ${projectId}: ${cached.snapshot.version} -> ${result.snapshot.version}`)
         )
       }
     }
@@ -207,14 +262,14 @@ export class GraphQLServiceSnapshotClient {
 
     if (!snapshot) {
       // Fail closed - deny if snapshot unavailable
-      console.error(`[GraphQL Service Snapshot] Snapshot unavailable for project ${projectId}`)
+      console.error(this.formatLog(`Snapshot unavailable for project ${projectId}`))
       return false
     }
 
     const isActive = snapshot.project.status === 'ACTIVE'
 
     if (!isActive) {
-      console.log(`[GraphQL Service Snapshot] Project ${projectId} is not active: ${snapshot.project.status}`)
+      console.log(this.formatLog(`Project ${projectId} is not active: ${snapshot.project.status}`))
     }
 
     return isActive
@@ -230,14 +285,14 @@ export class GraphQLServiceSnapshotClient {
 
     if (!snapshot) {
       // Fail closed - deny if snapshot unavailable
-      console.error(`[GraphQL Service Snapshot] Snapshot unavailable for project ${projectId}`)
+      console.error(this.formatLog(`Snapshot unavailable for project ${projectId}`))
       return false
     }
 
     const isEnabled = snapshot.services.graphql?.enabled ?? false
 
     if (!isEnabled) {
-      console.log(`[GraphQL Service Snapshot] GraphQL service not enabled for project ${projectId}`)
+      console.log(this.formatLog(`GraphQL service not enabled for project ${projectId}`))
     }
 
     return isEnabled
@@ -354,7 +409,7 @@ export class GraphQLServiceSnapshotClient {
    */
   invalidateCache(projectId: string): void {
     snapshotCache.delete(projectId)
-    console.log(`[GraphQL Service Snapshot] Invalidated cache for project ${projectId}`)
+    console.log(this.formatLog(`Invalidated cache for project ${projectId}`))
   }
 
   /**
@@ -362,7 +417,7 @@ export class GraphQLServiceSnapshotClient {
    */
   clearCache(): void {
     snapshotCache.clear()
-    console.log('[GraphQL Service Snapshot] Cleared all cache')
+    console.log(this.formatLog('Cleared all cache'))
   }
 
   /**
@@ -501,7 +556,8 @@ export function cleanupExpiredGraphQLCacheEntries(): number {
   }
 
   if (cleaned > 0) {
-    console.log(`[GraphQL Service Snapshot] Cleaned up ${cleaned} expired cache entries`)
+    const correlationId = graphqlServiceSnapshotClient.getCorrelationId()
+    console.log(`[GraphQL Service Snapshot] [${correlationId}] Cleaned up ${cleaned} expired cache entries`)
   }
 
   return cleaned
