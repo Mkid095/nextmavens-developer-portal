@@ -602,6 +602,19 @@ export class ControlPlaneClient {
   }
 
   /**
+   * Retry a failed webhook delivery
+   */
+  async retryWebhook(
+    request: { event_log_id: string },
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: { id: string; message: string; retry_count: number } }> {
+    return this.request<{ success: boolean; data: { id: string; message: string; retry_count: number } }>('/api/v1/webhooks/retry', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }, req)
+  }
+
+  /**
    * Create a new secret
    */
   async createSecret(
