@@ -144,8 +144,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented internal snapshot endpoint in control-plane-api. Created src/lib/snapshot/ with types.ts (snapshot schema), cache.ts (in-memory cache with 45s TTL, version tracking), errors.ts (fail-closed error classes), builder.ts (build snapshot from DB), and index.ts (barrel export). Created GET /internal/snapshot?project_id=xxx route.ts with UUID validation, caching, X-Response-Time/X-Cache-Status headers, CORS OPTIONS, and errorToHttpResponse for 503 fail-closed behavior with Retry-After header. Response includes version, project (id, status, environment, tenant_id), services (auth, graphql, realtime, storage, database, functions), limits (per-minute/hour/day), and quotas (db_queries, realtime_connections, storage_uploads, function_invocations). Typecheck passes."
     },
     {
       "id": "US-011",

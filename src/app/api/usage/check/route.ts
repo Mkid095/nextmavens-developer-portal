@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
+import { toErrorNextResponse, ErrorCode, isPlatformError, createError } from '@/lib/errors'
 
 /**
  * POST /api/usage/check
@@ -173,9 +174,8 @@ export async function POST(req: NextRequest) {
     // Validate request
     const validation = validateRequest(body)
     if (!validation.valid) {
-      return NextResponse.json(
-        { error: validation.error },
-        { status: 400 }
+      return toErrorNextResponse(
+        { code: ErrorCode.VALIDATION_ERROR, message: validation.error || 'Invalid request' }
       )
     }
 
@@ -189,22 +189,20 @@ export async function POST(req: NextRequest) {
     )
 
     if (projectCheck.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Project not found' },
-        { status: 404 }
+      return toErrorNextResponse(
+        { code: ErrorCode.NOT_FOUND, message: 'Project not found' }
       )
     }
 
     // Check if project is suspended
     const suspended = await isProjectSuspended(pool, project_id)
     if (suspended) {
-      return NextResponse.json(
-        {
-          error: 'Project temporarily suspended due to excessive usage',
-          allowed: false,
-          reason: 'project_suspended',
-        },
-        { status: 403 }
+      return toErrorNextResponse(
+        createError(
+          ErrorCode.PROJECT_SUSPENDED,
+          'Project temporarily suspended due to excessive usage',
+          project_id
+        )
       )
     }
 
@@ -212,12 +210,8 @@ export async function POST(req: NextRequest) {
     const quotaConfig = await getQuotaConfig(pool, project_id, service)
     if (!quotaConfig) {
       // No quota configured - deny by default
-      return NextResponse.json(
-        {
-          error: 'No quota configured for this service',
-          allowed: false,
-        },
-        { status: 403 }
+      return toErrorNextResponse(
+        { code: ErrorCode.SERVICE_DISABLED, message: 'No quota configured for this service' }
       )
     }
 
@@ -227,16 +221,17 @@ export async function POST(req: NextRequest) {
 
     // Check hard cap (abuse prevention)
     if (quotaConfig.hard_cap > 0 && projectedUsage > quotaConfig.hard_cap) {
-      return NextResponse.json(
-        {
-          error: 'Project temporarily suspended due to excessive usage',
-          allowed: false,
-          reason: 'hard_cap_exceeded',
-          current_usage: currentUsage,
-          hard_cap: quotaConfig.hard_cap,
-          reset_at: quotaConfig.reset_at,
-        },
-        { status: 403 }
+      return toErrorNextResponse(
+        createError(
+          ErrorCode.QUOTA_EXCEEDED,
+          'Quota exceeded: hard cap reached',
+          project_id,
+          {
+            current_usage: currentUsage,
+            hard_cap: quotaConfig.hard_cap,
+            reset_at: quotaConfig.reset_at,
+          }
+        )
       )
     }
 
@@ -266,11 +261,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(response)
   } catch (error: unknown) {
-    const err = error as { message?: string }
+    if (isPlatformError(error)) {
+      return error.toNextResponse()
+    }
     console.error('[Usage Check] Error:', error)
-    return NextResponse.json(
-      { error: err.message || 'Failed to check usage' },
-      { status: 500 }
-    )
+    return toErrorNextResponse(error)
   }
 }

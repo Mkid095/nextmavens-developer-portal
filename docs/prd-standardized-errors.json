@@ -113,8 +113,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated API gateway to use standard error factory. Updated src/lib/middleware/schema-scope.ts to use toErrorNextResponse() with standard error codes. Updated src/lib/auth.ts and control-plane-api/src/lib/auth.ts to throw PlatformError with KEY_INVALID/AUTHENTICATION_ERROR codes. Updated control-plane-api/src/app/api/v1/projects/[id]/route.ts to use standard error format. Updated src/app/api/usage/check/route.ts to use standard error format with PROJECT_SUSPENDED, QUOTA_EXCEEDED, SERVICE_DISABLED codes. All errors now return standard format with code, message, docs, retryable, and timestamp. Typecheck passes."
     },
     {
       "id": "US-004",

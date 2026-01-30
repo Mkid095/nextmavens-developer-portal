@@ -100,10 +100,8 @@ export async function PUT(
       validatedData = updateProjectSchema.parse(body)
     } catch (error) {
       if (error instanceof ZodError) {
-        return errorResponse(
-          'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
-          400
+        return toErrorNextResponse(
+          { code: ErrorCode.VALIDATION_ERROR, message: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ') }
         )
       }
       throw error
@@ -113,9 +111,9 @@ export async function PUT(
 
     if (!valid) {
       if (error === 'NOT_FOUND') {
-        return errorResponse('NOT_FOUND', 'Project not found', 404)
+        return toErrorNextResponse({ code: ErrorCode.NOT_FOUND, message: 'Project not found' })
       }
-      return errorResponse('FORBIDDEN', 'Access denied', 403)
+      return toErrorNextResponse({ code: ErrorCode.PERMISSION_DENIED, message: 'Access denied' }, projectId)
     }
 
     const pool = getPool()
@@ -151,7 +149,7 @@ export async function PUT(
     }
 
     if (updates.length === 0) {
-      return errorResponse('VALIDATION_ERROR', 'No fields to update', 400)
+      return toErrorNextResponse({ code: ErrorCode.VALIDATION_ERROR, message: 'No fields to update' })
     }
 
     // Add updated_at
@@ -190,14 +188,11 @@ export async function PUT(
       },
     })
   } catch (error) {
-    if (error instanceof Error && error.message === 'No token provided') {
-      return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
-    }
-    if (error instanceof Error && error.message === 'Invalid token') {
-      return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
+    if (isPlatformError(error)) {
+      return error.toNextResponse()
     }
     console.error('Error updating project:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to update project', 500)
+    return toErrorNextResponse(error, params.id)
   }
 }
 
@@ -214,9 +209,9 @@ export async function DELETE(
 
     if (!valid) {
       if (error === 'NOT_FOUND') {
-        return errorResponse('NOT_FOUND', 'Project not found', 404)
+        return toErrorNextResponse({ code: ErrorCode.NOT_FOUND, message: 'Project not found' })
       }
-      return errorResponse('FORBIDDEN', 'Access denied', 403)
+      return toErrorNextResponse({ code: ErrorCode.PERMISSION_DENIED, message: 'Access denied' }, projectId)
     }
 
     const pool = getPool()
@@ -237,13 +232,10 @@ export async function DELETE(
       },
     })
   } catch (error) {
-    if (error instanceof Error && error.message === 'No token provided') {
-      return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
-    }
-    if (error instanceof Error && error.message === 'Invalid token') {
-      return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
+    if (isPlatformError(error)) {
+      return error.toNextResponse()
     }
     console.error('Error deleting project:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to delete project', 500)
+    return toErrorNextResponse(error, params.id)
   }
 }
