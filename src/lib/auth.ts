@@ -36,9 +36,19 @@ export interface Developer {
   organization?: string
 }
 
-export function generateAccessToken(developer: Developer): string {
+/**
+ * JWT payload with project_id claim.
+ * US-001: Require project_id in JWT
+ */
+export interface JwtPayload {
+  id: string
+  email: string
+  project_id: string
+}
+
+export function generateAccessToken(developer: Developer, projectId: string): string {
   return jwt.sign(
-    { id: developer.id, email: developer.email },
+    { id: developer.id, email: developer.email, project_id: projectId },
     getJwtSecret(),
     { expiresIn: '1h' }
   )
@@ -52,7 +62,7 @@ export function generateRefreshToken(developerId: string): string {
   )
 }
 
-export function verifyAccessToken(token: string): Developer {
+export function verifyAccessToken(token: string): JwtPayload {
   try {
     const decoded = jwt.verify(token, getJwtSecret())
     if (typeof decoded === 'string') {
@@ -62,8 +72,15 @@ export function verifyAccessToken(token: string): Developer {
     if (!decoded.id || !decoded.email) {
       throw new Error('Invalid token structure')
     }
-    return decoded as unknown as Developer
-  } catch {
+    // US-001: Require project_id in JWT
+    if (!decoded.project_id) {
+      throw new Error('Missing project_id claim')
+    }
+    return decoded as unknown as JwtPayload
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Missing project_id claim') {
+      throw error
+    }
     throw new Error('Invalid token')
   }
 }
@@ -86,7 +103,11 @@ export function hashApiKey(key: string): string {
   return crypto.createHash('sha256').update(key).digest('hex')
 }
 
-export async function authenticateRequest(req: NextRequest): Promise<Developer> {
+/**
+ * US-001: Authenticate a request and return the JWT payload.
+ * Verifies that project_id claim exists in the token.
+ */
+export async function authenticateRequest(req: NextRequest): Promise<JwtPayload> {
   const authHeader = req.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw new Error('No token provided')
