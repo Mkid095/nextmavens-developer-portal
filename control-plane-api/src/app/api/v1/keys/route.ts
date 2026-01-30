@@ -198,9 +198,12 @@ export async function POST(req: NextRequest) {
     const keyPrefix = getKeyPrefix(validatedData.key_type, projectEnvironment)
     const keyEnvironment = mapProjectEnvironmentToKeyEnvironment(projectEnvironment)
 
-    // Generate API key pair
-    const publicKey = generateApiKey('public')
-    const secretKey = generateApiKey('secret')
+    // Generate API key pair with environment-specific prefix
+    // US-010: Keys have environment-specific prefixes (nm_live_pk_, nm_dev_pk_, nm_staging_pk_)
+    const publicKeySuffix = generateApiKey('public')
+    const secretKeySuffix = generateApiKey('secret')
+    const publicKey = `${keyPrefix}${publicKeySuffix}`
+    const secretKey = `${keyPrefix}${secretKeySuffix}`
     const hashedSecretKey = hashApiKey(secretKey)
 
     // Ensure columns exist

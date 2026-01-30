@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest, type JwtPayload, generateApiKey, hashApiKey, getKeyPrefix, DEFAULT_API_KEY_SCOPES } from '@/lib/auth'
+import { authenticateRequest, type JwtPayload, generateApiKey, hashApiKey, getKeyPrefix, DEFAULT_API_KEY_SCOPES, mapProjectEnvironmentToKeyEnvironment } from '@/lib/auth'
 import { getPool } from '@/lib/db'
 
 // Helper function for standard error responses
@@ -33,9 +33,9 @@ export async function POST(req: NextRequest, context: RouteContext) {
       // Columns might already exist, ignore errors
     }
 
-    // Get the existing key details with ownership verification
+    // Get the existing key details with ownership verification and project environment
     const existingKeyResult = await pool.query(
-      `SELECT ak.*, p.developer_id
+      `SELECT ak.*, p.developer_id, p.environment as project_environment
        FROM api_keys ak
        JOIN projects p ON ak.project_id = p.id
        WHERE ak.id = $1`,
@@ -53,17 +53,20 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return errorResponse('FORBIDDEN', 'You do not have permission to rotate this key', 403)
     }
 
-    // Get key_type and environment from existing key
+    // Get key_type from existing key
     const keyType = existingKey.key_type || 'secret'
-    const environment = existingKey.environment || 'live'
 
-    // Generate new API key pair
-    const publicKey = generateApiKey('public')
-    const secretKey = generateApiKey('secret')
+    // US-010: Use project's environment for key prefix (not the key's environment)
+    const projectEnvironment = existingKey.project_environment || 'prod'
+    const keyPrefix = getKeyPrefix(keyType, projectEnvironment)
+    const keyEnvironment = mapProjectEnvironmentToKeyEnvironment(projectEnvironment)
+
+    // Generate new API key pair with environment-specific prefix
+    const publicKeySuffix = generateApiKey('public')
+    const secretKeySuffix = generateApiKey('secret')
+    const publicKey = `${keyPrefix}${publicKeySuffix}`
+    const secretKey = `${keyPrefix}${secretKeySuffix}`
     const hashedSecretKey = hashApiKey(secretKey)
-
-    // Generate key prefix based on type and environment
-    const keyPrefix = getKeyPrefix(keyType, environment)
 
     // Get default scopes for the key type
     const scopes = existingKey.scopes || DEFAULT_API_KEY_SCOPES[keyType]
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
       `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, name, scopes, environment)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, key_type, key_prefix, scopes, environment, name, created_at`,
-      [existingKey.project_id, keyType, keyPrefix, hashedSecretKey, existingKey.name, JSON.stringify(scopes), environment]
+      [existingKey.project_id, keyType, keyPrefix, hashedSecretKey, existingKey.name, JSON.stringify(scopes), keyEnvironment]
     )
 
     const newKey = newKeyResult.rows[0]

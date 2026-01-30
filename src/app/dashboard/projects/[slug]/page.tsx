@@ -37,6 +37,7 @@ import QuotaWarningBanner from '@/components/QuotaWarningBanner'
 import ServiceTab from '@/components/ServiceTab'
 import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKeyModal'
 import DeletionPreviewModal from '@/components/DeletionPreviewModal'
+import CodeBlockEnhancer from '@/components/docs/CodeBlockEnhancer'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Project {
@@ -645,7 +646,9 @@ export default function ProjectDetailPage() {
   const databaseUrl = `postgresql://nextmavens:Elishiba@95@nextmavens-db-m4sxnf.1.mvuvh68efk7jnvynmv8r2jm2u:5432/nextmavens?options=--search_path=tenant_${project.slug}`
 
   return (
-    <div className="min-h-screen bg-[#F3F5F7]">
+    <>
+      <CodeBlockEnhancer />
+      <div className="min-h-screen bg-[#F3F5F7]">
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
