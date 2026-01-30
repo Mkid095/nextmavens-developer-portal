@@ -1,32 +1,38 @@
 /**
  * US-002: Scope Database Queries
+ * US-005: Update API Gateway Errors (Standardized Error Format)
  *
  * Middleware for enforcing tenant isolation at the API gateway level.
  * Validates project ownership and prevents cross-project access.
+ * Uses standardized error format for consistent error responses.
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { type JwtPayload } from './auth'
 import { getTenantContext, TenantAccessError } from './tenant-db'
+import {
+  ErrorCode,
+  toErrorNextResponse,
+  createError,
+  authenticationError,
+  permissionDeniedError,
+  notFoundError,
+  validationError,
+  internalError,
+} from '@/lib/errors'
 
 /**
- * Standard error response format for API gateway
+ * Standard error response for API gateway using standardized error format
+ * Maps error codes to appropriate HTTP responses
  */
 export function gatewayErrorResponse(
-  code: string,
+  code: ErrorCode,
   message: string,
-  status: number
-): NextResponse {
-  return NextResponse.json(
-    {
-      success: false,
-      error: {
-        code,
-        message,
-      },
-    },
-    { status }
-  )
+  projectId?: string,
+  details?: Record<string, unknown>
+): Response {
+  const error = createError(code, message, projectId, details)
+  return error.toNextResponse()
 }
 
 /**
@@ -173,43 +179,37 @@ export function withTenantIsolation<
       }
 
       if (!projectId) {
-        return gatewayErrorResponse(
-          'INVALID_REQUEST',
-          'Project ID is required',
-          400
-        )
+        return validationError('Project ID is required').toNextResponse()
       }
 
       // Create gateway context (validates access and ownership)
       const contextResult = await createGatewayContext(projectId, jwt)
 
       if (!contextResult.success || !contextResult.context) {
-        const statusCode = contextResult.error === 'Project not found' ? 404 : 403
-        return gatewayErrorResponse(
-          statusCode === 404 ? 'NOT_FOUND' : TenantAccessError.CROSS_SCHEMA_ACCESS,
-          contextResult.error || 'Access denied',
-          statusCode
-        )
+        const error = contextResult.error === 'Project not found'
+          ? notFoundError('Project not found', jwt.project_id)
+          : permissionDeniedError(contextResult.error || 'Access denied', jwt.project_id)
+        return error.toNextResponse()
       }
 
       // Call the actual handler with gateway context
       return await handler(req, params, contextResult.context)
     } catch (error) {
-      // Handle authentication errors
+      // Handle authentication errors using standardized error format
       if (error instanceof Error) {
         if (error.message === 'No token provided') {
-          return gatewayErrorResponse('UNAUTHORIZED', 'Authentication required', 401)
+          return authenticationError('Authentication required').toNextResponse()
         }
         if (error.message === 'Invalid token') {
-          return gatewayErrorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
+          return authenticationError('Invalid or expired token').toNextResponse()
         }
         if (error.message === 'Missing project_id claim') {
-          return gatewayErrorResponse('INVALID_TOKEN', 'Token must include project_id claim', 401)
+          return authenticationError('Token must include project_id claim').toNextResponse()
         }
       }
 
       console.error('Error in tenant isolation middleware:', error)
-      return gatewayErrorResponse('INTERNAL_ERROR', 'Internal server error', 500)
+      return internalError('Internal server error').toNextResponse()
     }
   }
 }

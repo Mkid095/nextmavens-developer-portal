@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio, Code2 } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio, Code2, AlertCircle } from 'lucide-react'
 
 const chapters = [
   {
@@ -82,6 +82,15 @@ const chapters = [
     color: 'emerald',
     tools: ['subscribe', 'CDC', 'WebSocket'],
     path: '/docs/realtime',
+  },
+  {
+    id: 'errors',
+    title: 'Error Codes',
+    description: 'Complete reference for all API error codes and troubleshooting',
+    icon: AlertCircle,
+    color: 'red',
+    tools: ['Error reference', 'Troubleshooting', 'HTTP status'],
+    path: '/docs/errors',
   },
   {
     id: 'mcp',

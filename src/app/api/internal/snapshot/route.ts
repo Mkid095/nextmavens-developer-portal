@@ -13,6 +13,8 @@
  * - Retry-After header indicates when to retry
  *
  * Response time target: < 100ms (achieved via caching)
+ *
+ * US-005: Uses standardized error format for consistent error responses
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -20,6 +22,7 @@ import { buildSnapshot } from '@/lib/snapshot/builder'
 import { getCachedSnapshot, setCachedSnapshot } from '@/lib/snapshot/cache'
 import { SnapshotMetadata } from '@/lib/snapshot/types'
 import { errorToHttpResponse, ProjectNotFoundError } from '@/lib/snapshot/errors'
+import { validationError, notFoundError, internalError, rateLimitError } from '@/lib/errors'
 
 /**
  * Snapshot response with optional metadata
@@ -39,24 +42,17 @@ export async function GET(req: NextRequest) {
     const projectId = searchParams.get('project_id')
 
     if (!projectId) {
-      return NextResponse.json(
-        {
-          error: 'Missing project_id parameter',
-        } as SnapshotResponse,
-        { status: 400 }
-      )
+      return validationError('Missing project_id parameter', { field: 'project_id' }).toNextResponse()
     }
 
     // Validate project_id format (UUID)
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(projectId)) {
-      return NextResponse.json(
-        {
-          error: 'Invalid project_id format',
-        } as SnapshotResponse,
-        { status: 400 }
-      )
+      return validationError('Invalid project_id format', {
+        field: 'project_id',
+        expected_format: 'UUID'
+      }).toNextResponse()
     }
 
     // Check cache first
@@ -98,7 +94,17 @@ export async function GET(req: NextRequest) {
 
     const responseTime = Date.now() - startTime
 
-    // Convert error to appropriate HTTP response
+    // Handle ProjectNotFoundError with standardized format
+    if (error instanceof ProjectNotFoundError) {
+      const standardizedError = notFoundError(error.message, error.message.match(/Project not found: (.+)/)?.[1])
+      const response = standardizedError.toNextResponse()
+      // Add response time headers
+      response.headers.set('X-Response-Time', `${responseTime}ms`)
+      response.headers.set('X-Cache-Status', 'ERROR')
+      return response
+    }
+
+    // Convert other errors to appropriate HTTP response
     const { status, message, retryAfter } = errorToHttpResponse(error)
 
     const headers: Record<string, string> = {
@@ -111,20 +117,19 @@ export async function GET(req: NextRequest) {
       headers['Retry-After'] = retryAfter.toString()
     }
 
-    return NextResponse.json(
-      {
-        error: message,
-        metadata: {
-          generatedAt: new Date().toISOString(),
-          ttl: 0,
-          cacheHit: false,
-        },
-      } as SnapshotResponse,
-      {
-        status,
-        headers,
-      }
-    )
+    // Use standardized error format for other errors
+    const standardizedError = status === 503
+      ? internalError(message, { retry_after: retryAfter })
+      : internalError(message)
+
+    const response = standardizedError.toNextResponse()
+
+    // Add custom headers
+    Object.entries(headers).forEach(([key, value]) => {
+      response.headers.set(key, value)
+    })
+
+    return response
   }
 }
 
