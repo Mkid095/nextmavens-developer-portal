@@ -133,7 +133,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: POST /v1/orgs endpoint exists and now accepts optional 'slug' parameter. If slug is provided and already exists, returns 409 DUPLICATE_ORGANIZATION error. If slug is not provided, auto-generates from name and appends counter (-1, -2, etc.) if duplicate exists to ensure uniqueness. Creates organization with authenticated user as owner. Returns organization details (id, name, slug, owner_id, created_at). Typecheck passes."
+      "notes": "Implemented POST /api/organizations endpoint in developer portal API. Accepts name and optional slug. Validates input (name: 2-255 chars, slug: 2-100 chars, lowercase letters/numbers/hyphens only). Forwards to control plane API at /api/v1/orgs which creates organization with authenticated user as owner. Slug generation is handled by control plane (generates from name if not provided, appends counter for duplicates). Returns organization details (id, name, slug, owner_id, created_at) with 201 status. Also implemented GET /api/organizations for listing organizations. Typecheck passes."
     },
     {
       "id": "US-006",

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
+import crypto from 'crypto'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
-import { addMemberSchema } from '@/lib/validation'
+import { inviteMemberSchema } from '@/lib/validation'
+import { sendOrganizationInvitationEmail } from '@/lib/email'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -12,11 +14,11 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate organization ownership
+// Helper function to validate organization ownership/admin access
 async function validateOrganizationOwnership(
   orgId: string,
   developer: JwtPayload
-): Promise<{ valid: boolean; organization?: any }> {
+): Promise<{ valid: boolean; organization?: any; membership?: any }> {
   const pool = getPool()
   const result = await pool.query(
     `SELECT o.id, o.name, o.slug, o.owner_id, o.created_at,
@@ -41,10 +43,15 @@ async function validateOrganizationOwnership(
     return { valid: false, organization }
   }
 
-  return { valid: true, organization }
+  return { valid: true, organization, membership: organization }
 }
 
-// POST /v1/orgs/:id/members - Add member to organization
+// Generate secure invitation token
+function generateInvitationToken(): string {
+  return crypto.randomBytes(32).toString('hex')
+}
+
+// POST /v1/orgs/:id/members - Invite member to organization by email
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -53,10 +60,10 @@ export async function POST(
     const developer = await authenticateRequest(req)
     const body = await req.json()
 
-    // Validate request body
+    // Validate request body - now expects email instead of user_id
     let validatedData: any
     try {
-      validatedData = addMemberSchema.parse(body)
+      validatedData = inviteMemberSchema.parse(body)
     } catch (error) {
       if (error instanceof ZodError) {
         return errorResponse(
@@ -68,58 +75,76 @@ export async function POST(
       throw error
     }
 
-    // Check ownership (only owners can add members)
+    // Check ownership/admin access (only owners/admins can invite)
     const ownershipCheck = await validateOrganizationOwnership(params.id, developer)
     if (!ownershipCheck.valid) {
       if (ownershipCheck.organization) {
-        return errorResponse('FORBIDDEN', 'Only owners can add members', 403)
+        return errorResponse('FORBIDDEN', 'Only owners and admins can invite members', 403)
       }
       return errorResponse('NOT_FOUND', 'Organization not found', 404)
     }
 
     const pool = getPool()
 
-    // Verify the user exists
-    const userResult = await pool.query(
-      'SELECT id, name, email FROM developers WHERE id = $1',
-      [validatedData.user_id]
-    )
+    // Normalize email to lowercase
+    const normalizedEmail = validatedData.email.toLowerCase().trim()
 
-    if (userResult.rows.length === 0) {
-      return errorResponse('NOT_FOUND', 'User not found', 404)
-    }
-
-    // Check if user is already a member
+    // Check if there's already a pending or accepted invitation for this email
     const existingMember = await pool.query(
-      'SELECT user_id FROM control_plane.organization_members WHERE org_id = $1 AND user_id = $2',
-      [params.id, validatedData.user_id]
+      `SELECT id, user_id, email, status, role, created_at
+       FROM control_plane.organization_members
+       WHERE org_id = $1 AND (LOWER(email) = LOWER($2) OR user_id IN (
+         SELECT id FROM developers WHERE LOWER(email) = LOWER($2)
+       ))`,
+      [params.id, normalizedEmail]
     )
 
     if (existingMember.rows.length > 0) {
-      return errorResponse('DUPLICATE_MEMBER', 'User is already a member of this organization', 409)
+      const member = existingMember.rows[0]
+      if (member.status === 'pending') {
+        return errorResponse(
+          'PENDING_INVITATION',
+          'A pending invitation already exists for this email',
+          409
+        )
+      }
+      return errorResponse(
+        'ALREADY_MEMBER',
+        'This user is already a member of the organization',
+        409
+      )
     }
 
-    // Add member
+    // Generate invitation token and expiry (7 days from now)
+    const invitationToken = generateInvitationToken()
+    const tokenExpiresAt = new Date()
+    tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 7)
+
+    // Create pending membership
     const result = await pool.query(
-      `INSERT INTO control_plane.organization_members (org_id, user_id, role, invited_by)
-       VALUES ($1, $2, $3, $4)
-       RETURNING org_id, user_id, role, invited_by, joined_at, created_at`,
-      [params.id, validatedData.user_id, validatedData.role, developer.id]
+      `INSERT INTO control_plane.organization_members (org_id, email, role, status, invitation_token, token_expires_at, invited_by)
+       VALUES ($1, $2, $3, 'pending', $4, $5, $6)
+       RETURNING id, org_id, email, role, status, invitation_token, token_expires_at, invited_by, created_at`,
+      [params.id, normalizedEmail, validatedData.role, invitationToken, tokenExpiresAt, developer.id]
     )
 
     const member = result.rows[0]
-    const user = userResult.rows[0]
+
+    // TODO: Send invitation email
+    // This will be implemented in a follow-up story
+    // For now, the invitation is created in pending state
 
     return NextResponse.json({
       success: true,
       data: {
+        id: member.id,
         org_id: member.org_id,
-        user_id: member.user_id,
-        name: user.name,
-        email: user.email,
+        email: member.email,
         role: member.role,
+        status: member.status,
         invited_by: member.invited_by,
-        joined_at: member.joined_at,
+        created_at: member.created_at,
+        expires_at: member.token_expires_at,
       }
     }, { status: 201 })
   } catch (error) {
@@ -129,7 +154,7 @@ export async function POST(
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error adding member:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to add member', 500)
+    console.error('Error inviting member:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to invite member', 500)
   }
 }

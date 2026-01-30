@@ -124,6 +124,34 @@ export interface RevokeKeyResponse {
   }
 }
 
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  owner_id: string
+  user_role?: 'owner' | 'admin' | 'developer' | 'viewer'
+  created_at: string
+}
+
+export interface CreateOrganizationRequest {
+  name: string
+  slug?: string
+}
+
+export interface CreateOrganizationResponse {
+  success: boolean
+  data: Organization
+}
+
+export interface ListOrganizationsResponse {
+  success: boolean
+  data: Organization[]
+  meta?: {
+    limit: number
+    offset: number
+  }
+}
+
 export interface ControlPlaneError {
   error: string
   message?: string
@@ -342,6 +370,58 @@ export class ControlPlaneClient {
     req?: { headers: { get: (name: string) => string | null } }
   ): Promise<DeletionPreviewResponse> {
     return this.request<DeletionPreviewResponse>(`/api/v1/projects/${projectId}/deletion-preview`, {}, req)
+  }
+
+  /**
+   * Create a new organization
+   */
+  async createOrganization(
+    request: CreateOrganizationRequest,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<CreateOrganizationResponse> {
+    return this.request<CreateOrganizationResponse>('/api/v1/orgs', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    }, req)
+  }
+
+  /**
+   * List organizations for the authenticated user
+   */
+  async listOrganizations(
+    options?: { limit?: number; offset?: number },
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<ListOrganizationsResponse> {
+    const params = new URLSearchParams()
+    if (options?.limit) params.append('limit', options.limit.toString())
+    if (options?.offset) params.append('offset', options.offset.toString())
+    const queryString = params.toString()
+    const endpoint = `/api/v1/orgs${queryString ? `?${queryString}` : ''}`
+    return this.request<ListOrganizationsResponse>(endpoint, {}, req)
+  }
+
+  /**
+   * Get a single organization by ID
+   */
+  async getOrganization(
+    orgId: string,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: Organization; members?: any[] }> {
+    return this.request<{ success: boolean; data: Organization; members?: any[] }>(`/api/v1/orgs/${orgId}`, {}, req)
+  }
+
+  /**
+   * Update an organization
+   */
+  async updateOrganization(
+    orgId: string,
+    request: { name?: string },
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: Organization }> {
+    return this.request<{ success: boolean; data: Organization }>(`/api/v1/orgs/${orgId}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    }, req)
   }
 }
 

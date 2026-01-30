@@ -193,7 +193,7 @@
     {
       "id": "US-008",
       "title": "Add Environment Selector in UI",
-      "description": "As a developer, I want to select environment when creating projects so that I can set up dev/staging/proj environments.",
+      "description": "As a developer, I want to select environment when creating projects so that I can set up dev/staging/prod environments.",
       "acceptanceCriteria": [
         "Environment dropdown in project creation form",
         "Options: Production, Development, Staging",
@@ -210,8 +210,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added environment selector dropdown to project creation form in src/app/dashboard/page.tsx. Options include Production (prod), Development (dev), and Staging (staging) with Production as default. Added help text explaining the differences between environments: Production has standard limits and auto-suspend, Development has 10x limits with no auto-suspend and infinite webhook retries, Staging has 5x limits with 5 webhook retries. Updated API route to pass environment to control plane. Typecheck passes."
     },
     {
       "id": "US-009",

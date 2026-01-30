@@ -74,10 +74,21 @@ export const updateOrganizationSchema = z.object({
   name: z.string().min(2).max(255).optional(),
 })
 
-// Add member to organization schema
+// Add member to organization schema (by existing user ID)
 export const addMemberSchema = z.object({
   user_id: z.string().uuid('Invalid user ID format'),
   role: organizationRoleEnum.default('developer'),
+})
+
+// Invite member to organization schema (by email)
+export const inviteMemberSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  role: organizationRoleEnum.default('developer'),
+})
+
+// Organization member status enum
+export const memberStatusEnum = z.enum(['pending', 'accepted', 'declined'], {
+  errorMap: () => ({ message: 'Status must be one of: pending, accepted, declined' }),
 })
 
 // Update member role schema
@@ -98,8 +109,10 @@ export type ListProjectsQuery = z.infer<typeof listProjectsQuerySchema>
 export type CreateOrganizationInput = z.infer<typeof createOrganizationSchema>
 export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>
 export type AddMemberInput = z.infer<typeof addMemberSchema>
+export type InviteMemberInput = z.infer<typeof inviteMemberSchema>
 export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>
 export type ListOrganizationsQuery = z.infer<typeof listOrganizationsQuerySchema>
+export type MemberStatus = z.infer<typeof memberStatusEnum>
 
 // Create API key schema
 export const createApiKeySchema = z.object({
