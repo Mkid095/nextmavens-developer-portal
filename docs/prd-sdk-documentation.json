@@ -47,8 +47,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Installation section already implemented in src/app/docs/sdk/page.tsx with npm, yarn, and pnpm commands, each with copy buttons. Typecheck passed."
     },
     {
       "id": "US-003",

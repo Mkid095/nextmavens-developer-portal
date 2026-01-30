@@ -375,7 +375,8 @@ export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, o
           <button
             onClick={onToggle}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={isCollapsed ? 'Expand sidebar (Cmd/Ctrl + B)' : 'Collapse sidebar (Cmd/Ctrl + B)'}
+            title={isCollapsed ? 'Expand sidebar (Cmd/Ctrl + B)' : 'Collapse sidebar (Cmd/Ctrl + B)'}
           >
             {isCollapsed ? (
               <ChevronRight className="w-5 h-5" />
@@ -386,6 +387,9 @@ export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, o
               </>
             )}
           </button>
+          <div className="text-xs text-slate-400 text-center mt-1">
+            {isMac() ? '⌘' : 'Ctrl'} + B
+          </div>
         </div>
       </div>
     </motion.aside>

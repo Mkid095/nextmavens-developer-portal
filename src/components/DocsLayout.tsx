@@ -47,6 +47,20 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
     return () => window.removeEventListener('resize', handleResize)
   }, [isMobileMenuOpen])
 
+  // Keyboard shortcut to toggle sidebar (Cmd/Ctrl + B)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Cmd/Ctrl + B
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault()
+        handleToggle()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const handleToggle = () => {
     setIsCollapsed((prev) => !prev)
   }
