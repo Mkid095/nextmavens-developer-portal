@@ -108,8 +108,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated auth service API routes to apply correlation ID middleware. Modified src/lib/api/auth-service-client.ts to support custom headers parameter (for correlation ID propagation) across all methods: listEndUsers, getEndUser, disableEndUser, enableEndUser, updateEndUserMetadata, deleteEndUser, resetEndUserPassword, getEndUserSessions, revokeEndUserSession, getEndUserAuthHistory. Updated src/app/api/auth/users/route.ts to: (1) Apply withCorrelationId() at request start, (2) Pass correlation ID header to auth service client, (3) Set correlation ID in response headers, (4) Include correlation ID in error logs. All auth service API routes now support full request tracing with x-request-id propagation. Typecheck passes."
     },
     {
       "id": "US-005",

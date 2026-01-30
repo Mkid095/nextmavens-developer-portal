@@ -46,16 +46,22 @@ export class AuthServiceClient {
 
   /**
    * Make an authenticated request to the auth service
+   *
+   * @param endpoint - The API endpoint path
+   * @param options - Request options (method, body, etc.)
+   * @param customHeaders - Optional additional headers to merge with defaults (e.g., correlation ID)
    */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    customHeaders?: HeadersInit
   ): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${this.config.apiKey}`,
+      ...customHeaders,
       ...options.headers,
     }
 
@@ -90,8 +96,11 @@ export class AuthServiceClient {
 
   /**
    * List all end-users with optional filtering
+   *
+   * @param query - Query parameters for filtering and pagination
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async listEndUsers(query: EndUserListQuery = {}): Promise<EndUserListResponse> {
+  async listEndUsers(query: EndUserListQuery = {}, headers?: HeadersInit): Promise<EndUserListResponse> {
     const params = new URLSearchParams()
 
     if (query.limit) params.append('limit', String(query.limit))
@@ -107,92 +116,120 @@ export class AuthServiceClient {
     if (query.sort_order) params.append('sort_order', query.sort_order)
 
     const queryString = params.toString()
-    return this.request<EndUserListResponse>(`/users${queryString ? `?${queryString}` : ''}`)
+    return this.request<EndUserListResponse>(`/users${queryString ? `?${queryString}` : ''}`, {}, headers)
   }
 
   /**
    * Get a single end-user by ID
+   *
+   * @param userId - The user ID to fetch
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async getEndUser(userId: string): Promise<EndUserDetailResponse> {
-    return this.request<EndUserDetailResponse>(`/users/${userId}`)
+  async getEndUser(userId: string, headers?: HeadersInit): Promise<EndUserDetailResponse> {
+    return this.request<EndUserDetailResponse>(`/users/${userId}`, {}, headers)
   }
 
   /**
    * Disable an end-user account
+   *
+   * @param request - Disable request with user ID and reason
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async disableEndUser(request: DisableEndUserRequest): Promise<EndUserStatusResponse> {
+  async disableEndUser(request: DisableEndUserRequest, headers?: HeadersInit): Promise<EndUserStatusResponse> {
     return this.request<EndUserStatusResponse>(`/users/${request.userId}/disable`, {
       method: 'POST',
       body: JSON.stringify({ reason: request.reason }),
-    })
+    }, headers)
   }
 
   /**
    * Enable (re-enable) an end-user account
+   *
+   * @param request - Enable request with user ID
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async enableEndUser(request: EnableEndUserRequest): Promise<EndUserStatusResponse> {
+  async enableEndUser(request: EnableEndUserRequest, headers?: HeadersInit): Promise<EndUserStatusResponse> {
     return this.request<EndUserStatusResponse>(`/users/${request.userId}/enable`, {
       method: 'POST',
-    })
+    }, headers)
   }
 
   /**
    * Update end-user metadata
+   *
+   * @param request - Update request with user ID and metadata
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async updateEndUserMetadata(request: UpdateEndUserMetadataRequest): Promise<EndUserDetailResponse> {
+  async updateEndUserMetadata(request: UpdateEndUserMetadataRequest, headers?: HeadersInit): Promise<EndUserDetailResponse> {
     return this.request<EndUserDetailResponse>(`/users/${request.userId}/metadata`, {
       method: 'PATCH',
       body: JSON.stringify({ metadata: request.metadata }),
-    })
+    }, headers)
   }
 
   /**
    * Delete an end-user account
+   *
+   * @param request - Delete request with user ID and reason
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async deleteEndUser(request: DeleteEndUserRequest): Promise<DeleteEndUserResponse> {
+  async deleteEndUser(request: DeleteEndUserRequest, headers?: HeadersInit): Promise<DeleteEndUserResponse> {
     return this.request<DeleteEndUserResponse>(`/users/${request.userId}`, {
       method: 'DELETE',
       body: JSON.stringify({ reason: request.reason }),
-    })
+    }, headers)
   }
 
   /**
    * Reset end-user password (sends reset email)
+   *
+   * @param request - Reset password request with user ID and email
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async resetEndUserPassword(request: ResetEndUserPasswordRequest): Promise<ResetEndUserPasswordResponse> {
+  async resetEndUserPassword(request: ResetEndUserPasswordRequest, headers?: HeadersInit): Promise<ResetEndUserPasswordResponse> {
     return this.request<ResetEndUserPasswordResponse>(`/users/${request.userId}/reset-password`, {
       method: 'POST',
       body: JSON.stringify({ email: request.email }),
-    })
+    }, headers)
   }
 
   /**
    * Get all sessions for an end-user
+   *
+   * @param userId - The user ID to fetch sessions for
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async getEndUserSessions(userId: string): Promise<EndUserSessionsResponse> {
-    return this.request<EndUserSessionsResponse>(`/users/${userId}/sessions`)
+  async getEndUserSessions(userId: string, headers?: HeadersInit): Promise<EndUserSessionsResponse> {
+    return this.request<EndUserSessionsResponse>(`/users/${userId}/sessions`, {}, headers)
   }
 
   /**
    * Revoke a specific session for an end-user
+   *
+   * @param request - Revoke request with user ID and session ID
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async revokeEndUserSession(request: RevokeEndUserSessionRequest): Promise<RevokeEndUserSessionResponse> {
+  async revokeEndUserSession(request: RevokeEndUserSessionRequest, headers?: HeadersInit): Promise<RevokeEndUserSessionResponse> {
     return this.request<RevokeEndUserSessionResponse>(`/users/${request.userId}/sessions/${request.sessionId}`, {
       method: 'DELETE',
-    })
+    }, headers)
   }
 
   /**
    * Get authentication history for an end-user
+   *
+   * @param userId - The user ID to fetch auth history for
+   * @param query - Optional query parameters for pagination
+   * @param headers - Optional additional headers (e.g., correlation ID for tracing)
    */
-  async getEndUserAuthHistory(userId: string, query: AuthHistoryListQuery = {}): Promise<AuthHistoryListResponse> {
+  async getEndUserAuthHistory(userId: string, query: AuthHistoryListQuery = {}, headers?: HeadersInit): Promise<AuthHistoryListResponse> {
     const params = new URLSearchParams()
 
     if (query.limit) params.append('limit', String(query.limit))
     if (query.offset) params.append('offset', String(query.offset))
 
     const queryString = params.toString()
-    return this.request<AuthHistoryListResponse>(`/users/${userId}/auth-history${queryString ? `?${queryString}` : ''}`)
+    return this.request<AuthHistoryListResponse>(`/users/${userId}/auth-history${queryString ? `?${queryString}` : ''}`, {}, headers)
   }
 
   // Legacy aliases for backward compatibility

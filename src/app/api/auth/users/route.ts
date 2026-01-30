@@ -79,6 +79,9 @@ const userListQuerySchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
+    // Apply correlation ID for request tracing (US-004)
+    const correlationId = withCorrelationId(req)
+
     // Authenticate the request
     const developer = await authenticateRequest(req)
 
@@ -107,20 +110,33 @@ export async function GET(req: NextRequest) {
       sort_order: validatedQuery.sort_order,
     }
 
-    // Call auth service
+    // Call auth service with correlation ID header propagation
     const client = requireAuthServiceClient()
-    const response = await client.listEndUsers(query)
 
-    return NextResponse.json(response)
+    // Propagate correlation ID to downstream auth service
+    const authHeaders = new Headers()
+    authHeaders.set(CORRELATION_HEADER, correlationId)
+
+    const response = await client.listEndUsers(query, authHeaders)
+
+    // Set correlation ID in response headers for traceability
+    let res = NextResponse.json(response)
+    res = setCorrelationHeader(res, correlationId)
+
+    return res
   } catch (error) {
+    // Get correlation ID for error logging
+    const correlationId = getCorrelationId(req) || 'unknown'
+
     // Generic error handling to prevent information leakage
     if (error instanceof Error && error.name === 'ZodError') {
       return validationError('Invalid query parameters').toNextResponse()
     }
 
-    // Log security-relevant errors for monitoring
+    // Log security-relevant errors for monitoring with correlation ID (US-004)
     console.error('[Security] Error listing users:', {
       error: error instanceof Error ? error.message : 'Unknown error',
+      correlationId,
       timestamp: new Date().toISOString(),
     })
 

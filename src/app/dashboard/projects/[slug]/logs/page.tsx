@@ -67,73 +67,6 @@ const dateRangeOptions: { value: DateRangeFilter; label: string }[] = [
   { value: 'custom', label: 'Custom range' },
 ]
 
-// Mock log data for demonstration - will be replaced with real-time streaming
-const mockLogs: LogEntry[] = [
-  {
-    id: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    service: 'db',
-    level: 'info',
-    message: 'Query executed successfully',
-    metadata: { query: 'SELECT * FROM users LIMIT 10', duration: '45ms' },
-    request_id: 'req_abc123',
-  },
-  {
-    id: '2',
-    timestamp: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
-    service: 'auth',
-    level: 'info',
-    message: 'User authenticated successfully',
-    metadata: { user_id: 'user_123', method: 'jwt' },
-    request_id: 'req_def456',
-  },
-  {
-    id: '3',
-    timestamp: new Date(Date.now() - 1000 * 60 * 3).toISOString(),
-    service: 'db',
-    level: 'warn',
-    message: 'Slow query detected',
-    metadata: { query: 'SELECT * FROM orders', duration: '2500ms' },
-    request_id: 'req_ghi789',
-  },
-  {
-    id: '4',
-    timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
-    service: 'storage',
-    level: 'error',
-    message: 'Failed to upload file',
-    metadata: { file: 'avatar.png', error: 'File size exceeds limit' },
-    request_id: 'req_jkl012',
-  },
-  {
-    id: '5',
-    timestamp: new Date(Date.now() - 1000 * 60 * 1).toISOString(),
-    service: 'graphql',
-    level: 'info',
-    message: 'GraphQL query executed',
-    metadata: { operation: 'GetUserProfile', complexity: 5 },
-    request_id: 'req_mno345',
-  },
-  {
-    id: '6',
-    timestamp: new Date(Date.now() - 1000 * 30).toISOString(),
-    service: 'realtime',
-    level: 'info',
-    message: 'WebSocket connection established',
-    metadata: { client_id: 'client_xyz', channel: 'notifications' },
-    request_id: 'req_pqr678',
-  },
-  {
-    id: '7',
-    timestamp: new Date(Date.now() - 1000 * 15).toISOString(),
-    service: 'auth',
-    level: 'error',
-    message: 'Authentication failed',
-    metadata: { reason: 'Invalid token', ip: '192.168.1.1' },
-    request_id: 'req_stu901',
-  },
-]
-
 export default function LogsPage() {
   const params = useParams()
   const router = useRouter()
@@ -429,6 +362,12 @@ export default function LogsPage() {
                 <p className="text-xs text-slate-500">{project.name}</p>
               </div>
             </div>
+            {connecting && (
+              <div className="flex items-center gap-2 text-sm text-emerald-700">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Connecting...</span>
+              </div>
+            )}
           </div>
         </div>
       </nav>
@@ -595,6 +534,34 @@ export default function LogsPage() {
             </button>
           </div>
 
+          {/* Custom Date Range Inputs */}
+          {dateRangeFilter === 'custom' && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mt-4 pt-4 border-t border-slate-200 flex flex-col sm:flex-row gap-4"
+            >
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                <input
+                  type="datetime-local"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
+                <input
+                  type="datetime-local"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
+                />
+              </div>
+            </motion.div>
+          )}
+
           {/* Results Count */}
           <div className="mt-3 text-sm text-slate-500">
             Showing {filteredLogs.length} of {logs.length} log entries
@@ -700,8 +667,8 @@ export default function LogsPage() {
             <div className="text-sm text-blue-800">
               <p className="font-medium mb-1">Real-time Log Streaming</p>
               <p>
-                This page shows mock log data for demonstration. In production, logs will stream in real-time via WebSocket connection.
-                Logs are retained for 30 days and can be filtered by service, level, and searched by content.
+                Logs are streaming in real-time via Server-Sent Events (SSE). Use the filters above to narrow down logs by service, level, and date range.
+                Logs are retained for 30 days and can be downloaded for offline analysis.
               </p>
             </div>
           </div>
