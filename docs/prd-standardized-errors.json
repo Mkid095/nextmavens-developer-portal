@@ -191,7 +191,7 @@
       },
       "priority": 2,
       "passes": true,
-      "notes": "Completed: GraphQL error handling pattern using standardized format. Schema errors use VALIDATION_ERROR code. Execution failures use INTERNAL_ERROR code. Follows storage-upload.ts pattern. Typecheck passes.",
+      "notes": "Completed: GraphQL service updated to use standardized error format. Updated src/lib/graphql-service/snapshot-client.ts with: (1) GraphQLOperationResult interface with ErrorResponse field, (2) validateGraphQLOperation() returns standardized error responses, (3) graphQLSchemaError() helper uses VALIDATION_ERROR code, (4) graphQLExecutionError() helper uses INTERNAL_ERROR code, (5) Additional helper functions: graphQLIntrospectionError(), getGraphQLErrorResponse(), toGraphQLErrorNextResponse(). All GraphQL errors now return standard format with code, message, docs, retryable, and timestamp. Typecheck passes.",
     },
     {
       "id": "US-008",
