@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin, RefreshCw, Clock, AlertCircle } from 'lucide-react'
+import { BookOpen, Server, Database, HardDrive, Shield, Globe, ArrowRight, ChevronRight, AlertTriangle, Copy, CheckCircle, MapPin, RefreshCw, Clock, AlertCircle, Lock, Key, FileKey } from 'lucide-react'
 
 export default function InfrastructureDocsPage() {
   return (
@@ -71,6 +71,9 @@ export default function InfrastructureDocsPage() {
             </a>
             <a href="#network" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Network Architecture
+            </a>
+            <a href="#security" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
+              <ChevronRight className="w-4 h-4" /> Security Architecture
             </a>
             <a href="#scaling" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Scaling Roadmap
@@ -527,6 +530,305 @@ export default function InfrastructureDocsPage() {
                 <li>• No public database port</li>
                 <li>• Internal services only</li>
               </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Security Architecture */}
+        <section id="security" className="bg-white rounded-xl p-8 border border-slate-200 mb-8">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-6 flex items-center gap-3">
+            <Shield className="w-6 h-6 text-blue-700" />
+            Security Architecture
+          </h2>
+
+          <p className="text-slate-600 mb-6">
+            Security is implemented at every layer of the NextMavens platform. From network isolation to data encryption, we protect your data through defense-in-depth principles.
+          </p>
+
+          {/* Security Overview */}
+          <div className="bg-slate-900 rounded-lg p-8 text-slate-100 font-mono text-sm overflow-x-auto mb-6">
+            <pre className="whitespace-pre">{`┌─────────────────────────────────────────────────────────────────┐
+│                     Security Layers Overview                      │
+│                                                                   │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                  Network Security Layer                    │  │
+│  │  • Firewall: Only 80/443 open                              │  │
+│  │  • DDoS Protection: Cloudflare                             │  │
+│  │  • VPN for Admin Access                                    │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              │                                    │
+│                              ▼                                    │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                   Transport Security Layer                 │  │
+│  │  • TLS 1.2+ for all connections                            │  │
+│  │  • Let's Encrypt certificates                              │  │
+│  │  • HTTP/2 with TLS                                         │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              │                                    │
+│                              ▼                                    │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                 Authentication & Authorization             │  │
+│  │  • JWT-based authentication                                │  │
+│  │  • Per-project API keys                                    │  │
+│  │  • Role-based access control (RBAC)                        │  │
+│  │  • Break glass emergency access                            │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                              │                                    │
+│                              ▼                                    │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                    Data Security Layer                     │  │
+│  │  • Encryption at rest (PostgreSQL)                         │  │
+│  │  • Encrypted backups (Telegram)                            │  │
+│  │  • Per-project database isolation                          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘`}</pre>
+          </div>
+
+          {/* Network Isolation */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+              <Lock className="w-5 h-5 text-blue-600" />
+              Network Isolation
+            </h3>
+            <p className="text-sm text-slate-600 mb-4">
+              The platform enforces strict network boundaries to protect against unauthorized access and lateral movement.
+            </p>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2 text-sm">Firewall Rules</h4>
+                <ul className="text-xs text-slate-600 space-y-1">
+                  <li>• Inbound: Ports 80, 443 only</li>
+                  <li>• Outbound: HTTPS only</li>
+                  <li>• SSH: Key-based auth only</li>
+                  <li>• Database: No public access</li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2 text-sm">Internal Segmentation</h4>
+                <ul className="text-xs text-slate-600 space-y-1">
+                  <li>• Services on localhost</li>
+                  <li>• Database on private IP</li>
+                  <li>• No inter-service exposure</li>
+                  <li>• Admin VPN required</li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-slate-200">
+                <h4 className="font-semibold text-slate-900 mb-2 text-sm">DDoS Protection</h4>
+                <ul className="text-xs text-slate-600 space-y-1">
+                  <li>• Cloudflare CDN</li>
+                  <li>• Rate limiting enabled</li>
+                  <li>• Bot detection</li>
+                  <li>• Geo-blocking optional</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* TLS Everywhere */}
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2">
+              <FileKey className="w-5 h-5 text-emerald-600" />
+              TLS Everywhere
+            </h3>
+            <p className="text-sm text-emerald-800 mb-4">
+              All network traffic is encrypted using TLS 1.2 or higher, ensuring data confidentiality in transit.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                <h4 className="font-semibold text-emerald-900 mb-2 text-sm">TLS Configuration</h4>
+                <ul className="text-xs text-emerald-700 space-y-1">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    TLS 1.2 and 1.3 supported
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    Automatic certificate renewal
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    Let's Encrypt via Traefik
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    HSTS headers enforced
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    Strong cipher suites only
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-emerald-200">
+                <h4 className="font-semibold text-emerald-900 mb-2 text-sm">Encrypted Endpoints</h4>
+                <ul className="text-xs text-emerald-700 space-y-1">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    All API endpoints (HTTPS)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    Web dashboard (HTTPS)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    Database connections (SSL)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    External API calls (HTTPS)
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-emerald-600" />
+                    Webhook notifications (HTTPS)
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* JWT Authentication */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+              <Key className="w-5 h-5 text-blue-600" />
+              JWT Authentication
+            </h3>
+            <p className="text-sm text-blue-800 mb-4">
+              JSON Web Tokens provide stateless, secure authentication for all API interactions with granular permission controls.
+            </p>
+            <div className="grid md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h4 className="font-semibold text-blue-900 mb-2 text-sm">Token Structure</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• HS256 or RS256 signing</li>
+                  <li>• Expiration: 24 hours</li>
+                  <li>• Refresh tokens supported</li>
+                  <li>• Claims: user, role, project</li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h4 className="font-semibold text-blue-900 mb-2 text-sm">Token Storage</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• HttpOnly cookies</li>
+                  <li>• Secure flag enabled</li>
+                  <li>• SameSite=Strict</li>
+                  <li>• No localStorage exposure</li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-blue-200">
+                <h4 className="font-semibold text-blue-900 mb-2 text-sm">Authorization Flow</h4>
+                <ul className="text-xs text-blue-700 space-y-1">
+                  <li>• Login: POST /api/auth/login</li>
+                  <li>• Verify: Bearer token header</li>
+                  <li>• Refresh: POST /api/auth/refresh</li>
+                  <li>• Logout: Invalidate token</li>
+                </ul>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-blue-200">
+              <h4 className="font-semibold text-blue-900 mb-2 text-sm">JWT Claims Example</h4>
+              <pre className="text-xs bg-slate-100 p-3 rounded text-slate-800 overflow-x-auto">{`{
+  "sub": "developer_123",
+  "name": "john@example.com",
+  "role": "developer",
+  "projects": ["project_a", "project_b"],
+  "iat": 1640995200,
+  "exp": 1641081600
+}`}</pre>
+            </div>
+          </div>
+
+          {/* API Key Authentication */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+            <h3 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+              <Key className="w-5 h-5 text-purple-600" />
+              API Key Authentication
+            </h3>
+            <p className="text-sm text-purple-800 mb-4">
+              API keys provide secure, project-specific authentication for external integrations and programmatic access.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <h4 className="font-semibold text-purple-900 mb-2 text-sm">API Key Features</h4>
+                <ul className="text-xs text-purple-700 space-y-1">
+                  <li>• Per-project scoped keys</li>
+                  <li>• Prefix: nm_* for identification</li>
+                  <li>• Configurable permissions (read/write)</li>
+                  <li>• Key rotation support</li>
+                  <li>• Expiration dates optional</li>
+                  <li>• Audit logging for all usage</li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-purple-200">
+                <h4 className="font-semibold text-purple-900 mb-2 text-sm">Usage Example</h4>
+                <pre className="text-xs bg-slate-100 p-3 rounded text-slate-800 overflow-x-auto">{`curl -X POST https://portal.nextmavens.cloud/api/graphql \\
+  -H "Authorization: Bearer nm_live_1234567890abcdef" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "{ projects { name } }"}'`}</pre>
+              </div>
+            </div>
+          </div>
+
+          {/* Data Encryption at Rest */}
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+            <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+              <Lock className="w-5 h-5 text-orange-600" />
+              Data Encryption at Rest
+            </h3>
+            <p className="text-sm text-orange-800 mb-4">
+              All persistent data is encrypted at rest using industry-standard encryption algorithms to protect against unauthorized physical access.
+            </p>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-white rounded-lg p-4 border border-orange-200">
+                <h4 className="font-semibold text-orange-900 mb-2 text-sm">Database Encryption</h4>
+                <ul className="text-xs text-orange-700 space-y-1">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    PostgreSQL transparent encryption
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    AES-256 encryption algorithm
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    Encrypted storage volumes
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    Encrypted backups at rest
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    Keys managed securely
+                  </li>
+                </ul>
+              </div>
+              <div className="bg-white rounded-lg p-4 border border-orange-200">
+                <h4 className="font-semibold text-orange-900 mb-2 text-sm">Storage Encryption</h4>
+                <ul className="text-xs text-orange-700 space-y-1">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    Telegram cloud encryption
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    End-to-end file encryption
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    Encrypted backup transmission
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    No plaintext on disk
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="w-3 h-3 text-orange-600" />
+                    Secure key rotation
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
         </section>

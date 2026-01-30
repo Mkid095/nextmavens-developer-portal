@@ -175,8 +175,8 @@
         "step5": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added Security Architecture section to /docs/infrastructure page with comprehensive documentation including: Security Layers Overview diagram (Network Security, Transport Security, Authentication & Authorization, Data Security), Network Isolation (firewall rules, internal segmentation, DDoS protection), TLS Everywhere (TLS 1.2+ support, Let's Encrypt certificates, all endpoints encrypted), JWT Authentication (token structure, storage, authorization flow with code examples), API Key Authentication (per-project keys, prefix nm_*, permissions, rotation), and Data Encryption at Rest (database encryption with AES-256, storage encryption with Telegram). Added Lock, Key, FileKey icons. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-009",

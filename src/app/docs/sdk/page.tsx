@@ -20,6 +20,239 @@ const installMethods = [
   },
 ]
 
+const databaseExamples = [
+  {
+    title: 'Select Data',
+    description: 'Retrieve data from a table with various filtering and sorting options',
+    code: `// Select all columns
+const { data, error } = await client
+  .from('users')
+  .select('*')
+
+// Select specific columns
+const { data } = await client
+  .from('users')
+  .select('id, email, name')
+
+// Select with ordering
+const { data } = await client
+  .from('users')
+  .select('*')
+  .order('created_at', { ascending: false })
+
+// Select with pagination
+const { data } = await client
+  .from('users')
+  .select('*')
+  .range(0, 9)  // First 10 records`,
+  },
+  {
+    title: 'Insert Data',
+    description: 'Add new records to a table',
+    code: `// Insert a single record
+const { data, error } = await client
+  .from('users')
+  .insert({
+    email: 'user@example.com',
+    name: 'John Doe',
+    status: 'active'
+  })
+  .select()
+
+// Insert multiple records
+const { data } = await client
+  .from('users')
+  .insert([
+    { email: 'user1@example.com', name: 'User One' },
+    { email: 'user2@example.com', name: 'User Two' },
+    { email: 'user3@example.com', name: 'User Three' }
+  ])
+  .select()`,
+  },
+  {
+    title: 'Update Data',
+    description: 'Modify existing records in a table',
+    code: `// Update a single record
+const { data, error } = await client
+  .from('users')
+  .update({ status: 'inactive' })
+  .eq('id', 1)
+  .select()
+
+// Update multiple records
+const { data } = await client
+  .from('users')
+  .update({ verified: true })
+  .eq('status', 'pending')
+  .select()
+
+// Update with conditional logic
+const { data } = await client
+  .from('users')
+  .update({ last_login: new Date().toISOString() })
+  .eq('email', 'user@example.com')
+  .select()`,
+  },
+  {
+    title: 'Delete Data',
+    description: 'Remove records from a table',
+    code: `// Delete a single record
+const { error } = await client
+  .from('users')
+  .delete()
+  .eq('id', 1)
+
+// Delete multiple records
+const { error } = await client
+  .from('users')
+  .delete()
+  .in('id', [1, 2, 3])
+
+// Delete with condition
+const { error } = await client
+  .from('users')
+  .delete()
+  .lt('created_at', '2024-01-01')`,
+  },
+  {
+    title: 'Filter Operators',
+    description: 'Use various filter operators to refine your queries',
+    code: `// Equality filters
+await client
+  .from('users')
+  .select('*')
+  .eq('status', 'active')  // status = 'active'
+
+// Not equal
+await client
+  .from('users')
+  .select('*')
+  .neq('status', 'inactive')  // status != 'inactive'
+
+// Comparison operators
+await client
+  .from('products')
+  .select('*')
+  .gt('price', 100)  // price > 100
+
+await client
+  .from('products')
+  .select('*')
+  .gte('price', 100)  // price >= 100
+
+await client
+  .from('products')
+  .select('*')
+  .lt('price', 500)  // price < 500
+
+await client
+  .from('products')
+  .select('*')
+  .lte('price', 500)  // price <= 500
+
+// String matching
+await client
+  .from('users')
+  .select('*')
+  .like('name', '%John%')  // name contains 'John'
+
+await client
+  .from('users')
+  .select('*')
+  .ilike('email', '%@example.com')  // case-insensitive
+
+// Array operators
+await client
+  .from('posts')
+  .select('*')
+  .contains('tags', ['javascript', 'typescript'])
+
+await client
+  .from('posts')
+  .select('*')
+  .in('status', ['draft', 'published'])`,
+  },
+  {
+    title: 'Combining Filters',
+    description: 'Chain multiple filters together for complex queries',
+    code: `// Multiple filters with AND logic
+const { data } = await client
+  .from('users')
+  .select('*')
+  .eq('status', 'active')
+  .gte('age', 18)
+  .order('created_at', { ascending: false })
+  .limit(10)
+
+// Filter with OR logic using 'or'
+const { data } = await client
+  .from('products')
+  .select('*')
+  .or('category.eq(electronics),price.gt(100)')
+
+// Complex filtering
+const { data } = await client
+  .from('orders')
+  .select('*')
+  .eq('user_id', 1)
+  .in('status', ['pending', 'processing'])
+  .gte('total', 50)
+  .order('created_at', { ascending: false })`,
+  },
+  {
+    title: 'Joins and Relations',
+    description: 'Query related data using foreign key relationships',
+    code: `// Join with related table using foreign keys
+const { data, error } = await client
+  .from('orders')
+  .select(\`
+    id,
+    total,
+    created_at,
+    user:users(
+      id,
+      email,
+      name
+    ),
+    items:order_items(
+      id,
+      quantity,
+      price,
+      product:products(
+        id,
+        name,
+        image_url
+      )
+    )
+  \`)
+  .eq('id', 1)
+
+// Multiple joins
+const { data } = await client
+  .from('posts')
+  .select(\`
+    id,
+    title,
+    content,
+    author:users(
+      id,
+      name,
+      avatar_url
+    ),
+    comments(
+      id,
+      text,
+      created_at,
+      user:users(
+        id,
+        name
+      )
+    )
+  \`)
+  .order('created_at', { ascending: false })`,
+  },
+]
+
 const codeExamples = [
   {
     title: 'Import and Initialize',
@@ -30,30 +263,6 @@ const client = createClient({
   apiKey: process.env.NEXTMAVENS_API_KEY,
   projectId: 'your-project-id'
 })`,
-  },
-  {
-    title: 'Database Query',
-    description: 'Query data from your PostgreSQL database',
-    code: `// Select data
-const { data, error } = await client
-  .from('users')
-  .select('*')
-  .eq('status', 'active')
-  .limit(10)
-
-// Insert data
-const { data } = await client
-  .from('users')
-  .insert({
-    email: 'user@example.com',
-    name: 'John Doe'
-  })
-
-// Update data
-const { data } = await client
-  .from('users')
-  .update({ status: 'inactive' })
-  .eq('id', 1)`,
   },
   {
     title: 'Authentication',
@@ -333,6 +542,71 @@ NEXTMAVENS_PROJECT_ID=your_project_id`}</code>
                 </pre>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Database Section */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-emerald-100 rounded-lg">
+              <svg className="w-5 h-5 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Database</h2>
+              <p className="text-slate-600">Query and manipulate your PostgreSQL database</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {databaseExamples.map((example, index) => (
+              <motion.div
+                key={example.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="border border-slate-200 rounded-lg overflow-hidden"
+              >
+                <div className="p-4 border-b border-slate-200 bg-slate-50">
+                  <h3 className="text-base font-semibold text-slate-900 mb-1">{example.title}</h3>
+                  <p className="text-sm text-slate-600">{example.description}</p>
+                </div>
+                <div className="p-4">
+                  <div className="relative group">
+                    <button
+                      onClick={() => handleCopy(example.code, `db-${index}`)}
+                      className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                      aria-label="Copy code"
+                    >
+                      {copied === `db-${index}` ? (
+                        <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                    <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                      <code className="text-xs text-slate-300 font-mono block">{example.code}</code>
+                    </pre>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">Key Concepts</h4>
+            <ul className="text-xs text-blue-800 space-y-1">
+              <li>• All queries return a <code className="bg-blue-100 px-1 rounded">{ data, error }</code> object</li>
+              <li>• Use <code className="bg-blue-100 px-1 rounded">.select()</code> to specify which columns to retrieve</li>
+              <li>• Chain filters like <code className="bg-blue-100 px-1 rounded">.eq()</code>, <code className="bg-blue-100 px-1 rounded">.gt()</code>, <code className="bg-blue-100 px-1 rounded">.in()</code> to refine queries</li>
+              <li>• Use <code className="bg-blue-100 px-1 rounded">.order()</code> for sorting and <code className="bg-blue-100 px-1 rounded">.limit()</code> / <code className="bg-blue-100 px-1 rounded">.range()</code> for pagination</li>
+              <li>• Join related tables by nesting column selections with the table name</li>
+            </ul>
           </div>
         </div>
 
