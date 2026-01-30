@@ -317,8 +317,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented organization scoping in GET /api/v1/projects endpoint (control-plane-api/src/app/api/v1/projects/route.ts). Projects are now filtered based on organization membership: (1) Personal projects (organization_id IS NULL) are only visible to the owner (developer_id matches), (2) Organization projects (organization_id IS NOT NULL) are visible to all members with accepted status in that organization. Added p.organization_id to SELECT query and response. Updated Project interface in control-plane-client.ts to include organization_id field. Typecheck passes."
     }
   ],
   "relatedPRDs": [],
