@@ -302,8 +302,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Already implemented at control-plane-api/src/app/api/internal/health/route.ts. Returns status, version (1.0.0), uptime (seconds), and dependencies section with database status and latency. Returns 200 if healthy, 503 if any dependency unhealthy. Typecheck passes."
     },
     {
       "id": "US-012",
