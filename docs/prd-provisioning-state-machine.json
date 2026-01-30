@@ -27,8 +27,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration 007_create_provisioning_steps_table.sql created with provisioning_steps table in control_plane schema. All required columns: id (UUID PK), project_id (UUID FK to projects.id), step_name (VARCHAR 100), status (VARCHAR 20 with CHECK constraint for pending/running/success/failed/skipped), started_at, completed_at, error_message (TEXT), error_details (JSONB), retry_count (INTEGER default 0), created_at. Unique constraint on (project_id, step_name). Indexes on project_id, status, and composite (project_id, status). Migration record inserted into schema_migrations. Typecheck passes."
     },
     {
       "id": "US-002",
