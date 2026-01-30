@@ -108,8 +108,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created POST /api/usage/track endpoint at src/app/api/usage/track/route.ts. Validates request (project_id, service, metric_type, amount, optional request_id). Records usage snapshot in control_plane.usage_snapshots table with id, project_id, service, metric_type, amount, recorded_at, created_at. Idempotent via request_id - checks if request already tracked before inserting. Returns tracked boolean, id, and message. Handles unique constraint violations gracefully. Typecheck passes."
     },
     {
       "id": "US-006",
@@ -136,8 +136,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Background job infrastructure fully implemented. checkAllProjectsForSuspension() in src/features/abuse-controls/lib/suspensions.ts checks all active projects against hard caps. suspendProject() sets project status to SUSPENDED. sendSuspensionNotification() sends email to project owner. POST /api/admin/suspensions/check endpoint at src/app/api/admin/suspensions/check/route.ts triggers manual checks. Usage check endpoint returns 403 for suspended projects with reason 'project_suspended'. Typecheck passes."
     },
     {
       "id": "US-005",
