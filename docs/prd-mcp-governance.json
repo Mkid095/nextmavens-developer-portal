@@ -53,8 +53,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: MCP default scopes are already defined in src/lib/types/api-key.types.ts. The DEFAULT_SCOPES object includes mcp_ro: ['db:select', 'storage:read', 'realtime:subscribe'] which matches the acceptance criteria - db has only select, storage has only read, auth is empty (excluded), realtime has only subscribe, and graphql is empty (excluded). The getMcpDefaultScopes(mcpAccessLevel) function retrieves these defaults. The api_keys.scopes column exists from migration add-key-type-and-scopes.ts. Typecheck passes."
     },
     {
       "id": "US-003",
