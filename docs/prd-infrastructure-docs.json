@@ -131,8 +131,8 @@
         "step5": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added Service Dependencies section to /docs/infrastructure page with ASCII diagram showing service dependency graph (Web UI → Control Plane → PostgreSQL, Web UI → Data Plane → PostgreSQL, Data Plane → Telegram Storage). Includes detailed dependency cards: Control Plane → Data Plane relationship, Database dependencies (Control Plane uses developers/projects/api_keys tables, Data Plane uses per-project databases), Storage dependencies (Telegram for file uploads and backups), Service health dependencies (Web UI requires Control Plane, Control Plane requires PostgreSQL, Data Plane validates DB health per query). Includes service startup order: PostgreSQL → Control Plane API → Data Plane API → Web UI. Added Table of Contents link. Typecheck passes."
     },
     {
       "id": "US-007",

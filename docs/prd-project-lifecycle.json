@@ -167,7 +167,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Two implementation approaches provided. (1) gateway-status-check.ts with authenticateApiKeyWithStatusCheck() function that integrates project status checks with API key authentication in a single query. (2) Added checkProjectStatus() function to auth.ts that validates project status separately, using keysWorkForStatus() and getErrorCodeForStatus() helpers from project-lifecycle.types.ts. Status is fetched from database and checked against allowed states (CREATED, ACTIVE). SUSPENDED throws projectSuspendedError, ARCHIVED throws projectArchivedError, DELETED throws projectDeletedError. Added convenience functions to errors.ts (projectArchivedError, projectDeletedError). Typecheck passes."
+      "notes": "Completed: Implemented checkProjectStatus() function in src/lib/auth.ts that queries project status and throws appropriate errors (PROJECT_SUSPENDED, PROJECT_ARCHIVED, PROJECT_DELETED) for non-active states. The authenticateApiKey() function calls checkProjectStatus() on each request, enforcing that keys only work for ACTIVE and CREATED states. Uses helper functions from project-lifecycle.types.ts (keysWorkForStatus, getErrorCodeForStatus). Uses error convenience functions (projectSuspendedError, projectArchivedError, projectDeletedError) from errors.ts. Cleaned up unused gateway-status-check.ts file. Typecheck passes."
     },
     {
       "id": "US-005",

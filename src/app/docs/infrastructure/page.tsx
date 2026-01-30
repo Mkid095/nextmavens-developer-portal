@@ -60,6 +60,9 @@ export default function InfrastructureDocsPage() {
             <a href="#services" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Service Components
             </a>
+            <a href="#dependencies" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
+              <ChevronRight className="w-4 h-4" /> Service Dependencies
+            </a>
             <a href="#database" className="text-slate-600 hover:text-emerald-700 flex items-center gap-2 py-1">
               <ChevronRight className="w-4 h-4" /> Database Architecture
             </a>
@@ -233,6 +236,122 @@ export default function InfrastructureDocsPage() {
                 <li>• System health status</li>
                 <li>• Backup controls</li>
               </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Service Dependencies */}
+        <section id="dependencies" className="bg-white rounded-xl p-8 border border-slate-200 mb-8">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-6 flex items-center gap-3">
+            <Globe className="w-6 h-6 text-blue-700" />
+            Service Dependencies
+          </h2>
+
+          <p className="text-slate-600 mb-6">
+            Understanding service dependencies is critical for troubleshooting, scaling, and maintaining system reliability.
+          </p>
+
+          {/* Dependency Diagram */}
+          <div className="bg-slate-900 rounded-lg p-8 text-slate-100 font-mono text-sm overflow-x-auto mb-6">
+            <pre className="whitespace-pre">{`┌─────────────────────────────────────────────────────────────────┐
+│                     Service Dependency Graph                      │
+│                                                                   │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐     │
+│  │    Web UI   │─────▶│ Control     │─────▶│ PostgreSQL  │     │
+│  │  (Next.js)  │      │ Plane API   │      │  Database   │     │
+│  └─────────────┘      └─────────────┘      └─────┬───────┘     │
+│       │                     │                      │             │
+│       │                     ▼                      │             │
+│       │              ┌─────────────┐              │             │
+│       └─────────────▶│   Data      │──────────────┘             │
+│                      │  Plane API  │                            │
+│                      └─────────────┘                            │
+│                           │                                      │
+│                           ▼                                      │
+│                      ┌─────────────┐                            │
+│                      │  Telegram   │                            │
+│                      │  Storage    │                            │
+│                      └─────────────┘                            │
+└─────────────────────────────────────────────────────────────────┘`}</pre>
+          </div>
+
+          {/* Dependency Details */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
+              <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Control Plane → Data Plane
+              </h3>
+              <p className="text-sm text-blue-800 mb-3">
+                Control Plane creates projects and manages metadata. Data Plane provides isolated databases for each project.
+              </p>
+              <ul className="text-xs text-blue-700 space-y-1">
+                <li>• Control Plane provisions project databases</li>
+                <li>• Data Plane validates project ownership</li>
+                <li>• Shared database connection pool</li>
+              </ul>
+            </div>
+
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-5">
+              <h3 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                Database Dependencies
+              </h3>
+              <p className="text-sm text-purple-800 mb-3">
+                All services require PostgreSQL for persistent storage and state management.
+              </p>
+              <ul className="text-xs text-purple-700 space-y-1">
+                <li>• Control Plane: developers, projects, API keys</li>
+                <li>• Data Plane: per-project databases</li>
+                <li>• Connection pooling (max 20 connections)</li>
+              </ul>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-5">
+              <h3 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                <HardDrive className="w-5 h-5" />
+                Storage Dependencies
+              </h3>
+              <p className="text-sm text-orange-800 mb-3">
+                Telegram provides scalable file storage and backup infrastructure without additional service dependencies.
+              </p>
+              <ul className="text-xs text-orange-700 space-y-1">
+                <li>• User file uploads (profile images, documents)</li>
+                <li>• Database backups (daily SQL dumps)</li>
+                <li>• No local disk storage required</li>
+              </ul>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-5">
+              <h3 className="font-semibold text-green-900 mb-3 flex items-center gap-2">
+                <Shield className="w-5 h-5" />
+                Service Health Dependencies
+              </h3>
+              <p className="text-sm text-green-800 mb-3">
+                Services have explicit health dependencies and graceful degradation when dependencies are unavailable.
+              </p>
+              <ul className="text-xs text-green-700 space-y-1">
+                <li>• Web UI: Requires Control Plane (shows error if down)</li>
+                <li>• Control Plane: Requires PostgreSQL (503 if unavailable)</li>
+                <li>• Data Plane: Validates DB health per query</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Startup Order */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-6">
+            <h3 className="font-semibold text-slate-900 mb-3">Service Startup Order</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              Services must be initialized in the correct order to avoid connection failures during deployment.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="bg-blue-100 text-blue-900 px-3 py-2 rounded-lg font-medium">1. PostgreSQL</span>
+              <span className="text-slate-400">→</span>
+              <span className="bg-purple-100 text-purple-900 px-3 py-2 rounded-lg font-medium">2. Control Plane API</span>
+              <span className="text-slate-400">→</span>
+              <span className="bg-orange-100 text-orange-900 px-3 py-2 rounded-lg font-medium">3. Data Plane API</span>
+              <span className="text-slate-400">→</span>
+              <span className="bg-green-100 text-green-900 px-3 py-2 rounded-lg font-medium">4. Web UI (Next.js)</span>
             </div>
           </div>
         </section>
