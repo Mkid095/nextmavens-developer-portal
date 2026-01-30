@@ -3,6 +3,8 @@
  * Client for interacting with the Control Plane API for projects, API keys, and governance operations
  */
 
+import type { DeletionPreviewResponse } from '@/lib/types/deletion-preview.types'
+
 // Type definitions for Control Plane API requests/responses
 
 export interface Project {
@@ -305,6 +307,16 @@ export class ControlPlaneClient {
     return this.request<RevokeKeyResponse>(`/api/v1/keys/${keyId}/revoke`, {
       method: 'DELETE',
     }, req)
+  }
+
+  /**
+   * Get deletion preview for a project
+   */
+  async getDeletionPreview(
+    projectId: string,
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<DeletionPreviewResponse> {
+    return this.request<DeletionPreviewResponse>(`/api/v1/projects/${projectId}/deletion-preview`, {}, req)
   }
 }
 
