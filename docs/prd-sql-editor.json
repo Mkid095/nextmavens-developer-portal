@@ -106,8 +106,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added read-only checkbox to SqlEditor component (checked by default for safety). Checkbox shows 'Write enabled' badge when unchecked. Destructive query detection implemented with warning banner showing which command was detected and requiring user to uncheck readonly mode. handleExecute passes readonly parameter to API. Studio page updated with SQL Query tab that integrates SqlEditor with ResultsTable. Query execution via /api/studio/:projectId/query with readonly parameter. Typecheck passes."
     },
     {
       "id": "US-006",
