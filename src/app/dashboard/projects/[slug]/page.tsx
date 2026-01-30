@@ -1027,6 +1027,9 @@ export default function ProjectDetailPage() {
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-lg font-semibold text-slate-900">{project.name}</h1>
+                  {project.status && (
+                    <ProjectStatusBadge status={project.status} size="sm" />
+                  )}
                   {project.environment && (
                     <span
                       className={`px-2 py-0.5 text-xs font-medium rounded-full ${

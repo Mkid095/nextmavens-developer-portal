@@ -259,8 +259,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated Studio query API at src/app/api/studio/[projectId]/query/route.ts to enforce RBAC database.write permission for write operations (INSERT/UPDATE/DELETE). Added isWriteQuery() helper to detect write operations, getOrganizationId() to get tenant_id from project, and permission check before executing non-readonly write queries. Viewers are rejected with 403 and clear message explaining required permission. Developers and admins with database.write permission can execute write queries. Read operations (SELECT) continue to work for all authenticated users. Typecheck passes."
     },
     {
       "id": "US-011",
