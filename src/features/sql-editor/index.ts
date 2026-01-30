@@ -10,5 +10,6 @@
 
 export { SqlEditor } from './components/SqlEditor'
 export { ResultsTable } from './components/ResultsTable'
-export { QueryHistoryPanel, addQueryToHistory } from './components/QueryHistory'
+export { QueryHistoryPanel, useQueryHistory, addQueryToHistory } from './components/QueryHistory'
 export type { QueryResult } from './components/ResultsTable'
+export type { QueryHistoryItem } from './components/QueryHistory'

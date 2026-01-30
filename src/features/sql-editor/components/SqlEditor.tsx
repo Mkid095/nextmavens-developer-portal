@@ -11,6 +11,7 @@ interface SqlEditorProps {
   value?: string
   onChange?: (value: string) => void
   onExecute?: (query: string, readonly: boolean) => void
+  onLoadQuery?: (query: string) => void
   readOnly?: boolean
   placeholder?: string
   height?: string
@@ -31,15 +32,18 @@ interface SqlEditorProps {
  * - Run query button
  * - Read-only mode (default)
  * - RBAC permission enforcement (US-011)
+ * - Query history integration (US-004)
  *
  * US-001: Create SQL Editor Component
  * US-005: Implement Read-Only Mode
  * US-011: Enforce Studio Permissions
+ * US-004: Implement Query History
  */
 export function SqlEditor({
   value = '',
   onChange,
   onExecute,
+  onLoadQuery,
   readOnly = false,
   placeholder = '-- Enter your SQL query here...\n-- Press Ctrl+Enter to execute',
   height = '400px',
@@ -144,6 +148,8 @@ export function SqlEditor({
         setShowWarning(true)
         return
       }
+      // US-004: Add query to history
+      addQueryToHistory(query.trim(), readonlyMode)
       // US-005: Pass readonly mode to execute handler
       onExecute(query.trim(), readonlyMode)
     }
@@ -152,7 +158,24 @@ export function SqlEditor({
   const handleForceExecute = () => {
     setShowWarning(false)
     if (onExecute && query.trim()) {
+      // US-004: Add query to history
+      addQueryToHistory(query.trim(), readonlyMode)
       onExecute(query.trim(), readonlyMode)
+    }
+  }
+
+  /**
+   * US-004: Load a query from history into the editor
+   */
+  const loadQuery = (query: string) => {
+    setQuery(query)
+    if (onChange) {
+      onChange(query)
+    }
+    // Focus the editor after loading
+    if (editorRef.current) {
+      editorRef.current.focus()
+      editorRef.current.setPosition({ lineNumber: 1, column: 1 })
     }
   }
 

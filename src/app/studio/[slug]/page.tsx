@@ -24,6 +24,7 @@ import { UserList } from '@/features/auth-users/components/UserList'
 import { UserDetail } from '@/features/auth-users/components/UserDetail'
 import { SqlEditor } from '@/features/sql-editor'
 import { ResultsTable } from '@/features/sql-editor/components/ResultsTable'
+import { QueryHistoryPanel, addQueryToHistory } from '@/features/sql-editor/components/QueryHistory'
 import { Permission } from '@/lib/types/rbac.types'
 
 interface DatabaseTable {
@@ -61,6 +62,9 @@ export default function StudioPage() {
   const [queryResults, setQueryResults] = useState<any>(null)
   const [queryError, setQueryError] = useState<string | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
+
+  // US-004: Query History state
+  const [showQueryHistory, setShowQueryHistory] = useState(true)
 
   // US-011: RBAC state for SQL execution permissions
   const [userRole, setUserRole] = useState<UserRole>(null)
@@ -234,11 +238,20 @@ export default function StudioPage() {
   }
 
   /**
+   * US-004: Handle selecting a query from history
+   */
+  const handleSelectQueryFromHistory = (query: string, readonly: boolean) => {
+    setSqlQuery(query)
+    setQueryError(null)
+  }
+
+  /**
    * US-005: Execute SQL query with readonly mode
    * US-011: Enforce RBAC permissions for SQL execution
    * - Viewers can only SELECT
    * - Developers can SELECT/INSERT/UPDATE
    * - Admins/Owners have full access
+   * US-004: Add query to history after successful execution
    */
   const handleExecuteQuery = async (query: string, readonly: boolean) => {
     // US-011: Check if user can execute this query based on their role
@@ -301,6 +314,8 @@ export default function StudioPage() {
 
       if (data.success) {
         setQueryResults(data.data)
+        // US-004: Add successful query to history
+        addQueryToHistory(query, readonly)
       }
     } catch (err: any) {
       console.error('Query execution failed:', err)
@@ -434,7 +449,9 @@ export default function StudioPage() {
         {/* Main Content Area */}
         <div className="flex-1 overflow-auto p-6">
           {activeNav === 'sql' ? (
-            <div className="flex flex-col gap-6">
+            <div className="flex gap-6 h-full">
+              {/* Main SQL Editor Section */}
+              <div className={`flex flex-col gap-6 ${showQueryHistory ? 'flex-1' : 'w-full'}`}>
               {/* US-011: Permission banner showing user's role and allowed operations */}
               {!permissionsLoading && (
                 <div className={`flex items-start gap-3 p-4 rounded-lg border ${
@@ -515,7 +532,8 @@ export default function StudioPage() {
                 </div>
               )}
             </div>
-          ) : activeNav === 'users' ? (
+            ) : (
+            <TablesView
             selectedUserId ? (
               <UserDetail
                 key={selectedUserId}
