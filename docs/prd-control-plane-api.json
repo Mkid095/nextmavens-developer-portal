@@ -225,8 +225,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented Jobs API in control-plane-api. Added validation schemas for jobs (jobTypeEnum, jobStatusEnum, listJobsQuerySchema) to src/lib/validation.ts. Created GET /v1/jobs/route.ts - List jobs with filtering by project_id, type, status, limit, offset. Returns job list with project details. Created GET /v1/jobs/[id]/route.ts - Get job details and status. Created POST /v1/jobs/[id]/retry/route.ts - Retry failed jobs (only failed jobs can be retried, checks max_attempts). Created DELETE /v1/jobs/[id]/route.ts - Cancel pending jobs (only pending jobs can be cancelled). All endpoints require JWT authentication with project ownership verification. Job types: provision_project, rotate_key, deliver_webhook, export_backup, check_usage_limits, auto_suspend. Status tracking: pending, running, failed, completed. Typecheck passes."
     },
     {
       "id": "US-007",

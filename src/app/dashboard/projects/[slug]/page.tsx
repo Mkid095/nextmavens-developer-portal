@@ -581,6 +581,31 @@ export default function ProjectDetailPage() {
     setSelectedScopes(prev => prev.filter(s => !serviceScopes.includes(s)))
   }
 
+  // US-010: Handle project deletion
+  const handleDeleteProject = async () => {
+    setDeleteSubmitting(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/projects/${project.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Failed to delete project' }))
+        throw new Error(data.error || 'Failed to delete project')
+      }
+
+      // Redirect to dashboard after successful deletion
+      router.push('/dashboard')
+    } catch (err: any) {
+      console.error('Failed to delete project:', err)
+      throw err
+    } finally {
+      setDeleteSubmitting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F3F5F7] flex items-center justify-center">
@@ -703,6 +728,23 @@ export default function ProjectDetailPage() {
                       <code className="text-sm text-slate-900">{project.slug}</code>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* US-010: Delete Project Section */}
+              <div className="mt-8 pt-6 border-t border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-medium text-red-900">Danger Zone</h3>
+                    <p className="text-sm text-slate-600 mt-1">Delete this project and all its data</p>
+                  </div>
+                  <button
+                    onClick={() => setShowDeleteModal(true)}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span className="text-sm font-medium">Delete Project</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2042,6 +2084,16 @@ const client = createClient({
             </div>
           </div>
         </div>
+      )}
+
+      {/* US-010: Deletion Preview Modal */}
+      {project && (
+        <DeletionPreviewModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          projectId={project.id}
+          onConfirmDelete={handleDeleteProject}
+        />
       )}
     </div>
   )

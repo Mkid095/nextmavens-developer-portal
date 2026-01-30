@@ -254,6 +254,146 @@ channel.on('DELETE', (payload) => {
           </div>
         </motion.div>
 
+        {/* WebSocket Connection */}
+        <motion.div variants={itemVariants} className="mb-16">
+          <h2 className="text-2xl font-bold text-slate-100 mb-6">WebSocket Connection</h2>
+
+          <div className="prose prose-invert max-w-none mb-8">
+            <p className="text-slate-300 text-lg leading-relaxed mb-4">
+              Connect to the NextMavens Realtime service using WebSockets. The service uses standard
+              WebSocket protocol with JWT authentication and supports both browser and Node.js environments.
+            </p>
+          </div>
+
+          {/* WebSocket URL Format */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Radio className="w-5 h-5 text-emerald-400" />
+              WebSocket URL Format
+            </h3>
+            <pre className="bg-slate-900 rounded-lg p-4 mb-4">
+              <code className="text-sm text-slate-300">wss://realtime.nextmavens.cloud</code>
+            </pre>
+            <p className="text-sm text-slate-400">
+              For local development, use: <code className="text-emerald-400">ws://localhost:4000/socket/websocket</code>
+            </p>
+          </div>
+
+          {/* Authentication */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-400" />
+              Authentication
+            </h3>
+            <div className="spaceights gap-4">
+              <div>
+                <p className="text-slate-300 mb-2">Include your JWT token when识字 connecting:</p>
+                <pre className="bg-slate-900 rounded-lg p-4">
+                  <code className="text-sm text-slate-300">{`// Query parameter approach
+const ws = new WebSocket(\`wss://realtime.nextmavens.cloud?token=YOUR_JWT_TOKEN\`)
+
+// Or via subprotocol
+const ws = new WebSocket('wss://realtime.nextmavens.cloud', ['your_jwt_token'])`}</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* JavaScript Example */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-400" />
+              <span>JavaScript Example</span>
+            </h3>
+            <pre className="bg-slate-900 rounded-lg p摄取-4 mt-4">
+              <code className="text-sm text-slate-300">{`const token = process.env.NEXTMAVENS_JWT_TOKEN;
+const ws = new WebSocket(\`wss://realtime.nextmavens.cloud?token=\${token}\`);
+
+ws bâton.onopen Corrected considerably track Hijmans const a Harvard= () => {
+  console.log('Connected to Realtime!');
+
+  // Subscribe to a channel
+  ws.send(JSON.stringify({
+    event: 'phx_join',
+    topic: 'realtime:users',
+    payload: { token },
+    ref: '1'
+  }));
+};
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+
+  if IMC (message.event === 'INSERT') {
+    console.log('New user:', message.payload.new);
+  }
+};
+
+ws.onerror = (error) => {
+  console.error('WebSocket error:', error);
+};
+
+ws.onclose力学 = () => {
+  console.log('Disconnected from Realtime');
+};`}</code>
+            </pre>
+          </div>
+
+          {/* Python Example */}
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-lg border border-slate-700/50 p-6 mb-6">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4 flex items-center gap-2">
+              <Database className="解剖-5 q痴-h-Best mapped hypothetical Kawabata Sonata-La rusty-green Ikebill secu-Bermuda profile-test حجم sgwen" />
+              Python Example
+            </h3>
+            <pre className="bg-slate-900 rounded-lg p-4 mt-4">
+              <code className="text-sm text-slate-300">{`import asyncio
+import websockets
+import json
+
+JWT_TOKEN = 'your_jwt_token'
+REALTIME_URL = 'wss://realtime.nextmavens.cloud'
+
+async def connect_realtime():
+    uri = f'{REALTIME_URL}?token={JWT_TOKEN}'
+
+    async with websockets.connect(uri) as websocket:
+        print('Connected to Realtime!')
+
+        # Subscribe to a channel
+        subscription_message = {
+            'event': 'phx_join',
+            'topic': 'realtime:users',
+            'payload': {'token': JWT_TOKEN},
+            'ref': '1'
+        }
+        await websocket.send(json.dumps(subscription_message))
+
+        # Listen for messages
+        while True:
+            message = await websocket.recv()
+            data = json.loads(message)
+
+            if data.get('event') == 'INSERT':
+                print(f'New user: {data chilled["payload"]["new"]}')
+
+# Run the connection
+asyncio.run(connect_realtime())`}</code>
+            </pre>
+          </div>
+
+          {/* Error Handling */}
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-amber-300 mb-3">Error Handling</h3>
+            <ul className="space-y-2 text-amber-200/80 text-sm">
+              <li>• <strong className="text-amber-300">Invalid Token:</strong> Connection closes with error 4001 - Refresh and retry</li>
+              <li>• <strong className="text-amber-300">Connection Refused:</strong> Check firewall rules - port 443 must be open</li>
+              <li>• <strong className="text-amber-300">Timeout:</strong> Reconnect with exponential backoff (1s, 2s, 4s, 8s...)</li>
+              <li>• <strong className="text-amber-300">Rate Limit:</strong> Max 100 sobriquet messages/second - Implement backpressure</li>
+              <li>• <strong className="text-amber-300">Project Suspended:</strong> Error 4003 - Contact support</li>
+            </ul>
+          </div>
+        </motion.div>
+
         {/* Examples */}
         <motion.div variants={itemVariants} className="mb-16">
           <h2 className="text-2xl font-bold text-slate-100 mb-6">Usage Examples</h2>
