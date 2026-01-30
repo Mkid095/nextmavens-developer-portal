@@ -56,7 +56,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Correlation middleware created at src/lib/middleware/correlation.ts with exports at src/lib/middleware/index.ts"
+      "notes": "Implemented correlation ID middleware with:\n- src/lib/middleware/correlation.ts with full API (withCorrelationId, setCorrelationHeader, getCorrelationId, withCorrelation)\n- Updated route handlers (health, projects, auth/users) to use correlation IDs\n- Unit tests in src/lib/middleware/__tests__/correlation.test.ts\n- Integration tests in src/lib/middleware/__tests__/integration-test.ts\n- Generates UUID if not in x-request-id header\n- Sets req.id = correlation ID\n- Sets x-request-id response header\n- Works with Next.js\n- All acceptance criteria met"
     },
     {
       "id": "US-003",
@@ -82,8 +82,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created src/middleware.ts (77 lines) - Next.js root middleware that applies correlation ID to all API routes. Uses generateCorrelationId() and extractCorrelationId() from correlation.ts. Config matcher excludes static files and Next.js internals. Every request gets x-request-id header (existing or generated new). Request ID passed to response headers for client tracing. Downstream services can extract from x-request-id header. Typecheck passes."
     },
     {
       "id": "US-004",
