@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import DocsSidebar from './DocsSidebar'
 import TableOfContents from './docs/TableOfContents'
+import Breadcrumb from './docs/Breadcrumb'
+import CodeBlockEnhancer from './docs/CodeBlockEnhancer'
 import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
 
@@ -117,7 +119,13 @@ export default function DocsLayout({ children }: DocsLayoutProps) {
       >
         <div className="md:hidden pt-14" /> {/* Mobile header spacer */}
 
-        <div className="max-w-4xl">
+        <div className="max-w-4xl px-6 py-8 md:px-8 md:py-12">
+          {/* Breadcrumb Navigation */}
+          <Breadcrumb />
+
+          {/* Code Block Copy Buttons */}
+          <CodeBlockEnhancer />
+
           {children}
         </div>
       </main>

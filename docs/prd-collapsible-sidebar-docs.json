@@ -159,8 +159,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: TableOfContents.tsx component created at src/components/docs/TableOfContents.tsx. TOC appears on right side of content (fixed position). Extracts headings automatically from h1-h4 elements in the main content area. Smooth scroll to section with offset for fixed headers. Active heading highlighted with emerald color and left border. Hidden on mobile (<1024px / lg breakpoint) and visible on desktop. Added clsx and tailwind-merge dependencies for className utilities. Updated DocsLayout.tsx to include TOC and constrain main content width. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -181,8 +181,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Breadcrumb.tsx component created at src/components/docs/Breadcrumb.tsx. Breadcrumb appears at top of content area. Shows navigation hierarchy: Home icon > Docs > Section > Current Page. Automatically generates breadcrumbs from URL pathname. Formats segment labels (capitalizes words, converts hyphens to spaces). Skips showing breadcrumb on docs index page (/docs). All breadcrumb items are clickable links except current page which is displayed as text with medium font weight. ChevronRight icons between items for visual separation. Added proper padding and spacing to DocsLayout for breadcrumb display. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -204,8 +204,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: CodeBlockEnhancer.tsx component created at src/components/docs/CodeBlockEnhancer.tsx that automatically adds copy buttons to all <pre><code> blocks in documentation pages. Also created CodeBlock.tsx component for explicit use with new code blocks. Copy button appears on hover in top-right corner of each code block. Copies code content to clipboard using navigator.clipboard API. Shows feedback: 'Copied!' with checkmark icon and emerald color. Auto-hides after 2 seconds and returns to 'Copy' state. Button is hidden by default and appears on group hover. Detects language from className (e.g., language-typescript) and displays language label. Integrated into DocsLayout.tsx to enhance all existing and new code blocks. Typecheck passes."
     },
     {
       "id": "US-007",
