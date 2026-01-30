@@ -383,7 +383,7 @@ export default function ProjectDetailPage() {
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-semibold text-emerald-900">New API Key Created</h3>
-                      <p className="text-sm text-emerald-700">Copy these keys now. You won't see the secret key again.</p>
+                      <p className="text-sm text-emerald-700">Copy these keys now. You won&apos;t see the secret key again.</p>
                     </div>
                     <button
                       onClick={() => setNewKey(null)}
