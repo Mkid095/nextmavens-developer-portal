@@ -16,8 +16,9 @@ export type McpAccessLevel = 'ro' | 'rw' | 'admin'
 
 /**
  * The environment the key is intended for.
+ * Aligned with project environment types for consistency.
  */
-export type ApiKeyEnvironment = 'live' | 'test' | 'dev'
+export type ApiKeyEnvironment = 'prod' | 'dev' | 'staging'
 
 /**
  * Granular permission scopes for API keys.
@@ -147,19 +148,19 @@ export const DEFAULT_SCOPES: Record<ApiKey, ApiKeyScope[]> = {
 /**
  * Key prefix format for each key type and environment.
  *
- * Public keys: pk_live_, pk_test_, pk_dev_
- * Secret keys: sk_live_, sk_test_, sk_dev_
- * Service role: sr_live_, sr_test_, sr_dev_
+ * Public keys: pk_prod_, pk_dev_, pk_staging_
+ * Secret keys: sk_prod_, sk_dev_, sk_staging_
+ * Service role: sr_prod_, sr_dev_, sr_staging_
  * MCP tokens: mcp_ro_, mcp_rw_, mcp_admin_
  *
  * @param keyType - The type of API key
- * @param environment - The environment (live, test, dev)
+ * @param environment - The environment (prod, dev, staging)
  * @param mcpAccessLevel - The MCP access level (ro, rw, admin) - only used for MCP keys
  * @returns The key prefix string
  */
 export function getKeyPrefix(
   keyType: ApiKeyType,
-  environment: ApiKeyEnvironment = 'live',
+  environment: ApiKeyEnvironment = 'prod',
   mcpAccessLevel?: McpAccessLevel
 ): string {
   if (keyType === 'mcp') {
@@ -174,9 +175,9 @@ export function getKeyPrefix(
   }[keyType]
 
   const envSuffix = {
-    live: '_live_',
-    test: '_test_',
+    prod: '_prod_',
     dev: '_dev_',
+    staging: '_staging_',
   }[environment]
 
   return `${typePrefix}${envSuffix}`

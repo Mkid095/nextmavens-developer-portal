@@ -60,7 +60,7 @@ export interface ApiKey {
   key_type: 'public' | 'secret' | 'service_role' | 'mcp'
   key_prefix: string
   scopes: string[]
-  environment: 'live' | 'test' | 'dev'
+  environment: 'prod' | 'dev' | 'staging'
   created_at: string
   last_used?: string
 }
@@ -69,7 +69,7 @@ export interface CreateApiKeyRequest {
   name: string
   projectId?: string
   key_type?: 'public' | 'secret' | 'service_role' | 'mcp'
-  environment?: 'live' | 'test' | 'dev'
+  environment?: 'prod' | 'dev' | 'staging'
 }
 
 export interface CreateApiKeyResponse {

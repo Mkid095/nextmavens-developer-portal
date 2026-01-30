@@ -53,8 +53,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: GET /api/projects/:id/deletion-preview endpoint created at src/app/api/projects/[projectId]/deletion-preview/route.ts. Returns project details, will_be_deleted counts (schemas, tables, api_keys, webhooks, edge_functions, storage_buckets, secrets), dependencies array with type/target/impact, and recoverable_until date. Typecheck passes."
     },
     {
       "id": "US-003",
