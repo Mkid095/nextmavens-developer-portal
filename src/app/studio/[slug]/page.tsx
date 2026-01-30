@@ -17,17 +17,24 @@ import {
   Activity,
   Users,
   Terminal,
+  AlertCircle,
 } from 'lucide-react'
 import { TablesView, type TableData } from '@/features/studio/components/TablesView'
 import { UserList } from '@/features/auth-users/components/UserList'
 import { UserDetail } from '@/features/auth-users/components/UserDetail'
 import { SqlEditor } from '@/features/sql-editor'
 import { ResultsTable } from '@/features/sql-editor/components/ResultsTable'
+import { Permission } from '@/lib/types/rbac.types'
 
 interface DatabaseTable {
   name: string
   type: string
 }
+
+/**
+ * User role in the organization for RBAC permissions
+ */
+type UserRole = 'owner' | 'admin' | 'developer' | 'viewer' | null
 
 const navItems = [
   { id: 'tables', label: 'Tables', icon: Table },
@@ -55,9 +62,117 @@ export default function StudioPage() {
   const [queryError, setQueryError] = useState<string | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
 
+  // US-011: RBAC state for SQL execution permissions
+  const [userRole, setUserRole] = useState<UserRole>(null)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
+  const [permissionsLoading, setPermissionsLoading] = useState(true)
+
   useEffect(() => {
     fetchTables()
+    fetchUserPermissions()
   }, [params.slug])
+
+  /**
+   * US-011: Fetch user role and organization ID for RBAC permissions
+   * Viewers can only SELECT, Developers can SELECT/INSERT/UPDATE,
+   * Admins/Owners have full access
+   */
+  const fetchUserPermissions = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+
+      // Get project info to find organization ID
+      const projectRes = await fetch(`/api/projects?slug=${params.slug}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!projectRes.ok) {
+        return
+      }
+
+      const projectData = await projectRes.json()
+      const project = projectData.projects?.[0]
+
+      if (!project) {
+        return
+      }
+
+      // Get organization ID from project
+      setOrganizationId(project.tenant_id || null)
+
+      // Fetch user's database.write permission to determine role
+      if (project.tenant_id) {
+        const permRes = await fetch(
+          `/api/permissions/check?permission=${encodeURIComponent(Permission.DATABASE_WRITE)}&organizationId=${encodeURIComponent(project.tenant_id)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
+
+        if (permRes.ok) {
+          const permData = await permRes.json()
+          setUserRole(permData.role || null)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch user permissions:', err)
+    } finally {
+      setPermissionsLoading(false)
+    }
+  }
+
+  /**
+   * US-011: Check if user can execute a specific query based on their role
+   * - Viewers: only SELECT
+   * - Developers: SELECT, INSERT, UPDATE
+   * - Admins/Owners: full access (SELECT, INSERT, UPDATE, DELETE, DDL)
+   */
+  const canExecuteQuery = (query: string, readonly: boolean): boolean => {
+    // If readonly mode is on, only SELECT queries are allowed (for all authenticated users)
+    if (readonly) {
+      const trimmedQuery = query.trim()
+      const command = extractSqlCommand(trimmedQuery)
+      return command === 'SELECT'
+    }
+
+    // If readonly mode is OFF, check role-based permissions
+    if (!userRole) {
+      return false // No role = no permission
+    }
+
+    const trimmedQuery = query.trim()
+    const command = extractSqlCommand(trimmedQuery)
+
+    // Viewers can only SELECT even when readonly is off
+    if (userRole === 'viewer') {
+      return command === 'SELECT'
+    }
+
+    // Developers can SELECT, INSERT, UPDATE (but not DELETE or DDL)
+    if (userRole === 'developer') {
+      return ['SELECT', 'INSERT', 'UPDATE'].includes(command)
+    }
+
+    // Admins and Owners have full access
+    if (userRole === 'admin' || userRole === 'owner') {
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * Extract the first SQL command from a query
+   */
+  const extractSqlCommand = (queryText: string): string => {
+    const trimmed = queryText.trim()
+    const withoutComments = trimmed
+      .replace(/--.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .trim()
+    const match = withoutComments.match(/^(\w+)/)
+    return match ? match[1].toUpperCase() : ''
+  }
 
   useEffect(() => {
     if (selectedTable) {
@@ -120,9 +235,26 @@ export default function StudioPage() {
 
   /**
    * US-005: Execute SQL query with readonly mode
-   * Passes readonly parameter to API endpoint
+   * US-011: Enforce RBAC permissions for SQL execution
+   * - Viewers can only SELECT
+   * - Developers can SELECT/INSERT/UPDATE
+   * - Admins/Owners have full access
    */
   const handleExecuteQuery = async (query: string, readonly: boolean) => {
+    // US-011: Check if user can execute this query based on their role
+    if (!canExecuteQuery(query, readonly)) {
+      const command = extractSqlCommand(query.trim())
+      const permissionMessage =
+        userRole === 'viewer'
+          ? `Viewers can only execute SELECT queries. Your current role '${userRole}' does not permit ${command} operations.`
+          : userRole === 'developer'
+            ? `Developers can execute SELECT, INSERT, and UPDATE queries. Your current role '${userRole}' does not permit ${command} operations.`
+            : `You do not have permission to execute this query. Your role '${userRole || 'unknown'}' does not permit ${command} operations.`
+
+      setQueryError(permissionMessage)
+      return
+    }
+
     setIsExecuting(true)
     setQueryError(null)
     setQueryResults(null)
@@ -303,11 +435,48 @@ export default function StudioPage() {
         <div className="flex-1 overflow-auto p-6">
           {activeNav === 'sql' ? (
             <div className="flex flex-col gap-6">
+              {/* US-011: Permission banner showing user's role and allowed operations */}
+              {!permissionsLoading && (
+                <div className={`flex items-start gap-3 p-4 rounded-lg border ${
+                  userRole === 'viewer'
+                    ? 'bg-blue-50 border-blue-200'
+                    : userRole === 'developer'
+                      ? 'bg-amber-50 border-amber-200'
+                      : 'bg-emerald-50 border-emerald-200'
+                }`}>
+                  <Shield className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                    userRole === 'viewer'
+                      ? 'text-blue-600'
+                      : userRole === 'developer'
+                        ? 'text-amber-600'
+                        : 'text-emerald-600'
+                  }`} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-900">
+                      SQL Query Permissions
+                    </p>
+                    <p className="text-xs text-slate-700 mt-1">
+                      Your role: <strong className="capitalize">{userRole || 'unknown'}</strong>
+                      {userRole === 'viewer' && (
+                        <span> • You can only execute <strong>SELECT</strong> queries</span>
+                      )}
+                      {userRole === 'developer' && (
+                        <span> • You can execute <strong>SELECT, INSERT, UPDATE</strong> queries</span>
+                      )}
+                      {(userRole === 'admin' || userRole === 'owner') && (
+                        <span> • You have <strong>full access</strong> to all SQL operations</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* US-005: SQL Editor with read-only mode */}
               <SqlEditor
                 value={sqlQuery}
                 onChange={setSqlQuery}
                 onExecute={handleExecuteQuery}
+                userRole={userRole}
                 height="300px"
               />
 
