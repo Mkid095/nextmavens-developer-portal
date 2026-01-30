@@ -161,8 +161,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: API gateway isolation enforcement is fully implemented. Gateway validates project_id in JWT via verifyAccessToken() (US-001). Gateway sets search_path to tenant_{slug} via initSchemaScope() (US-002). Gateway blocks cross-project requests returning 403 via permissionDeniedError() (US-005). ApiGatewaySnapshotClient validates project status, service enablement, and rate limits. Typecheck passes."
     },
     {
       "id": "US-007",

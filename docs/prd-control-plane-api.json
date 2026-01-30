@@ -171,8 +171,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created Control Plane API client (src/lib/api/control-plane-client.ts) with full TypeScript types. Refactored developer portal routes: /api/projects (list/create), /api/projects/[projectId] (get/update/delete), /api/api-keys (list/create/delete), /api/keys/[id]/rotate, /api/keys/[id]/revoke. All routes now call Control Plane API instead of direct DB queries. Authentication is shared via forwarded JWT headers. Error handling uses standard error format. Added CONTROL_PLANE_URL to .env.example. Preserved idempotency, rate limiting, and correlation ID functionality. Typecheck passes."
     },
     {
       "id": "US-005",
