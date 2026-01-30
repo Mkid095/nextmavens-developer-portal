@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ChevronRight,
   ChevronDown,
@@ -9,6 +9,8 @@ import {
   Key,
   Hash,
   FileText,
+  ShieldCheck,
+  Star,
 } from 'lucide-react'
 
 export interface DatabaseColumn {
@@ -18,9 +20,17 @@ export interface DatabaseColumn {
   column_default: string | null
 }
 
+export interface DatabaseIndex {
+  index_name: string
+  index_def: string
+  is_unique: boolean
+  is_primary: boolean
+}
+
 export interface DatabaseTable {
   name: string
   columns?: DatabaseColumn[]
+  indexes?: DatabaseIndex[]
   row_count?: number
 }
 
@@ -42,10 +52,12 @@ interface SchemaBrowserProps {
  * Displays database schema in a tree structure with:
  * - Tables list (expandable)
  * - Columns with details (expandable)
+ * - Indexes with details (expandable)
  * - Color-coded data types
  * - Visual indicators for nullable/primary keys
  *
  * US-001: Create Schema Browser Component
+ * US-006: Display Indexes
  */
 export function SchemaBrowser({
   projectId,
@@ -55,6 +67,51 @@ export function SchemaBrowser({
   selectedTable,
 }: SchemaBrowserProps) {
   const [expandedTables, setExpandedTables] = useState<Set<string>>(new Set())
+  const [expandedIndexes, setExpandedIndexes] = useState<Set<string>>(new Set())
+  const [tableIndexes, setTableIndexes] = useState<Map<string, DatabaseIndex[]>>(new Map())
+  const [loadingIndexes, setLoadingIndexes] = useState<Set<string>>(new Set())
+
+  // Fetch indexes when a table is expanded
+  useEffect(() => {
+    expandedTables.forEach(async (tableName) => {
+      // Skip if we already fetched indexes for this table
+      if (tableIndexes.has(tableName)) {
+        return
+      }
+
+      // Skip if already loading
+      if (loadingIndexes.has(tableName)) {
+        return
+      }
+
+      // Mark as loading
+      setLoadingIndexes(prev => new Set(prev).add(tableName))
+
+      try {
+        const response = await fetch(
+          `/api/studio/${projectId}/tables/${tableName}/indexes`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+          }
+        )
+
+        if (response.ok) {
+          const data = await response.json()
+          setTableIndexes(prev => new Map(prev).set(tableName, data.indexes))
+        }
+      } catch (error) {
+        console.error(`Failed to fetch indexes for ${tableName}:`, error)
+      } finally {
+        setLoadingIndexes(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(tableName)
+          return newSet
+        })
+      }
+    })
+  }, [expandedTables, projectId, tableIndexes, loadingIndexes])
 
   const toggleTable = (tableName: string) => {
     const newExpanded = new Set(expandedTables)
@@ -192,6 +249,44 @@ export function SchemaBrowser({
                       </div>
                     )
                   })}
+                </div>
+              )}
+
+              {/* Indexes Section */}
+              {isExpanded && (
+                <div className="pl-10 pr-4 pb-2 space-y-1">
+                  {loadingIndexes.has(table.name) ? (
+                    <div className="flex items-center gap-2 px-3 py-1.5 text-slate-400">
+                      <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-xs">Loading indexes...</span>
+                    </div>
+                  ) : tableIndexes.get(table.name) && tableIndexes.get(table.name)!.length > 0 ? (
+                    <>
+                      <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5 mt-2">
+                        Indexes
+                      </div>
+                      {tableIndexes.get(table.name)!.map((index) => (
+                        <div
+                          key={index.index_name}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-slate-50 hover:bg-slate-100 transition"
+                        >
+                          <Key className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                          <span className="text-xs font-medium text-slate-700 flex-1">
+                            {index.index_name}
+                          </span>
+                          <span className="text-xs text-slate-400 truncate max-w-48 font-mono" title={index.index_def}>
+                            {index.index_def}
+                          </span>
+                          {index.is_primary && (
+                            <Star className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" title="Primary key" />
+                          )}
+                          {index.is_unique && !index.is_primary && (
+                            <ShieldCheck className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" title="Unique" />
+                          )}
+                        </div>
+                      ))}
+                    </>
+                  ) : null}
                 </div>
               )}
             </div>

@@ -1,69 +1,121 @@
 # Client Compatibility
 
-This document provides a compatibility matrix showing which SDK versions work with which API versions.
+This document provides a compatibility matrix showing which SDK versions work with which API versions of the NextMavens platform.
 
 ## Compatibility Matrix
 
 | SDK Version | API v1 (Current) | API v2 (Beta) | Notes |
 |-------------|------------------|---------------|-------|
-| 1.x.x | OK Full Support | X Not Compatible | Stable release |
-| 2.0.0-beta.1 | OK Full Support | OK Full Support | Beta release |
-| 0.9.x | WARN Deprecated | X Not Compatible | Legacy version |
+| 1.x.x | ✅ Full Support | ❌ Not Compatible | Stable release for API v1 |
+| 2.0.0-beta.1 | ✅ Full Support | ✅ Full Support | Beta release supporting both API versions |
+| 0.9.x | ⚠️ Deprecated Support | ❌ Not Compatible | Legacy - upgrade to 1.x recommended |
 
 ## Legend
 
-- OK - All features work
-- WARN - Deprecated but functional
-- X - Not compatible
+- ✅ **Full Support** - All featuresXTOK work as expected
+- ⚠️ **Partial/Deprecated Support** - Supported but deprecated
+- ❌ **Not Compatible** - Do not use this combination
+- 🔄 **Migration Required** - Upgrade required for continued support
 
-## SDK Version Details
+## Detailed Compatibility Information
 
-### SDK 1.x.x (Current)
+### SDK Version 1.x.x (Current Stable)
 
-Released for API v1 with full feature parity.
+Released for API v1, providing full feature parity with stable APIs.
 
-- API v1: Full support
+**Compatible API Versions:**
+- API v1 (latest): Full support
+- API v1 (deprecated): Supported until sunset date
+
+**Known Limitations:**
 - Cannot access API v2 beta features
-- Recommended for production
+- Some newer response fields may be ignored
 
-### SDK 2.0.0-beta.1 (Beta)
+**Recommended For:**
+- Production applications
+- Users requiring maximum stability
 
-Supports both API v1 and v2.
+### SDK Version 2.0.0-beta.1 (Beta)
 
-- API v1: Backward compatible
-- API v2: New features available
-- Beta status may have breaking changes
+Beta SDK supporting both API v1 and v2, allowing gradual migration to API v2.
 
-### SDK 0.9.x (Legacy)
+**Compatible API Versions:**
+- API v1: Full backward compatibility
+- API v2 (beta): Access to new features
 
-Deprecated and unmaintained.
+**Beta Status:**
+- May have breaking changes before stable release
+- Not recommended for production without testing
 
-- Upgrade to 1.x.x required
-- Not for new projects
+**Recommended For:**
+- Testing API v2 features
+- Early adopters who can tolerate potential changes
 
-## Upgrading
+### SDK Version 0.9.x (Legacy)
 
-From 0.9.x to 1.x.x:
-```bash
-npm install @nextmavens/sdk@latest
-```
+Legacy SDK for API v1, deprecated and no longer actively maintained.
 
-From 1.x.x to 2.x.x (beta):
-```bash
-npm install @nextmavens/sdk@beta
-```
+**Compatible API Versions:**
+- API v1 (deprecated): Supported until sunset
 
-## Support Timeline
+**Migration Required:**
+- Upgrade to SDK 1.x.x for continued support
+- See [Migration Guides](./migration-guides.md) for upgrade instructions
 
-| API Version | Status | Support Until |
-|-------------|--------|---------------|
-| v1 | Current | 2027-01-01 |
-| v2 | Beta | TBD |
+**Not Recommended For:**
+- New projects
+- Active development
 
-## Deprecation Policy
+## API Version Support Timeline
 
-- 6 months notice for major version deprecations
-- 3 months notice for minor version deprecations
-- Bug fixes for all supported versions
-- Security patches for 3 months post-deprecation
+| API Version | Status | Support Until | Recommended SDK |
+|-------------|--------|---------------|-----------------|
+| v1 | Current | 2027-01-01 | SDK 1.x.x or 2.x.x |
+| v2 | Beta | TBD | SDK 2.x.x (beta) |
+
+## Upgrading Recommendations
+
+### From SDK  pint 0.9.x to 1.x.x
+
+SDK 0.9.x is deprecated. Upgrade to 1.x.x to ensure continued support.
+
+\
+See the [Migration Guide](./migration-guides.md) for detailed instructions.
+
+### From SDK 1.x.x to 2.x.x (Beta)
+
+SDK 2.x.x (beta) supports both API v1 and v2. Upgrade if you need API v2 features.
+
+\
+**Note:** SDK 2.x.x is in beta. Expect potential breaking changes before stable release.
+
+## Checking Your SDK Version
+
+### JavaScript/TypeScript
+
+\
+### Python
+
+\
+See [SDK Semantic Versioning](./sdk-versioning.md) for more information on semantic versioning.
+
+## Handling Incompatibilities
+
+If you encounter incompatibility issues:
+
+1. **Check the matrix above** - Ensure you're using a supported combination
+2. **Review error messages** - Incompatibility errors typically indicate the issue
+3. **Upgrade your SDK** - Use the latest stable version of the SDK for your target API version
+4. **Contact support** - If issues persist, [open a support request](../support/)
+
+## SDK Deprecation Policy
+
+SDK versions are deprecated following the same policy as API versions:
+
+- **6 months notice** for major version deprecations
+- **3 months notice** for minor version deprecations
+- **Bug fixes** provided for all supported SDK versions
+- **Security patches** provided for deprecated SDK versions for 3 months post-deprecation
+
+See the [Deprecation Timeline](./deprecation-timeline.md) for more details.
 
