@@ -80,8 +80,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added mcp_access_level field to createApiKeySchema (control-plane-api/src/lib/validation.ts) with options: 'ro' (read-only), 'rw' (read-write), 'admin'. Updated getKeyPrefix() to properly handle MCP keys with format mcp_{access_level}_ (e.g., mcp_ro_, mcp_rw_, mcp_admin_). Updated POST /v1/keys endpoint to use mcp_access_level for determining default scopes via getMcpDefaultScopes(). Added warning messages for each MCP access level. Updated control-plane-client CreateApiKeyRequest interface to include mcp_access_level. Updated developer portal API to pass mcp_access_level parameter. All acceptance criteria met - can create MCP read-only tokens with mcp_ro_ prefix, scopes limited to read operations (db:select, storage:read, realtime:subscribe). Typecheck passes."
     },
     {
       "id": "US-006",

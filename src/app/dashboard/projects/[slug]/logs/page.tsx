@@ -20,6 +20,30 @@ import {
   Calendar,
 } from 'lucide-react'
 
+/**
+ * Highlight search terms in text
+ * @param text - The text to highlight
+ * @param query - The search query to highlight
+ * @returns JSX with highlighted matches
+ */
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query || !text) return text
+
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  const parts = text.split(regex)
+
+  return parts.map((part, index) => {
+    if (regex.test(part)) {
+      return (
+        <mark key={index} className="bg-yellow-200 text-slate-900 rounded px-0.5">
+          {part}
+        </mark>
+      )
+    }
+    return part
+  })
+}
+
 interface Project {
   id: string
   name: string
@@ -288,7 +312,8 @@ export default function LogsPage() {
       searchQuery === '' ||
       log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (log.request_id && log.request_id.toLowerCase().includes(searchQuery.toLowerCase()))
+      (log.request_id && log.request_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (log.metadata && JSON.stringify(log.metadata).toLowerCase().includes(searchQuery.toLowerCase()))
 
     return matchesSearch
   })
@@ -611,7 +636,7 @@ export default function LogsPage() {
                           {new Date(log.timestamp).toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-800 break-words">{log.message}</p>
+                      <p className="text-sm text-slate-800 break-words">{highlightText(log.message, searchQuery)}</p>
 
                       {/* Expanded Details */}
                       {expandedLogId === log.id && (
@@ -635,7 +660,9 @@ export default function LogsPage() {
                               <span className="font-medium text-slate-700">Metadata:</span>
                               <pre className="mt-2 p-3 bg-slate-900 rounded-lg overflow-x-auto">
                                 <code className="text-xs text-emerald-400">
-                                  {JSON.stringify(log.metadata, null, 2)}
+                                  {searchQuery
+                                    ? highlightText(JSON.stringify(log.metadata, null, 2), searchQuery)
+                                    : JSON.stringify(log.metadata, null, 2)}
                                 </code>
                               </pre>
                             </div>

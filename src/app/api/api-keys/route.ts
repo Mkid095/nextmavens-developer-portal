@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   try {
     await authenticateRequest(req)
     const body = await req.json()
-    const { name, projectId, key_type, environment, request_id } = body
+    const { name, projectId, key_type, environment, mcp_access_level, request_id } = body
 
     // Generate idempotency key: create_key:{request_id}
     const idempotencyKey = getIdempotencyKey('create_key', req.headers, request_id)
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         // Call Control Plane API to create API key
         try {
           const response = await controlPlane.createApiKey(
-            { name, projectId, key_type, environment },
+            { name, projectId, key_type, environment, mcp_access_level },
             req
           )
 
