@@ -213,8 +213,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: GraphQL queries scoped to tenant_{slug} via schema-scope middleware (US-002). TenantQueryExecutor sets search_path and validates queries. Cross-project queries rejected with 403 via permissionDeniedError(). Typecheck passes."
     },
     {
       "id": "US-009",
@@ -240,8 +240,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: WebSocket connections validated via realtime-scope middleware (US-003). validateChannelSubscription() enforces channel prefix. Cross-project channel subscriptions rejected with 403. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -266,8 +266,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: File operations validated via storage-scope middleware (US-004). validateStoragePath() enforces project_id prefix. Cross-project file access rejected with 403 via permissionDeniedError(). Typecheck passes."
     },
     {
       "id": "US-011",

@@ -71,30 +71,52 @@ export async function GET(req: NextRequest) {
       // Build snapshot from database
       snapshot = await buildSnapshot(projectId)
 
+      // US-009: Validate snapshot before caching and returning
+      try {
+        validateSnapshot(snapshot)
+      } catch (error) {
+        console.error('[Snapshot API] Schema validation failed:', error)
+        throw new SnapshotBuildError(
+          'Generated snapshot failed schema validation',
+          error instanceof Error ? error : undefined
+        )
+      }
+
       // Cache the snapshot (45 second TTL)
       setCachedSnapshot(projectId, snapshot, 45 * 1000)
     }
 
     const responseTime = Date.now() - startTime
 
+    // Build response object
+    const response: SnapshotResponse = {
+      snapshot,
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        ttl: 45,
+        cacheHit,
+      },
+    }
+
+    // US-009: Validate full response before sending
+    try {
+      validateSnapshotResponse(response)
+    } catch (error) {
+      console.error('[Snapshot API] Response validation failed:', error)
+      throw new SnapshotBuildError(
+        'Snapshot response failed schema validation',
+        error instanceof Error ? error : undefined
+      )
+    }
+
     // Return snapshot with metadata
-    return NextResponse.json(
-      {
-        snapshot,
-        metadata: {
-          generatedAt: new Date().toISOString(),
-          ttl: 45,
-          cacheHit,
-        },
-      } as SnapshotResponse,
-      {
-        headers: {
-          'X-Response-Time': `${responseTime}ms`,
-          'X-Cache-Status': cacheHit ? 'HIT' : 'MISS',
-          'Cache-Control': 'max-age=30', // Allow client-side caching for 30s
-        },
-      }
-    )
+    return NextResponse.json(response, {
+      headers: {
+        'X-Response-Time': `${responseTime}ms`,
+        'X-Cache-Status': cacheHit ? 'HIT' : 'MISS',
+        'Cache-Control': 'max-age=30', // Allow client-side caching for 30s
+      },
+    })
   } catch (error: unknown) {
     console.error('[Snapshot API] Error:', error)
 
