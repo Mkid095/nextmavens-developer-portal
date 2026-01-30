@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { runLogCleanup, getLogStorageSummary, LOG_RETENTION_DAYS } from '@/features/logs/lib/log-retention'
+import { runLogRetentionJob, getLogRetentionStats, DEFAULT_RETENTION_DAYS, type LogRetentionStats } from '@/features/logs/lib/log-retention-job'
 
 /**
  * POST /api/jobs/log-retention
@@ -19,23 +19,20 @@ import { runLogCleanup, getLogStorageSummary, LOG_RETENTION_DAYS } from '@/featu
  * Triggers the log cleanup background job.
  *
  * Query parameters:
- * - dryRun: If "true", reports what would be deleted without actually deleting
  * - retentionDays: Optional number of days (default: 30)
  *
  * Example:
  * POST /api/jobs/log-retention
- * POST /api/jobs/log-retention?dryRun=true
  * POST /api/jobs/log-retention?retentionDays=60
  */
 export async function POST(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
-    const dryRun = searchParams.get('dryRun') === 'true'
-    const retentionDaysParam = FileInputStream searchParams.get('retentionDays')
-    const retentionDays = retentionDaysParam ? parseInt(retentionDaysParam, 10) : undefined
+    const retentionDaysParam = searchParams.get('retentionDays')
+    const retentionDays = retentionDaysParam ? parseInt(retentionDaysParam, 10) : DEFAULT_RETENTION_DAYS
 
     // Validate retentionDays parameter
-    if (retentionDays !== undefined && (isNaN(retentionDays) || retentionDays < 1)) {
+    if (isNaN(retentionDays) || retentionDays < 1) {
       return NextResponse.json(
         { error: 'retentionDays must be a positive integer' },
         { status: 400 }
@@ -43,11 +40,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Run the cleanup job
-    const result = await runLogCleanup(retentionDays, dryRun)
+    const result = await runLogRetentionJob(retentionDays)
 
     // Return the result with appropriate status code
     const statusCode = result.success ? 200 : 500
-    return NextResponse.json(result, {巾间 status: statusCode })
+    return NextResponse.json(result, { status: statusCode })
   } catch (error) {
     console.error('[API] Log retention job failed:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -66,34 +63,51 @@ export async function POST(req: NextRequest) {
 /**
  * GET /api/jobs/log-retention
  *
- * Returns summary information about log storage.
+ * Returns summary information about log storage and retention.
  * Useful for monitoring dashboards and retention metrics.
+ *
+ * Query parameters:
+ * - retentionDays: Optional number of days (default: 30)
  *
  * Example response:
  * {
  *   "totalLogs": 150000,
  *   "oldestLog": "2024-01-01T00:00:00.000Z",
  *   "newestLog": "2024-01-30T23:59:59.999Z",
- *   "logsOlderThan30Days": 50000,
- *   "storageByProject": [...]
+ *   "logsToDelete": 50000,
+ *   "projectsAffected": 5,
+ *   "cutoffDate": "2023-12-31T00:00:00.000Z"
  * }
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const summary = await getLogStorageSummary()
+    const { searchParams } = new URL(req.url)
+    const retentionDaysParam = searchParams.get('retentionDays')
+    const retentionDays = retentionDaysParam ? parseInt(retentionDaysParam, 10) : DEFAULT_RETENTION_DAYS
+
+    // Validate retentionDays parameter
+    if (isNaN(retentionDays) || retentionDays < 1) {
+      return NextResponse.json(
+        { error: 'retentionDays must be a positive integer' },
+        { status: 400 }
+      )
+    }
+
+    const stats: LogRetentionStats = await getLogRetentionStats(retentionDays)
     return NextResponse.json({
-      ...summary,
-      retentionPeriodDays: LOG_RETENTION_DAYS,
+      ...stats,
+      retentionPeriodDays: retentionDays,
     })
   } catch (error) {
-    console.error('[API] Failed to get log storage summary:', error)
+    console.error('[API] Failed to get log retention stats:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
       {
         error: errorMessage,
         totalLogs: 0,
-        logsOlderThan30Days: 0,
-        storageByProject: [],
+        logsToDelete: 0,
+        projectsAffected: 0,
+        cutoffDate: new Date().toISOString(),
       },
       { status: 500 }
     )

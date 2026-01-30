@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS control_plane.webhooks (
   target_url VARCHAR(2048) NOT NULL,
   secret VARCHAR(255) NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex'),
   enabled BOOLEAN DEFAULT TRUE NOT NULL,
+  consecutive_failures INTEGER DEFAULT 0 NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -40,6 +42,10 @@ COMMENT ON COLUMN control_plane.webhooks.target_url IS 'URL endpoint where webho
 COMMENT ON COLUMN control_plane.webhooks.secret IS 'Secret key for HMAC-SHA256 signature verification (auto-generated on creation)';
 
 COMMENT ON COLUMN control_plane.webhooks.enabled IS 'Whether this webhook is active and should receive events';
+
+COMMENT ON COLUMN control_plane.webhooks.consecutive_failures IS 'Number of consecutive delivery failures (auto-disabled after threshold)';
+
+COMMENT ON COLUMN control_plane.webhooks.updated_at IS 'When this webhook configuration was last updated';
 
 COMMENT ON COLUMN control_plane.webhooks.created_at IS 'When this webhook configuration was created';
 
