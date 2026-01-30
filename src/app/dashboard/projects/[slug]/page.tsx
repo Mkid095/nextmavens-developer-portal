@@ -35,6 +35,7 @@ import {
 import SuspensionBanner from '@/components/SuspensionBanner'
 import ServiceTab from '@/components/ServiceTab'
 import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKeyModal'
+import DeletionPreviewModal from '@/components/DeletionPreviewModal'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Project {
@@ -242,6 +243,9 @@ export default function ProjectDetailPage() {
   const [selectedScopes, setSelectedScopes] = useState<string[]>([])
   const [showScopeDetails, setShowScopeDetails] = useState(false)
   const [showUsageExamples, setShowUsageExamples] = useState(false)
+  // US-010: Deletion preview modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
   useEffect(() => {
     if (project) {
