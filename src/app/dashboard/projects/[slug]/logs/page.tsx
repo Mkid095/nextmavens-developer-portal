@@ -21,6 +21,7 @@ import {
   ChevronDown as ChevronDownIcon,
   FileJson,
   FileCode,
+  BarChart3,
 } from 'lucide-react'
 
 /**
@@ -69,6 +70,24 @@ type ServiceFilter = 'all' | 'db' | 'auth' | 'realtime' | 'storage' | 'graphql'
 type LevelFilter = 'all' | 'info' | 'warn' | 'error'
 type DateRangeFilter = '1h' | '24h' | '7d' | '30d' | 'custom'
 type DownloadFormat = 'json' | 'text'
+type ChartGroupBy = 'level' | 'service'
+
+interface ChartDataPoint {
+  timestamp: string
+  count: number
+  level?: string
+  service?: string
+}
+
+interface ChartData {
+  data: ChartDataPoint[]
+  timeRange: {
+    start: string
+    end: string
+  }
+  totalLogs: number
+  groupBy: 'level' | 'service'
+}
 
 const serviceOptions: { value: ServiceFilter; label: string }[] = [
   { value: 'all', label: 'All Services' },
@@ -94,6 +113,179 @@ const dateRangeOptions: { value: DateRangeFilter; label: string }[] = [
   { value: '30d', label: 'Last 30 days' },
   { value: 'custom', label: 'Custom range' },
 ]
+
+// Color palette for charts
+const CHART_COLORS: Record<string, string> = {
+  info: '#10b981', // emerald-500
+  warn: '#f59e0b', // amber-500
+  error: '#ef4444', // red-500
+  db: '#3b82f6', // blue-500
+  auth: '#8b5cf6', // violet-500
+  realtime: '#ec4899', // pink-500
+  storage: '#f97316', // orange-500
+  graphql: '#14b8a6', // teal-500
+}
+
+/**
+ * SimpleBarChart Component
+ *
+ * A lightweight SVG bar chart for visualizing log data.
+ * Shows log volume over time grouped by level or service.
+ */
+function SimpleBarChart({
+  data,
+  groupBy,
+}: {
+  data: ChartData
+  groupBy: 'level' | 'service'
+}) {
+  if (!data.data || data.data.length === 0) {
+    return (
+      <div className="h-64 flex items-center justify-center text-slate-500">
+        No chart data available
+      </div>
+    )
+  }
+
+  // Group data by timestamp
+  const groupedByTime: Record<string, ChartDataPoint[]> = {}
+  data.data.forEach((point) => {
+    const timestamp = point.timestamp.split(':')[0] + ':00:00' // Round to hour
+    if (!groupedByTime[timestamp]) {
+      groupedByTime[timestamp] = []
+    }
+    groupedByTime[timestamp].push(point)
+  })
+
+  // Get sorted timestamps
+  const timestamps = Object.keys(groupedByTime).sort()
+  const uniqueGroups = Array.from(
+    new Set(data.data.map((d) => (groupBy === 'level' ? d.level : d.service)))
+  ).filter(Boolean) as string[]
+
+  // Calculate max count for scaling
+  const maxCount = Math.max(...data.data.map((d) => d.count), 1)
+
+  // Chart dimensions
+  const chartHeight = 200
+  const chartWidth = 700
+  const barWidth = Math.max(10, (chartWidth - 60) / timestamps.length / uniqueGroups.length - 2)
+  const groupGap = 4
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <svg width={chartWidth} height={chartHeight + 40} className="mx-auto">
+        {/* Y-axis labels and grid lines */}
+        {[0, 25, 50, 75, 100].map((percent) => {
+          const y = chartHeight - (chartHeight * percent) / 100
+          const value = Math.round((maxCount * percent) / 100)
+          return (
+            <g key={percent}>
+              <line
+                x1={40}
+                y1={y}
+                x2={chartWidth}
+                y2={y}
+                stroke="#e2e8f0"
+                strokeWidth="1"
+                strokeDasharray={percent === 0 ? '0' : '4,4'}
+              />
+              <text
+                x={35}
+                y={y + 4}
+                textAnchor="end"
+                fontSize="10"
+                fill="#64748b"
+                fontFamily="monospace"
+              >
+                {value}
+              </text>
+            </g>
+          )
+        })}
+
+        {/* Bars */}
+        {timestamps.map((timestamp, i) => {
+          const x = 50 + i * ((barWidth + groupGap) * uniqueGroups.length + groupGap)
+          const points = groupedByTime[timestamp] || []
+
+          return (
+            <g key={timestamp}>
+              {uniqueGroups.map((group, j) => {
+                const point = points.find(
+                  (p) => (groupBy === 'level' ? p.level : p.service) === group
+                )
+                const count = point?.count || 0
+                const barHeight = (count / maxCount) * chartHeight
+                const y = chartHeight - barHeight
+                const barX = x + j * (barWidth + groupGap)
+                const color = CHART_COLORS[group] || '#64748b'
+
+                return (
+                  <g key={group}>
+                    <rect
+                      x={barX}
+                      y={y}
+                      width={barWidth}
+                      height={barHeight}
+                      fill={color}
+                      opacity="0.8"
+                      rx="2"
+                    />
+                    {/* Tooltip */}
+                    {count > 0 && (
+                      <title>
+                        {timestamp}\n{group}: {count} logs
+                      </title>
+                    )}
+                  </g>
+                )
+              })}
+            </g>
+          )
+        })}
+
+        {/* X-axis labels (show every few timestamps to avoid crowding) */}
+        {timestamps
+          .filter((_, i) => i % Math.ceil(timestamps.length / 6) === 0)
+          .map((timestamp, i) => {
+            const index = timestamps.indexOf(timestamp)
+            const x = 50 + index * ((barWidth + groupGap) * uniqueGroups.length + groupGap)
+            const date = new Date(timestamp)
+            const label = date.toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })
+            return (
+              <text
+                key={timestamp}
+                x={x + (barWidth * uniqueGroups.length) / 2}
+                y={chartHeight + 15}
+                textAnchor="middle"
+                fontSize="9"
+                fill="#64748b"
+              >
+                {label}
+              </text>
+            )
+          })}
+
+        {/* Legend */}
+        <g transform={`translate(${chartWidth - 150}, 10)`}>
+          {uniqueGroups.map((group, i) => (
+            <g key={group} transform={`translate(0, ${i * 16})`}>
+              <rect width="12" height="12" fill={CHART_COLORS[group] || '#64748b'} rx="2" />
+              <text x="18" y="10" fontSize="10" fill="#475569" fontWeight="500">
+                {group}
+              </text>
+            </g>
+          ))}
+        </g>
+      </svg>
+    </div>
+  )
+}
 
 export default function LogsPage() {
   const params = useParams()
@@ -128,6 +320,10 @@ export default function LogsPage() {
   const [totalLogCount, setTotalLogCount] = useState(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement>(null)
+  const [chartData, setChartData] = useState<ChartData | null>(null)
+  const [chartLoading, setChartLoading] = useState(false)
+  const [chartGroupBy, setChartGroupBy] = useState<ChartGroupBy>('level')
+  const [showCharts, setShowCharts] = useState(true)
 
   // Initialize filters from URL
   useEffect(() => {
@@ -228,6 +424,48 @@ export default function LogsPage() {
       endDate: endDate.toISOString(),
     }
   }
+
+  const fetchChartData = async () => {
+    if (!project) return
+
+    setChartLoading(true)
+    try {
+      const token = localStorage.getItem('accessToken')
+
+      // Build query parameters
+      const urlParams = new URLSearchParams()
+      urlParams.append('project_id', project.id)
+      urlParams.append('group_by', chartGroupBy)
+
+      // Add date range filter
+      const { startDate, endDate } = getDateRange()
+      urlParams.append('start_date', startDate)
+      urlParams.append('end_date', endDate)
+
+      const res = await fetch(`/api/logs/charts?${urlParams.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!res.ok) {
+        console.error('Failed to fetch chart data')
+        return
+      }
+
+      const data: ChartData = await res.json()
+      setChartData(data)
+    } catch (error) {
+      console.error('Failed to fetch chart data:', error)
+    } finally {
+      setChartLoading(false)
+    }
+  }
+
+  // Fetch chart data when project, filters, or chartGroupBy change
+  useEffect(() => {
+    if (project && showCharts) {
+      fetchChartData()
+    }
+  }, [project, serviceFilter, levelFilter, dateRangeFilter, customStartDate, customEndDate, chartGroupBy, showCharts])
 
   const connectToLogStream = () => {
     // Close existing connection
