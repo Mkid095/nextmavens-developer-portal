@@ -16,9 +16,11 @@ ADD CONSTRAINT check_project_status
 CHECK (status IN ('created', 'active', 'suspended', 'archived', 'deleted'));
 
 -- Update existing projects to 'active' status
+-- All existing projects are set to 'active' since they are already in use
+-- This handles both new rows with default 'created' and any NULL values
 UPDATE projects
 SET status = 'active'
-WHERE status = 'created';
+WHERE status IS NULL OR status = 'created';
 
 -- Create index on status for efficient querying
 CREATE INDEX IF NOT EXISTS idx_projects_status

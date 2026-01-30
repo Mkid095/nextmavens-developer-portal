@@ -482,32 +482,83 @@ export default function ProjectDetailPage() {
           )}
 
           {activeTab === 'database' && (
-            <div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-6">Database Connection</h2>
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    PostgreSQL Connection String
-                  </label>
-                  <div className="relative group">
-                    <button
-                      onClick={() => handleCopy(databaseUrl, 'database-url')}
-                      className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
-                    >
-                      {copied === 'database-url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
-                    </button>
-                    <pre className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono break-all">{databaseUrl}</code>
+            <ServiceTab
+              serviceName="Database"
+              overview="A powerful PostgreSQL-powered data service with auto-generated REST & GraphQL APIs. Store, query, and manage your application data with full SQL capabilities while enjoying the convenience of instant API generation."
+              whenToUse="Use the Database service for any application that needs persistent data storage - user profiles, content management, e-commerce catalogs, analytics data, or any structured data. Perfect for applications requiring complex queries, transactions, and relational data modeling."
+              quickStart={
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-100 font-mono">npm install nextmavens-js</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`import { createClient } from 'nextmavens-js'
+
+const client = createClient({
+  apiKey: process.env.NEXTMAVENS_API_KEY,
+  projectId: '${project.id}'
+})`}</code>
+                    </pre>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
+                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
+                      <code className="text-sm text-slate-300 font-mono">{`// Query data
+const { data, error } = await client
+  .from('users')
+  .select('*')
+  .limit(10)
+
+// Insert data
+const { data } = await client
+  .from('users')
+  .insert({ email: 'user@example.com' })`}</code>
                     </pre>
                   </div>
                 </div>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                  <p className="text-sm text-amber-800">
-                    <strong>Warning:</strong> Keep your database credentials secure. Never commit connection strings to public repositories.
-                  </p>
+              }
+              connectionDetails={
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      PostgreSQL Connection String
+                    </label>
+                    <div className="relative group">
+                      <button
+                        onClick={() => handleCopy(databaseUrl, 'database-url')}
+                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                      >
+                        {copied === 'database-url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <pre className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
+                        <code className="text-sm text-slate-100 font-mono break-all">{databaseUrl}</code>
+                      </pre>
+                    </div>
+                  </div>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <p className="text-sm text-amber-800">
+                      <strong>Security Warning:</strong> Keep your database credentials secure. Never commit connection strings to public repositories or expose them in client-side code.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">REST API</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.rest}</code>
+                    </div>
+                    <div>
+                      <p className="text-sm text-slate-600 mb-1">GraphQL API</p>
+                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.graphql}</code>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              }
+              docsUrl="https://docs.nextmavens.cloud/database"
+            />
           )}
 
           {activeTab === 'api-keys' && (

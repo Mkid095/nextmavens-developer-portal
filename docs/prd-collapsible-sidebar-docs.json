@@ -70,8 +70,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Active route highlighting in DocsSidebar.tsx with useRef for scroll-into-view. Changed font-medium to font-bold for active items. Active items scroll into view smoothly when route changes (only when sidebar is not collapsed). Different background colors applied per section. Typecheck passes."
     },
     {
       "id": "US-004",
