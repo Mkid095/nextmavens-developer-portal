@@ -117,8 +117,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Full API Keys Management API implemented in control-plane-api. Added Zod validation schemas for API keys (create, list). Added API key generation functions (generateApiKey, hashApiKey, getKeyPrefix) with DEFAULT_API_KEY_SCOPES. Created /v1/keys/route.ts with GET (list keys with filtering by project_id, key_type, environment, limit, offset) and POST (create key with type, environment, scopes). Created /v1/keys/[id]/route.ts with GET (get key details without secret value). Created /v1/keys/[id]/rotate/route.ts with POST (rotate key with 24-hour grace period for old key). Created /v1/keys/[id]/revoke/route.ts with DELETE (revoke key immediately by setting status=revoked). Created /v1/keys/:id/usage with GET (usage statistics including last_7_days, last_30_days, success_error_rate). All endpoints require JWT authentication with ownership verification. Key types: public, secret, service_role, mcp with default scopes per type. Typecheck passes."
     },
     {
       "id": "US-009",

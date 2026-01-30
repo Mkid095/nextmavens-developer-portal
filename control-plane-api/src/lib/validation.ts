@@ -10,6 +10,32 @@ export const organizationRoleEnum = z.enum(['owner', 'admin', 'developer', 'view
   errorMap: () => ({ message: 'Role must be one of: owner, admin, developer, viewer' }),
 })
 
+// API key type enum
+export const apiKeyTypeEnum = z.enum(['public', 'secret', 'service_role', 'mcp'], {
+  errorMap: () => ({ message: 'Key type must be one of: public, secret, service_role, mcp' }),
+})
+
+// API key environment enum
+export const apiKeyEnvironmentEnum = z.enum(['live', 'test', 'dev'], {
+  errorMap: () => ({ message: 'Key environment must be one of: live, test, dev' }),
+})
+
+// API key scope enum (common scopes)
+export const apiKeyScopeEnum = z.enum([
+  'db:select',
+  'db:insert',
+  'db:update',
+  'db:delete',
+  'storage:read',
+  'storage:write',
+  'auth:signin',
+  'auth:manage',
+  'graphql:execute',
+  'realtime:subscribe',
+  'realtime:publish',
+  'admin:all',
+])
+
 // Project creation schema
 export const createProjectSchema = z.object({
   project_name: z.string().min(2, 'Project name must be at least 2 characters').max(100, 'Project name must be at most 100 characters'),
@@ -71,3 +97,27 @@ export type UpdateOrganizationInput = z.infer<typeof updateOrganizationSchema>
 export type AddMemberInput = z.infer<typeof addMemberSchema>
 export type UpdateMemberRoleInput = z.infer<typeof updateMemberRoleSchema>
 export type ListOrganizationsQuery = z.infer<typeof listOrganizationsQuerySchema>
+
+// Create API key schema
+export const createApiKeySchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').max(255, 'Name must be at most 255 characters'),
+  project_id: z.string().uuid('Invalid project ID format').optional(),
+  key_type: apiKeyTypeEnum.default('public'),
+  environment: apiKeyEnvironmentEnum.default('live'),
+  scopes: z.array(apiKeyScopeEnum).optional(),
+})
+
+// Query parameters for listing API keys
+export const listApiKeysQuerySchema = z.object({
+  project_id: z.string().uuid('Invalid project ID format').optional(),
+  key_type: apiKeyTypeEnum.optional(),
+  environment: apiKeyEnvironmentEnum.optional(),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').optional(),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').optional(),
+})
+
+export type CreateApiKeyInput = z.infer<typeof createApiKeySchema>
+export type ListApiKeysQuery = z.infer<typeof listApiKeysQuerySchema>
+export type ApiKeyType = z.infer<typeof apiKeyTypeEnum>
+export type ApiKeyEnvironment = z.infer<typeof apiKeyEnvironmentEnum>
+export type ApiKeyScope = z.infer<typeof apiKeyScopeEnum>

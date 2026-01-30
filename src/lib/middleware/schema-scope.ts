@@ -25,6 +25,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Pool, PoolClient } from 'pg';
 import { getPool } from '@/lib/db';
 import { authenticateRequest, JwtPayload } from '@/lib/auth';
+import { toErrorNextResponse, ErrorCode } from '@/lib/errors';
 
 /**
  * Error codes for schema scoping
@@ -324,34 +325,23 @@ export function withSchemaScopeHandler<T extends NextRequest>(
       const response = await handler(req, pool, ...args);
       return response as NextResponse;
     } catch (error: any) {
-      // Handle schema scoping errors
+      // Handle schema scoping errors using standard error factory
       if (error.message === SchemaScopeError.CROSS_SCHEMA_ACCESS) {
-        return NextResponse.json(
-          {
-            error: 'Cross-schema access denied',
-            message: 'Access to other project resources not permitted',
-          },
-          { status: 403 }
+        return toErrorNextResponse(
+          { code: ErrorCode.PERMISSION_DENIED, message: 'Access to other project resources not permitted' },
+          req.headers.get('x-project-id') || undefined
         );
       }
 
       if (error.message === SchemaScopeError.TENANT_NOT_FOUND) {
-        return NextResponse.json(
-          {
-            error: 'Tenant not found',
-            message: 'The project tenant could not be found',
-          },
-          { status: 404 }
+        return toErrorNextResponse(
+          { code: ErrorCode.NOT_FOUND, message: 'The project tenant could not be found' }
         );
       }
 
       if (error.message === SchemaScopeError.SCHEMA_INIT_FAILED) {
-        return NextResponse.json(
-          {
-            error: 'Schema initialization failed',
-            message: 'Failed to initialize database schema scope',
-          },
-          { status: 500 }
+        return toErrorNextResponse(
+          { code: ErrorCode.INTERNAL_ERROR, message: 'Failed to initialize database schema scope' }
         );
       }
 

@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { NextRequest } from 'next/server'
 import { getPool } from './db'
+import { createError, ErrorCode, type PlatformError } from './errors'
 
 const JWT_SECRET = process.env.JWT_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
@@ -66,22 +67,27 @@ export function verifyAccessToken(token: string): JwtPayload {
   try {
     const decoded = jwt.verify(token, getJwtSecret())
     if (typeof decoded === 'string') {
-      throw new Error('Invalid token format')
+      throw createError(ErrorCode.KEY_INVALID, 'Invalid token format')
     }
     // Ensure the decoded token has the required properties
     if (!decoded.id || !decoded.email) {
-      throw new Error('Invalid token structure')
+      throw createError(ErrorCode.KEY_INVALID, 'Invalid token structure')
     }
     // US-001: Require project_id in JWT
     if (!decoded.project_id) {
-      throw new Error('Missing project_id claim')
+      throw createError(ErrorCode.KEY_INVALID, 'Missing project_id claim')
     }
     return decoded as unknown as JwtPayload
   } catch (error) {
-    if (error instanceof Error && error.message === 'Missing project_id claim') {
+    // If it's already a PlatformError, re-throw it
+    if (error instanceof Error && error.name === 'PlatformError') {
       throw error
     }
-    throw new Error('Invalid token')
+    // Otherwise wrap as KEY_INVALID
+    if (error instanceof Error && error.message.includes('jwt')) {
+      throw createError(ErrorCode.KEY_INVALID, 'Invalid or expired token')
+    }
+    throw createError(ErrorCode.KEY_INVALID, 'Invalid token')
   }
 }
 

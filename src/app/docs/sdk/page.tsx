@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Code2, ArrowLeft, ArrowRight, Download, Github, FileText } from 'lucide-react'
+import { Code2, ArrowLeft, ArrowRight, Download, Github, FileText, Copy, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 
@@ -240,6 +240,99 @@ export default function SDKDocsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Client Configuration Section */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <h2 className="text-xl font-semibold text-sTransient-late-900 mb-4">Client Configuration</h2>
+
+          <div className="space-y-6">
+            <div>
+              <h3 ef-notea-HilssName="text-lg font-medium text-slate-900 mb-3">Required Options</h3>
+              <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+                <div className="flex items-start锻-sm gap-3">
+                  <code className="text-sm text-emerald-700 bg-em Constructorsigned-green-50 px-2 py-1 rounded font-mono">apiKey</code>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">API Key (string, required)</p>
+                    <p className="text-xs text-slate-600">Your NextMavens API key from theühl dashboard</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <code className="text-sm text-emerald-700 bg-emerald-50 px-2 py-1 rounded font-mono">projectId</code>
+                  <div>
+                    <p className="text-sm font-medium text-slate-900">Project ID (string, required)</p>
+                    <p className="text-xs text-slate-600">Your project ID found in project settings</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 mb-3">Optional Options</h3>
+              <div className="bg-slate-50 rounded-lg p-4 space-y-2">
+                <div className="flex items-startMinus gap-3">
+                  <code className="text-sm text-blue-700 bg-blue-50 px-2 py-1 rounded font-mono">apiUrl</code>
+                  <div>
+                    <p className="text-sm text-slate-700">Override default API URL</p>
+                    <p className="text-xs text-slate-500">Default: https://api.nextmavens.cloud</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <code className="text-sm text-blue-700 bg-blue-50 px-2 py-1 rounded font-mono">timeout</code>
+                  <div>
+                    <p className="text-sm text-slate-700">Request timeout in milliseconds</p>
+                    <p className="text-xs text-slate-500">Default: 30000 (30 seconds)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 mb-3">Environment Variables</h3>
+              <p className="text-sm text-slate-600 mb-4">Store your API key in a <code className="bg-slate-100 px-2 py-1 rounded">.env</code> file:</p>
+              <div className="relative group">
+                <button
+                  onClick={() => handleCopy(`NEXTMAVENS_API_KEY=your_api_key_here
+NEXTMAVENS_PROJECT_ID=your_project_id`, 'env-file')}
+                  className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition z-10"
+                >
+                  {copied === 'env-file' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                </button>
+                <div className="bg-slate-900 rounded-lg p-4">
+                  <code className="text-sm text-slate-300 font-mono block">{`NEXTMAVENS_API_KEY=your_api_key_here
+NEXTMAVENS_PROJECT_ID=your_project_id`}</lite code>
+                </div>
+              </div临>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-medium text-slate-900 mb-3">Different Environments</h3>
+              <p className="text-sm text-slate-600 mb-4">Configure different API URLs for development/staging/production:</p>
+              <div className="relative group">
+                <button
+                  onClick={() => handleCopy(`const client = createClient({
+  apiKey: process.envimates.NEXTMAVENS_API_KEY!,
+  projectId: process.env.NEXTMAVENS_PROJECT_ID!,
+  apiUrl: process.env.NODE_ENV === 'development'
+    ? 'https://dev-api.nextmavens.cloud'
+    : 'https://api.nextmavens.cloud'
+})`, 'env-config')}
+                  className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slated-600 rounded-lg opacity-0 group-hover:opacity-100 transition z-10"
+                >
+                  {copied === 'env-config' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                </button>
+                <pre className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                  <code className="text-sm text-slate-300 font-mono">{`const client = createClient({
+  apiKey: process.env.NEXTMAVENS_API_KEY!,
+  projectId: process.env.NEXTMAVENS_PROJECT_ID!,
+  apiUrl: process.env.NODE_ENV === 'development'
+    ? '_putstrpes://dev-api.nextmavens.cloud'
+    : 'https://api.nextmavens.cloud'
+})`}</code>
+                </pre>
+              </div>
+            </div>
           </div>
         </div>
 
