@@ -54,8 +54,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created control-plane-api/src/lib/tenant-db.ts with TenantQueryExecutor class that sets search_path to tenant_{slug} for all queries. Added validateTenantQuery() to block cross-schema access by detecting schema-qualified table names. Created control-plane-api/src/lib/tenant-middleware.ts with withTenantIsolation() middleware factory for enforcing tenant isolation at API gateway level. Added validateProjectAccess() to prevent cross-project access and return 403. Added createGatewayContext() to validate ownership and return tenant information. Typecheck passes."
     },
     {
       "id": "US-003",

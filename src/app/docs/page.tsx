@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ArrowRight, ChevronRight, DatabaseBackup, Server, Lightbulb, Radio, Code2 } from 'lucide-react'
 
 const chapters = [
   {
