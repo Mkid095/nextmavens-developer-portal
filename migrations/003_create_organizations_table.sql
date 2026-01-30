@@ -1,13 +1,13 @@
 -- Migration: Create organizations table
--- Description: Create organizations table to support multi-tenant team structures
+-- Description: Create organizations table for multi-tenant team structures
 -- Version: 003
 
--- Create organizations table
+-- Create organizations table to support multi-tenant team structures
 CREATE TABLE IF NOT EXISTS control_plane.organizations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(255) NOT NULL UNIQUE,
-    owner_id UUID NOT NULL REFERENCES developers(id) ON DELETE CASCADE,
+    owner_id UUID NOT NULL REFERENCES public.developers(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS control_plane.organizations (
 CREATE INDEX IF NOT EXISTS idx_organizations_owner_id
 ON control_plane.organizations(owner_id);
 
--- Create index on slug for faster lookups
+-- Create index on slug for quick lookups by slug
 CREATE INDEX IF NOT EXISTS idx_organizations_slug
 ON control_plane.organizations(slug);
 
