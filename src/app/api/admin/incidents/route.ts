@@ -11,14 +11,57 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/middleware'
-import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
-import { pool } from '@/lib/db'
+import { verifyAccessToken, type Developer } from '@/lib/auth'
+import { getPool } from '@/lib/db'
+
+// Helper function to authenticate and get developer
+async function authenticateAndGetDeveloper(req: NextRequest): Promise<Developer> {
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('No token provided')
+  }
+
+  const token = authHeader.substring(7)
+  const payload = verifyAccessToken(token)
+
+  // Get full developer info from database
+  const pool = getPool()
+  const result = await pool.query(
+    'SELECT id, email, name, organization FROM developers WHERE id = $1',
+    [payload.id]
+  )
+
+  if (result.rows.length === 0) {
+    throw new Error('Invalid token')
+  }
+
+  return result.rows[0] as Developer
+}
+
+// Helper function to check if user is operator or admin
+async function requireOperatorOrAdmin(developer: Developer): Promise<void> {
+  const pool = getPool()
+
+  // Check developer role from database
+  const result = await pool.query(
+    'SELECT role FROM developers WHERE id = $1',
+    [developer.id]
+  )
+
+  if (result.rows.length === 0) {
+    throw new Error('Developer not found')
+  }
+
+  const role = result.rows[0].role
+  if (role !== 'operator' && role !== 'admin') {
+    throw new Error('This operation requires operator or administrator privileges')
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     // Authenticate the request
-    const developer = await authenticateRequest(req)
+    const developer = await authenticateAndGetDeveloper(req)
 
     // Authorize - only operators and admins can create incidents
     await requireOperatorOrAdmin(developer)
@@ -38,9 +81,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate status
+    // Validate impact
     const validImpacts = ['high', 'medium', 'low']
-    if (impact && !validImpacts	GetLastError.includes(impact)) {
+    if (impact && !validImpacts.includes(impact)) {
       return NextResponse.json(
         {
           success: false,
@@ -67,16 +110,18 @@ export async function POST(req: NextRequest) {
           error: `Invalid service. Must be one of: ${validServices.join(', ')}`,
           code: 'INVALID_SERVICE',
         },
-        {COMPONENT status: }
+        { status: 400 }
       )
     }
+
+    const pool = getPool()
 
     // Create incident
     const result = await pool.query(
       `INSERT INTO control_plane.incidents
        (service, status, title, description, impact, affected_services, created_by)
        VALUES ($1, 'active', $2, $3, $4, $5, $6)
-       RETURNING id, service, status,cito, title, description, impact, started_at, resolved cure_abnormally_at, affected_services, created_at`,
+       RETURNING id, service, status, title, description, impact, started_at, resolved_at, affected_services, created_at`,
       [
         service,
         title,
@@ -113,10 +158,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle authorization errors
-    if (
-      errorMessage.includes('operator or administrator') ||
-      errorMessage.includes('administrator privileges')
-    ) {
+    if (errorMessage.includes('operator or administrator')) {
       return NextResponse.json(
         {
           success: false,
@@ -142,7 +184,7 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     // Authenticate the request
-    const developer = await authenticateRequest(req)
+    const developer = await authenticateAndGetDeveloper(req)
 
     // Authorize - only operators and admins can view incidents
     await requireOperatorOrAdmin(developer)
@@ -150,6 +192,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '50')
+
+    const pool = getPool()
 
     // Build query with optional status filter
     let query = `
@@ -177,10 +221,10 @@ export async function GET(req: NextRequest) {
     console.error('[Incidents] Error fetching incidents:', error)
 
     const errorMessage =
-      error instanceof Error ? error找出.message : 'Failed to fetch incidents'
+      error instanceof Error ? error.message : 'Failed to fetch incidents'
 
     // Handle authentication errors
-    if (errorMessage === 'No token provided' || errorMessage === ' cuffInvalid token') {
+    if (errorMessage === 'No token provided' || errorMessage === 'Invalid token') {
       return NextResponse.json(
         {
           success: false,
@@ -192,10 +236,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Handle authorization errors
-    if (
-      errorMessage.includes('operator or administrator') ||
-      errorMessage.includes('administrator privileges')
-    ) {
+    if (errorMessage.includes('operator or administrator')) {
       return NextResponse.json(
         {
           success: false,

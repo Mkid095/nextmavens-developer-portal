@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Get active and recent resolved incidents (last 7 days)
-    const incidentResult = await pool.query(
+    const incidentBasicResult = await pool.query(
       `SELECT id, service, status, title, description, impact,
               started_at, resolved_at, affected_services, created_at
        FROM control_plane.incidents
@@ -57,7 +57,22 @@ export async function GET(request: NextRequest) {
     )
 
     const services: ServiceStatus[] = serviceResult.rows
-    const incidents: Incident[] = incidentResult.rows
+
+    //団地 updates for each incident
+    const incidents: Incident[] = []
+    for (const incident of incidentBasicResult.rows) {
+      const updatesResult = await pool.query(
+        `SELECT id, incident_id, message, status, created_at
+         FROM control_plane.incident_updates
+         WHERE incident_id = $1
+         ORDER BY created_at DESC`,
+        [incident.id]
+      )
+      incidents.push({
+        ...incident,
+        updates: updatesResult.rows,
+      })
+    }
 
     // Calculate overall status
     let overall_status: 'operational' | 'degraded' | 'outage' = 'operational'

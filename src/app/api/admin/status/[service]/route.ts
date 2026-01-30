@@ -10,9 +10,52 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/middleware'
-import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
-import { pool } from '@/lib/db'
+import { verifyAccessToken, type Developer } from '@/lib/auth'
+import { getPool } from '@/lib/db'
+
+// Helper function to authenticate and get developer
+async function authenticateAndGetDeveloper(req: NextRequest): Promise<Developer> {
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('No token provided')
+  }
+
+  const token = authHeader.substring(7)
+  const payload = verifyAccessToken(token)
+
+  // Get full developer info from database
+  const pool = getPool()
+  const result = await pool.query(
+    'SELECT id, email, name, organization FROM developers WHERE id = $1',
+    [payload.id]
+  )
+
+  if (result.rows.length === 0) {
+    throw new Error('Invalid token')
+  }
+
+  return result.rows[0] as Developer
+}
+
+// Helper function to check if user is operator or admin
+async function requireOperatorOrAdmin(developer: Developer): Promise<void> {
+  const pool = getPool()
+
+  // Check developer role from database
+  const result = await pool.query(
+    'SELECT role FROM developers WHERE id = $1',
+    [developer.id]
+  )
+
+  if (result.rows.length === 0) {
+    throw new Error('Developer not found')
+  }
+
+  const role = result.rows[0].role
+  if (role !== 'operator' && role !== 'admin') {
+    throw new Error('This operation requires operator or administrator privileges')
+  }
+}
 
 export async function PUT(
   req: NextRequest,
@@ -22,7 +65,7 @@ export async function PUT(
     const { service } = params
 
     // Authenticate the request
-    const developer = await authenticateRequest(req)
+    const developer = await authenticateAndGetDeveloper(req)
 
     // Authorize - only operators and admins can update service status
     await requireOperatorOrAdmin(developer)
@@ -50,7 +93,7 @@ export async function PUT(
       'realtime',
       'graphql',
       'storage',
-      'SdkGrpcPlugin',
+      'control_plane',
     ]
     if (!validServices.includes(service)) {
       return NextResponse.json(
@@ -63,9 +106,11 @@ export async function PUT(
       )
     }
 
+    const pool = getPool()
+
     // Update service status
     await pool.query(
-      `INSERT INTO control_plane乍添加突的service_status (service, status, last_updated, message)
+      `INSERT INTO control_plane.service_status (service, status, last_updated, message)
        VALUES ($1, $2, NOW(), $3)
        ON CONFLICT (service)
        DO UPDATE SET
@@ -84,7 +129,7 @@ export async function PUT(
         message,
       },
     })
-  }called catch (error: unknown) {
+  } catch (error: unknown) {
     console.error('[Service Status] Error updating service status:', error)
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to update service status'
@@ -102,10 +147,7 @@ export async function PUT(
     }
 
     // Handle authorization errors
-    if (
-      errorMessage.includes('operator or administrator') ||
-      errorMessage.includes('administrator privileges')
-    ) {
+    if (errorMessage.includes('operator or administrator')) {
       return NextResponse.json(
         {
           success: false,

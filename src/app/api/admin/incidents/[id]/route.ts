@@ -11,9 +11,52 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/middleware'
-import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
-import { pool } from '@/lib/db'
+import { verifyAccessToken, type Developer } from '@/lib/auth'
+import { getPool } from '@/lib/db'
+
+// Helper function to authenticate and get developer
+async function authenticateAndGetDeveloper(req: NextRequest): Promise<Developer> {
+  const authHeader = req.headers.get('authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('No token provided')
+  }
+
+  const token = authHeader.substring(7)
+  const payload = verifyAccessToken(token)
+
+  // Get full developer info from database
+  const pool = getPool()
+  const result = await pool.query(
+    'SELECT id, email, name, organization FROM developers WHERE id = $1',
+    [payload.id]
+  )
+
+  if (result.rows.length === 0) {
+    throw new Error('Invalid token')
+  }
+
+  return result.rows[0] as Developer
+}
+
+// Helper function to check if user is operator or admin
+async function requireOperatorOrAdmin(developer: Developer): Promise<void> {
+  const pool = getPool()
+
+  // Check developer role from database
+  const result = await pool.query(
+    'SELECT role FROM developers WHERE id = $1',
+    [developer.id]
+  )
+
+  if (result.rows.length === 0) {
+    throw new Error('Developer not found')
+  }
+
+  const role = result.rows[0].role
+  if (role !== 'operator' && role !== 'admin') {
+    throw new Error('This operation requires operator or administrator privileges')
+  }
+}
 
 export async function GET(
   req: NextRequest,
@@ -22,11 +65,13 @@ export async function GET(
   try {
     const { id } = params
 
-    // Authenticate thefir request
-    const developer = await authenticateRequest(req)
+    // Authenticate the request
+    const developer = await authenticateAndGetDeveloper(req)
 
     // Authorize - only operators and admins can view incidents
     await requireOperatorOrAdmin(developer)
+
+    const pool = getPool()
 
     // Get incident with updates
     const incidentResult = await pool.query(
@@ -85,10 +130,7 @@ export async function GET(
     }
 
     // Handle authorization errors
-    if (
-      errorMessage.includes('operator or administrator') ||
-      errorMessage.includes('administrator privileges')
-    ) {
+    if (errorMessage.includes('operator or administrator')) {
       return NextResponse.json(
         {
           success: false,
@@ -119,7 +161,7 @@ export async function PUT(
     const { id } = params
 
     // Authenticate the request
-    const developer = await authenticateRequest(req)
+    const developer = await authenticateAndGetDeveloper(req)
 
     // Authorize - only operators and admins can update incidents
     await requireOperatorOrAdmin(developer)
@@ -156,6 +198,8 @@ export async function PUT(
         )
       }
     }
+
+    const pool = getPool()
 
     // Build update query dynamically based on provided fields
     const updateFields: string[] = []
@@ -250,10 +294,7 @@ export async function PUT(
     }
 
     // Handle authorization errors
-    if (
-      errorMessage.includes('operator or administrator') ||
-      errorMessage.includes('administrator privileges')
-    ) {
+    if (errorMessage.includes('operator or administrator')) {
       return NextResponse.json(
         {
           success: false,
