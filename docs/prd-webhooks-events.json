@@ -192,7 +192,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Implemented event emissions for project.created, file.uploaded, and key.rotated events. Added import of emitEvent from @/features/webhooks in all three locations. Project creation (control-plane-api/src/app/api/v1/projects/route.ts) now emits project.created event with project_id, project_name, tenant_id, environment, developer_id, created_at. File upload (src/app/api/storage/upload/route.ts) now emits file.uploaded event with project_id, file_name, file_size, content_type, storage_path, uploaded_at. Key rotation (control-plane-api/src/app/api/v1/keys/[id]/rotate/route.ts) now emits key.rotated event with project_id, old_key_id, new_key_id, key_name, key_type, rotated_at, expires_at. All emissions use fire-and-forget pattern to avoid blocking responses. Note: user.signedup event not implemented due to lack of project_id context at signup time (event_log requires project_id). Events are created in event_log table via the emitEvent function which calls createEventLog internally. Typecheck passes."
+      "notes": "Completed: Implemented event emissions for all four required events. project.created: Emitted at control-plane-api/src/app/api/v1/projects/route.ts with project_id, project_name, tenant_id, environment, developer_id, created_at. user.signedup: Emitted at src/app/api/developer/register/route.ts using new emitPlatformEvent function (for platform events without project_id) with user_id, email, name, organization, created_at. file.uploaded: Emitted at src/app/api/storage/upload/route.ts with project_id, file_name, file_size, content_type, storage_path, uploaded_at. key.rotated: Emitted at control-plane-api/src/app/api/v1/keys/[id]/rotate/route.ts with project_id, old_key_id, new_key_id, key_name, key_type, rotated_at, expires_at. Created emitPlatformEvent function in webhook-delivery.ts for platform-level events (uses system project_id '00000000-0000-0000-0000-000000000000'). All emissions use fire-and-forget pattern. Events are created in event_log table. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -218,8 +218,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: All Webhooks API endpoints implemented. GET /api/webhooks (control-plane-api/src/app/api/v1/webhooks/route.ts:40-142) lists webhooks with filters for project_id, event, enabled status, limit, and offset. GET /api/webhooks/:id (control-plane-api/src/app/api/v1/webhooks/[id]/route.ts:35-95) returns webhook details. PUT /api/webhooks/:id (control-plane-api/src/app/api/v1/webhooks/[id]/route.ts:98-216) updates webhook fields (event, target_url, secret, enabled). DELETE /api/webhooks/:id (control-plane-api/src/app/api/v1/webhooks/[id]/route.ts:219-273) deletes webhook. All endpoints include authentication, project ownership validation, and proper error handling. Validation schemas defined in control-plane-api/src/lib/validation.ts (createWebhookSchema, updateWebhookSchema, listWebhooksQuerySchema)."
     },
     {
       "id": "US-009",
