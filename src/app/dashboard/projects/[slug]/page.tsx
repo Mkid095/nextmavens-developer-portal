@@ -39,6 +39,7 @@ import {
   Lock,
   Edit3,
   Users,
+  KeyRound,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import QuotaWarningBanner from '@/components/QuotaWarningBanner'
@@ -128,7 +129,7 @@ interface TabConfig {
   icon: LucideIcon
 }
 
-type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'mcp-analytics' | 'feature-flags' | 'support'
+type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'secrets' | 'mcp-analytics' | 'feature-flags' | 'support'
 
 const tabs: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Settings },
@@ -138,6 +139,7 @@ const tabs: TabConfig[] = [
   { id: 'realtime', label: 'Realtime', icon: Activity },
   { id: 'graphql', label: 'GraphQL', icon: Code2 },
   { id: 'api-keys', label: 'API Keys', icon: Key },
+  { id: 'secrets', label: 'Secrets', icon: KeyRound },
   { id: 'mcp-analytics', label: 'MCP Analytics', icon: BarChart3 },
   { id: 'feature-flags', label: 'Feature Flags', icon: ShieldAlert },
   { id: 'support', label: 'Support', icon: LifeBuoy },
