@@ -58,8 +58,8 @@
         "step7": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: All required error codes defined in ErrorCode enum (PROJECT_SUSPENDED, RATE_LIMITED, QUOTA_EXCEEDED, KEY_INVALID, SERVICE_DISABLED, PERMISSION_DENIED, VALIDATION_ERROR, INTERNAL_ERROR). Typecheck passes."
     },
     {
       "id": "US-003",
@@ -85,8 +85,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Retryable flags configured in ERROR_METADATA. Retryable: RATE_LIMITED, INTERNAL_ERROR. Not retryable: PROJECT_SUSPENDED, QUOTA_EXCEEDED, KEY_INVALID, SERVICE_DISABLED, PERMISSION_DENIED, VALIDATION_ERROR, AUTHENTICATION_ERROR, NOT_FOUND, CONFLICT, PROJECT_ARCHIVED, PROJECT_DELETED. Flag included in all error responses via PlatformError class. Typecheck passes."
     },
     {
       "id": "US-005",

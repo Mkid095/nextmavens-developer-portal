@@ -91,11 +91,12 @@ async function getTenantSlug(projectId: string): Promise<string> {
   }
 
   // Query database for tenant slug
+  // Use base pool to avoid recursive scoping - query control_plane schema
   const pool = getPool();
   const result = await pool.query(
     `SELECT t.slug as tenant_slug
-     FROM projects p
-     JOIN tenants t ON p.tenant_id = t.id
+     FROM control_plane.projects p
+     JOIN control_plane.tenants t ON p.tenant_id = t.id
      WHERE p.id = $1`,
     [projectId]
   );
