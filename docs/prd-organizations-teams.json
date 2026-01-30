@@ -241,8 +241,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented PUT /api/organizations/:id/members/:userId endpoint for updating member roles. Added updateOrganizationMemberRole method to ControlPlaneClient that forwards to control plane API PUT /v1/orgs/:id/members/:userId. Created validation file src/lib/validation.ts with updateMemberRoleSchema (role enum: owner, admin, developer, viewer). Developer portal endpoint validates request body using Zod, handles errors (FORBIDDEN, NOT_FOUND, UNAUTHORIZED), and returns updated member details. Control plane API already implemented with full validation: only owners can update member roles (via validateOrganizationOwnership), prevents changing organization owner role, validates role enum, updates organization_members table. Typecheck passes."
     },
     {
       "id": "US-010",

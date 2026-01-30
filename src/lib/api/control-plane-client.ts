@@ -449,6 +449,21 @@ export class ControlPlaneClient {
   }
 
   /**
+   * Update a member's role in an organization
+   */
+  async updateOrganizationMemberRole(
+    orgId: string,
+    userId: string,
+    request: { role: 'owner' | 'admin' | 'developer' | 'viewer' },
+    req?: { headers: { get: (name: string) => string | null } }
+  ): Promise<{ success: boolean; data: { org_id: string; user_id: string; role: string; joined_at: string } }> {
+    return this.request<{ success: boolean; data: { org_id: string; user_id: string; role: string; joined_at: string } }>(`/api/v1/orgs/${orgId}/members/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    }, req)
+  }
+
+  /**
    * List webhooks for a project or all webhooks for the authenticated user
    */
   async listWebhooks(
