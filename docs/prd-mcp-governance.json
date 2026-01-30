@@ -243,8 +243,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Comprehensive MCP documentation page at src/app/docs/mcp/page.tsx (458 lines). Explains all 3 token types (mcp_ro_, mcp_rw_, mcp_admin_) with descriptions, use cases, included scopes, security notices, and risk levels. Shows scopes per type in a detailed reference table. Shows use cases for each type with specific scenarios (AI code assistants, documentation generators, analytics tools for read-only; trusted AI development tools, automated data migration, code generation for write; AI-powered operations tools, automated infrastructure management, emergency recovery for admin). Warns about write access risks with dedicated warning section explaining risks and requiring explicit confirmation. Includes AI tool recommendations table showing which token type to use for common AI tools (Claude Code, Cursor, GitHub Copilot, ChatGPT, Custom AI Agents). Also includes best practices section (start with read-only, rotate regularly, monitor usage, scope narrowly, never expose client-side). Typecheck passes."
     },
     {
       "id": "US-010",
