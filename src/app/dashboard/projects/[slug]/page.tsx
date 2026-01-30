@@ -50,6 +50,7 @@ import SupportRequestDetailModal from '@/components/SupportRequestDetailModal'
 import { McpUsageAnalytics } from '@/components/McpUsageAnalytics'
 import LanguageSelector, { type CodeLanguage, useLanguageSelector } from '@/components/LanguageSelector'
 import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLanguageCodeBlock'
+import ServiceStatusIndicator, { type ServiceStatus, getServiceStatus } from '@/components/ServiceStatusIndicator'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Project {
@@ -72,6 +73,18 @@ interface ApiKey {
   expires_at?: string
   last_used?: string
   usage_count?: number
+}
+
+/**
+ * Service status tracking
+ * US-010: Add Service Status Indicators
+ */
+interface ServiceStatuses {
+  database: boolean
+  auth: boolean
+  storage: boolean
+  realtime: boolean
+  graphql: boolean
 }
 
 /**
@@ -309,6 +322,15 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [showSecret, setShowSecret] = useState<Record<string, boolean>>({})
+  // US-010: Service status tracking
+  const [serviceStatuses, setServiceStatuses] = useState<ServiceStatuses>({
+    database: true,
+    auth: true,
+    storage: true,
+    realtime: true,
+    graphql: true,
+  })
+  const [updatingService, setUpdatingService] = useState<string | null>(null)
   const [suspensionStatus, setSuspensionStatus] = useState<SuspensionRecord | null>(null)
   const [suspensionLoading, setSuspensionLoading] = useState(true)
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false)
@@ -854,6 +876,48 @@ export default function ProjectDetailPage() {
   // US-011: Deselect all scopes for a service
   const deselectAllScopesForService = (serviceScopes: string[]) => {
     setSelectedScopes(prev => prev.filter(s => !serviceScopes.includes(s)))
+  }
+
+  // US-010: Handle service status toggle
+  const handleToggleService = async (serviceName: keyof ServiceStatuses) => {
+    if (!project?.id || updatingService) return
+
+    const currentStatus = serviceStatuses[serviceName]
+    const newStatus = !currentStatus
+
+    // Confirm before disabling
+    if (!newStatus) {
+      const confirmed = confirm(`Are you sure you want to disable the ${serviceName} service? This may affect your application.`)
+      if (!confirmed) return
+    }
+
+    setUpdatingService(serviceName)
+    try {
+      const token = localStorage.getItem('accessToken')
+      const res = await fetch(`/api/projects/${project.id}/services/${serviceName}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ enabled: newStatus }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'Failed to update service status' }))
+        throw new Error(data.error || 'Failed to update service status')
+      }
+
+      setServiceStatuses(prev => ({
+        ...prev,
+        [serviceName]: newStatus,
+      }))
+    } catch (err: any) {
+      console.error(`Failed to toggle ${serviceName} service:`, err)
+      alert(err.message || `Failed to ${newStatus ? 'enable' : 'disable'} ${serviceName} service`)
+    } finally {
+      setUpdatingService(null)
+    }
   }
 
   // US-010: Handle project deletion
@@ -1663,34 +1727,74 @@ const client = createClient({
           )}
 
           {activeTab === 'graphql' && (
-            <ServiceTab
-              serviceName="GraphQL"
-              overview="A powerful GraphQL API automatically generated from your database schema. Query your data with flexible, type-safe GraphQL operations. No manual API development required - the schema reflects your database structure in real-time."
-              whenToUse="Use the GraphQL service when you need flexible, efficient data fetching. Perfect for frontend applications, mobile apps, and any scenario where clients need to query exactly the data they need. Ideal for complex data relationships, nested queries, and avoiding over-fetching."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/graphql</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createGraphQLClient } from '@nextmavens/graphql'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-slate-900">GraphQL Service</h2>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              <ServiceTab
+                serviceName="GraphQL"
+                overview="A powerful GraphQL API automatically generated from your database schema. Query your data with flexible, type-safe GraphQL operations. No manual API development required - the schema reflects your database structure in real-time."
+                whenToUse="Use the GraphQL service when you need flexible, efficient data fetching. Perfect for frontend applications, mobile apps, and any scenario where clients need to query exactly the data they need. Ideal for complex data relationships, nested queries, and avoiding over-fetching."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install @nextmavens/graphql',
+                          python: 'pip install nextmavens-graphql',
+                          go: 'go get github.com/nextmavens/go-graphql',
+                          curl: '# No installation needed - use curl directly',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createGraphQLClient } from '@nextmavens/graphql'
 
 const graphql = createGraphQLClient({
   url: '${endpoints.graphql}',
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { data, error } = await graphql.query(\`query {
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens_graphql
+
+graphql = nextmavens_graphql.create_client(
+    url='${endpoints.graphql}',
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-graphql"
+
+func main() {
+    graphql := gographql.NewClient(gographql.Config{
+        URL: "${endpoints.graphql}",
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"
+export GRAPHQL_URL="${endpoints.graphql}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { data, error } = await graphql.query(\`query {
   users(limit: 10, order_by: { created_at: desc }) {
     id
     email
@@ -1700,13 +1804,50 @@ const graphql = createGraphQLClient({
       avatar_url
     }
   }
-}\`)`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Mutation Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { data, error } = await graphql.mutation(\`mutation {
+}\`)`,
+                          python: `query = \"""
+query {
+  users(limit: 10, order_by: { created_at: desc }) {
+    id
+    email
+    created_at
+    profiles {
+      full_name
+      avatar_url
+    }
+  }
+}
+\"""
+
+result = graphql.query(query)`,
+                          go: `query := \`query {
+  users(limit: 10, order_by: { created_at: desc }) {
+    id
+    email
+    created_at
+    profiles {
+      full_name
+      avatar_url
+    }
+  }
+}\`
+
+result, err := graphql.Query(query)`,
+                          curl: `curl -X POST "$GRAPHQL_URL/graphql" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "query { users(limit: 10) { id email } }"
+  }'`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Mutation Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { data, error } = await graphql.mutation(\`mutation {
   insert_users_one(object: {
     email: "user@example.com"
     profiles: {
@@ -1716,11 +1857,46 @@ const graphql = createGraphQLClient({
     id
     email
   }
-}\`)`}</code>
-                    </pre>
+}\`)`,
+                          python: `mutation = \"""
+mutation {
+  insert_users_one(object: {
+    email: "user@example.com"
+    profiles: {
+      data: { full_name: "John Doe" }
+    }
+  }) {
+    id
+    email
+  }
+}
+\"""
+
+result = graphql.mutate(mutation)`,
+                          go: `mutation := \`mutation {
+  insert_users_one(object: {
+    email: "user@example.com"
+    profiles: {
+      data: { full_name: "John Doe" }
+    }
+  }) {
+    id
+    email
+  }
+}\`
+
+result, err := graphql.Mutate(mutation)`,
+                          curl: `curl -X POST "$GRAPHQL_URL/graphql" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "mutation { insert_users_one(object: { email: \\"user@example.com\\" }) { id email } }"
+  }'`,
+                        })}
+                      />
+                    </div>
                   </div>
-                </div>
-              }
+                }
               connectionDetails={
                 <div className="space-y-4">
                   <div>
@@ -2098,34 +2274,74 @@ echo "https://cdn.nextmavens.cloud/$PROJECT_ID/uploads/avatars/1234567890_profil
           )}
 
           {activeTab === 'realtime' && (
-            <ServiceTab
-              serviceName="Realtime"
-              overview="A real-time data synchronization service powered by PostgreSQL Change Data Capture (CDC). Subscribe to database changes and receive instant updates via WebSocket connections. Perfect for collaborative apps, live dashboards, and multi-user experiences."
-              whenToUse="Use the Realtime service when you need live data updates in your application. Ideal for collaborative editing, live dashboards, chat applications, notifications, activity feeds, and any scenario where users need to see changes instantly across multiple clients."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/realtime</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createRealtimeClient } from '@nextmavens/realtime'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-slate-900">Realtime Service</h2>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              <ServiceTab
+                serviceName="Realtime"
+                overview="A real-time data synchronization service powered by PostgreSQL Change Data Capture (CDC). Subscribe to database changes and receive instant updates via WebSocket connections. Perfect for collaborative apps, live dashboards, and multi-user experiences."
+                whenToUse="Use the Realtime service when you need live data updates in your application. Ideal for collaborative editing, live dashboards, chat applications, notifications, activity feeds, and any scenario where users need to see changes instantly across multiple clients."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install @nextmavens/realtime',
+                          python: 'pip install nextmavens-realtime',
+                          go: 'go get github.com/nextmavens/go-realtime',
+                          curl: '# No installation needed - use websocat or wscat',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createRealtimeClient } from '@nextmavens/realtime'
 
 const realtime = createRealtimeClient({
   url: '${endpoints.realtime}',
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Connect to WebSocket</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`// Connect to the realtime service
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens_realtime
+
+realtime = nextmavens_realtime.create_client(
+    url='${endpoints.realtime}',
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-realtime"
+
+func main() {
+    realtime := gorealtime.NewClient(gorealtime.Config{
+        URL: "${endpoints.realtime}",
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"
+export REALTIME_URL="${endpoints.realtime}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Connect to WebSocket</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `// Connect to the realtime service
 const { socket, error } = await realtime.connect()
 
 // Handle connection events
@@ -2135,13 +2351,50 @@ socket.on('connected', () => {
 
 socket.on('disconnected', () => {
   console.log('Disconnected from realtime')
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Subscribe to Table Changes</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`// Subscribe to all changes on the 'users' table
+})`,
+                          python: `# Connect to the realtime service
+socket = await realtime.connect()
+
+# Handle connection events
+@socket.on('connected')
+def on_connected():
+    print('Connected to realtime!')
+
+@socket.on('disconnected')
+def on_disconnected():
+    print('Disconnected from realtime')`,
+                          go: `// Connect to the realtime service
+socket, err := realtime.Connect()
+if err != nil {
+    log.Fatal(err)
+}
+
+// Handle connection events
+socket.On("connected", func() {
+    fmt.Println("Connected to realtime!")
+})
+
+socket.On("disconnected", func() {
+    fmt.Println("Disconnected from realtime")
+})`,
+                          curl: `# Connect using websocat or wscat
+# First, get a JWT token from the auth endpoint
+TOKEN=$(curl -s -X POST "$REALTIME_URL/v1/auth/token" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"project_id": "'"$PROJECT_ID"'"}' | jq -r '.token')
+
+# Then connect to WebSocket
+wscat -c "$REALTIME_URL/v1/realtime?token=$TOKEN"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Subscribe to Table Changes</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `// Subscribe to all changes on the 'users' table
 const subscription = socket
   .channel('users')
   .on('INSERT', (payload) => {
@@ -2150,8 +2403,34 @@ const subscription = socket
   .on('UPDATE', (payload) => {
     console.log('User updated:', payload.new)
   })
-  .subscribe()`}</code>
-                    </pre>
+  .subscribe()`,
+                          python: `# Subscribe to all changes on the 'users' table
+@socket.channel('users')
+def on_insert(payload):
+    print(f'New user: {payload["new"]}')
+
+@socket.channel('users')
+def on_update(payload):
+    print(f'User updated: {payload["new"]}')
+
+subscription = socket.subscribe('users')`,
+                          go: `// Subscribe to all changes on the 'users' table
+subscription := socket.Channel("users").
+    On("INSERT", func(payload map[string]interface{}) {
+        fmt.Println("New user:", payload["new"])
+    }).
+    On("UPDATE", func(payload map[string]interface{}) {
+        fmt.Println("User updated:", payload["new"])
+    }).
+    Subscribe()`,
+                          curl: `# Subscribe to table changes (send JSON message via WebSocket)
+echo '{"event": "phx_join", "topic": "users", "payload": {"events": ["INSERT", "UPDATE"]}}' | \\
+  wscat -c "$REALTIME_URL/v1/realtime?token=$TOKEN"`,
+                        })}
+                      />
+                    </div>
+                  </div>
+                }
                   </div>
                 </div>
               }

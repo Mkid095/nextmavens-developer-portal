@@ -51,7 +51,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "ROLE_PERMISSIONS constant already defined in src/lib/types/rbac.types.ts with correct mappings: Owner (all permissions), Admin (all except projects.delete), Developer (view_logs, use_services, database.read), Viewer (view_logs, database.read). Typecheck passes."
+      "notes": "ROLE_PERMISSIONS constant defined in src/lib/types/rbac.types.ts with correct mappings: Owner (all permissions), Admin (all except projects.delete and projects.manage_users - see US-008), Developer (view_logs, use_services, database.read), Viewer (view_logs, database.read). Typecheck passes."
     },
     {
       "id": "US-003",
@@ -208,8 +208,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated RBAC role permissions to remove projects.manage_users from Admin role (only Owners now have this permission). Updated control-plane-api user management endpoints (POST /v1/orgs/:id/members for invite, PUT /v1/orgs/:id/members/:userId for role update, DELETE /v1/orgs/:id/members/:userId for remove) to use requirePermission middleware with Permission.PROJECTS_MANAGE_USERS. All endpoints now enforce that only organization owners can invite, remove, or change roles of members. Returns 403 Forbidden with detailed error message for non-owners. Updated rbac.types.ts in both src/lib and control-plane-api/src/lib. Typecheck passes."
     },
     {
       "id": "US-009",

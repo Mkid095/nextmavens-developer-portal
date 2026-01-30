@@ -253,6 +253,254 @@ const { data } = await client
   },
 ]
 
+const authExamples = [
+  {
+    title: 'Sign Up (Registration)',
+    description: 'Create a new user account with email and password',
+    code: `// Basic sign up with email and password
+const { data, error } = await client.auth.signUp({
+  email: 'user@example.com',
+  password: 'secure_password_123'
+})
+
+// Sign up with additional user metadata
+const { data, error } = await client.auth.signUp({
+  email: 'user@example.com',
+  password: 'secure_password_123',
+  name: 'John Doe',
+  metadata: {
+    company: 'Acme Corp',
+    role: 'developer'
+  }
+})
+
+// Check if sign up was successful
+if (error) {
+  console.error('Sign up failed:', error.message)
+} else {
+  console.log('User created:', data.user)
+  console.log('Session:', data.session)
+}`,
+  },
+  {
+    title: 'Sign In (Login)',
+    description: 'Authenticate an existing user with email and password',
+    code: `// Basic sign in
+const { data, error } = await client.auth.signIn({
+  email: 'user@example.com',
+  password: 'user_password_123'
+})
+
+// Sign in with session persistence
+const { data, error } = await client.auth.signIn({
+  email: 'user@example.com',
+  password: 'user_password_123'
+}, {
+  // Persist session in localStorage (browser only)
+  persistSession: true
+})
+
+// Handle sign in response
+if (error) {
+  console.error('Sign in failed:', error.message)
+  // Common errors: invalid_credentials, user_not_found, email_not_confirmed
+} else {
+  console.log('Signed in successfully')
+  console.log('User ID:', data.user.id)
+  console.log('Access token:', data.session.access_token)
+}`,
+  },
+  {
+    title: 'Get Current User',
+    description: 'Retrieve the currently authenticated user',
+    code: `// Get current user (if session exists)
+const { data: { user }, error } = await client.auth.getUser()
+
+if (error) {
+  console.error('Error fetching user:', error.message)
+} else if (user) {
+  console.log('Current user:', user)
+  console.log('User ID:', user.id)
+  console.log('User email:', user.email)
+  console.log('User metadata:', user.metadata)
+} else {
+  console.log('No user is currently signed in')
+}
+
+// Check if user is authenticated
+const isAuthenticated = !!user
+
+// Access user properties
+if (user) {
+  const { id, email, name, metadata, created_at } = user
+}`,
+  },
+  {
+    title: 'Sign Out',
+    description: 'Sign out the current user and clear the session',
+    code: `// Basic sign out
+const { error } = await client.auth.signOut()
+
+if (error) {
+  console.error('Sign out failed:', error.message)
+} else {
+  console.log('Signed out successfully')
+}
+
+// Sign out and redirect (common pattern)
+const handleSignOut = async () => {
+  const { error } = await client.auth.signOut()
+  if (!error) {
+    // Redirect to login page or home
+    window.location.href = '/login'
+  }
+}
+
+// Sign out from all devices (if your backend supports it)
+const { error } = await client.auth.signOut({
+  scope: 'global' // Signs out from all sessions
+})`,
+  },
+  {
+    title: 'Session Management',
+    description: 'Manage user sessions and tokens',
+    code: `// Listen to auth state changes (React example)
+useEffect(() => {
+  const { data: { subscription } } = client.auth.onAuthStateChange(
+    (event, session) => {
+      console.log('Auth event:', event)
+      // Events: 'SIGNED_IN', 'SIGNED_OUT', 'USER_UPDATED', 'TOKEN_REFRESHED'
+      console.log('Session:', session)
+
+      switch (event) {
+        case 'SIGNED_IN':
+          console.log('User signed in')
+          break
+        case 'SIGNED_OUT':
+          console.log('User signed out')
+          break
+        case 'TOKEN_REFRESHED':
+          console.log('Token refreshed automatically')
+          break
+      }
+    }
+  )
+
+  return () => subscription.unsubscribe()
+}, [])
+
+// Refresh session manually
+const { data, error } = await client.auth.refreshSession()
+
+// Get current session
+const { data: { session } } = await client.auth.getSession()
+
+// Check if session is valid
+const isSessionValid = () => {
+  const { data: { session } } = client.auth.getSession()
+  return !!session && new Date(session.expires_at) > new Date()
+}`,
+  },
+  {
+    title: 'Update User Profile',
+    description: 'Update the current user\'s information',
+    code: `// Update user metadata
+const { data, error } = await client.auth.updateUser({
+  name: 'Jane Doe',
+  metadata: {
+    company: 'New Company',
+    avatar_url: 'https://example.com/avatar.jpg'
+  }
+})
+
+// Update user email (requires verification)
+const { data, error } = await client.auth.updateUser({
+  email: 'newemail@example.com'
+})
+
+// Update password
+const { data, error } = await client.auth.updateUser({
+  password: 'new_secure_password_123'
+})
+
+// Handle update response
+if (error) {
+  console.error('Update failed:', error.message)
+} else {
+  console.log('User updated:', data.user)
+}`,
+  },
+  {
+    title: 'Reset Password',
+    description: 'Handle password reset flow',
+    code: `// Request password reset (sends email to user)
+const { data, error } = await client.auth.resetPasswordForEmail(
+  'user@example.com'
+)
+
+if (error) {
+  console.error('Reset request failed:', error.message)
+} else {
+  console.log('Password reset email sent')
+}
+
+// Update password with reset token (from email link)
+const { data, error } = await client.auth.updateUser({
+  password: 'new_password_123'
+})
+
+// Complete password reset flow
+const handlePasswordReset = async (newPassword: string) => {
+  const { data, error } = await client.auth.updateUser({
+    password: newPassword
+  })
+
+  if (error) {
+    console.error('Password reset failed:', error.message)
+  } else {
+    console.log('Password updated successfully')
+    // Redirect to sign in page
+    window.location.href = '/login'
+  }
+}`,
+  },
+  {
+    title: 'Error Handling',
+    description: 'Handle common authentication errors',
+    code: `// Helper function to handle auth errors
+const handleAuthError = (error: any) => {
+  switch (error?.message) {
+    case 'invalid_credentials':
+      return 'Invalid email or password'
+    case 'user_not_found':
+      return 'No account found with this email'
+    case 'email_not_confirmed':
+      return 'Please verify your email before signing in'
+    case 'weak_password':
+      return 'Password must be at least 8 characters'
+    case 'email_already_exists':
+      return 'An account with this email already exists'
+    case 'session_expired':
+      return 'Your session has expired, please sign in again'
+    default:
+      return 'An unexpected error occurred'
+  }
+}
+
+// Usage example
+const { data, error } = await client.auth.signIn({
+  email: 'user@example.com',
+  password: 'password'
+})
+
+if (error) {
+  const userMessage = handleAuthError(error)
+  console.error(userMessage)
+  // Show error to user in UI
+}`,
+  },
+]
+
 const codeExamples = [
   {
     title: 'Import and Initialize',
@@ -263,28 +511,6 @@ const client = createClient({
   apiKey: process.env.NEXTMAVENS_API_KEY,
   projectId: 'your-project-id'
 })`,
-  },
-  {
-    title: 'Authentication',
-    description: 'Handle user authentication',
-    code: `// Sign up a new user
-const { data, error } = await client.auth.signUp({
-  email: 'user@example.com',
-  password: 'secure_password',
-  name: 'John Doe'
-})
-
-// Sign in existing user
-const { data, error } = await client.auth.signIn({
-  email: 'user@example.com',
-  password: 'secure_password'
-})
-
-// Get current user
-const { data: { user } } = await client.auth.getUser()
-
-// Sign out
-await client.auth.signOut()`,
   },
   {
     title: 'Realtime Subscriptions',
@@ -610,8 +836,74 @@ NEXTMAVENS_PROJECT_ID=your_project_id`}</code>
           </div>
         </div>
 
+        {/* Authentication Section */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <svg className="w-5 h-5 text-purple-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Authentication</h2>
+              <p className="text-slate-600">Handle user authentication and session management</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {authExamples.map((example, index) => (
+              <motion.div
+                key={example.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="border border-slate-200 rounded-lg overflow-hidden"
+              >
+                <div className="p-4 border-b border-slate-200 bg-slate-50">
+                  <h3 className="text-base font-semibold text-slate-900 mb-1">{example.title}</h3>
+                  <p className="text-sm text-slate-600">{example.description}</p>
+                </div>
+                <div className="p-4">
+                  <div className="relative group">
+                    <button
+                      onClick={() => handleCopy(example.code, `auth-${index}`)}
+                      className="absolute top-2 right-2 p-1.5 bg-slate-700 hover:bg-slate-600 rounded opacity-0 group-hover:opacity-100 transition z-10"
+                      aria-label="Copy code"
+                    >
+                      {copied === `auth-${index}` ? (
+                        <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                    <pre className="bg-slate-900 rounded p-3 overflow-x-auto">
+                      <code className="text-xs text-slate-300 font-mono block">{example.code}</code>
+                    </pre>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <h4 className="text-sm font-semibold text-purple-900 mb-2">Authentication Best Practices</h4>
+            <ul className="text-xs text-purple-800 space-y-1">
+              <li>• Always handle errors and display user-friendly messages</li>
+              <li>• Store tokens securely (the SDK handles this automatically with localStorage)</li>
+              <li>• Implement proper session management with auth state listeners</li>
+              <li>• Use strong password requirements for sign up</li>
+              <li>• Implement email verification for new accounts</li>
+              <li>• Use HTTPS in production to protect tokens in transit</li>
+            </ul>
+          </div>
+        </div>
+
         <div className="space-y-8 mb-12">
-          <h2 className="text-xl font-semibold text-slate-900">Usage Examples</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Quick Examples</h2>
           {codeExamples.map((example, index) => (
             <motion.div
               key={example.title}

@@ -121,8 +121,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added comprehensive Auth section to SDK docs (src/app/docs/sdk/page.tsx) with 8 detailed examples: Sign Up (basic and with metadata), Sign In (basic with session persistence), Get Current User, Sign Out (basic and global), Session Management (auth state listeners, refresh session, check validity), Update User Profile, Reset Password (request and update), and Error Handling (common auth errors). Each example includes code with syntax highlighting and copy buttons. Added best practices section with security tips. Typecheck passes."
     },
     {
       "id": "US-006",
