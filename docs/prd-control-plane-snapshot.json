@@ -129,7 +129,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Created src/lib/api-gateway/snapshot-client.ts (450+ lines) with ApiGatewaySnapshotClient class that fetches snapshots from control plane, caches locally with 30s TTL, validates project status and service enablement before all requests, implements sliding window rate limiting with per-minute/hour/day limits, and enforces fail-closed behavior (denies requests when snapshot unavailable). Includes validateRequest() method that checks: project status (active/suspended/archived/deleted), service enablement (auth/graphql/realtime/storage/database/functions), and rate limits. Typecheck passes."
+      "notes": "Completed: Created src/lib/api-gateway/snapshot-client.ts (580+ lines) with ApiGatewaySnapshotClient class that fetches snapshots from control plane, caches locally with 30s TTL, validates project status and service enablement before all requests, implements sliding window rate limiting with per-minute/hour/day limits, and enforces fail-closed behavior (denies requests when snapshot unavailable). Includes validateRequest() method that checks: project status (ACTIVE/SUSPENDED/ARCHIVED/DELETED), service enablement (auth/graphql/realtime/storage/database/functions), and rate limits. Fixed bug: changed status comparisons from lowercase ('active', 'suspended', etc.) to uppercase ('ACTIVE', 'SUSPENDED', etc.) to match snapshot builder output. Added convenience functions and periodic cache cleanup. Typecheck passes."
     },
     {
       "id": "US-009",
