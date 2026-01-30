@@ -652,6 +652,203 @@ const securityAntiPatterns = [
   },
 ]
 
+const operationalBenefits = [
+  {
+    title: 'Boring Technology',
+    description: 'Use mature, well-understood technologies with proven track records. No bleeding-edge frameworks, no experimental patterns—just tools that work.',
+    icon: Wrench,
+    examples: [
+      'PostgreSQL: battle-tested since 1997',
+      'Node.js: mature runtime with extensive ecosystem',
+      'React: stable UI library with massive community',
+      'Standard protocols: HTTP, WebSockets, SQL',
+    ],
+  },
+  {
+    title: 'Minimal Dependencies',
+    description: 'Fewer dependencies mean fewer vulnerabilities, less maintenance burden, and faster builds. Every dependency is a liability.',
+    icon: FolderOpen,
+    examples: [
+      'Prefer built-in Node.js modules over packages',
+      'Choose libraries with minimal transitive deps',
+      'Avoid dependencies on abandonware or unmaintained packages',
+      'Regular dependency audits and updates',
+    ],
+  },
+  {
+    title: 'Observable by Default',
+    description: 'Metrics, logs, and traces are built-in from day one. No retro-fitting observability—debugging is always possible.',
+    icon: BarChart3,
+    examples: [
+      'Structured logging with request IDs',
+      'Prometheus metrics for all services',
+      'Distributed tracing for cross-service requests',
+      'Health checks and readiness probes everywhere',
+    ],
+  },
+  {
+    title: 'Automated Operations',
+    description: 'Manual operations are error-prone and don\'t scale. Automate deployment, scaling, backups, and recovery.',
+    icon: Bot,
+    examples: [
+      'CI/CD pipelines for all deployments',
+      'Automated database backups and restoration',
+      'Auto-scaling based on metrics',
+      'Automated security scanning and patching',
+    ],
+  },
+]
+
+const operationalExamples = [
+  {
+    title: 'Structured Logging with Request IDs',
+    description: 'Every request gets a unique ID that propagates through all services',
+    code: `// Middleware generates and attaches request ID
+export async function middleware(req: NextRequest) {
+  const requestId = crypto.randomUUID()
+  req.headers.set('x-request-id', requestId)
+
+  // Log includes request ID, timestamp, user, action
+  logger.info('request.started', {
+    request_id: requestId,
+    method: req.method,
+    path: req.nextUrl.pathname,
+    user_id: await getUserId(req),
+    timestamp: new Date().toISOString(),
+  })
+
+  return NextResponse.next()
+}
+
+// Service logs use same request ID
+logger.info('database.query', {
+  request_id: requestId,
+  query: 'SELECT * FROM users',
+  duration_ms: 12,
+})`,
+  },
+  {
+    title: 'Health Checks Everywhere',
+    description: 'Every service exposes health and readiness endpoints',
+    code: `// /health/check returns service health
+export async function GET() {
+  const checks = await Promise.allSettled([
+    // Database connectivity
+    pool.query('SELECT 1'),
+    // External service availability
+    fetch('https://api.telegram.org/bot'),
+    // Disk space check
+    checkDiskSpace('/data'),
+  ])
+
+  const healthy = checks.every(c => c.status === 'fulfilled')
+
+  return Response.json({
+    status: healthy ? 'healthy' : 'unhealthy',
+    checks: {
+      database: checks[0].status,
+      telegram_api: checks[1].status,
+      disk_space: checks[2].status,
+    },
+    timestamp: new Date().toISOString(),
+  }, { status: healthy ? 200 : 503 })
+}`,
+  },
+  {
+    title: 'Automated Backups and Restoration',
+    description: 'Backups run automatically, restoration is tested regularly',
+    code: `// Automated daily backups
+cron.schedule('0 2 * * *', async () => {
+  const backup = await pgDump(databaseUrl)
+  await uploadToTelegram(backup)
+
+  await auditLog.insert({
+    action: 'backup.completed',
+    metadata: { size_bytes: backup.length },
+    timestamp: new Date(),
+  })
+})
+
+// Automated restoration test (weekly)
+cron.schedule('0 3 * * 0', async () => {
+  const testDb = await createTestDatabase()
+  await restoreFromLatestBackup(testDb)
+  const integrity = await verifyDataIntegrity(testDb)
+
+  if (!integrity.ok) {
+    await alertOps('backup.restoration.failed', integrity)
+  }
+
+  await dropTestDatabase(testDb)
+})`,
+  },
+  {
+    title: 'CI/CD Pipeline with Quality Gates',
+    description: 'Every commit runs tests, linting, and security scans',
+    code: `# .github/workflows/ci.yml
+name: CI
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: pnpm install
+      - run: pnpm run typecheck
+      - run: pnpm run test
+      - run: pnpm run lint
+      - run: pnpm audit --production
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm audit --production
+      - uses: snyk/actions/node@master
+      - run: trivy fs .`,
+  },
+]
+
+const operationalComparison = [
+  {
+    practice: 'Boring Tech Stack',
+    boring: 'Postgres, Node.js, React',
+    bleeding: 'GraphQL, Rust, WebAssembly',
+    boringAdvantage: true,
+  },
+  {
+    practice: 'Dependency Count',
+    boring: '~50 production dependencies',
+    bleeding: '~500+ production dependencies',
+    boringAdvantage: true,
+  },
+  {
+    practice: 'Observability',
+    boring: 'Built-in from day one',
+    bleeding: 'Added later when debugging',
+    boringAdvantage: true,
+  },
+  {
+    practice: 'Deployment',
+    boring: 'Automated CI/CD pipeline',
+    bleeding: 'Manual SSH and scripts',
+    boringAdvantage: true,
+  },
+  {
+    practice: 'On-call',
+    boring: 'Alerts mean something is wrong',
+    bleeding: 'Alerts are normal (alert fatigue)',
+    boringAdvantage: true,
+  },
+  {
+    practice: 'Time to Debug',
+    boring: 'Minutes (logs + traces)',
+    bleeding: 'Hours/Days (add logging, redeploy)',
+    boringAdvantage: true,
+  },
+]
+
 export default function PlatformPhilosophyPage() {
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
@@ -1560,6 +1757,191 @@ export default function PlatformPhilosophyPage() {
                   className="inline-flex items-center gap-2 text-red-700 font-medium hover:text-red-800"
                 >
                   Explore Security & Error Documentation
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-3 bg-amber-100 rounded-xl">
+              <Wrench className="w-6 h-6 text-amber-700" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold text-slate-900">Operational Simplicity</h2>
+              <p className="text-slate-600">Why boring technology and minimal dependencies reduce toil</p>
+            </div>
+          </div>
+
+          <div className="space-y-6 mb-12">
+            {operationalBenefits.map((benefit, index) => {
+              const Icon = benefit.icon
+              return (
+                <motion.div
+                  key={benefit.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-white rounded-xl p-8 border border-slate-200"
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="p-2 bg-amber-100 rounded-lg">
+                      <Icon className="w-5 h-5 text-amber-700" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-900 mb-2">{benefit.title}</h3>
+                      <p className="text-slate-600 leading-relaxed">{benefit.description}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-4">
+                    {benefit.examples.map((example) => (
+                      <div key={example} className="flex items-center gap-2 text-sm text-slate-600">
+                        <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                        <span>{example}</span>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Operations in Practice</h3>
+            <p className="text-slate-600 mb-8">
+              These examples show how operational principles translate into day-to-day development and operations.
+              Boring technology, minimal dependencies, built-in observability, and automation aren't abstract
+              concepts—they're concrete practices that reduce toil and prevent incidents.
+            </p>
+
+            <div className="space-y-8">
+              {operationalExamples.map((example, index) => (
+                <motion.div
+                  key={example.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <h4 className="font-semibold text-slate-900 mb-2">{example.title}</h4>
+                  <p className="text-sm text-slate-600 mb-3">{example.description}</p>
+                  <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                    <pre className="text-sm text-slate-300">
+                      <code>{example.code}</code>
+                    </pre>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Boring vs Bleeding Edge</h3>
+            <p className="text-slate-600 mb-8">
+              Comparing boring technology choices with bleeding-edge alternatives reveals why boring wins
+              in production systems.
+            </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-900">Practice</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-amber-700">Boring (NextMavens)</th>
+                    <th className="text-left py-3 px-4 text-sm font-semibold text-slate-600">Bleeding Edge</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {operationalComparison.map((row, i) => (
+                    <tr key={i} className="border-b border-slate-100">
+                      <td className="py-3 px-4 text-sm text-slate-700 font-medium">{row.practice}</td>
+                      <td className={`py-3 px-4 text-sm ${row.boringAdvantage === true ? 'text-emerald-700 font-semibold' : 'text-slate-600'}`}>
+                        {row.boring}
+                      </td>
+                      <td className={`py-3 px-4 text-sm ${row.boringAdvantage === false ? 'text-emerald-700 font-semibold' : 'text-slate-600'}`}>
+                        {row.bleeding}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+            <h3 className="text-xl font-semibold text-slate-900 mb-6">Why Operational Simplicity Wins</h3>
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Activity className="w-5 h-5 text-amber-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Reduced Toil</h4>
+                  <p className="text-slate-600">
+                    Fewer emergency deployments, less manual intervention, predictable systems. Engineers
+                    spend time building features, not fighting fires.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Shield className="w-5 h-5 text-purple-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Fewer Surprises</h4>
+                  <p className="text-slate-600">
+                    Mature technology has known failure modes. Observability means you see issues before
+                    they become outages. Automation eliminates human error.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Zap className="w-5 h-5 text-blue-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Faster Debugging</h4>
+                  <p className="text-slate-600">
+                    Logs, metrics, and traces are built-in. When something breaks, you already have the data
+                    you need to diagnose and fix it. No "add logging and redeploy" loops.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <Bot className="w-5 h-5 text-emerald-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-slate-900 mb-1">Scales Without Heroes</h4>
+                  <p className="text-slate-600">
+                    Automation means the system works at 3 AM. Clear runbooks and observability mean anyone
+                    can troubleshoot. No reliance on individual heroes.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 rounded-xl p-8 border border-amber-200 mb-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-amber-100 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-amber-700" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-slate-900 mb-2">The Bottom Line</h4>
+                <p className="text-slate-700 leading-relaxed mb-4">
+                  Operational simplicity isn't about avoiding complexity—it's about managing it deliberately.
+                  Boring technology means fewer unknowns. Minimal dependencies mean smaller attack surfaces.
+                  Built-in observability means faster debugging. Automation means consistent operations.
+                  These principles reduce toil, prevent incidents, and let teams focus on building features
+                  instead of fighting infrastructure. When operations are simple, engineering is productive.
+                </p>
+                <Link
+                  href="/docs/infrastructure"
+                  className="inline-flex items-center gap-2 text-amber-700 font-medium hover:text-amber-800"
+                >
+                  Explore Infrastructure Documentation
                   <ArrowLeft className="w-4 h-4 rotate-180" />
                 </Link>
               </div>

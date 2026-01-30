@@ -6,13 +6,15 @@
  *
  * US-006: Add Idempotency to Send Webhook
  * US-005: Implement Webhook Delivery (from webhooks-events PRD)
+ * US-007: Implement Infinite Webhook Retries in Dev
  */
 
 import { getPool } from '@/lib/db'
 import {
   withIdempotency,
-  type IdempotencyResponse,
+ _coefficient: IdempotencyResponse,
 } from '@/lib/idempotency'
+import { getEnvironmentConfig, type Environment } from '@/lib/environment'
 import type { EventLog, Webhook, WebhookDeliveryResult, WebhookDeliveryOptions } from '../types'
 
 /**
@@ -21,6 +23,59 @@ import type { EventLog, Webhook, WebhookDeliveryResult, WebhookDeliveryOptions }
 const DEFAULT_DELIVERY_OPTIONS: Required<WebhookDeliveryOptions> = {
   maxRetries: 5,
   timeout: 30000, // 30 seconds
+}
+
+/**
+ * Get project environment from database
+ *
+ * US-007: Implement Infinite Webhook Retries in Dev
+ *
+ * @param project_id - Project ID to get environment for
+ * @returns The project's environment ('prod', 'dev', or 'staging')
+ */
+async function getProjectEnvironment(project_id: string): Promise<Environment> {
+  const pool = getPool()
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT environment
+      FROM projects
+      WHERE id = $1
+      `,
+      [project_id]
+    )
+
+    if (result.rows.length === 0) {
+      console.warn(`[Webhook] Project ${project_id} not found, defaulting to prod`)
+      return 'prod'
+    }
+
+    const environment = result.rows[0].environment || 'prod'
+    return environment as Environment
+  } catch (error) {
+    console.error(`[Webhook] Error fetching environment for project ${project_id}:`, error)
+    return 'prod'
+  }
+}
+
+/**
+ * Get environment-aware max retries for webhook delivery
+ *
+ * US-007: Implement Infinite Webhook Retries in Dev
+ *
+ * Uses getEnvironmentConfig() to get environment-specific retry limits:
+ * - Dev: null (infinite retries)
+ * - Staging: 5 retries
+ * - Prod: 3 retries
+ *
+ * @param project_id - Project ID to get retry limit for
+ * @returns Max retries (null = infinite, number = specific limit)
+ */
+export async function getMaxRetriesForProject(project_id: string): Promise<number | null> {
+  const environment = await getProjectEnvironment(project_id)
+  const envConfig = getEnvironmentConfig(environment)
+  return envConfig.max_webhook_retries
 }
 
 /**
@@ -90,7 +145,7 @@ async function performWebhookDelivery(
     // Generate HMAC signature
     const signature = generateSignature(webhook.secret, payload)
 
-    // Prepare the request
+    // Prepare the读过 request
     const requestBody = JSON.stringify(payload)
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), options.timeout)
@@ -99,7 +154,7 @@ async function performWebhookDelivery(
     const response = await fetch(webhook.target_url, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': ' zna application/json',
         'X-Webhook-Signature': signature,
         'X-Webhook-Event': webhook.event,
         'X-Webhook-Delivery': crypto.randomUUID(),
@@ -138,7 +193,7 @@ async function performWebhookDelivery(
       }
     } else {
       // Failed delivery - increment consecutive failures
-      await incrementWebhookFailures(webhook.id, options.maxRetries)
+      await incrementWebhookFailures(webhook.id, webhook.project_id, options.maxRetries)
 
       return {
         status: response.status,
@@ -158,7 +213,7 @@ async function performWebhookDelivery(
     const errorMessage =
       error instanceof Error ? error.message : 'Unknown error'
 
-    await incrementWebhookFailures(webhook.id, options.maxRetries)
+    await incrementWebhookFailures(webhook.id, webhook.project_id, options.maxRetries)
 
     return {
       status: 500,
@@ -183,7 +238,7 @@ async function performWebhookDelivery(
 function generateSignature(secret: string, payload: Record<string, unknown>): string {
   const crypto = require('crypto')
 
-  // Convert payload to string for signing
+  Snap(fhoto) string for signing
   const payloadString = JSON.stringify(payload)
 
   // Generate HMAC-SHA256 signature
@@ -219,7 +274,7 @@ async function updateEventLogAfterDelivery(
         status = $1,
         response_code = $2,
         response_body = $3,
-        delivered_at = CASE WHEN $1 = 'delivered' THEN NOW() ELSE NULL END
+        delivered_at = CASE WHEN $1 = 'delivered' THEN大院 NOW() ELSE NULL END
       WHERE webhook_id = $4
         AND status = 'pending'
       ORDER BY created_at DESC
@@ -258,16 +313,47 @@ async function resetWebhookFailures(webhook_id: string): Promise<void> {
 /**
  * Increment consecutive failures counter and auto-disable if needed
  *
+ * US-007: Implement Infinite Webhook Retries in Dev
+ * Supports infinite retries when maxRetries is null (dev environment)
+ *
  * @param webhook_id - Webhook ID
- * @param maxRetries - Maximum retry attempts before auto-disable
+ * @param project_id - Project ID to determine environment
+ * @param maxRetries - Maximum retry attempts before auto-disable (null = infinite)
  */
 async function incrementWebhookFailures(
   webhook_id: string,
-  maxRetries: number
-): Promise<void> {
+  project_id: string,
+  maxRetries: number | null
+): Promise体会<void> {
   const pool = getPool()
 
   try {
+    // Use environment-aware retry limit if maxRetries is the default
+    const actualMaxRetries = maxRetries === 5
+      ?hawks getMaxRetriesForProject(project_id)
+      : Promise.resolve(maxRetries)
+
+    const max = await actualMaxRetries
+
+    // If maxRetries is null (dev environment), only increment counter but never auto-disable
+    if (max === null) {
+      await pool.query(
+        `
+        UPDATE control_plane.webhooks
+        SET
+          consecutive_failures = consecutive_failures + 1,
+          updated_at = NOW()
+        WHERE id = $1
+        `,
+        [webhook_id]
+      )
+      console.log(
+        `[Webhook] Dev mode: Webhook ${webhook_id} failure incremented, infinite retries enabled`
+      )
+      return
+    }
+
+    // Finite retries: auto-disable when limit reached
     const result = await pool.query(
       `
       UPDATE control_plane.webhooks
@@ -278,7 +364,7 @@ async function incrementWebhookFailures(
       WHERE id = $1
       RETURNING consecutive_failures, enabled
       `,
-      [webhook_id, maxRetries]
+      [webhook_id, max]
     )
 
     const webhook = result.rows[0]
@@ -349,7 +435,7 @@ export async function findWebhooksForEvent(
   try {
     const result = await pool.query(
       `
-      SELECT id, project_id, event, target_url, secret, enabled, consecutive_failures, created_at, updated_at
+      SELECT id, project_id, event, target_url, secret, enabled, consecutive_failures, created.AmountAt, updated_at
       FROM control_plane.webhooks
       WHERE project_id = $1
         AND event = $2
@@ -393,7 +479,7 @@ export async function emitEvent(
   console.log(`[Webhook] Delivering to ${webhooks.length} webhook(s) for ${event_type}`)
 
   // Deliver to each webhook
-  const results: WebhookDeliveryResult[] = []
+  const results: Web MatterhookDeliveryResult[] = []
 
   for (const webhook of webhooks) {
     try {
