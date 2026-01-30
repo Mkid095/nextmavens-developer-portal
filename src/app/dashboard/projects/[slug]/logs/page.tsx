@@ -156,7 +156,7 @@ export default function LogsPage() {
   const [expandedLogId, setExpandedLogId] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   const [downloadSuccess, setDownloadSuccess] = useState(false)
-  const [streamConnected, setStreamConnected] = useState(false)
+  const [connecting, setConnecting] = useState(false)
 
   // Initialize filters from URL
   useEffect(() => {
@@ -244,6 +244,107 @@ export default function LogsPage() {
       setError('Failed to load project')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const getDateRange = (): { startDate: string; endDate: string } => {
+    const now = new Date()
+    let startDate = new Date()
+    let endDate = now
+
+    if (dateRangeFilter === 'custom' && customStartDate && customEndDate) {
+      startDate = new Date(customStartDate)
+      endDate = new Date(customEndDate)
+      endDate.setHours(23, 59, 59, 999)
+    } else {
+      switch (dateRangeFilter) {
+        case '1h':
+          startDate = new Date(now.getTime() - 60 * 60 * 1000)
+          break
+        case '24h':
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+          break
+        case '7d':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          break
+        case '30d':
+          startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+          break
+        default:
+          startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+      }
+    }
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    }
+  }
+
+  const connectToLogStream = () => {
+    // Close existing connection
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+    }
+
+    setConnecting(true)
+    setLogs([])
+
+    // Build query parameters
+    const urlParams = new URLSearchParams()
+    urlParams.append('project_id', project.id)
+
+    if (serviceFilter !== 'all') {
+      urlParams.append('service', serviceFilter)
+    }
+
+    if (levelFilter !== 'all') {
+      urlParams.append('level', levelFilter)
+    }
+
+    // Add date range filter
+    const { startDate, endDate } = getDateRange()
+    if (startDate) {
+      urlParams.append('start_date', startDate)
+    }
+    if (endDate) {
+      urlParams.append('end_date', endDate)
+    }
+
+    const streamUrl = '/api/logs/stream?' + urlParams.toString()
+
+    try {
+      const eventSource = new EventSource(streamUrl)
+      eventSourceRef.current = eventSource
+
+      eventSource.addEventListener('connected', () => {
+        setConnecting(false)
+      })
+
+      eventSource.addEventListener('log', (event) => {
+        try {
+          const logEntry: LogEntry = JSON.parse(event.data)
+          setLogs((prev) => {
+            // Avoid duplicates
+            if (prev.some((log) => log.id === logEntry.id)) {
+              return prev
+            }
+            // Add new logs at the beginning
+            return [logEntry, ...prev]
+          })
+        } catch (err) {
+          console.error('Failed to parse log entry:', err)
+        }
+      })
+
+      eventSource.onerror = () => {
+        console.error('EventSource error')
+        setConnecting(false)
+        eventSource.close()
+      }
+    } catch (err) {
+      console.error('Failed to create EventSource:', err)
+      setConnecting(false)
     }
   }
 
