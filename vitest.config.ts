@@ -37,6 +37,7 @@ export default defineConfig({
     },
   },
   esbuild: {
-    jsx: 'preserve',
+    jsx: 'automatic',
+    jsxImportSource: 'react',
   },
 })
