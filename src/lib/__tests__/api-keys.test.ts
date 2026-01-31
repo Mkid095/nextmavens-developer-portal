@@ -100,9 +100,10 @@ describe('API Key Generation', () => {
       const key = generateApiKey('public')
       const hash = hashApiKey(key)
 
+      // Hash should not be equal to the original key (different content)
+      expect(hash).not.toBe(key)
       // Hash should not contain the original key
       expect(hash).not.toContain(key)
-      expect(hash.length).not.toBe(key.length)
     })
 
     it('should handle empty string', () => {

@@ -4,7 +4,7 @@
  * Run with: npx tsx src/lib/crypto/__tests__/crypto.test.ts
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   encryptSecret,
   decryptSecret,

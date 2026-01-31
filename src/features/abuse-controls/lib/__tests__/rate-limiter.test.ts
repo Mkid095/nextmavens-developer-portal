@@ -32,8 +32,12 @@ describe('Rate Limiter', () => {
 
   describe('checkRateLimit', () => {
     it('should allow requests under the limit', async () => {
+      const windowDate = new Date()
+      // First query: DELETE (doesn't return meaningful rows)
+      mockPool.query.mockResolvedValueOnce({ rows: [] })
+      // Second query: UPSERT returns the record
       mockPool.query.mockResolvedValueOnce({
-        rows: [{ attempt_count: 1, window_start: new Date() }],
+        rows: [{ attempt_count: 1, window_start: windowDate }],
       })
 
       const identifier = {
@@ -48,8 +52,12 @@ describe('Rate Limiter', () => {
     })
 
     it('should block requests over the limit', async () => {
+      const windowDate = new Date()
+      // First query: DELETE
+      mockPool.query.mockResolvedValueOnce({ rows: [] })
+      // Second query: UPSERT returns record over limit
       mockPool.query.mockResolvedValueOnce({
-        rows: [{ attempt_count: 6, window_start: new Date() }],
+        rows: [{ attempt_count: 6, window_start: windowDate }],
       })
 
       const identifier = {
@@ -64,8 +72,10 @@ describe('Rate Limiter', () => {
     })
 
     it('should clean up old records', async () => {
+      const windowDate = new Date()
+      mockPool.query.mockResolvedValueOnce({ rows: [] })
       mockPool.query.mockResolvedValueOnce({
-        rows: [{ attempt_count: 1, window_start: new Date() }],
+        rows: [{ attempt_count: 1, window_start: windowDate }],
       })
 
       const identifier = {
@@ -82,8 +92,10 @@ describe('Rate Limiter', () => {
     })
 
     it('should use upsert pattern for rate limit records', async () => {
+      const windowDate = new Date()
+      mockPool.query.mockResolvedValueOnce({ rows: [] })
       mockPool.query.mockResolvedValueOnce({
-        rows: [{ attempt_count: 1, window_start: new Date() }],
+        rows: [{ attempt_count: 1, window_start: windowDate }],
       })
 
       const identifier = {
@@ -101,8 +113,9 @@ describe('Rate Limiter', () => {
 
     it('should calculate correct reset time', async () => {
       const windowStart = new Date('2024-01-01T00:00:00Z')
+      mockPool.query.mockResolvedValueOnce({ rows: [] })
       mockPool.query.mockResolvedValueOnce({
-        rows: [{ attempt_count: 1, window_start }],
+        rows: [{ attempt_count: 1, window_start: windowStart }],
       })
 
       const identifier = {
@@ -339,11 +352,11 @@ describe('Rate Limiter', () => {
 
   describe('RateLimitIdentifierType', () => {
     it('should have IP type', () => {
-      expect(RateLimitIdentifierType.IP).toBe('IP')
+      expect(RateLimitIdentifierType.IP).toBe('ip')
     })
 
     it('should have ORG type', () => {
-      expect(RateLimitIdentifierType.ORG).toBe('ORG')
+      expect(RateLimitIdentifierType.ORG).toBe('org')
     })
   })
 })

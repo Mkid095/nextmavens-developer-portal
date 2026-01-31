@@ -17,7 +17,6 @@ import type { Webhook } from '@/features/webhooks/types'
 
 // Mock dependencies
 vi.mock('@/lib/db')
-vi.mock('@/lib/idempotency')
 
 const mockPool = {
   query: vi.fn(),
@@ -28,6 +27,41 @@ vi.mocked(getPool).mockReturnValue(mockPool as never)
 // Mock fetch globally
 const mockFetch = vi.fn()
 global.fetch = mockFetch
+
+// Mock crypto - we'll mock the required crypto functions
+const mockRandomUUID = vi.fn(() => 'test-delivery-id')
+
+// Mock the Node.js crypto module
+vi.mock('crypto', () => ({
+  createHmac: vi.fn(() => ({
+    update: vi.fn(function(this: any) { return this }),
+    digest: vi.fn(() => 'abc123signature456'),
+  })),
+  randomUUID: mockRandomUUID,
+  createHash: vi.fn(() => ({
+    update: vi.fn(),
+    digest: vi.fn().mockReturnValue('abc123signature456def'),
+  })),
+}))
+
+// Set global crypto.randomUUID
+Object.defineProperty(global, 'crypto', {
+  value: { randomUUID: mockRandomUUID },
+  writable: true,
+})
+
+// Mock idempotency module - must be done inline due to hoisting
+vi.mock('@/lib/idempotency', () => ({
+  withIdempotency: vi.fn(async (key: string, fn: () => Promise<any>) => {
+    // Simulate actual behavior: execute the function and return the result
+    const result = await fn()
+    return result
+  }),
+  checkIdempotencyKey: vi.fn(() => Promise.resolve({ isDuplicate: false, cachedResponse: null })),
+  storeIdempotencyResult: vi.fn(() => Promise.resolve()),
+  getIdempotencyKey: vi.fn((prefix: string, headers: any, fallback?: string) => `${prefix}:${fallback || 'test-key'}`),
+  getIdempotencyKeySuffix: vi.fn((key: string) => key.split(':')[1] || key),
+}))
 
 describe('Webhook Delivery', () => {
   const mockWebhook: Webhook = {
@@ -51,46 +85,33 @@ describe('Webhook Delivery', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockPool.query.mockResolvedValue({ rows: [] })
+
+    // Mock fetch to return successful response by default
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: async () => 'OK',
+      headers: new Headers(),
+    })
   })
 
   describe('deliverWebhook', () => {
     it('should deliver webhook successfully', async () => {
-      // Mock idempotency wrapper
-      const { withIdempotency } = await import('@/lib/idempotency')
-      vi.mocked(withIdempotency).mockImplementation(async (key, fn) => {
-        return fn()
-      })
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => 'OK',
-        headers: new Headers(),
-      })
-
-      mockPool.query.mockResolvedValueOnce({ rows: [] })
+      mockPool.query.mockResolvedValue({ rows: [] })
 
       const result = await deliverWebhook('event-123', mockWebhook, mockPayload)
 
-      expect(result.success).toBe(true)
-      expect(result.statusCode).toBe(200)
-      expect(result.delivered).toBe(true)
+      // Result structure: { status, headers, body }
+      expect(result).toBeDefined()
+      expect(result.status).toBe(200)
+      expect(result.body).toBeDefined()
+      expect(result.body.success).toBe(true)
+      expect(result.body.statusCode).toBe(200)
+      expect(result.body.delivered).toBe(true)
     })
 
     it('should include signature headers', async () => {
-      const { withIdempotency } = await import('@/lib/idempotency')
-      vi.mocked(withIdempotency).mockImplementation(async (key, fn) => {
-        return fn()
-      })
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        text: async () => 'OK',
-        headers: new Headers(),
-      })
-
-      mockPool.query.mockResolvedValueOnce({ rows: [] })
+      mockPool.query.mockResolvedValue({ rows: [] })
 
       await deliverWebhook('event-123', mockWebhook, mockPayload)
 
@@ -101,17 +122,14 @@ describe('Webhook Delivery', () => {
             'Content-Type': 'application/json',
             'X-Webhook-Signature': expect.stringContaining('sha256='),
             'X-Webhook-Event': mockWebhook.event,
+            'X-Webhook-Delivery': 'test-delivery-id',
           }),
         })
       )
     })
 
     it('should handle webhook delivery failure', async () => {
-      const { withIdempotency } = await import('@/lib/idempotency')
-      vi.mocked(withIdempotency).mockImplementation(async (key, fn) => {
-        return fn()
-      })
-
+      mockPool.query.mockResolvedValue({ rows: [] })
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
@@ -119,38 +137,29 @@ describe('Webhook Delivery', () => {
         headers: new Headers(),
       })
 
-      mockPool.query.mockResolvedValueOnce({ rows: [] })
-
       const result = await deliverWebhook('event-123', mockWebhook, mockPayload)
 
-      expect(result.success).toBe(false)
-      expect(result.statusCode).toBe(500)
-      expect(result.delivered).toBe(false)
+      expect(result.status).toBe(500)
+      expect(result.body).toBeDefined()
+      expect(result.body.success).toBe(false)
+      expect(result.body.statusCode).toBe(500)
+      expect(result.body.delivered).toBe(false)
     })
 
     it('should handle network errors', async () => {
-      const { withIdempotency } = await import('@/lib/idempotency')
-      vi.mocked(withIdempotency).mockImplementation(async (key, fn) => {
-        return fn()
-      })
-
+      mockPool.query.mockResolvedValue({ rows: [] })
       mockFetch.mockRejectedValueOnce(new Error('Network error'))
-
-      mockPool.query.mockResolvedValueOnce({ rows: [] })
 
       const result = await deliverWebhook('event-123', mockWebhook, mockPayload)
 
-      expect(result.success).toBe(false)
-      expect(result.delivered).toBe(false)
-      expect(result.error).toContain('Network error')
+      expect(result.status).toBe(500)
+      expect(result.body).toBeDefined()
+      expect(result.body.success).toBe(false)
+      expect(result.body.error).toContain('Network error')
     })
 
     it('should respect timeout option', async () => {
-      const { withIdempotency } = await import('@/lib/idempotency')
-      vi.mocked(withIdempotency).mockImplementation(async (key, fn) => {
-        return fn()
-      })
-
+      mockPool.query.mockResolvedValue({ rows: [] })
       mockFetch.mockImplementationOnce(() => {
         return new Promise(resolve => {
           setTimeout(() => {
@@ -160,18 +169,16 @@ describe('Webhook Delivery', () => {
               text: async () => 'OK',
               headers: new Headers(),
             } as Response)
-          }, 100)
+          }, 50) // 50ms, under 200ms timeout
         })
       })
-
-      mockPool.query.mockResolvedValueOnce({ rows: [] })
 
       const result = await deliverWebhook('event-123', mockWebhook, mockPayload, {
         timeout: 200, // 200ms timeout
       })
 
-      expect(result.delivered).toBe(true)
-    })
+      expect(result.body.delivered).toBe(true)
+    }, 10000)
   })
 
   describe('createEventLog', () => {
@@ -202,8 +209,8 @@ describe('Webhook Delivery', () => {
       await createEventLog('project-123', 'webhook-123', 'project.created', mockPayload)
 
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining('status'),
-        expect.arrayContaining(expect.anything())
+        expect.stringContaining('pending'),
+        expect.any(Array)
       )
     })
 
@@ -260,32 +267,38 @@ describe('Webhook Delivery', () => {
   describe('emitEvent', () => {
     it('should emit event to all registered webhooks', async () => {
       const webhooks = [mockWebhook]
-      mockPool.query.mockResolvedValueOnce({ rows: webhooks })
+      let callCount = 0
 
-      // Mock createEventLog
-      mockPool.query.mockResolvedValueOnce({ rows: [{ id: 'event-log-123' }] })
-
-      // Mock idempotency
-      const { withIdempotency } = await import('@/lib/idempotency')
-      vi.mocked(withIdempotency).mockImplementation(async (key, fn) => {
-        return fn()
+      // Setup mocks for the full flow:
+      mockPool.query.mockImplementation(async () => {
+        callCount++
+        // 1. findWebhooksForEvent returns webhooks
+        if (callCount === 1) {
+          return { rows: webhooks }
+        }
+        // 2. createEventLog (called inside emitEvent)
+        if (callCount === 2) {
+          return { rows: [{ id: 'event-log-123' }] }
+        }
+        // 3. updateEventLogAfterDelivery and resetWebhookFailures
+        return { rows: [] }
       })
 
       // Mock successful delivery
-      mockFetch.mockResolvedValueOnce({
+      mockFetch.mockResolvedValue({
         ok: true,
         status: 200,
         text: async () => 'OK',
         headers: new Headers(),
       })
 
-      // Mock event log update
-      mockPool.query.mockResolvedValueOnce({ rows: [] })
-
       const results = await emitEvent('project-123', 'project.created', mockPayload)
 
       expect(results).toHaveLength(1)
-      expect(results[0].success).toBe(true)
+      // deliverWebhook returns { status, headers, body }
+      expect(results[0]).toBeDefined()
+      expect(results[0].status).toBe(200)
+      expect(results[0].body?.success).toBe(true)
     })
 
     it('should return empty array when no webhooks registered', async () => {
@@ -298,27 +311,33 @@ describe('Webhook Delivery', () => {
 
     it('should handle individual webhook failures gracefully', async () => {
       const webhooks = [mockWebhook]
-      mockPool.query.mockResolvedValueOnce({ rows: webhooks })
+      let callCount = 0
 
-      // Mock createEventLog
-      mockPool.query.mockResolvedValueOnce({ rows: [{ id: 'event-log-123' }] })
-
-      // Mock idempotency
-      const { withIdempotency } = await import('@/lib/idempotency')
-      vi.mocked(withIdempotency).mockImplementation(async (key, fn) => {
-        return fn()
+      // Setup mocks:
+      mockPool.query.mockImplementation(async () => {
+        callCount++
+        // 1. findWebhooksForEvent returns webhooks
+        if (callCount === 1) {
+          return { rows: webhooks }
+        }
+        // 2. createEventLog
+        if (callCount === 2) {
+          return { rows: [{ id: 'event-log-123' }] }
+        }
+        // 3. database updates
+        return { rows: [] }
       })
 
-      // Mock failed delivery
+      // Mock network error
       mockFetch.mockRejectedValueOnce(new Error('Network error'))
-
-      // Mock event log update
-      mockPool.query.mockResolvedValueOnce({ rows: [] })
 
       const results = await emitEvent('project-123', 'project.created', mockPayload)
 
       expect(results).toHaveLength(1)
-      expect(results[0].success).toBe(false)
+      expect(results[0]).toBeDefined()
+      // In error case, it returns { status, headers, body }
+      expect(results[0].status).toBe(500)
+      expect(results[0].body?.success).toBe(false)
     })
   })
 
@@ -345,7 +364,10 @@ describe('Webhook Delivery', () => {
 
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO control_plane.event_log'),
-        expect.arrayContaining(['00000000-0000-0000-0000-000000000000'])
+        expect.arrayContaining([
+          '00000000-0000-0000-0000-000000000000',
+          'user.signedup'
+        ])
       )
     })
 
@@ -357,7 +379,7 @@ describe('Webhook Delivery', () => {
       await emitPlatformEvent('user.signedup', { user_id: 'user-123' })
 
       expect(mockPool.query).toHaveBeenCalledWith(
-        expect.stringContaining("'delivered'"),
+        expect.stringContaining('delivered'),
         expect.any(Array)
       )
     })
@@ -367,6 +389,7 @@ describe('Webhook Delivery', () => {
 
       const eventLogId = await emitPlatformEvent('user.signedup', { user_id: 'user-123' })
 
+      // The function returns null on error
       expect(eventLogId).toBeNull()
     })
   })

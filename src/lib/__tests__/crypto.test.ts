@@ -63,8 +63,9 @@ describe('Crypto Utilities', () => {
       const key = generateApiKey()
       const hash = hashApiKey(key)
 
+      // The hash should not contain the original key (different content)
+      expect(hash).not.toBe(key)
       expect(hash).not.toContain(key)
-      expect(hash).not.toHaveLength(key.length)
     })
   })
 

@@ -74,8 +74,12 @@ describe('JWT Token Generation', () => {
 
     it('should generate unique tokens for each call', () => {
       const developerId = 'dev-123'
+      // Use fake timers to ensure different timestamps
+      vi.useFakeTimers()
       const token1 = generateRefreshToken(developerId)
+      vi.advanceTimersByTime(1000) // Advance by 1 second
       const token2 = generateRefreshToken(developerId)
+      vi.useRealTimers()
 
       // Tokens should be different due to timestamp in JWT
       expect(token1).not.toBe(token2)
@@ -274,7 +278,6 @@ describe('Type Safety', () => {
       id: 'test-id',
       email: 'test@example.com',
       name: 'Test Name',
-      organization: 'Test Org',
     }
 
     expect(typeof developer.id).toBe('string')

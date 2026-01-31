@@ -8,7 +8,7 @@
  * All tests verify 403 response for cross-project access attempts.
  */
 
-import { describe, it, expect } from '@jest/globals'
+import { describe, it, expect } from 'vitest'
 import {
   validateQueryIsolation,
   SchemaScopeError,
