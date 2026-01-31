@@ -7,7 +7,7 @@ import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 const graphqlConfig = {
   domain: 'https://api.nextmavens.cloud',
   port: 4004,
-  graphiqlUrl: 'https://api.nextmavens.cloud/graphiql',
+  graphiqlUrl: null, // Not currently available
   features: ['Auto Schema', 'Relations', 'Mutations', 'Subscriptions'],
 }
 
@@ -153,14 +153,9 @@ export default function GraphQLDocsPage() {
                 <Zap className="w-4 h-4 text-slate-600" />
                 <span className="text-xs font-medium text-slate-700">GraphiQL IDE</span>
               </div>
-              <a
-                href={graphqlConfig.graphiqlUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-700 hover:underline break-all"
-              >
-                {graphqlConfig.graphiqlUrl}
-              </a>
+              <span className="text-xs text-slate-500 italic">
+                Not currently available - use curl or other GraphQL clients
+              </span>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
@@ -305,19 +300,17 @@ const { data, errors } = await response.json();`}</CodeBlockWithCopy>
             </div>
 
             <div>
-              <h3 className="font-semibold text-slate-900 mb-3">Using GraphiQL IDE</h3>
+              <h3 className="font-semibold text-slate-900 mb-3">Using GraphQL Clients</h3>
               <p className="text-slate-600 mb-3">
-                Visit the GraphiQL IDE to interactively explore the schema and test queries:
+                Use GraphQL clients like Apollo Explorer, Postman, or curl to interactively explore the schema:
               </p>
-              <a
-                href={graphqlConfig.graphiqlUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                <Zap className="w-4 h-4" />
-                Open GraphiQL IDE
-              </a>
+              <CodeBlockWithCopy>{`# Example with curl
+curl -X POST https://api.nextmavens.cloud/graphql \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -d '{"query":"{ __schema { types { name } } }"}'
+
+# Or use Apollo Explorer: https://explorer.apollographql.com`}</CodeBlockWithCopy>
             </div>
           </div>
         </div>

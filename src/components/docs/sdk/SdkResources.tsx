@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Github, FileText, Download, ArrowLeft, ArrowRight } from 'lucide-react'
+import { Book, Globe, MessageSquare, ArrowLeft, ArrowRight } from 'lucide-react'
 
 export function SdkResources() {
   return (
@@ -13,42 +13,36 @@ export function SdkResources() {
     >
       <h2 className="text-xl font-semibold text-slate-900 mb-6">Resources</h2>
       <div className="grid md:grid-cols-3 gap-4">
-        <a
-          href="https://github.com/Mkid095/nextmavens-js"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/docs/graphql"
           className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition"
         >
-          <Github className="w-5 h-5 text-slate-700" />
+          <Globe className="w-5 h-5 text-slate-700" />
           <div>
-            <p className="font-medium text-slate-900">GitHub Repository</p>
-            <p className="text-sm text-slate-600">View source code</p>
+            <p className="font-medium text-slate-900">GraphQL Guide</p>
+            <p className="text-sm text-slate-600">Learn GraphQL queries</p>
           </div>
-        </a>
-        <a
-          href="https://github.com/Mkid095/nextmavens-js/issues"
-          target="_blank"
-          rel="noopener noreferrer"
+        </Link>
+        <Link
+          href="/docs/realtime"
           className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition"
         >
-          <FileText className="w-5 h-5 text-slate-700" />
+          <MessageSquare className="w-5 h-5 text-slate-700" />
           <div>
-            <p className="font-medium text-slate-900">Report an Issue</p>
-            <p className="text-sm text-slate-600">File bugs and requests</p>
+            <p className="font-medium text-slate-900">Realtime Docs</p>
+            <p className="text-sm text-slate-600">WebSocket subscriptions</p>
           </div>
-        </a>
-        <a
-          href="https://github.com/Mkid095/nextmavens-js/blob/main/CONTRIBUTING.md"
-          target="_blank"
-          rel="noopener noreferrer"
+        </Link>
+        <Link
+          href="/docs/auth"
           className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-md transition"
         >
-          <Download className="w-5 h-5 text-slate-700" />
+          <Book className="w-5 h-5 text-slate-700" />
           <div>
-            <p className="font-medium text-slate-900">Contributing</p>
-            <p className="text-sm text-slate-600">How to contribute</p>
+            <p className="font-medium text-slate-900">Auth Guide</p>
+            <p className="text-sm text-slate-600">Authentication patterns</p>
           </div>
-        </a>
+        </Link>
       </div>
     </motion.div>
   )

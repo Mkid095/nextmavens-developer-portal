@@ -36,8 +36,8 @@ export function SdkHeader() {
             <Code2 className="w-6 h-6 text-blue-700" />
           </div>
           <div>
-            <h1 className="text-3xl font-semibold text-slate-900">JavaScript SDK</h1>
-            <p className="text-slate-600">Official TypeScript client for NextMavens platform</p>
+            <h1 className="text-3xl font-semibold text-slate-900">API Reference</h1>
+            <p className="text-slate-600">Direct API access using REST, GraphQL, and WebSocket</p>
           </div>
         </div>
       </main>

@@ -7,179 +7,144 @@ const authExamples = [
   {
     title: 'Sign Up',
     description: 'Register a new user account',
-    code: `const { data, error } = await client.auth.signUp({
-  email: 'user@example.com',
-  password: 'secure_password',
-  options: {
-    data: {
-      name: 'John Doe'
-    }
-  }
-})
+    code: `const response = await fetch('https://api.nextmavens.cloud/api/auth/signup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'secure_password',
+    name: 'John Doe'
+  })
+});
+
+const { data, error } = await response.json();
 
 if (error) {
   console.error('Sign up failed:', error.message)
 } else {
   console.log('User created:', data.user)
+  console.log('Access token:', data.accessToken)
 }`,
   },
   {
     title: 'Sign In',
     description: 'Authenticate a user with email and password',
-    code: `const { data, error } = await client.auth.signIn({
-  email: 'user@example.com',
-  password: 'user_password'
-})
+    code: `const response = await fetch('https://api.nextmavens.cloud/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    email: 'user@example.com',
+    password: 'user_password'
+  })
+});
+
+const { data, error } = await response.json();
 
 if (error) {
   console.error('Sign in failed:', error.message)
 } else {
   console.log('Signed in:', data.user)
-  // Store session for subsequent requests
+  // Store tokens for subsequent requests
+  localStorage.setItem('accessToken', data.accessToken)
+  localStorage.setItem('refreshToken', data.refreshToken)
 }`,
   },
   {
     title: 'Get Current User',
     description: 'Retrieve the currently authenticated user',
-    code: `const { data: { user }, error } = await client.auth.getUser()
+    code: `const response = await fetch('https://api.nextmavens.cloud/api/auth/me', {
+  method: 'GET',
+  headers: {
+    'Authorization': \`Bearer \${localStorage.getItem('accessToken')}\`
+  }
+});
+
+const { data, error } = await response.json();
 
 if (error) {
   console.error('Failed to get user:', error.message)
 } else {
-  console.log('Current user:', user)
-}
+  console.log('Current user:', data.user)
+}`,
+  },
+  {
+    title: 'Refresh Token',
+    description: 'Get a new access token using refresh token',
+    code: `const response = await fetch('https://api.nextmavens.cloud/api/auth/refresh', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    refreshToken: localStorage.getItem('refreshToken')
+  })
+});
 
-// Check authentication status
-const isAuthenticated = !!user`,
+const { data, error } = await response.json();
+
+if (error) {
+  console.error('Token refresh failed:', error.message)
+  // Redirect to login
+} else {
+  // Update stored access token
+  localStorage.setItem('accessToken', data.accessToken)
+}`,
   },
   {
     title: 'Sign Out',
     description: 'Log out the current user and clear session',
-    code: `const { error } = await client.auth.signOut()
+    code: `const response = await fetch('https://api.nextmavens.cloud/api/auth/logout', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    refreshToken: localStorage.getItem('refreshToken')
+  })
+});
+
+const { data, error } = await response.json();
 
 if (error) {
   console.error('Sign out failed:', error.message)
 } else {
-  console.log('Signed out successfully')
-}
-
-// Handle sign out with redirect
-const handleSignOut = async () => {
-  await client.auth.signOut()
+  // Clear stored tokens
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  // Redirect to login
   window.location.href = '/login'
-}`,
-  },
-  {
-    title: 'Session Management',
-    description: 'Manage user sessions and tokens',
-    code: `const { data, error } = await client.auth.refreshSession()
-
-// Get current session
-const { data: { session } } = await client.auth.getSession()
-
-// Check if session is valid
-const isSessionValid = () => {
-  const { data: { session } } = client.auth.getSession()
-  return !!session && new Date(session.expires_at) > new Date()
-}`,
-  },
-  {
-    title: 'Update User',
-    description: 'Update user profile and metadata',
-    code: `const { data, error } = await client.auth.updateUser({
-  data: {
-    name: 'Jane Doe',
-    avatar_url: 'https://example.com/avatar.jpg'
-  }
-})
-
-// Update email
-const { data } = await client.auth.updateUser({
-  email: 'newemail@example.com'
-})
-
-// Update password
-const { data } = await client.auth.updateUser({
-  password: 'new_secure_password'
-})`,
-  },
-  {
-    title: 'Password Reset',
-    description: 'Handle password reset flow',
-    code: `// Request password reset email
-const { data, error } = await client.auth.resetPasswordForEmail(
-  'user@example.com',
-  {
-    redirectTo: 'https://yourapp.com/auth/reset-password'
-  }
-)
-
-// Update password with reset token (from email link)
-const { data, error } = await client.auth.updateUser({
-  password: 'new_password'
-})
-
-// Handle password reset in your app
-const handlePasswordReset = async (newPassword: string) => {
-  const { data, error } = await client.auth.updateUser({
-    password: newPassword
-  })
-
-  if (error) {
-    console.error('Password reset failed:', error.message)
-  } else {
-    console.log('Password reset successful')
-    // Redirect to login or dashboard
-  }
 }`,
   },
   {
     title: 'Error Handling',
     description: 'Handle common authentication errors',
     code: `const handleAuthError = (error: any) => {
-  switch (error.message) {
-    case 'Invalid login credentials':
+  switch (error?.message) {
+    case 'Invalid credentials':
       return 'Incorrect email or password'
-    case 'Email not confirmed':
-      return 'Please verify your email first'
-    case 'User already registered':
+    case 'User already exists':
       return 'An account with this email already exists'
-    case 'Password should be at least 6 characters':
-      return 'Password must be at least 6 characters'
+    case 'Password too weak':
+      return 'Password must be at least 8 characters'
+    case 'Invalid token':
+      return 'Session expired. Please sign in again.'
     default:
       return 'An authentication error occurred'
   }
 }
 
 // Usage
-const { data, error } = await client.auth.signIn({
-  email: 'user@example.com',
-  password: 'password'
-})
+try {
+  const response = await fetch('https://api.nextmavens.cloud/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
 
-if (error) {
-  const userMessage = handleAuthError(error)
-  console.error(userMessage)
-}`,
-  },
-  {
-    title: 'OAuth Integration',
-    description: 'Set up OAuth providers for social login',
-    code: `// Redirect to OAuth provider
-const { data, error } = await client.auth.signIn({
-  provider: 'google',
-  options: {
-    redirectTo: 'https://yourapp.com/auth/callback'
+  const { data, error } = await response.json();
+
+  if (error) {
+    const userMessage = handleAuthError(error)
+    console.error(userMessage)
   }
-})
-
-// Available providers: 'google', 'github', 'gitlab', 'bitbucket'
-
-// Handle OAuth callback
-const { data, error } = await client.auth.getSession()
-if (data.session) {
-  // User is signed in via OAuth
-  console.log('OAuth user:', data.session.user)
+} catch (err) {
+  console.error('Network error:', err)
 }`,
   },
 ]
@@ -192,6 +157,10 @@ export function SdkAuth() {
       transition={{ delay: 0.3 }}
     >
       <h2 className="text-2xl font-semibold text-slate-900 mb-6">Authentication</h2>
+      <p className="text-slate-600 mb-6">
+        Use the REST API endpoints for authentication. Store access and refresh tokens securely
+        and include the access token in the Authorization header for authenticated requests.
+      </p>
       <div className="space-y-6 mb-12">
         {authExamples.map((example, index) => (
           <motion.div
