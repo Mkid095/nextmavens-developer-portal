@@ -1,54 +1,103 @@
 'use client'
 
 import Link from 'next/link'
-import { Shield, ArrowLeft, ArrowRight } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { Shield, ArrowLeft, ArrowRight, Server, CheckCircle, Lock, Clock } from 'lucide-react'
 import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 
-const tools = [
+const authConfig = {
+  domain: 'https://auth.nextmavens.cloud',
+  port: 4000,
+  jwtSecret: 'nextmavens-auth-secret-key-2024-production-secure',
+  accessTokenExpiry: '1 hour',
+  refreshTokenExpiry: '7 days',
+}
+
+const endpoints = [
   {
-    name: 'nextmavens_signin',
-    description: 'Authenticate a user with email and password',
+    name: 'Login',
     method: 'POST',
-    endpoint: '/auth/signin',
-    params: [
-      { name: 'email', type: 'string', required: true, description: 'User email address' },
-      { name: 'password', type: 'string', required: true, description: 'User password' },
-    ],
-    response: {
-      user: 'User object (id, email, name)',
-      accessToken: 'JWT access token (1 hour expiry)',
-      refreshToken: 'JWT refresh token (7 day expiry)',
+    path: '/api/auth/login',
+    gatewayPath: '/api/auth/login',
+    description: 'Authenticate user with email and password',
+    request: {
+      email: 'string',
+      password: 'string',
     },
-    example: {
-      email: 'user@example.com',
-      password: 'securepassword123',
+    response: {
+      user: 'User object with id, email, name, role, tenant_id',
+      accessToken: 'JWT token (expires in 1 hour)',
+      refreshToken: 'JWT token (expires in 7 days)',
     },
   },
   {
-    name: 'nextmavens_signup',
-    description: 'Register a new user account',
+    name: 'Signup',
     method: 'POST',
-    endpoint: '/auth/signup',
-    params: [
-      { name: 'email', type: 'string', required: true, description: 'User email address' },
-      { name: 'password', type: 'string', required: true, description: 'User password (min 8 characters)' },
-      { name: 'name', type: 'string', required: true, description: 'User display name' },
-      { name: 'metadata', type: 'object', required: false, description: 'Additional user metadata' },
-    ],
+    path: '/api/auth/signup',
+    gatewayPath: '/api/auth/signup',
+    description: 'Register a new user account',
+    request: {
+      email: 'string',
+      password: 'string (min 8 characters)',
+      name: 'string',
+    },
     response: {
       user: 'Created user object',
-      accessToken: 'JWT access token',
-      refreshToken: 'JWT refresh token',
+      accessToken: 'JWT token',
+      refreshToken: 'JWT token',
     },
-    example: {
-      email: 'newuser@example.com',
-      password: 'securepassword123',
-      name: 'John Doe',
-      metadata: { organization: 'Acme Inc' },
+  },
+  {
+    name: 'Refresh Token',
+    method: 'POST',
+    path: '/api/auth/refresh',
+    gatewayPath: '/api/auth/refresh',
+    description: 'Get a new access token using refresh token',
+    request: {
+      refreshToken: 'string',
+    },
+    response: {
+      accessToken: 'New JWT token',
+    },
+  },
+  {
+    name: 'Logout',
+    method: 'POST',
+    path: '/api/auth/logout',
+    gatewayPath: '/api/auth/logout',
+    description: 'Invalidate current session',
+    request: {
+      refreshToken: 'string',
+    },
+    response: {
+      success: 'boolean',
+    },
+  },
+  {
+    name: 'Get Current User',
+    method: 'GET',
+    path: '/api/auth/me',
+    gatewayPath: '/api/auth/me',
+    description: 'Get currently authenticated user',
+    headers: {
+      Authorization: 'Bearer <token>',
+    },
+    response: {
+      user: 'User object',
     },
   },
 ]
+
+const jwtStructure = {
+  header: 'alg: HS256, typ: JWT',
+  payload: {
+    userId: 'integer',
+    email: 'string',
+    tenantId: 'uuid (optional)',
+    role: 'string (user|owner|admin)',
+    iat: 'issued at timestamp',
+    exp: 'expiration timestamp',
+  },
+}
 
 export default function AuthDocsPage() {
   return (
@@ -60,7 +109,7 @@ export default function AuthDocsPage() {
       `}</style>
 
       <nav className="bg-white border-b border-slate-200">
-        <div className="mx-auto max-w-[1180px] px-4 py-4 flex items-center justify-between">
+        <div className="mx-auto max-w-[1400px] px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-700 text-white shadow">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -74,12 +123,11 @@ export default function AuthDocsPage() {
             <Link href="/" className="text-sm text-slate-600 hover:text-slate-900">Home</Link>
             <Link href="/docs" className="text-sm text-slate-900 font-medium">Docs</Link>
             <Link href="/mcp" className="text-sm text-slate-600 hover:text-slate-900">MCP</Link>
-            <Link href="/login" className="text-sm text-slate-600 hover:text-slate-900">Login</Link>
           </div>
         </div>
       </nav>
 
-      <main className="mx-auto max-w-[1180px] px-4 py-12">
+      <main className="mx-auto max-w-[1400px] px-4 py-12">
         <Link href="/docs" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-8">
           <ArrowLeft className="w-4 h-4" />
           Back to Docs
@@ -95,100 +143,182 @@ export default function AuthDocsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">Overview</h2>
-          <p className="text-slate-600 leading-relaxed mb-4">
-            The Authentication service provides secure user registration and login with JWT-based tokens.
-            Passwords are hashed using bcrypt and never stored in plain text.
-          </p>
-          <div className="grid md:grid-cols-2 gap-4">
+        {/* Service Info */}
+        <div className="bg-white rounded-xl p-6 border border-slate-200 mb-12">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">Service Information</h2>
+          <div className="grid md:grid-cols-4 gap-4">
             <div className="bg-slate-50 rounded-lg p-4">
-              <h3 className="font-medium text-slate-900 mb-2">Access Token</h3>
-              <p className="text-sm text-slate-600">Valid for 1 hour. Include in Authorization header.</p>
-              <code className="text-xs text-slate-700 mt-2 block">Authorization: Bearer &lt;token&gt;</code>
+              <div className="flex items-center gap-2 mb-2">
+                <Server className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Domain</span>
+              </div>
+              <code className="text-xs text-blue-700 break-all">{authConfig.domain}</code>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
-              <h3 className="font-medium text-slate-900 mb-2">Refresh Token</h3>
-              <p className="text-sm text-slate-600">Valid for 7 days. Use to get new access tokens.</p>
-              <code className="text-xs text-slate-700 mt-2 block">POST /auth/refresh</code>
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Port</span>
+              </div>
+              <code className="text-xs text-slate-700">{authConfig.port}</code>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Access Token</span>
+              </div>
+              <p className="text-xs text-slate-600">{authConfig.accessTokenExpiry}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Lock className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Refresh Token</span>
+              </div>
+              <p className="text-xs text-slate-600">{authConfig.refreshTokenExpiry}</p>
             </div>
           </div>
         </div>
 
-        <div className="space-y-8">
-          {tools.map((tool, index) => (
-            <motion.div
-              key={tool.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-xl border border-slate-200 overflow-hidden"
-            >
+        {/* Endpoints */}
+        <h2 className="text-2xl font-semibold text-slate-900 mb-6">API Endpoints</h2>
+        <div className="space-y-6 mb-12">
+          {endpoints.map((endpoint, index) => (
+            <div key={endpoint.name} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
               <div className="p-6 border-b border-slate-200">
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="text-xl font-semibold text-slate-900 mb-1">{tool.name}</h3>
-                    <p className="text-slate-600">{tool.description}</p>
+                    <h3 className="text-xl font-semibold text-slate-900 mb-1">{endpoint.name}</h3>
+                    <p className="text-slate-600">{endpoint.description}</p>
                   </div>
                   <span className="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">
-                    {tool.method}
+                    {endpoint.method}
                   </span>
                 </div>
-                <code className="text-sm text-slate-700 bg-slate-50 px-3 py-2 rounded block">
-                  {tool.endpoint}
-                </code>
+                <div className="flex gap-4 text-sm">
+                  <div>
+                    <span className="text-slate-500">Direct:</span>
+                    <code className="ml-1 bg-slate-100 px-2 py-0.5 rounded">{authConfig.domain}{endpoint.path}</code>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Via Gateway:</span>
+                    <code className="ml-1 bg-slate-100 px-2 py-0.5 rounded">https://api.nextmavens.cloud{endpoint.gatewayPath}</code>
+                  </div>
+                </div>
               </div>
 
               <div className="p-6">
-                <h4 className="font-semibold text-slate-900 mb-4">Parameters</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="text-left py-3 px-4 font-medium text-slate-700">Name</th>
-                        <th className="text-left py-3 px-4 font-medium text-slate-700">Type</th>
-                        <th className="text-left py-3 px-4 font-medium text-slate-700">Required</th>
-                        <th className="text-left py-3 px-4 font-medium text-slate-700">Description</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tool.params.map((param) => (
-                        <tr key={param.name} className="border-b border-slate-100">
-                          <td className="py-3 px-4">
-                            <code className="text-slate-900">{param.name}</code>
-                          </td>
-                          <td className="py-3 px-4 text-slate-600">{param.type}</td>
-                          <td className="py-3 px-4">
-                            {param.required ? (
-                              <span className="text-red-600">Required</span>
-                            ) : (
-                              <span className="text-slate-500">Optional</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-slate-600">{param.description}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <h4 className="font-semibold text-slate-900 mb-3">Request</h4>
+                <div className="grid md:grid-cols-2 gap-4 mb-4">
+                  {endpoint.request && (
+                    <div>
+                      <h5 className="text-xs font-medium text-slate-700 mb-2">Body Parameters</h5>
+                      <div className="bg-slate-50 rounded-lg p-3">
+                        <CodeBlockWithCopy>{JSON.stringify(endpoint.request, null, 2)}</CodeBlockWithCopy>
+                      </div>
+                    </div>
+                  )}
+                  {endpoint.headers && (
+                    <div>
+                      <h5 className="text-xs font-medium text-slate-700 mb-2">Headers</h5>
+                      <div className="bg-slate-50 rounded-lg p-3">
+                        <CodeBlockWithCopy>{JSON.stringify(endpoint.headers, null, 2)}</CodeBlockWithCopy>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <h4 className="font-semibold text-slate-900 mt-6 mb-4">Example Request</h4>
-                <CodeBlockWithCopy>{JSON.stringify(tool.example, null, 2)}</CodeBlockWithCopy>
-
-                <h4 className="font-semibold text-slate-900 mt-6 mb-4">Response</h4>
-                <CodeBlockWithCopy>{JSON.stringify({ success: true, data: tool.response }, null, 2)}</CodeBlockWithCopy>
+                <h4 className="font-semibold text-slate-900 mb-3">Response</h4>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <CodeBlockWithCopy>{JSON.stringify({ success: true, data: endpoint.response }, null, 2)}</CodeBlockWithCopy>
+                </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
+        {/* JWT Structure */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <h2 className="text-xl font-semibold text-slate-900 mb-4">JWT Token Structure</h2>
+          <p className="text-slate-600 mb-6">
+            Access tokens are JWTs signed with HMAC-SHA256. Include them in the Authorization header.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-semibold text-slate-900 mb-3">Header</h3>
+              <div className="bg-slate-900 rounded-lg p-4">
+                <code className="text-xs text-emerald-400 block">
+                  {JSON.stringify(jwtStructure.header, null, 2)}
+                </code>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-slate-900 mb-3">Payload</h3>
+              <div className="bg-slate-900 rounded-lg p-4">
+                <code className="text-xs text-emerald-400 block">
+                  {JSON.stringify(jwtStructure.payload, null, 2)}
+                </code>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <h3 className="font-semibold text-slate-900 mb-3">Usage Example</h3>
+            <CodeBlockWithCopy>{`// Make authenticated request
+const response = await fetch('https://api.nextmavens.cloud/users', {
+  headers: {
+    'Authorization': 'Bearer ' + accessToken,
+    'Content-Type': 'application/json',
+  },
+})`}</CodeBlockWithCopy>
+          </div>
+        </div>
+
+        {/* Best Practices */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200">
+          <h2 className="text-xl font-semibold text-slate-900 mb-4">Security Best Practices</h2>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-slate-900 mb-1">Store Tokens Securely</h3>
+                <p className="text-sm text-slate-600">Never store tokens in localStorage. Use httpOnly cookies or secure storage.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-slate-900 mb-1">Handle Token Expiry</h3>
+                <p className="text-sm text-slate-600">Refresh tokens before expiry. Implement automatic token refresh.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-slate-900 mb-1">Use HTTPS Only</h3>
+                <p className="text-sm text-slate-600">Never send tokens over unencrypted connections.</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-medium text-slate-900 mb-1">Validate Tokens</h3>
+                <p className="text-sm text-slate-600">Always validate token signature and expiration on the server.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-12 flex items-center justify-between">
-          <Link href="/docs/database" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
+          <Link href="/docs/api-keys" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
             <ArrowLeft className="w-4 h-4" />
-            Database Docs
+            API Keys
           </Link>
-          <Link href="/docs/storage" className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-medium">
-            Storage Docs
+          <Link href="/docs/database" className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-medium">
+            Database Docs
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

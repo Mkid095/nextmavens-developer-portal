@@ -1,110 +1,128 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Shield, Code2, AlertTriangle, CheckCircle, Zap } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { ArrowLeft, ArrowRight, Shield, Code2, AlertTriangle, CheckCircle, Zap, Server, Key, Lock, Globe, Terminal } from 'lucide-react'
+import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 
-const mcpTokenTypes = [
+const mcpConfig = {
+  gatewayDomain: 'https://api.nextmavens.cloud',
+  endpoint: '/mcp',
+  available: true,
+  protocol: 'MCP (Model Context Protocol) 2024-11-05',
+  toolsCount: 11,
+}
+
+const mcpTools = [
   {
-    id: 'mcp_ro',
-    name: 'Read-Only MCP Token',
-    icon: Shield,
-    prefix: 'mcp_ro_',
+    category: 'Database Operations',
+    tools: [
+      {
+        name: 'nextmavens_query',
+        description: 'Execute SELECT queries on any database table',
+        parameters: 'table, filters, limit, offset, orderBy',
+        scopes: ['db:select'],
+      },
+      {
+        name: 'nextmavens_insert',
+        description: 'Insert new records into a table',
+        parameters: 'table, data',
+        scopes: ['db:insert'],
+      },
+      {
+        name: 'nextmavens_update',
+        description: 'Update existing records in a table',
+        parameters: 'table, data, filters',
+        scopes: ['db:update'],
+      },
+      {
+        name: 'nextmavens_delete',
+        description: 'Delete records from a table',
+        parameters: 'table, filters',
+        scopes: ['db:delete'],
+      },
+    ],
+  },
+  {
+    category: 'Authentication',
+    tools: [
+      {
+        name: 'nextmavens_signin',
+        description: 'Sign in a user with email and password',
+        parameters: 'email, password',
+        scopes: ['auth:signin'],
+      },
+      {
+        name: 'nextmavens_signup',
+        description: 'Sign up a new user',
+        parameters: 'email, password, name, tenantId',
+        scopes: ['auth:signup'],
+      },
+    ],
+  },
+  {
+    category: 'Storage (Telegram)',
+    tools: [
+      {
+        name: 'nextmavens_file_info',
+        description: 'Get information about a file by ID',
+        parameters: 'fileId',
+        scopes: ['storage:read'],
+      },
+      {
+        name: 'nextmavens_file_download_url',
+        description: 'Get a download URL for a file',
+        parameters: 'fileId',
+        scopes: ['storage:read'],
+      },
+      {
+        name: 'nextmavens_list_files',
+        description: 'List files with optional filters',
+        parameters: 'tenantId, fileType, limit, offset',
+        scopes: ['storage:read'],
+      },
+    ],
+  },
+  {
+    category: 'GraphQL',
+    tools: [
+      {
+        name: 'nextmavens_graphql',
+        description: 'Execute a GraphQL query',
+        parameters: 'query, variables',
+        scopes: ['graphql:execute'],
+      },
+      {
+        name: 'nextmavens_graphql_introspect',
+        description: 'Get GraphQL schema introspection',
+        parameters: 'none (automatic)',
+        scopes: ['graphql:execute'],
+      },
+    ],
+  },
+]
+
+const tokenTypes = [
+  {
+    type: 'mcp_ro_',
+    name: 'MCP Read-Only',
     color: 'emerald',
-    description: 'The safest token type for AI assistants. Can read data but cannot modify anything.',
-    useCases: [
-      'AI code assistants that need to read your data schema',
-      'Documentation generators',
-      'Analytics tools',
-      'Data exploration by AI',
-    ],
-    scopes: ['db:select', 'storage:read', 'realtime:subscribe'],
-    examples: [
-      { scenario: 'Schema inspection', desc: 'AI reads your database structure to understand relationships' },
-      { scenario: 'Documentation', desc: 'AI generates API documentation from your GraphQL schema' },
-      { scenario: 'Analytics queries', desc: 'AI runs read-only queries to analyze data trends' },
-    ],
-    warning: 'Can be safely shared with most AI tools - read-only access cannot modify data',
-    security: 'Low risk - AI cannot modify your data',
+    scopes: ['db:select', 'storage:read', 'graphql:execute'],
+    description: 'Safe for most AI tools - read database access only',
   },
   {
-    id: 'mcp_rw',
-    name: 'Write MCP Token',
-    icon: Code2,
-    prefix: 'mcp_rw_',
+    type: 'mcp_rw_',
+    name: 'MCP Read-Write',
     color: 'amber',
-    description: 'Allows AI tools to both read and write data. Requires explicit opt-in with warning confirmation.',
-    useCases: [
-      'Trusted AI development tools',
-      'Automated data migration assistants',
-      'Code generation with schema modifications',
-      'AI-powered data synchronization',
-    ],
     scopes: ['db:select', 'db:insert', 'db:update', 'storage:read', 'storage:write', 'graphql:execute'],
-    examples: [
-      { scenario: 'Schema migrations', desc: 'AI generates and applies database schema changes' },
-      { scenario: 'Data seeding', desc: 'AI populates database with test data for development' },
-      { scenario: 'Content updates', desc: 'AI updates database records based on user input' },
-    ],
-    warning: 'This AI can modify your data. Only grant to trusted AI systems.',
-    security: 'Medium-high risk - AI can create and modify data',
+    description: 'For trusted AI tools - can modify data',
   },
   {
-    id: 'mcp_admin',
-    name: 'Admin MCP Token',
-    icon: Zap,
-    prefix: 'mcp_admin_',
+    type: 'mcp_admin_',
+    name: 'MCP Admin',
     color: 'red',
-    description: 'Full administrative access. Bypasses row-level security (RLS) and can manage all resources.',
-    useCases: [
-      'AI-powered operations tools',
-      'Automated infrastructure management',
-      'Emergency recovery systems',
-      'Trusted AI ops assistants',
-    ],
-    scopes: [
-      'db:select',
-      'db:insert',
-      'db:update',
-      'db:delete',
-      'storage:read',
-      'storage:write',
-      'auth:manage',
-      'graphql:execute',
-      'realtime:subscribe',
-      'realtime:publish',
-      'secrets:read',
-    ],
-    examples: [
-      { scenario: 'User management', desc: 'AI creates, updates, or deactivates user accounts' },
-      { scenario: 'Data cleanup', desc: 'AI performs bulk deletion operations for maintenance' },
-      { scenario: 'Emergency recovery', desc: 'AI helps recover from data corruption or accidental deletions' },
-    ],
-    warning: 'Highest risk - AI has full control including destructive operations and user management',
-    security: 'Very high risk - AI has full control',
+    scopes: ['db:select', 'db:insert', 'db:update', 'db:delete', 'storage:read', 'storage:write', 'auth:manage'],
+    description: 'Full access - bypasses RLS - use with extreme caution',
   },
-]
-
-const scopeDefinitions = [
-  { scope: 'db:select', description: 'Query database tables', ro: true, rw: true, admin: true },
-  { scope: 'db:insert', description: 'Insert new records', ro: false, rw: true, admin: true },
-  { scope: 'db:update', description: 'Update existing records', ro: false, rw: true, admin: true },
-  { scope: 'db:delete', description: 'Delete records', ro: false, rw: false, admin: true },
-  { scope: 'storage:read', description: 'Read files from storage', ro: true, rw: true, admin: true },
-  { scope: 'storage:write', description: 'Upload/modify files', ro: false, rw: true, admin: true },
-  { scope: 'auth:manage', description: 'Manage users and authentication', ro: false, rw: false, admin: true },
-  { scope: 'realtime:subscribe', description: 'Subscribe to channels', ro: true, rw: true, admin: true },
-  { scope: 'realtime:publish', description: 'Publish to channels', ro: false, rw: false, admin: true },
-  { scope: 'graphql:execute', description: 'Execute GraphQL mutations', ro: false, rw: true, admin: true },
-  { scope: 'secrets:read', description: 'Read sensitive secrets', ro: false, rw: false, admin: true },
-]
-
-const aiTools = [
-  { name: 'Claude Code', category: 'Code Assistant', recommended: 'mcp_ro_' },
-  { name: 'Cursor', category: 'IDE', recommended: 'mcp_rw_' },
-  { name: 'GitHub Copilot', category: 'Code Assistant', recommended: 'mcp_ro_' },
-  { name: 'ChatGPT', category: 'AI Assistant', recommended: 'mcp_ro_' },
-  { name: 'Custom AI Agents', category: 'Automation', recommended: 'mcp_admin_' },
 ]
 
 export default function MCPDocsPage() {
@@ -112,12 +130,12 @@ export default function MCPDocsPage() {
     <div className="min-h-screen bg-[#F3F5F7]">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        :root { --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; }
+        :root { --font-sans: 'Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif; }
         .font-jakarta { font-family: var(--font-sans); }
       `}</style>
 
       <nav className="bg-white border-b border-slate-200">
-        <div className="mx-auto max-w-[1180px] px-4 py-4 flex items-center justify-between">
+        <div className="mx-auto max-w-[1400px] px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <div className="grid h-9 w-9 place-items-center rounded-lg bg-emerald-700 text-white shadow">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -130,170 +148,263 @@ export default function MCPDocsPage() {
           <div className="flex items-center gap-6">
             <Link href="/" className="text-sm text-slate-600 hover:text-slate-900">Home</Link>
             <Link href="/docs" className="text-sm text-slate-900 font-medium">Docs</Link>
-            <Link href="/mcp" className="text-sm text-slate-600 hover:text-slate-900">MCP Integration</Link>
-            <Link href="/login" className="text-sm text-slate-600 hover:text-slate-900">Login</Link>
+            <Link href="/mcp" className="text-sm text-slate-600 hover:text-slate-900">MCP</Link>
           </div>
         </div>
       </nav>
 
-      <main className="mx-auto max-w-[1180px] px-4 py-12">
+      <main className="mx-auto max-w-[1400px] px-4 py-12">
         <Link href="/docs" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-8">
           <ArrowLeft className="w-4 h-4" />
           Back to Docs
         </Link>
 
         <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-emerald-100 rounded-xl">
-            <Code2 className="w-6 h-6 text-emerald-700" />
+          <div className="p-3 bg-teal-100 rounded-xl">
+            <Zap className="w-6 h-6 text-teal-700" />
           </div>
           <div>
-            <h1 className="text-3xl font-semibold text-slate-900">MCP Token Documentation</h1>
-            <p className="text-slate-600">Understanding MCP token types, scopes, and when to use each</p>
+            <h1 className="text-3xl font-semibold text-slate-900">MCP Integration</h1>
+            <p className="text-slate-600">Model Context Protocol for AI/IDE integration with {mcpConfig.toolsCount} tools</p>
           </div>
         </div>
 
+        {/* Service Info */}
+        <div className="bg-white rounded-xl p-6 border border-slate-200 mb-12">
+          <h2 className="text-lg font-semibold text-slate-900 mb-4">MCP Server Information</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-slate-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Server className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Endpoint</span>
+              </div>
+              <code className="text-xs text-blue-700 break-all">{mcpConfig.gatewayDomain}{mcpConfig.endpoint}</code>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Terminal className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Protocol</span>
+              </div>
+              <p className="text-xs text-slate-700">{mcpConfig.protocol}</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Available Tools</span>
+              </div>
+              <p className="text-xs text-slate-700">{mcpConfig.toolsCount} tools across 4 categories</p>
+            </div>
+          </div>
+        </div>
+
+        {/* MCP Tools by Category */}
+        <h2 className="text-2xl font-semibold text-slate-900 mb-6">Available Tools</h2>
+        <div className="space-y-6 mb-12">
+          {mcpTools.map((category) => (
+            <div key={category.category} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b border-slate-200">
+                <h3 className="font-semibold text-slate-900">{category.category}</h3>
+              </div>
+              <div className="p-6">
+                <div className="space-y-4">
+                  {category.tools.map((tool) => (
+                    <div key={tool.name} className="border-b border-slate-100 pb-4 last:pb-0 last:border-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <code className="text-sm font-mono text-blue-700">{tool.name}</code>
+                          <p className="text-sm text-slate-600 mt-1">{tool.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-slate-500">Parameters:</span>
+                        <code className="bg-slate-100 px-2 py-0.5 rounded text-slate-700">{tool.parameters}</code>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Token Types */}
+        <h2 className="text-2xl font-semibold text-slate-900 mb-6">MCP Token Types</h2>
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          {tokenTypes.map((token) => (
+            <div key={token.type} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div className={`p-4 border-b border-slate-200 ${
+                token.color === 'emerald' ? 'bg-emerald-50 border-emerald-200' :
+                token.color === 'amber' ? 'bg-amber-50 border-amber-200' :
+                'bg-red-50 border-red-200'
+              }`}>
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="font-semibold text-slate-900">{token.name}</h3>
+                    <code className="text-xs bg-white px-2 py-0.5 rounded font-mono mt-1">{token.type}</code>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-slate-600 mb-4">{token.description}</p>
+                <div className="mb-3">
+                  <h4 className="text-xs font-medium text-slate-700 mb-2">Scopes:</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {token.scopes.map((scope) => (
+                      <span key={scope} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-mono">
+                        {scope}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Setup Instructions */}
         <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">What are MCP Tokens?</h2>
-          <p className="text-slate-600 leading-relaxed mb-4">
-            MCP (Model Context Protocol) tokens are API keys designed specifically for AI tools and assistants.
-            They provide controlled access to platform resources with safety guardrails to prevent unintended
-            modifications by AI systems.
+          <h2 className="text-xl font-semibold text-slate-900 mb-4">Setup Instructions</h2>
+
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-semibold text-slate-900 mb-3">1. Create MCP Token</h3>
+              <p className="text-sm text-slate-600 mb-4">
+                Go to the <Link href="/" className="text-emerald-700 hover:text-emerald-800">dashboard</Link> and create an MCP token
+                with the appropriate access level.
+              </p>
+              <CodeBlockWithCopy>{`// Example: Create read-only MCP token
+Token name: "Claude Code Assistant"
+Token type: mcp_ro_
+Description: "For AI-assisted development"
+`}</CodeBlockWithCopy>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-slate-900 mb-3">2. Configure Claude Code</h3>
+              <p className="text-sm text-slate-600 mb-4">Add the MCP server to your Claude Code config file:</p>
+              <CodeBlockWithCopy>{`// ~/.claude/mcp.json
+{
+  "mcpServers": {
+    "nextmavens": {
+      "command": "npx",
+      "args": ["-y", "@nextmavens/mcp-server"],
+      "env": {
+        "NEXTMAVENS_API_KEY": "your_mcp_ro_token_here",
+        "NEXTMAVENS_API_URL": "https://api.nextmavens.cloud"
+      }
+    }
+  }
+}`}</CodeBlockWithCopy>
+            </div>
+
+            <div>
+              <h3 className="font-semibold text-slate-900 mb-3">3. Use in AI Tools</h3>
+              <p className="text-sm text-slate-600 mb-4">Once configured, you can ask Claude Code to:</p>
+              <CodeBlockWithCopy>{`// Example queries you can make:
+"Query all users from the database"
+"Insert a new user record"
+"Get the database schema"
+"List all files in storage"
+"Execute a GraphQL query to get tenant information"`}</CodeBlockWithCopy>
+            </div>
+          </div>
+        </div>
+
+        {/* Request/Response Format */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
+          <h2 className="text-xl font-semibold text-slate-900 mb-4">Request/Response Format</h2>
+
+          <div className="mb-6">
+            <h3 className="font-semibold text-slate-900 mb-3">MCP Request</h3>
+            <CodeBlockWithCopy>{`// MCP JSON-RPC 2.0 format
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "nextmavens_query",
+    "arguments": {
+      "table": "users",
+      "filters": [
+        { "column": "email", "operator": "eq", "value": "user@example.com" }
+      ],
+      "limit": 10
+    }
+  }
+}`}</CodeBlockWithCopy>
+          </div>
+
+          <div>
+            <h3 className="font-semibold text-slate-900 mb-3">MCP Response</h3>
+            <CodeBlockWithCopy>{`{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\\"rows\\":[...],\\"rowCount\\":1}"
+      }
+    ]
+  }
+}`}</CodeBlockWithCopy>
+          </div>
+        </div>
+
+        {/* AI Tool Compatibility */}
+        <div className="bg-white rounded-xl p-8 border border-slate-200">
+          <h2 className="text-xl font-semibold text-slate-900 mb-4">Compatible AI Tools</h2>
+          <p className="text-sm text-slate-600 mb-6">
+            NextMavens MCP works with any AI tool that supports the Model Context Protocol:
           </p>
           <div className="grid md:grid-cols-3 gap-4">
             <div className="bg-slate-50 rounded-lg p-4">
-              <h3 className="font-medium text-slate-900 mb-2">Read-Only by Default</h3>
-              <p className="text-sm text-slate-600">MCP tokens default to read-only access for safety</p>
+              <h3 className="font-medium text-slate-900 mb-2">Claude Code</h3>
+              <p className="text-xs text-slate-600 mb-2">Anthropic's AI IDE assistant</p>
+              <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Recommended: mcp_ro_</span>
+            </div>
+            <div className="g-slate-50 rounded-lg p-4">
+              <h3 className="font-medium text-slate-900 mb-2">Cursor</h3>
+              <p className="text-xs text-slate-600 mb-2">AI-powered code editor</p>
+              <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Recommended: mcp_ro_</span>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
-              <h3 className="font-medium text-slate-900 mb-2">Explicit Opt-In</h3>
-              <p className="text-sm text-slate-600">Write access requires explicit confirmation</p>
+              <h3 className="font-medium text-slate-900 mb-2">GitHub Copilot</h3>
+              <p className="text-xs textslate-600 mb-2">GitHub's AI pair programmer</p>
+              <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Recommended: mcp_ro_</span>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
-              <h3 className="font-medium text-slate-900 mb-2">Audit Logged</h3>
-              <p className="text-sm text-slate-600">All MCP actions are heavily audited</p>
+              <h3 className="font-medium text-slate-900 mb-2">ChatGPT</h3>
+              <p className="text-xs text-slate-600 mb-2">OpenAI's AI assistant</p>
+              <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Recommended: mcp_ro_</span>
             </div>
           </div>
         </div>
 
-        <h2 className="text-2xl font-semibold text-slate-900 mb-6">MCP Token Types</h2>
-        <div className="space-y-8 mb-12">
-          {mcpTokenTypes.map((tokenType, index) => {
-            const Icon = tokenType.icon
-            const colorClasses = {
-              emerald: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-              amber: 'bg-amber-100 text-amber-700 border-amber-200',
-              red: 'bg-red-100 text-red-700 border-red-200',
-            }[tokenType.color]
-
-            const warningClasses = {
-              emerald: 'bg-emerald-50 border-emerald-200 text-emerald-800',
-              amber: 'bg-amber-50 border-amber-200 text-amber-800',
-              red: 'bg-red-50 border-red-200 text-red-800',
-            }[tokenType.color]
-
-            return (
-              <motion.div
-                key={tokenType.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-xl border border-slate-200 overflow-hidden"
-              >
-                <div className={`p-6 border-b ${colorClasses}`}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-lg ${colorClasses}`}>
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-semibold text-slate-900">{tokenType.name}</h3>
-                        <p className="text-slate-600 text-sm">{tokenType.description}</p>
-                      </div>
-                    </div>
-                    <code className="text-sm px-3 py-1 bg-slate-100 text-slate-700 rounded font-mono">
-                      {tokenType.prefix}
-                    </code>
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  <div className="grid md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <h4 className="font-semibold text-slate-900 mb-3">Use Cases</h4>
-                      <ul className="space-y-2">
-                        {tokenType.useCases.map((useCase) => (
-                          <li key={useCase} className="flex items-start gap-2 text-sm text-slate-600">
-                            <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
-                            {useCase}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="font-semibold text-slate-900 mb-3">Included Scopes</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {tokenType.scopes.map((scope) => (
-                          <span
-                            key={scope}
-                            className="text-xs px-2 py-1 bg-slate-100 text-slate-700 rounded font-mono"
-                          >
-                            {scope}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {tokenType.examples && (
-                    <div className="mb-6">
-                      <h4 className="font-semibold text-slate-900 mb-3">When to Use This Token</h4>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        {tokenType.examples.map((example) => (
-                          <div key={example.scenario} className="bg-slate-50 rounded-lg p-3">
-                            <h5 className="font-medium text-slate-900 text-sm mb-1">{example.scenario}</h5>
-                            <p className="text-xs text-slate-600">{example.desc}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className={`mt-4 p-4 rounded-lg border ${warningClasses}`}>
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h5 className="font-medium mb-1">Security Notice</h5>
-                        <p className="text-sm">{tokenType.warning}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-slate-200">
-                    <h4 className="font-semibold text-slate-900 mb-2">Risk Level</h4>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        tokenType.security.includes('Very high')
-                          ? 'bg-red-100 text-red-700'
-                          : tokenType.security.includes('Medium-high')
-                            ? 'bg-orange-100 text-orange-700'
-                            : 'bg-green-100 text-green-700'
-                      }`}
-                    >
-                      {tokenType.security}
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            )
-          })}
+        {/* Security */}
+        <div className="bg-amber-50 rounded-xl p-8 border border-amber-200 mb-12">
+          <h2 className="text-xl font-semibold text-amber-900 mb-4">
+            <AlertTriangle className="w-5 h-5 inline mr-2" />
+            Security Considerations
+          </h2>
+          <div className="space-y-3 text-amber-900">
+            <p className="text-sm">
+              <strong>MCP tokens have access to your production database.</strong> Only grant permissions
+              that the AI tool needs for its task.
+            </p>
+            <ul className="text-sm space-y-1">
+              <li>• Use <code className="bg-white px-1 rounded">mcp_ro_</code> tokens for read-only AI assistants</li>
+              <li>• Never share MCP tokens in public code or chat logs</li>
+              <li>• Monitor audit logs for AI tool activity</li>
+              <li>• Rotate MCP tokens regularly</li>
+              <li>• Set expiration dates on all MCP tokens</li>
+            </ul>
+          </div>
         </div>
 
+        {/* Scope Reference Table */}
         <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
           <h2 className="text-xl font-semibold text-slate-900 mb-4">Scope Reference</h2>
-          <p className="text-slate-600 mb-6">
-            Understanding what each scope allows and which token types include it
-          </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -301,143 +412,62 @@ export default function MCPDocsPage() {
                   <th className="text-left py-3 px-4 font-semibold text-slate-900">Scope</th>
                   <th className="text-left py-3 px-4 font-semibold text-slate-900">Description</th>
                   <th className="text-center py-3 px-4 font-semibold text-emerald-700">Read-Only</th>
-                  <th className="text-center py-3 px-4 font-semibold text-amber-700">Write</th>
+                  <th className="text-center py-3 px-4 font-semibold text-amber-700">Read-Write</th>
                   <th className="text-center py-3 px-4 font-semibold text-red-700">Admin</th>
                 </tr>
               </thead>
               <tbody>
-                {scopeDefinitions.map((scope) => (
-                  <tr key={scope.scope} className="border-b border-slate-100">
-                    <td className="py-3 px-4">
-                      <code className="bg-slate-100 px-2 py-1 rounded text-xs">{scope.scope}</code>
-                    </td>
-                    <td className="py-3 px-4 text-slate-600">{scope.description}</td>
-                    <td className="py-3 px-4 text-center">
-                      {scope.ro ? <CheckCircle className="w-4 h-4 text-emerald-600 mx-auto" /> : '—'}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {scope.rw ? <CheckCircle className="w-4 h-4 text-amber-600 mx-auto" /> : '—'}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {scope.admin ? <CheckCircle className="w-4 h-4 text-red-600 mx-auto" /> : '—'}
-                    </td>
-                  </tr>
-                ))}
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">db:select</code></td>
+                  <td className="py-3 px-4 text-slate-600">Query database tables</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">db:insert</code></td>
+                  <td className="py-3 px-4 text-slate-600">Insert new records</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">db:update</code></td>
+                  <td className="py-3 px-4 text-slate-600">Update existing records</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">db:delete</code></td>
+                  <td className="py-3 px-4 text-slate-600">Delete records</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">storage:read</code></td>
+                  <td className="py-3 px-4 text-slate-600">Read files from storage</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">storage:write</code></td>
+                  <td className="py-3 px-4 text-slate-600">Upload/modify files</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr>
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">graphql:execute</code></td>
+                  <td className="py-3 px-4 text-slate-600">Execute GraphQL queries</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
               </tbody>
             </table>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-8 border border-slate-200 mb-12">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">AI Tool Recommendations</h2>
-          <p className="text-slate-600 mb-6">
-            Recommended MCP token types for common AI tools and use cases
-          </p>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {aiTools.map((tool) => (
-              <div key={tool.name} className="bg-slate-50 rounded-lg p-4">
-                <h3 className="font-medium text-slate-900 mb-1">{tool.name}</h3>
-                <p className="text-xs text-slate-600 mb-2">{tool.category}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-600">Recommended:</span>
-                  <code className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded font-mono">
-                    {tool.recommended}
-                  </code>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="bg-amber-50 rounded-xl p-8 border border-amber-200 mb-12">
-          <h2 className="text-xl font-semibold text-amber-900 mb-4">
-            <AlertTriangle className="w-5 h-5 inline mr-2" />
-            Write Access Warnings
-          </h2>
-          <div className="space-y-4 text-amber-800">
-            <p className="font-medium">
-              When creating write-enabled MCP tokens (mcp_rw_, mcp_admin_), you'll see a warning
-              explaining the risks:
-            </p>
-            <div className="bg-white/50 rounded-lg p-4 border border-amber-200">
-              <p className="text-sm mb-3">
-                <strong>This AI can modify your data.</strong> Only grant to trusted AI systems.
-              </p>
-              <ul className="text-sm space-y-1">
-                <li>• Read/write tokens can insert/update/delete data</li>
-                <li>• Admin tokens have full access including destructive operations</li>
-                <li>• These permissions should only be granted to trusted systems</li>
-              </ul>
-            </div>
-            <p className="text-sm">
-              You must explicitly confirm that you understand the risks before the token is created.
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-8 border border-slate-200">
-          <h2 className="text-xl font-semibold text-slate-900 mb-4">Best Practices</h2>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-medium">
-                1
-              </div>
-              <div>
-                <h3 className="font-medium text-slate-900 mb-1">Start with Read-Only</h3>
-                <p className="text-sm text-slate-600">
-                  Always begin with <code className="bg-slate-100 px-1 rounded">mcp_ro_</code> tokens
-                  and only upgrade if the AI tool needs write access.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-medium">
-                2
-              </div>
-              <div>
-                <h3 className="font-medium text-slate-900 mb-1">Rotate Regularly</h3>
-                <p className="text-sm text-slate-600">
-                  Set expiration dates and rotate MCP tokens periodically to limit exposure.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-medium">
-                3
-              </div>
-              <div>
-                <h3 className="font-medium text-slate-900 mb-1">Monitor Usage</h3>
-                <p className="text-sm text-slate-600">
-                  Check audit logs regularly for unusual AI tool activity or suspicious operations.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-medium">
-                4
-              </div>
-              <div>
-                <h3 className="font-medium text-slate-900 mb-1">Scope Narrowly</h3>
-                <p className="text-sm text-slate-600">
-                  Create separate tokens for different AI tools and tasks to minimize blast radius.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-medium">
-                5
-              </div>
-              <div>
-                <h3 className="font-medium text-slate-900 mb-1">Never Expose Client-Side</h3>
-                <p className="text-sm text-slate-600">
-                  MCP tokens should only be used server-side or in trusted AI tools, never in browsers.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -446,8 +476,8 @@ export default function MCPDocsPage() {
             <ArrowLeft className="w-4 h-4" />
             API Keys Docs
           </Link>
-          <Link href="/docs/auth" className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-medium">
-            Authentication Docs
+          <Link href="/docs/graphql" className="inline-flex items-center gap-2 text-emerald-700 hover:text-emerald-800 font-medium">
+            GraphQL Docs
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
