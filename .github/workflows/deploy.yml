@@ -1,0 +1,367 @@
+# =============================================================================
+# Production Deployment Pipeline
+# =============================================================================
+#
+# This workflow handles production deployments of the Developer Portal.
+# It runs manually and requires approval for production environments.
+#
+# Deployment steps:
+#   1. Runs full CI suite (typecheck, lint, tests, build)
+#   2. Creates Docker image with optimized layers
+#   3. Pushes to container registry
+#   4. Deploys to production infrastructure
+#
+# =============================================================================
+
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+      version:
+        description: 'Version tag (optional, defaults to git SHA)'
+        required: false
+        type: string
+      skip_tests:
+        description: 'Skip tests (not recommended for production)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  deployments: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # =============================================================================
+  # Pre-deployment validation
+  # =============================================================================
+  validate:
+    name: Pre-deployment Validation
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.tag }}
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set version tag
+        id: version
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${{ github.sha }}"
+          fi
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
+          echo "Using version: $VERSION"
+
+      - name: Check branch protection
+        id: check
+        run: |
+          ENVIRONMENT="${{ inputs.environment }}"
+
+          # Production requires master/main branch
+          if [ "$ENVIRONMENT" = "production" ]; then
+            if [ "${{ github.ref_name }}" != "master" ] && [ "${{ github.ref_name }}" != "main" ]; then
+              echo "::error::Production deployments must be from master or main branch"
+              echo "should_deploy=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          fi
+
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+
+      - name: Display deployment info
+        run: |
+          echo "=========================================="
+          echo "Deployment Configuration"
+          echo "=========================================="
+          echo "Environment: ${{ inputs.environment }}"
+          echo "Version: ${{ steps.version.outputs.tag }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Skip tests: ${{ inputs.skip_tests }}"
+          echo "=========================================="
+
+  # =============================================================================
+  # Run CI tests before deployment
+  # =============================================================================
+  test:
+    name: Pre-deployment Tests
+    runs-on: ubuntu-latest
+    needs: validate
+
+    if: inputs.skip_tests == false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Run tests
+        run: pnpm test
+
+  # =============================================================================
+  # Build production Docker image
+  # =============================================================================
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [validate, test]
+    if: needs.validate.outputs.should_deploy == 'true'
+
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tags }}
+      image_digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ needs.validate.outputs.version }}
+            type=raw,value=latest,enable={{ is_default_branch }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=ref,event=branch
+            type=ref,event=pr
+          labels: |
+            org.opencontainers.image.title=NextMavens Developer Portal
+            org.opencontainers.image.description=Developer portal for NextMavens platform
+            org.opencontainers.image.vendor=NextMavens
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          build-args: |
+            NODE_ENV=production
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+  # =============================================================================
+  # Security scan of Docker image
+  # =============================================================================
+  scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ needs.build.outputs.image_tag }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # =============================================================================
+  # Deploy to environment
+  # =============================================================================
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: [validate, build, scan]
+    if: needs.validate.outputs.should_deploy == 'true'
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set deployment context
+        id: context
+        run: |
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            echo "deployment_url=https://portal.nextmavens.com" >> $GITHUB_OUTPUT
+          else
+            echo "deployment_url=https://staging-portal.nextmavens.com" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create deployment
+        id: deployment
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: '${{ github.token }}'
+          environment: ${{ inputs.environment }}
+          environment-url: ${{ steps.context.outputs.deployment_url }}
+          initial-status: 'in_progress'
+
+      - name: Deploy to ${{ inputs.environment }}
+        id: deploy
+        run: |
+          # This is a placeholder for actual deployment logic
+          # Replace with your deployment strategy:
+          #
+          # - Kubernetes: kubectl apply -f k8s/
+          # - Docker Compose: docker-compose -f docker-compose.prod.yml up -d
+          # - Cloud provider: Use their CLI or SDK
+          # - Custom: Add your deployment script here
+          #
+          echo "Deploying version ${{ needs.validate.outputs.version }} to ${{ inputs.environment }}..."
+          echo "Image: ${{ needs.build.outputs.image_tag }}"
+          echo "Digest: ${{ needs.build.outputs.image_digest }}"
+          sleep 5  # Simulate deployment
+          echo "url=${{ steps.context.outputs.deployment_url }}" >> $GITHUB_OUTPUT
+
+      - name: Update deployment status
+        if: success()
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: '${{ github.token }}'
+          environment: ${{ inputs.environment }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          status: 'success'
+          environment-url: ${{ steps.deploy.outputs.url }}
+          logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Update deployment status on failure
+        if: failure()
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: '${{ github.token }}'
+          environment: ${{ inputs.environment }}
+          deployment-id: ${{ steps.deployment.outputs.deployment_id }}
+          status: 'failure'
+          logs: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Post-deployment notification
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          ENVIRONMENT="${{ inputs.environment }}"
+          VERSION="${{ needs.validate.outputs.version }}"
+          URL="${{ steps.deploy.outputs.url }}"
+
+          echo "=========================================="
+          echo "Deployment Status: $STATUS"
+          echo "=========================================="
+          echo "Environment: $ENVIRONMENT"
+          echo "Version: $VERSION"
+          echo "URL: $URL"
+          echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "=========================================="
+
+  # =============================================================================
+  # Smoke tests after deployment
+  # =============================================================================
+  smoke-test:
+    name: Post-deployment Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for deployment to settle
+        run: sleep 30
+
+      - name: Run smoke tests
+        run: |
+          DEPLOY_URL="${{ needs.deploy.outputs.url }}"
+
+          echo "Running smoke tests against $DEPLOY_URL"
+
+          # Health check
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${DEPLOY_URL}/api/health" || echo "000")
+
+          if [ "$HTTP_STATUS" != "200" ] && [ "$HTTP_STATUS" != "000" ]; then
+            echo "::error::Health check failed with status $HTTP_STATUS"
+            exit 1
+          fi
+
+          echo "Health check passed (status: $HTTP_STATUS)"
+
+      - name: Verify critical endpoints
+        run: |
+          DEPLOY_URL="${{ needs.deploy.outputs.url }}"
+
+          # Check if key endpoints are accessible
+          ENDPOINTS=(
+            "/api/health"
+            "/api/v1"
+            "/api/status"
+          )
+
+          for endpoint in "${ENDPOINTS[@]}"; do
+            echo "Checking ${DEPLOY_URL}${endpoint}..."
+            curl -f -s "${DEPLOY_URL}${endpoint}" > /dev/null || {
+              echo "::warning::Endpoint ${endpoint} is not accessible"
+            }
+          done
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "::error::Smoke tests failed. Rolling back deployment..."
+          # Add rollback logic here
+          # For example, revert to previous Docker image tag

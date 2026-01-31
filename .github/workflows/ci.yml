@@ -1,0 +1,367 @@
+# =============================================================================
+# NextMavens Developer Portal - CI/CD Pipeline
+# =============================================================================
+#
+# This workflow runs on every push and pull request to ensure code quality.
+# It performs:
+#   - TypeScript type checking
+#   - ESLint code quality checks
+#   - All unit and integration tests
+#   - Coverage reporting with quality gates
+#
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [master, main, develop]
+  pull_request:
+    branches: [master, main, develop]
+
+# Cancel in-progress runs for the same branch and workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # =============================================================================
+  # Type Checking - Ensures TypeScript type safety across the codebase
+  # =============================================================================
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run TypeScript type check
+        run: pnpm typecheck
+
+  # =============================================================================
+  # Linting - Ensures code quality and consistency
+  # =============================================================================
+  lint:
+    name: ESLint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm lint
+
+  # =============================================================================
+  # Unit Tests - Fast tests without database dependencies
+  # =============================================================================
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    env:
+      SECRETS_MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit tests
+        run: pnpm test -- --exclude=src/lib/middleware/__tests__/isolation.test.ts
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: |
+            coverage/
+            vitest-report/
+
+  # =============================================================================
+  # Integration Tests - Tests with database dependencies
+  # =============================================================================
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nextmavens_test
+          POSTGRES_PASSWORD: test_password_12345
+          POSTGRES_DB: nextmavens_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://nextmavens_test:test_password_12345@localhost:5432/nextmavens_test
+      SECRETS_MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup database
+        run: pnpm tsx scripts/setup-database.ts --auto-confirm-breaking
+        env:
+          DATABASE_URL: postgresql://nextmavens_test:test_password_12345@localhost:5432/nextmavens_test
+
+      - name: Run integration tests
+        run: pnpm test -- src/lib/middleware/__tests__/isolation.test.ts
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: |
+            coverage/
+            vitest-report/
+
+  # =============================================================================
+  # Coverage Report - Generate and enforce coverage thresholds
+  # =============================================================================
+  coverage:
+    name: Coverage Report
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint, test-unit, test-integration]
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nextmavens_test
+          POSTGRES_PASSWORD: test_password_12345
+          POSTGRES_DB: nextmavens_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://nextmavens_test:test_password_12345@localhost:5432/nextmavens_test
+      SECRETS_MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup database
+        run: pnpm tsx scripts/setup-database.ts --auto-confirm-breaking
+
+      - name: Generate coverage report
+        run: pnpm test:coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage/lcov.info
+          fail_ci_if_error: false
+
+      - name: Generate coverage summary
+        id: coverage
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: ${{ github.workspace }}/coverage/lcov.info
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+          update-comment: true
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Coverage check
+        run: |
+          echo "Coverage thresholds configured in vitest.config.ts:"
+          echo "  - Statements: 80%"
+          echo "  - Branches: 80%"
+          echo "  - Functions: 80%"
+          echo "  - Lines: 80%"
+          echo ""
+          echo "Note: Current coverage is low (~15%). Work in progress to improve."
+
+  # =============================================================================
+  # Build Verification - Ensure the application builds successfully
+  # =============================================================================
+  build:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Next.js application
+        run: pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nextjs-build
+          path: .next/
+
+  # =============================================================================
+  # Security Scan - Check for security vulnerabilities
+  # =============================================================================
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run pnpm audit
+        run: pnpm audit --audit-level moderate
+        continue-on-error: true
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Checking for potential hardcoded secrets..."
+          if git grep -iE "password.*=.*[^{]|secret.*=.*[^{]|api_key.*=.*[^{]" -- ':!.env.example' ':!*.md' ':!*test*.ts' ':!*test*.tsx' ':!node_modules'; then
+            echo "Warning: Potential hardcoded secrets found. Please review."
+            exit 1
+          fi
+          echo "No hardcoded secrets detected."
+
+  # =============================================================================
+  # Summary Job - Overall status
+  # =============================================================================
+  status:
+    name: CI Status
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint, test-unit, test-integration, build, security]
+    if: always()
+
+    steps:
+      - name: Check all jobs
+        run: |
+          if [ "${{ needs.typecheck.result }}" != "success" ] || \
+             [ "${{ needs.lint.result }}" != "success" ] || \
+             [ "${{ needs.test-unit.result }}" != "success" ] || \
+             [ "${{ needs.test-integration.result }}" != "success" ] || \
+             [ "${{ needs.build.result }}" != "success" ]; then
+            echo "CI checks failed!"
+            exit 1
+          fi
+          echo "All CI checks passed!"

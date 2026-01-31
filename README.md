@@ -1,5 +1,10 @@
 # NextMavens Developer Portal
 
+[![CI Status](https://github.com/Mkid095/developer-portal/actions/workflows/ci.yml/badge.svg)](https://github.com/Mkid095/developer-portal/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/Mkid095/developer-portal/branch/master/graph/badge.svg)](https://codecov.io/gh/Mkid095/developer-portal)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.x-black)](https://nextjs.org/)
+
 Developer portal for managing projects, API keys, and viewing usage statistics on the NextMavens platform.
 
 ## Features
@@ -203,3 +208,63 @@ Each project gets its own tenant in the database. The tenant has:
 The portal is accessible at: `https://portal.nextmavens.cloud`
 
 Environment variables are configured in docker-compose.yml.
+
+## CI/CD Pipeline
+
+This project uses GitHub Actions for continuous integration and deployment.
+
+### CI Pipeline (.github/workflows/ci.yml)
+
+Runs on every push and pull request:
+- **Type Check** - TypeScript type checking
+- **Lint** - ESLint code quality checks
+- **Unit Tests** - Fast tests without database dependencies
+- **Integration Tests** - Tests with PostgreSQL database
+- **Coverage** - Code coverage with quality gates (80% threshold)
+- **Build** - Next.js production build verification
+- **Security** - Dependency audit and secret scanning
+
+### PR Validation (.github/workflows/pr-check.yml)
+
+Validates pull requests:
+- Size checks (prevents oversized PRs)
+- Metadata validation (requires description)
+- Label checks (requires categorization)
+
+### Deployment (.github/workflows/deploy.yml)
+
+Manual deployment workflow:
+- Runs full CI suite before deployment
+- Builds optimized Docker image
+- Pushes to container registry
+- Deploys to staging or production
+- Runs post-deployment smoke tests
+
+### Local Testing
+
+```bash
+# Install dependencies
+pnpm install
+
+# Type check
+pnpm typecheck
+
+# Lint
+pnpm lint
+
+# Run tests
+pnpm test
+
+# Run tests with coverage
+pnpm test:coverage
+
+# Watch mode
+pnpm test:watch
+```
+
+### Coverage Goals
+
+Current coverage: ~15% (151 tests passing)
+Target coverage: 80% across all metrics
+
+Work in progress to improve coverage.

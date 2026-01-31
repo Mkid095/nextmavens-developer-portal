@@ -1,0 +1,161 @@
+# =============================================================================
+# Pull Request Validation
+# =============================================================================
+#
+# This workflow runs on pull requests to provide additional validation
+# beyond the standard CI pipeline.
+#
+# Features:
+#   - Size validation (prevents giant PRs)
+#   - Label validation (ensures PR is properly categorized)
+#   - Description requirement (enforces meaningful PR descriptions)
+#   - Linked issue requirement (tracks work to issues)
+#
+# =============================================================================
+
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, labeled, unlabeled]
+
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  # =============================================================================
+  # PR Size Check - Prevents oversized pull requests
+  # =============================================================================
+  pr-size:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v45
+        with:
+          files_separator: ' '
+
+      - name: Calculate PR size
+        id: size
+        run: |
+          FILES_COUNT=${{ steps.changed-files.outputs.all_changed_files_count }}
+          ADDED_LINES=$(git diff --stat origin/${{ github.base_ref }}...HEAD | grep '^.*|' | awk '{sum+=$4} END {print sum+0}')
+          DELETED_LINES=$(git diff --stat origin/${{ github.base_ref }}...HEAD | grep '^.*|' | awk '{sum+=$5} END {print sum+0}')
+
+          # Default to 0 if no changes detected
+          ADDED_LINES=${ADDED_LINES:-0}
+          DELETED_LINES=${DELETED_LINES:-0}
+          TOTAL_CHANGES=$((ADDED_LINES + DELETED_LINES))
+
+          echo "files_count=$FILES_COUNT" >> $GITHUB_OUTPUT
+          echo "added_lines=$ADDED_LINES" >> $GITHUB_OUTPUT
+          echo "deleted_lines=$DELETED_LINES" >> $GITHUB_OUTPUT
+          echo "total_changes=$TOTAL_CHANGES" >> $GITHUB_OUTPUT
+
+          echo "Files changed: $FILES_COUNT"
+          echo "Lines added: $ADDED_LINES"
+          echo "Lines deleted: $DELETED_LINES"
+          echo "Total changes: $TOTAL_CHANGES"
+
+      - name: Validate PR size
+        run: |
+          FILES_COUNT=${{ steps.size.outputs.files_count }}
+          TOTAL_CHANGES=${{ steps.size.outputs.total_changes }}
+
+          # Size limits
+          MAX_FILES=50
+          MAX_CHANGES=1000
+
+          if [ $FILES_COUNT -gt $MAX_FILES ]; then
+            echo "::warning::PR changes $FILES_COUNT files (max: $MAX_FILES)"
+            echo "Consider splitting this into multiple smaller PRs"
+          fi
+
+          if [ $TOTAL_CHANGES -gt $MAX_CHANGES ]; then
+            echo "::warning::PR changes $TOTAL_CHANGES lines (max: $MAX_CHANGES)"
+            echo "Consider splitting this into multiple smaller PRs"
+          fi
+
+  # =============================================================================
+  # PR Metadata Check - Ensures PR has proper metadata
+  # =============================================================================
+  pr-metadata:
+    name: PR Metadata Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR description
+        run: |
+          DESCRIPTION="${{ github.event.pull_request.body }}"
+
+          if [ -z "$DESCRIPTION" ] || [ "$DESCRIPTION" = "null" ]; then
+            echo "::error::PR must have a description"
+            echo "Please provide a description of your changes"
+            exit 1
+          fi
+
+          # Check minimum description length
+          DESCRIPTION_LENGTH=$(echo "$DESCRIPTION" | wc -c)
+          if [ $DESCRIPTION_LENGTH -lt 50 ]; then
+            echo "::warning::PR description is too short"
+            echo "Please provide more details about your changes"
+          fi
+
+          echo "PR description check passed"
+
+      - name: Check for linked issue
+        run: |
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+
+          # Check if PR body contains issue reference (e.g., #123, Fixes #123, Closes #123)
+          if echo "$PR_BODY" | grep -qE '#[0-9]+'; then
+            echo "Issue reference found in PR description"
+          else
+            echo "::warning::No linked issue found"
+            echo "Consider linking an issue to track work (e.g., 'Fixes #123')"
+          fi
+
+  # =============================================================================
+  # Labels Check - Ensures PR is properly categorized
+  # =============================================================================
+  pr-labels:
+    name: PR Labels Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get PR labels
+        id: labels
+        run: |
+          LABELS_JSON='${{ toJson(github.event.pull_request.labels) }}'
+          LABELS_COUNT=$(echo "$LABELS_JSON" | jq 'length')
+
+          echo "count=$LABELS_COUNT" >> $GITHUB_OUTPUT
+          echo "labels=$LABELS_JSON" >> $GITHUB_OUTPUT
+
+          echo "Found $LABELS_COUNT labels"
+
+      - name: Validate required labels
+        run: |
+          LABELS_COUNT=${{ steps.labels.outputs.count }}
+
+          # Require at least one label
+          if [ $LABELS_COUNT -eq 0 ]; then
+            echo "::warning::PR has no labels"
+            echo "Please add at least one label to categorize this PR:"
+            echo "  - enhancement: New features or improvements"
+            echo "  - bug: Bug fixes"
+            echo "  - documentation: Documentation changes"
+            echo "  - tests: Test additions or improvements"
+            echo "  - refactor: Code refactoring"
+            echo "  - chore: Maintenance tasks"
+            echo "  - security: Security fixes"
+          fi
