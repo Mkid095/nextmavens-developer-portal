@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Shield, Code2, AlertTriangle, CheckCircle, Zap, Server, Key, Lock, Globe, Terminal } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Shield, Code2, AlertTriangle, CheckCircle, Zap, Server, Key, Lock, Globe, Terminal, Database, Cloud, FolderTree, Timeline, Folder } from 'lucide-react'
 import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 
 const mcpConfig = {
@@ -10,261 +10,382 @@ const mcpConfig = {
   installCommand: 'npx -y @nextmavenspacks/mcp-server',
   available: true,
   protocol: 'MCP (Model Context Protocol) 2024-11-05',
-  toolsCount: 36,
+  toolsCount: 39,
+  version: '1.0.0',
 }
 
 const mcpTools = [
   {
     category: 'Database Operations',
+    icon: Database,
     tools: [
       {
         name: 'nextmavens_query',
-        description: 'Execute SELECT queries on any database table',
-        parameters: 'table, filters, limit, offset, orderBy',
+        description: 'Execute a database query on NextMavens. Supports SELECT operations with filters, pagination, and ordering.',
+        inputSchema: {
+          table: { type: 'string', required: true, description: 'Table name to query' },
+          filters: {
+            type: 'array',
+            description: 'Array of filters: [{column, operator, value}]',
+            operators: ['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'like', 'ilike', 'in']
+          },
+          limit: { type: 'number', description: 'Maximum number of results' },
+          offset: { type: 'number', description: 'Number of results to skip' },
+          orderBy: { type: 'object', description: '{column, ascending}' }
+        },
         scopes: ['db:select'],
       },
       {
         name: 'nextmavens_insert',
-        description: 'Insert new records into a table',
-        parameters: 'table, data',
+        description: 'Insert a row into a database table',
+        inputSchema: {
+          table: { type: 'string', required: true },
+          data: { type: 'object', required: true, description: 'Data to insert (key-value pairs)' }
+        },
         scopes: ['db:insert'],
       },
       {
         name: 'nextmavens_update',
-        description: 'Update existing records in a table',
-        parameters: 'table, data, filters',
+        description: 'Update rows in a database table',
+        inputSchema: {
+          table: { type: 'string', required: true },
+          data: { type: 'object', required: true },
+          filters: { type: 'array', required: true }
+        },
         scopes: ['db:update'],
       },
       {
         name: 'nextmavens_delete',
-        description: 'Delete records from a table',
-        parameters: 'table, filters',
+        description: 'Delete rows from a database table',
+        inputSchema: {
+          table: { type: 'string', required: true },
+          filters: { type: 'array', required: true }
+        },
         scopes: ['db:delete'],
       },
     ],
   },
   {
     category: 'Authentication',
+    icon: Shield,
     tools: [
       {
         name: 'nextmavens_signin',
         description: 'Sign in a user with email and password',
-        parameters: 'email, password',
-        scopes: ['auth:signin'],
+        inputSchema: {
+          email: { type: 'string', required: true },
+          password: { type: 'string', required: true }
+        },
+        scopes: ['auth:manage'],
       },
       {
         name: 'nextmavens_signup',
         description: 'Sign up a new user',
-        parameters: 'email, password, name, tenantId',
-        scopes: ['auth:signup'],
+        inputSchema: {
+          email: { type: 'string', required: true },
+          password: { type: 'string', required: true },
+          name: { type: 'string', description: 'User display name' },
+          tenantId: { type: 'string', description: 'Tenant ID for multi-tenancy' }
+        },
+        scopes: ['auth:manage'],
       },
     ],
   },
   {
-    category: 'Storage (Telegram)',
+    category: 'Storage (Telegram Files)',
+    icon: Cloud,
     tools: [
       {
         name: 'nextmavens_file_info',
-        description: 'Get information about a file by ID',
-        parameters: 'fileId',
+        description: 'Get information about a file by ID from Telegram storage',
+        inputSchema: {
+          fileId: { type: 'string', required: true, description: 'File ID from Telegram storage' }
+        },
         scopes: ['storage:read'],
       },
       {
         name: 'nextmavens_file_download_url',
         description: 'Get a download URL for a file',
-        parameters: 'fileId',
+        inputSchema: {
+          fileId: { type: 'string', required: true }
+        },
         scopes: ['storage:read'],
       },
       {
         name: 'nextmavens_list_files',
         description: 'List files with optional filters',
-        parameters: 'tenantId, fileType, limit, offset',
+        inputSchema: {
+          tenantId: { type: 'string', description: 'Filter by tenant ID' },
+          fileType: { type: 'string', description: 'Filter by file type' },
+          limit: { type: 'number' },
+          offset: { type: 'number' }
+        },
         scopes: ['storage:read'],
       },
     ],
   },
   {
     category: 'GraphQL',
+    icon: Code2,
     tools: [
       {
         name: 'nextmavens_graphql',
         description: 'Execute a GraphQL query',
-        parameters: 'query, variables',
+        inputSchema: {
+          query: { type: 'string', required: true },
+          variables: { type: 'object', description: 'GraphQL variables' }
+        },
         scopes: ['graphql:execute'],
       },
       {
         name: 'nextmavens_graphql_introspect',
-        description: 'Get GraphQL schema introspection',
-        parameters: 'none (automatic)',
+        description: 'Get GraphQL schema introspection for exploring available types and fields',
+        inputSchema: {},
         scopes: ['graphql:execute'],
       },
     ],
   },
   {
     category: 'Schema Management',
+    icon: FolderTree,
     tools: [
       {
         name: 'nextmavens_create_table',
         description: 'Create a new database table with columns',
-        parameters: 'tableName, columns, primaryKeys',
+        inputSchema: {
+          tableName: { type: 'string', required: true },
+          columns: {
+            type: 'array',
+            required: true,
+            description: 'Array of column definitions: [{name, type, nullable, unique, default}]'
+          },
+          primaryKeys: { type: 'array', description: 'Primary key columns' }
+        },
         scopes: ['db:admin'],
       },
       {
         name: 'nextmavens_add_column',
         description: 'Add a column to an existing table',
-        parameters: 'tableName, column (name, type, nullable, default)',
+        inputSchema: {
+          tableName: { type: 'string', required: true },
+          column: {
+            type: 'object',
+            required: true,
+            description: '{name, type, nullable, default}'
+          }
+        },
         scopes: ['db:admin'],
       },
       {
         name: 'nextmavens_create_policy',
         description: 'Create or update an RLS policy on a table',
-        parameters: 'tableName, policyName, operation, using, check, roles',
+        inputSchema: {
+          tableName: { type: 'string', required: true },
+          policyName: { type: 'string', required: true },
+          operation: {
+            type: 'string',
+            required: true,
+            enum: ['select', 'insert', 'update', 'delete', 'all']
+          },
+          using: { type: 'string', description: 'USING expression for RLS' },
+          check: { type: 'string', description: 'WITH CHECK expression for RLS' },
+          roles: { type: 'array', description: 'Array of role names' }
+        },
         scopes: ['db:admin'],
       },
       {
         name: 'nextmavens_enable_rls',
         description: 'Enable Row Level Security on a table',
-        parameters: 'tableName',
+        inputSchema: {
+          tableName: { type: 'string', required: true }
+        },
         scopes: ['db:admin'],
       },
       {
         name: 'nextmavens_list_tables',
         description: 'List all database tables',
-        parameters: 'none',
+        inputSchema: {},
         scopes: ['db:select'],
       },
       {
         name: 'nextmavens_get_table_schema',
         description: 'Get schema information for a table',
-        parameters: 'tableName',
+        inputSchema: {
+          tableName: { type: 'string', required: true }
+        },
         scopes: ['db:select'],
       },
     ],
   },
   {
     category: 'Project Management',
+    icon: Server,
     tools: [
       {
         name: 'nextmavens_create_project',
         description: 'Create a new project',
-        parameters: 'name, description, domain',
+        inputSchema: {
+          name: { type: 'string', required: true },
+          description: { type: 'string' },
+          domain: { type: 'string' }
+        },
         scopes: ['project:create'],
       },
       {
         name: 'nextmavens_list_projects',
         description: 'List all projects',
-        parameters: 'none',
+        inputSchema: {},
         scopes: ['project:read'],
       },
       {
         name: 'nextmavens_get_project',
         description: 'Get project details',
-        parameters: 'projectId',
+        inputSchema: {
+          projectId: { type: 'string', required: true }
+        },
         scopes: ['project:read'],
       },
       {
         name: 'nextmavens_update_project',
         description: 'Update a project',
-        parameters: 'projectId, name, description, domain',
+        inputSchema: {
+          projectId: { type: 'string', required: true },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          domain: { type: 'string' }
+        },
         scopes: ['project:update'],
       },
       {
         name: 'nextmavens_delete_project',
         description: 'Delete a project',
-        parameters: 'projectId',
+        inputSchema: {
+          projectId: { type: 'string', required: true }
+        },
         scopes: ['project:delete'],
       },
     ],
   },
   {
     category: 'API Key Management',
+    icon: Key,
     tools: [
       {
         name: 'nextmavens_create_api_key',
         description: 'Create an API key with expiration options',
-        parameters: 'name, scopes, expiration (1day, 1week, 2weeks, 3weeks, 30days, 1year, forever)',
+        inputSchema: {
+          name: { type: 'string', required: true },
+          scopes: { type: 'array', description: 'Array of scope strings' },
+          expiration: {
+            type: 'string',
+            enum: ['1day', '1week', '2weeks', '3weeks', '30days', '1year', 'forever']
+          }
+        },
         scopes: ['key:create'],
       },
       {
         name: 'nextmavens_list_api_keys',
         description: 'List all API keys',
-        parameters: 'none',
+        inputSchema: {},
         scopes: ['key:read'],
       },
       {
         name: 'nextmavens_get_api_key',
         description: 'Get API key details',
-        parameters: 'keyId',
+        inputSchema: {
+          keyId: { type: 'string', required: true }
+        },
         scopes: ['key:read'],
       },
       {
         name: 'nextmavens_delete_api_key',
         description: 'Delete an API key',
-        parameters: 'keyId',
+        inputSchema: {
+          keyId: { type: 'string', required: true }
+        },
         scopes: ['key:delete'],
       },
     ],
   },
   {
     category: 'Realtime Management',
+    icon: Timeline,
     tools: [
       {
         name: 'nextmavens_enable_realtime',
         description: 'Enable realtime for a table',
-        parameters: 'tableName',
+        inputSchema: {
+          tableName: { type: 'string', required: true }
+        },
         scopes: ['realtime:manage'],
       },
       {
         name: 'nextmavens_disable_realtime',
         description: 'Disable realtime for a table',
-        parameters: 'tableName',
+        inputSchema: {
+          tableName: { type: 'string', required: true }
+        },
         scopes: ['realtime:manage'],
       },
       {
         name: 'nextmavens_list_realtime_tables',
         description: 'List tables with realtime enabled',
-        parameters: 'none',
+        inputSchema: {},
         scopes: ['realtime:read'],
       },
       {
         name: 'nextmavens_realtime_connection_info',
         description: 'Get realtime connection information',
-        parameters: 'none',
+        inputSchema: {},
         scopes: ['realtime:read'],
       },
     ],
   },
   {
     category: 'Storage Management',
+    icon: Folder,
     tools: [
       {
         name: 'nextmavens_create_bucket',
         description: 'Create a storage bucket',
-        parameters: 'name, publicAccess, fileSizeLimit',
+        inputSchema: {
+          name: { type: 'string', required: true },
+          publicAccess: { type: 'boolean', description: 'Allow public access' },
+          fileSizeLimit: { type: 'number', description: 'Max file size in bytes' }
+        },
         scopes: ['storage:admin'],
       },
       {
         name: 'nextmavens_list_buckets',
         description: 'List all storage buckets',
-        parameters: 'none',
+        inputSchema: {},
         scopes: ['storage:read'],
       },
       {
         name: 'nextmavens_delete_bucket',
         description: 'Delete a storage bucket',
-        parameters: 'bucketId',
+        inputSchema: {
+          bucketId: { type: 'string', required: true }
+        },
         scopes: ['storage:delete'],
       },
       {
         name: 'nextmavens_create_folder',
         description: 'Create a folder in a bucket',
-        parameters: 'bucketId, folderPath',
+        inputSchema: {
+          bucketId: { type: 'string', required: true },
+          folderPath: { type: 'string', required: true }
+        },
         scopes: ['storage:write'],
       },
       {
         name: 'nextmavens_update_bucket',
         description: 'Update bucket settings',
-        parameters: 'bucketId, publicAccess, fileSizeLimit',
+        inputSchema: {
+          bucketId: { type: 'string', required: true },
+          publicAccess: { type: 'boolean' },
+          fileSizeLimit: { type: 'number' }
+        },
         scopes: ['storage:admin'],
       },
     ],
@@ -303,12 +424,38 @@ const tokenTypes = [
   },
 ]
 
+function ToolInputSchema({ schema }: { schema: any }) {
+  if (!schema || Object.keys(schema).length === 0) {
+    return <span className="text-slate-400 italic">No parameters</span>
+  }
+
+  return (
+    <div className="space-y-1">
+      {Object.entries(schema).map(([key, def]: [string, any]) => (
+        <div key={key} className="flex items-center gap-2 text-xs">
+          <code className="bg-slate-100 px-1.5 py-0.5 rounded font-mono">
+            {key}
+          </code>
+          <span className="text-slate-400">:</span>
+          <span className={def.required ? 'text-red-600' : 'text-slate-600'}>
+            {def.type || 'string'}
+          </span>
+          {def.required && <span className="text-red-500">*</span>}
+          {def.description && (
+            <span className="text-slate-500">- {def.description}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function MCPDocsPage() {
   return (
     <div className="min-h-screen bg-[#F3F5F7]">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        :root { --font-sans: 'Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif; }
+        :root { --font-sans: 'Plus Jakarta Sans, ui-sans-serif, system-ui, sans-serif'; }
         .font-jakarta { font-family: var(--font-sans); }
       `}</style>
 
@@ -343,14 +490,16 @@ export default function MCPDocsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-semibold text-slate-900">MCP Integration</h1>
-            <p className="text-slate-600">Model Context Protocol for AI/IDE integration with {mcpConfig.toolsCount} tools</p>
+            <p className="text-slate-600">
+              Model Context Protocol server v{mcpConfig.version} for AI/IDE integration with {mcpConfig.toolsCount} tools
+            </p>
           </div>
         </div>
 
         {/* Service Info */}
         <div className="bg-white rounded-xl p-6 border border-slate-200 mb-12">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">MCP Server Information</h2>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-4 gap-4">
             <div className="bg-slate-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Terminal className="w-4 h-4 text-slate-600" />
@@ -370,7 +519,14 @@ export default function MCPDocsPage() {
                 <Zap className="w-4 h-4 text-slate-600" />
                 <span className="text-xs font-medium text-slate-700">Available Tools</span>
               </div>
-              <p className="text-xs text-slate-700">{mcpConfig.toolsCount} tools across 4 categories</p>
+              <p className="text-xs text-slate-700">{mcpConfig.toolsCount} tools across 9 categories</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">NPM Package</span>
+              </div>
+              <code className="text-xs text-blue-700 break-all">{mcpConfig.mcpServerPackage}</code>
             </div>
           </div>
         </div>
@@ -378,31 +534,43 @@ export default function MCPDocsPage() {
         {/* MCP Tools by Category */}
         <h2 className="text-2xl font-semibold text-slate-900 mb-6">Available Tools</h2>
         <div className="space-y-6 mb-12">
-          {mcpTools.map((category) => (
-            <div key={category.category} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-              <div className="p-4 bg-slate-50 border-b border-slate-200">
-                <h3 className="font-semibold text-slate-900">{category.category}</h3>
-              </div>
-              <div className="p-6">
-                <div className="space-y-4">
-                  {category.tools.map((tool) => (
-                    <div key={tool.name} className="border-b border-slate-100 pb-4 last:pb-0 last:border-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <code className="text-sm font-mono text-blue-700">{tool.name}</code>
-                          <p className="text-sm text-slate-600 mt-1">{tool.description}</p>
+          {mcpTools.map((category) => {
+            const Icon = category.icon
+            return (
+              <div key={category.category} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                  <Icon className="w-5 h-5 text-slate-700" />
+                  <h3 className="font-semibold text-slate-900">{category.category}</h3>
+                  <span className="text-xs text-slate-500 ml-auto">{category.tools.length} tools</span>
+                </div>
+                <div className="p-6">
+                  <div className="space-y-4">
+                    {category.tools.map((tool) => (
+                      <div key={tool.name} className="border-b border-slate-100 pb-4 last:pb-0 last:border-0">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <code className="text-sm font-mono text-blue-700">{tool.name}</code>
+                            <p className="text-sm text-slate-600 mt-1">{tool.description}</p>
+                          </div>
+                          <div className="flex gap-1">
+                            {tool.scopes.map((scope) => (
+                              <span key={scope} className="text-xs px-2 py-0.5 bg-slate-100 text-slate-600 rounded font-mono">
+                                {scope}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="bg-slate-50 rounded p-3">
+                          <div className="text-xs text-slate-500 mb-1">Parameters:</div>
+                          <ToolInputSchema schema={tool.inputSchema} />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-slate-500">Parameters:</span>
-                        <code className="bg-slate-100 px-2 py-0.5 rounded text-slate-700">{tool.parameters}</code>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Token Types */}
@@ -424,7 +592,7 @@ export default function MCPDocsPage() {
               </div>
               <div className="p-4">
                 <p className="text-sm text-slate-600 mb-4">{token.description}</p>
-                <div className="mb-3">
+                <div>
                   <h4 className="text-xs font-medium text-slate-700 mb-2">Scopes:</h4>
                   <div className="flex flex-wrap gap-1">
                     {token.scopes.map((scope) => (
@@ -483,7 +651,9 @@ Description: "For AI-assisted development"
 "Insert a new user record"
 "Get the database schema"
 "List all files in storage"
-"Execute a GraphQL query to get tenant information"`}</CodeBlockWithCopy>
+"Execute a GraphQL query to get tenant information"
+"Create a new bucket in storage"
+"Enable realtime on the posts table"`}</CodeBlockWithCopy>
             </div>
           </div>
         </div>
@@ -521,7 +691,7 @@ Description: "For AI-assisted development"
     "content": [
       {
         "type": "text",
-        "text": "{\\"rows\\":[...],\\"rowCount\\":1}"
+        "text": "{\\"table\\":\\"users\\",\\"count\\":1,\\"data\\":[...]}"
       }
     ]
   }
@@ -535,20 +705,20 @@ Description: "For AI-assisted development"
           <p className="text-sm text-slate-600 mb-6">
             NextMavens MCP works with any AI tool that supports the Model Context Protocol:
           </p>
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-slate-50 rounded-lg p-4">
               <h3 className="font-medium text-slate-900 mb-2">Claude Code</h3>
               <p className="text-xs text-slate-600 mb-2">Anthropic's AI IDE assistant</p>
               <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Recommended: mcp_ro_</span>
             </div>
-            <div className="g-slate-50 rounded-lg p-4">
+            <div className="bg-slate-50 rounded-lg p-4">
               <h3 className="font-medium text-slate-900 mb-2">Cursor</h3>
               <p className="text-xs text-slate-600 mb-2">AI-powered code editor</p>
               <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Recommended: mcp_ro_</span>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
               <h3 className="font-medium text-slate-900 mb-2">GitHub Copilot</h3>
-              <p className="text-xs textslate-600 mb-2">GitHub's AI pair programmer</p>
+              <p className="text-xs text-slate-600 mb-2">GitHub's AI pair programmer</p>
               <span className="text-xs px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Recommended: mcp_ro_</span>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
@@ -560,7 +730,7 @@ Description: "For AI-assisted development"
         </div>
 
         {/* Security */}
-        <div className="bg-amber-50 rounded-xl p-8 border border-amber-200 mb-12">
+        <div className="bg-amber-50 rounded-xl p-8 border border-amber-200 mb-12 mt-12">
           <h2 className="text-xl font-semibold text-amber-900 mb-4">
             <AlertTriangle className="w-5 h-5 inline mr-2" />
             Security Considerations
@@ -624,6 +794,13 @@ Description: "For AI-assisted development"
                   <td className="py-3 px-4 text-center">✓</td>
                 </tr>
                 <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">db:admin</code></td>
+                  <td className="py-3 px-4 text-slate-600">Schema modifications</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
                   <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">storage:read</code></td>
                   <td className="py-3 px-4 text-slate-600">Read files from storage</td>
                   <td className="py-3 px-4 text-center">✓</td>
@@ -637,11 +814,88 @@ Description: "For AI-assisted development"
                   <td className="py-3 px-4 text-center">✓</td>
                   <td className="py-3 px-4 text-center">✓</td>
                 </tr>
-                <tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">storage:admin</code></td>
+                  <td className="py-3 px-4 text-slate-600">Manage buckets</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
                   <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">graphql:execute</code></td>
                   <td className="py-3 px-4 text-slate-600">Execute GraphQL queries</td>
                   <td className="py-3 px-4 text-center">✓</td>
                   <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">realtime:read</code></td>
+                  <td className="py-3 px-4 text-slate-600">Read realtime status</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">realtime:manage</code></td>
+                  <td className="py-3 px-4 text-slate-600">Enable/disable realtime</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">project:create</code></td>
+                  <td className="py-3 px-4 text-slate-600">Create projects</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">project:read</code></td>
+                  <td className="py-3 px-4 text-slate-600">Read projects</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">project:update</code></td>
+                  <td className="py-3 px-4 text-slate-600">Update projects</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">project:delete</code></td>
+                  <td className="py-3 px-4 text-slate-600">Delete projects</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">key:create</code></td>
+                  <td className="py-3 px-4 text-slate-600">Create API keys</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">key:read</code></td>
+                  <td className="py-3 px-4 text-slate-600">Read API keys</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr className="border-b border-slate-100">
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">key:delete</code></td>
+                  <td className="py-3 px-4 text-slate-600">Delete API keys</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">✓</td>
+                </tr>
+                <tr>
+                  <td className="py-3 px-4"><code className="bg-slate-100 px-2 py-1 rounded">auth:manage</code></td>
+                  <td className="py-3 px-4 text-slate-600">Sign in/sign up users</td>
+                  <td className="py-3 px-4 text-center">—</td>
+                  <td className="py-3 px-4 text-center">—</td>
                   <td className="py-3 px-4 text-center">✓</td>
                 </tr>
               </tbody>
