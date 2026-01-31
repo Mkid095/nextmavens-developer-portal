@@ -6,7 +6,8 @@ import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 
 const mcpConfig = {
   gatewayDomain: 'https://api.nextmavens.cloud',
-  endpoint: '/mcp',
+  mcpServerPackage: '@nextmavens/mcp-server',
+  installCommand: 'npx -y @nextmavens/mcp-server',
   available: true,
   protocol: 'MCP (Model Context Protocol) 2024-11-05',
   toolsCount: 11,
@@ -175,17 +176,17 @@ export default function MCPDocsPage() {
           <div className="grid md:grid-cols-3 gap-4">
             <div className="bg-slate-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Server className="w-4 h-4 text-slate-600" />
-                <span className="text-xs font-medium text-slate-700">Endpoint</span>
+                <Terminal className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">Install Command</span>
               </div>
-              <code className="text-xs text-blue-700 break-all">{mcpConfig.gatewayDomain}{mcpConfig.endpoint}</code>
+              <code className="text-xs text-blue-700 break-all">{mcpConfig.installCommand}</code>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <Terminal className="w-4 h-4 text-slate-600" />
-                <span className="text-xs font-medium text-slate-700">Protocol</span>
+                <Server className="w-4 h-4 text-slate-600" />
+                <span className="text-xs font-medium text-slate-700">API Gateway</span>
               </div>
-              <p className="text-xs text-slate-700">{mcpConfig.protocol}</p>
+              <code className="text-xs text-blue-700 break-all">{mcpConfig.gatewayDomain}</code>
             </div>
             <div className="bg-slate-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
