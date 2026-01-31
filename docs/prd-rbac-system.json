@@ -51,7 +51,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "ROLE_PERMISSIONS constant already defined in src/lib/types/rbac.types.ts with correct mappings: Owner (all permissions), Admin (all except projects.delete), Developer (view_logs, use_services, database.read), Viewer (view_logs, database.read). Typecheck passes."
+      "notes": "ROLE_PERMISSIONS constant defined in src/lib/types/rbac.types.ts with correct mappings: Owner (all permissions), Admin (all except projects.delete and projects.manage_users - see US-008), Developer (view_logs, use_services, database.read), Viewer (view_logs, database.read). Typecheck passes."
     },
     {
       "id": "US-003",
@@ -182,8 +182,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Applied permission checking to all key management endpoints. Updated GET /api/api-keys, POST /api/api-keys (create), and DELETE /api/api-keys (revoke) in src/app/api/api-keys/route.ts. Also updated POST /api/keys/[id]/rotate in src/app/api/keys/[id]/rotate/route.ts and DELETE /api/keys/[id]/revoke in src/app/api/keys/[id]/revoke/route.ts. All endpoints now use requirePermission middleware with Permission.PROJECTS_MANAGE_KEYS. Extracts organization ID from project's tenant_id (for create) or from key's associated project (for rotate/revoke). Only admins and owners (who have projects.manage_keys permission) can create, rotate, or revoke API keys. Returns 403 Forbidden for developers/viewers with detailed error message including required_permission field. Added helper functions getOrganizationIdFromProject() and getOrganizationIdFromKey() to resolve organization context. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -208,8 +208,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated RBAC role permissions to remove projects.manage_users from Admin role (only Owners now have this permission). Updated control-plane-api user management endpoints (POST /v1/orgs/:id/members for invite, PUT /v1/orgs/:id/members/:userId for role update, DELETE /v1/orgs/:id/members/:userId for remove) to use requirePermission middleware with Permission.PROJECTS_MANAGE_USERS. All endpoints now enforce that only organization owners can invite, remove, or change roles of members. Returns 403 Forbidden with detailed error message for non-owners. Updated rbac.types.ts in both src/lib and control-plane-api/src/lib. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -232,8 +232,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: All UI elements now respect RBAC permissions. Added GET handler to src/app/api/organizations/[id]/members/[userId]/route.ts for fetching user roles. Existing usePermission/usePermissions hooks in src/hooks/usePermissions.ts work with existing permissions API at src/app/api/permissions/check/route.ts. Updated project detail page (src/app/dashboard/projects/[slug]/page.tsx): (1) Delete project button only shows for owners with canDeleteProject check, (2) Create Key buttons (header and 'Create your first API key') only show for admins/owners with canManageKeys check, (3) Service status toggles (ServiceStatusIndicator) are disabled/non-interactive for users without canManageServices permission via createToggleHandler returning undefined. The permission checks use project.tenant_id as the organization_id. Manage users button permission infrastructure (canManageUsers) is in place for future UI elements. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -259,8 +259,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated Studio query API at src/app/api/studio/[projectId]/query/route.ts to enforce RBAC database.write permission for write operations (INSERT/UPDATE/DELETE). Added isWriteQuery() helper to detect write operations, getOrganizationId() to get tenant_id from project, and permission check before executing non-readonly write queries. Viewers are rejected with 403 and clear message explaining required permission. Developers and admins with database.write permission can execute write queries. Read operations (SELECT) continue to work for all authenticated users. Typecheck passes."
     },
     {
       "id": "US-011",
@@ -286,8 +286,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Updated Studio query API at src/app/api/studio/[projectId]/query/route.ts to enforce RBAC permissions for ALL queries (not just writes). All queries now require authentication and permission checks: SELECT queries require database.read permission (all authenticated users have this), INSERT/UPDATE/DELETE require database.write permission (Admin/Owner only), DDL operations also require database.write permission. Role-based enforcement: Viewers can only SELECT, Developers can SELECT (with database.read), Admins/Owners have full access (SELECT/INSERT/UPDATE/DELETE/DDL). Error messages are clear about which permission is needed and who to contact. Typecheck passes."
     },
     {
       "id": "US-012",
@@ -312,8 +312,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: PERMISSION_DENIED error code already exists in src/lib/errors.ts with ErrorCode.PERMISSION_DENIED enum value, 403 HTTP status code, false retryable flag, and '/docs/errors#PERMISSION_DENIED' documentation link. permissionDeniedError() factory function creates PlatformError instances with clear messages. Error messages include required_permission field, your_role field, and query_type field to help developers understand what they need. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

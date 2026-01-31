@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { toErrorNextResponse, ErrorCode, isPlatformError, createError } from '@/lib/errors'
+import { createQuotaErrorResponse } from '@/features/quotas/lib/quota-error-messages'
 
 /**
  * POST /api/usage/check
@@ -194,19 +195,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if project is suspended
-    const suspended = await isProjectSuspended(pool, project_id)
-    if (suspended) {
-      return toErrorNextResponse(
-        createError(
-          ErrorCode.PROJECT_SUSPENDED,
-          'Project temporarily suspended due to excessive usage',
-          project_id
-        )
-      )
-    }
-
-    // Get quota configuration
+    // Get quota configuration first (needed for error messages)
     const quotaConfig = await getQuotaConfig(pool, project_id, service)
     if (!quotaConfig) {
       // No quota configured - deny by default
@@ -215,18 +204,59 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get current usage
+    // Get current usage (needed for error messages)
     const currentUsage = await getCurrentUsage(pool, project_id, service)
+
+    // Check if project is suspended
+    const suspended = await isProjectSuspended(pool, project_id)
+    if (suspended) {
+      // Use clear error message for project suspension
+      const errorResponse = createQuotaErrorResponse(ErrorCode.PROJECT_SUSPENDED, {
+        service,
+        currentUsage,
+        hardCap: quotaConfig.hard_cap,
+      })
+
+      return toErrorNextResponse(
+        createError(
+          ErrorCode.PROJECT_SUSPENDED,
+          errorResponse.message,
+          project_id,
+          {
+            guidance: errorResponse.guidance,
+            ...errorResponse.details,
+          }
+        )
+      )
+    }
+    if (!quotaConfig) {
+      // No quota configured - deny by default
+      return toErrorNextResponse(
+        { code: ErrorCode.SERVICE_DISABLED, message: 'No quota configured for this service' }
+      )
+    }
+
+    // Get current usage (already retrieved above)
     const projectedUsage = currentUsage + amount
 
     // Check hard cap (abuse prevention)
     if (quotaConfig.hard_cap > 0 && projectedUsage > quotaConfig.hard_cap) {
+      // Use clear error message for hard cap exceeded
+      const errorResponse = createQuotaErrorResponse(ErrorCode.QUOTA_EXCEEDED, {
+        service,
+        currentUsage,
+        monthlyLimit: quotaConfig.monthly_limit,
+        hardCap: quotaConfig.hard_cap,
+        resetAt: quotaConfig.reset_at,
+      })
+
       return toErrorNextResponse(
         createError(
           ErrorCode.QUOTA_EXCEEDED,
-          'Quota exceeded: hard cap reached',
+          errorResponse.message,
           project_id,
           {
+            guidance: errorResponse.guidance,
             current_usage: currentUsage,
             hard_cap: quotaConfig.hard_cap,
             reset_at: quotaConfig.reset_at,

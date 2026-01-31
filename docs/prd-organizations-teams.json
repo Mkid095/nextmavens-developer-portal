@@ -241,8 +241,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented PUT /api/organizations/:id/members/:userId endpoint for updating member roles. Added updateOrganizationMemberRole method to ControlPlaneClient that forwards to control plane API PUT /v1/orgs/:id/members/:userId. Created validation file src/lib/validation.ts with updateMemberRoleSchema (role enum: owner, admin, developer, viewer). Developer portal endpoint validates request body using Zod, handles errors (FORBIDDEN, NOT_FOUND, UNAUTHORIZED), and returns updated member details. Control plane API already implemented with full validation: only owners can update member roles (via validateOrganizationOwnership), prevents changing organization owner role, validates role enum, updates organization_members table. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -265,8 +265,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created organizations list page at /dashboard/organizations (src/app/dashboard/organizations/page.tsx). Lists all organizations with name, member count, and project count. Includes 'Create Organization' button with modal form for name and optional slug. Created organization detail view at /dashboard/organizations/[slug] (src/app/dashboard/organizations/[slug]/page.tsx) showing organization info, projects list, and members list with role badges. Created API endpoint /api/organizations/with-stats that fetches organizations with aggregated member and project counts. Updated control plane listProjectsQuerySchema to support organization_id filtering (control-plane-api/src/lib/validation.ts). Updated control plane projects GET route to filter by organization_id. Typecheck passes."
     },
     {
       "id": "US-011",
@@ -291,8 +291,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created comprehensive team management UI at /dashboard/organizations/[slug]/settings (src/app/dashboard/organizations/[slug]/settings/page.tsx, 819 lines). Features:\n- Lists all members with roles and status badges (active/pending)\n- Shows member email, name, join date, and invitation expiry\n- Invite member form with email input and role selection (owner/admin/developer/viewer)\n- Change role dropdown menu for owners to update member roles\n- Remove member button with confirmation modal\n- Resend invitation button for pending invitations\n- Permission-based UI: only owners and admins can manage members\n- Role legend with descriptions (Owner: full control, Admin: manage members/settings, Developer: use services/view logs, Viewer: read-only)\n- Toast notifications for all actions\n- Loading states and error handling\n\nBackend changes:\n- Added GET /v1/orgs/:id/members endpoint in control-plane-api (control-plane-api/src/app/api/v1/orgs/[id]/members/route.ts) that returns all members with user details, ordered by role hierarchy\n- Added GET /api/organizations/[id]/members in developer portal that forwards to control-plane\n- Added listOrganizationMembers() method to ControlPlaneClient\n\nAll acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-012",
@@ -317,8 +317,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented organization scoping in GET /api/v1/projects endpoint (control-plane-api/src/app/api/v1/projects/route.ts). Projects are now filtered based on organization membership: (1) Personal projects (organization_id IS NULL) are only visible to the owner (developer_id matches), (2) Organization projects (organization_id IS NOT NULL) are visible to all members with accepted status in that organization. Added p.organization_id to SELECT query and response. Updated Project interface in control-plane-client.ts to include organization_id field. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

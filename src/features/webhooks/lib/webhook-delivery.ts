@@ -258,6 +258,9 @@ async function resetWebhookFailures(webhook_id: string): Promise<void> {
 /**
  * Increment consecutive failures counter and auto-disable if needed
  *
+ * US-011: Disable Failed Webhooks
+ * After 5 consecutive failures, webhook is disabled and notification is sent
+ *
  * @param webhook_id - Webhook ID
  * @param maxRetries - Maximum retry attempts before auto-disable
  */
@@ -276,7 +279,7 @@ async function incrementWebhookFailures(
         enabled = CASE WHEN consecutive_failures + 1 >= $2 THEN false ELSE enabled END,
         updated_at = NOW()
       WHERE id = $1
-      RETURNING consecutive_failures, enabled
+      RETURNING id, project_id, event, target_url, consecutive_failures, enabled
       `,
       [webhook_id, maxRetries]
     )
@@ -288,7 +291,22 @@ async function incrementWebhookFailures(
       console.warn(
         `[Webhook] Webhook ${webhook_id} auto-disabled after ${webhook.consecutive_failures} consecutive failures`
       )
-      // TODO: Send notification to project owner (US-011)
+
+      // Send notification to project owner (US-011)
+      try {
+        const { sendWebhookDisabledNotification } = await import('@/features/abuse-controls/lib/notifications')
+        await sendWebhookDisabledNotification(
+          webhook.project_id,
+          webhook.id,
+          webhook.event,
+          webhook.target_url,
+          webhook.consecutive_failures
+        )
+        console.log(`[Webhook] Webhook disabled notification sent for webhook ${webhook_id}`)
+      } catch (notifError) {
+        console.error(`[Webhook] Failed to send webhook disabled notification:`, notifError)
+        // Don't throw - notification failure shouldn't break webhook processing
+      }
     }
   } catch (error) {
     console.error('[Webhook] Error incrementing failures:', error)
@@ -319,8 +337,8 @@ export async function createEventLog(
     const result = await pool.query(
       `
       INSERT INTO control_plane.event_log
-        (project_id, webhook_id, event_type, payload, status)
-      VALUES ($1, $2, $3, $4, 'pending')
+        (project_id, webhook_id, event_type, payload, status, retry_count)
+      VALUES ($1, $2, $3, $4, 'pending', 0)
       RETURNING id
       `,
       [project_id, webhook_id, event_type, JSON.stringify(payload)]
@@ -419,4 +437,44 @@ export async function emitEvent(
   }
 
   return results
+}
+
+/**
+ * Create a platform-level event log entry (without webhooks)
+ *
+ * US-007: Emit Events on Actions
+ * This function creates an event log entry for platform-level events
+ * that don't have an associated project (e.g., user.signedup).
+ * These events are logged but not delivered to webhooks since webhooks
+ * are scoped to projects.
+ *
+ * @param event_type - Event type
+ * @param payload - Event payload
+ * @returns Created event log ID or null
+ */
+export async function emitPlatformEvent(
+  event_type: string,
+  payload: Record<string, unknown>
+): Promise<string | null> {
+  const pool = getPool()
+
+  try {
+    // Create event log entry without a webhook (webhook_id is NULL)
+    // Use a special system project_id for platform events
+    const result = await pool.query(
+      `
+      INSERT INTO control_plane.event_log
+        (project_id, webhook_id, event_type, payload, status, retry_count)
+      VALUES ($1, NULL, $2, $3, 'delivered', 0)
+      RETURNING id
+      `,
+      ['00000000-0000-0000-0000-000000000000', event_type, JSON.stringify(payload)]
+    )
+
+    console.log(`[Webhook] Platform event logged: ${event_type}`)
+    return result.rows[0].id
+  } catch (error) {
+    console.error('[Webhook] Error creating platform event log:', error)
+    return null
+  }
 }

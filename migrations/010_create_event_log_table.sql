@@ -7,10 +7,14 @@
 CREATE TABLE IF NOT EXISTS control_plane.event_log (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  webhook_id UUID REFERENCES control_plane.webhooks(id) ON DELETE SET NULL,
   event_type VARCHAR(100) NOT NULL,
   payload JSONB NOT NULL DEFAULT '{}'::jsonb,
   delivered_at TIMESTAMPTZ,
   status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  response_code INTEGER,
+  response_body TEXT,
+  retry_count INTEGER DEFAULT 0 NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -58,6 +62,14 @@ COMMENT ON COLUMN control_plane.event_log.delivered_at IS 'Timestamp when the we
 COMMENT ON COLUMN control_plane.event_log.status IS 'Delivery status: pending, delivered, failed';
 
 COMMENT ON COLUMN control_plane.event_log.created_at IS 'When this event log entry was created';
+
+COMMENT ON COLUMN control_plane.event_log.webhook_id IS 'Reference to the webhook that delivered this event (null if event hasn\'t been delivered yet)';
+
+COMMENT ON COLUMN control_plane.event_log.response_code IS 'HTTP response code from webhook delivery (null if pending)';
+
+COMMENT ON COLUMN control_plane.event_log.response_body IS 'HTTP response body from webhook delivery (null if pending)';
+
+COMMENT ON COLUMN control_plane.event_log.retry_count IS 'Number of delivery retry attempts (0 for first attempt)';
 
 -- Insert migration record
 INSERT INTO control_plane.schema_migrations (version, description, breaking)

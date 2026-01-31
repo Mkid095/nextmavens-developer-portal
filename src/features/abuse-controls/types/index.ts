@@ -132,6 +132,17 @@ export interface SuspensionReason {
 }
 
 /**
+ * Suspension type enum
+ * PRD: US-010 - Implement Auto-Status Transitions
+ */
+export enum SuspensionType {
+  /** Suspended manually by a platform operator */
+  MANUAL = 'manual',
+  /** Suspended automatically by the background job for quota violations */
+  AUTOMATIC = 'automatic',
+}
+
+/**
  * Suspension record for tracking project suspensions
  */
 export interface SuspensionRecord {
@@ -149,6 +160,8 @@ export interface SuspensionRecord {
   resolved_at: Date | null
   /** Optional notes about the suspension */
   notes?: string
+  /** Type of suspension (manual or automatic) */
+  suspension_type?: SuspensionType
 }
 
 /**
@@ -593,6 +606,8 @@ export enum NotificationType {
   ERROR_RATE_DETECTED = 'error_rate_detected',
   /** Malicious pattern detected notification */
   MALICIOUS_PATTERN_DETECTED = 'malicious_pattern_detected',
+  /** Webhook disabled notification */
+  WEBHOOK_DISABLED = 'webhook_disabled',
 }
 
 /**

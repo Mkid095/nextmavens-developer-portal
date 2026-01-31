@@ -22,6 +22,7 @@ export enum ErrorCode {
   AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
   NOT_FOUND = 'NOT_FOUND',
   CONFLICT = 'CONFLICT',
+  QUERY_TIMEOUT = 'QUERY_TIMEOUT',
 }
 
 /**
@@ -88,6 +89,10 @@ const ERROR_METADATA: Record<ErrorCode, ErrorMetadata> = {
     retryable: false,
     docs: '/docs/errors#CONFLICT',
   },
+  [ErrorCode.QUERY_TIMEOUT]: {
+    retryable: false,
+    docs: '/docs/errors#QUERY_TIMEOUT',
+  },
 };
 
 /**
@@ -107,6 +112,7 @@ const ERROR_STATUS_CODES: Record<ErrorCode, number> = {
   [ErrorCode.AUTHENTICATION_ERROR]: 401,
   [ErrorCode.NOT_FOUND]: 404,
   [ErrorCode.CONFLICT]: 409,
+  [ErrorCode.QUERY_TIMEOUT]: 408,
 };
 
 /**
@@ -399,4 +405,12 @@ export function projectDeletedError(
   projectId: string
 ): PlatformError {
   return createError(ErrorCode.PROJECT_DELETED, message, projectId);
+}
+
+export function queryTimeoutError(
+  message: string = 'Query execution timeout',
+  projectId?: string,
+  details?: Record<string, unknown>
+): PlatformError {
+  return createError(ErrorCode.QUERY_TIMEOUT, message, projectId, details);
 }

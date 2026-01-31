@@ -6,3 +6,4 @@
 
 export * from './steps'
 export * from './state-machine'
+export * from './handlers'

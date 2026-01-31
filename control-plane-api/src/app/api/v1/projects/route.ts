@@ -14,6 +14,7 @@ import {
   withIdempotencyWithKey,
   type IdempotencyResponse,
 } from '@/lib/idempotency'
+import { emitEvent } from '@/features/webhooks'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -23,14 +24,17 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate ownership
+// Helper function to validate project ownership/access
+// US-012: Validates that the user has access to the project:
+// - For personal projects (organization_id IS NULL): only the owner can access
+// - For org projects (organization_id IS NOT NULL): all org members can access
 async function validateProjectOwnership(
   projectId: string,
   developer: JwtPayload
 ): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(
-    'SELECT id, developer_id, project_name, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, created_at FROM projects WHERE id = $1',
+    'SELECT id, developer_id, project_name, organization_id, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, created_at FROM projects WHERE id = $1',
     [projectId]
   )
 
@@ -39,7 +43,24 @@ async function validateProjectOwnership(
   }
 
   const project = result.rows[0]
-  if (project.developer_id !== developer.id) {
+
+  // Personal project: check if user is the owner
+  if (!project.organization_id) {
+    if (project.developer_id !== developer.id) {
+      return { valid: false, project }
+    }
+    return { valid: true, project }
+  }
+
+  // Organization project: check if user is a member
+  const membershipCheck = await pool.query(
+    `SELECT 1 FROM control_plane.organization_members
+     WHERE org_id = $1 AND user_id = $2 AND status = 'accepted'
+     LIMIT 1`,
+    [project.organization_id, developer.id]
+  )
+
+  if (membershipCheck.rows.length === 0) {
     return { valid: false, project }
   }
 
@@ -74,18 +95,38 @@ export async function GET(req: NextRequest) {
     }
 
     // Build query with filters
-    const conditions: string[] = ['developer_id = $1']
+    // US-012: Organization scoping - Show personal projects only to owner,
+    // and organization projects to all org members
+    const conditions: string[] = [
+      `(
+        -- Personal projects: only visible to owner
+        (p.organization_id IS NULL AND p.developer_id = $1)
+        OR
+        -- Org projects: visible to all org members
+        (p.organization_id IS NOT NULL AND EXISTS (
+          SELECT 1 FROM control_plane.organization_members om
+          WHERE om.org_id = p.organization_id
+            AND om.user_id = $1
+            AND om.status = 'accepted'
+        ))
+      )`
+    ]
     const values: any[] = [developer.id]
     let paramIndex = 2
 
     if (query.status) {
-      conditions.push(`status = $${paramIndex++}`)
+      conditions.push(`p.status = $${paramIndex++}`)
       values.push(query.status)
     }
 
     if (query.environment) {
-      conditions.push(`environment = $${paramIndex++}`)
+      conditions.push(`p.environment = $${paramIndex++}`)
       values.push(query.environment)
+    }
+
+    if (query.organization_id) {
+      conditions.push(`p.organization_id = $${paramIndex++}`)
+      values.push(query.organization_id)
     }
 
     const limit = query.limit || 50
@@ -98,6 +139,7 @@ export async function GET(req: NextRequest) {
         p.id, p.project_name, p.tenant_id, p.webhook_url,
         p.allowed_origins, p.rate_limit, p.status, p.environment, p.created_at,
         p.deleted_at, p.deletion_scheduled_at, p.grace_period_ends_at,
+        p.organization_id,
         t.slug as tenant_slug
       FROM projects p
       JOIN tenants t ON p.tenant_id = t.id
@@ -124,6 +166,7 @@ export async function GET(req: NextRequest) {
         deletion_scheduled_at: p.deletion_scheduled_at,
         grace_period_ends_at: p.grace_period_ends_at,
         recoverable_until: p.grace_period_ends_at,
+        organization_id: p.organization_id,
       })),
       meta: {
         limit,
@@ -230,6 +273,19 @@ export async function POST(req: NextRequest) {
         )
 
         const project = projectResult.rows[0]
+
+        // US-007: Emit project.created event
+        // Fire and forget - don't block the response on webhook delivery
+        emitEvent(project.id, 'project.created', {
+          project_id: project.id,
+          project_name: project.project_name,
+          tenant_id: project.tenant_id,
+          environment: project.environment,
+          developer_id: developer.id,
+          created_at: project.created_at,
+        }).catch(err => {
+          console.error('[Projects API] Failed to emit project.created event:', err)
+        })
 
         return {
           status: 201,

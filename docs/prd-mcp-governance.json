@@ -218,8 +218,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: MCP admin tokens fully implemented with mcp_admin_ prefix and full scopes (db:delete, auth:manage, realtime:publish). Added extra confirmation step specifically for admin tokens beyond the write confirmation. Admin tokens now go through TWO confirmation screens: (1) Write confirmation showing general write access risks, (2) Critical admin confirmation with detailed warnings about destructive access, user management capabilities, and best practices. Admin confirmation requires explicit checkbox accepting responsibility for data loss/security issues. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -243,8 +243,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added comprehensive Token Types section to /mcp page (src/app/mcp/page.tsx). New nav item 'Token Types' added to sidebar with Key icon. Explains all 3 token types (mcp_ro_, mcp_rw_, mcp_admin_) with detailed cards: Read-Only (blue, Eye icon) with scopes (db:select, storage:read, realtime:subscribe), Read-Write (amber, Edit3 icon) with scopes (db:select/insert/update, storage:read/write, realtime:subscribe), Admin (red, Lock icon) with full scopes including db:delete, auth:manage, realtime:publish. Shows use cases for each type with bullet points. Warns about write access risks: amber warning banner for rw tokens ('This AI Can Modify Your Data'), red critical warning for admin tokens ('Full Access including destructive operations'). Includes comparison table showing feature access across token types. Includes 'Which token type should I use?' guide with 3 cards explaining when to use each type. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -266,8 +266,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: MCP token indicators implemented in src/app/dashboard/projects/[slug]/page.tsx. Created getMcpTokenInfo() helper function (lines 240-295) that extracts MCP access level from key_prefix (mcp_ro_, mcp_rw_, mcp_admin_) and returns badge config with label, bgColor, textColor, icon, and showWarning flag. Badge rendering (lines 1342-1358): Read-Only tokens show blue badge (bg-blue-100) with EyeOffIcon. Read-Write tokens show amber badge (bg-amber-100) with Edit3 icon and warning badge. Admin tokens show red badge (bg-red-100) with Lock icon and warning badge. Warning badge shows AlertCircle icon with 'Write Access' text and tooltip 'This token can modify your data'. Typecheck passes."
     },
     {
       "id": "US-012",
@@ -293,8 +293,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Default MCP scopes already exclude auth - mcp_ro has no auth scopes, mcp_rw has no auth scopes, only mcp_admin has auth:manage. Added specific auth operation blocking in enforceMcpScopeRestrictions() in src/lib/scope-enforcement.ts. Added isAuthOperation() function that checks for auth:manage, auth:signin, auth:signup. Added getMcpAccessLevelFromPrefix() helper. When an MCP token attempts an auth operation: if accessLevel !== 'admin', throws MCP_AUTH_DENIED error with message 'MCP ro/rw token cannot perform auth operations. User management is restricted to MCP admin tokens (mcp_admin_) only.' This provides a clear, specific error for auth access attempts. Typecheck passes."
     },
     {
       "id": "US-011",
@@ -321,8 +321,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: MCP Usage Analytics fully implemented. Backend: getMcpTokenUsageAnalytics() function in src/lib/mcp-audit-logger.ts (lines 814-999) tracks usage per MCP token with requestCount, operationsPerformed, successCount, errorCount, successRate, errorRate, averageResponseTime, lastUsed, firstUsed, and aiToolsUsed. API: GET /api/mcp/analytics endpoint in src/app/api/mcp/analytics/route.ts with session-based authentication via authenticateRequest(), project access verification, query parameters (project_id, limit, offset, start_date, end_date, export=csv), and JSON/CSV response formats. UI: McpUsageAnalytics component in src/components/McpUsageAnalytics.tsx displays token cards with request count, success/error rate, operations performed, AI tools used, and export to CSV functionality. Integrated into project detail page (src/app/dashboard/projects/[slug]/page.tsx) - shown when project has MCP tokens. Export: exportMcpTokenUsageAnalyticsAsCsv() function generates CSV with API Key ID, Key Prefix, Access Level, Request Count, Success/Error counts and rates, Avg Response Time, First/Last Used, AI Tools Used, and Top Operations. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

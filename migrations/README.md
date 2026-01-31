@@ -44,19 +44,54 @@ Migrations are executed automatically by the migration runner in `src/lib/migrat
 ### Programmatic Usage
 
 ```typescript
-import { runMigrations, getMigrationStatus, rollbackMigration } from './lib/migrations'
+import { runMigrations, getMigrationStatus, rollbackMigration, getMigrationPlan } from './lib/migrations'
 
 // Run all pending migrations
 await runMigrations()
+
+// US-007: Dry run - show what migrations would be applied without actually running them
+await runMigrations({ dryRun: true })
+
+// US-007: Verbose dry run with more details
+await runMigrations({ dryRun: true, verbose: true })
 
 // Check migration status
 const status = await getMigrationStatus()
 console.log('Applied:', status.applied)
 console.log('Pending:', status.pending)
 
+// US-007: Get migration plan programmatically
+const plan = await getMigrationPlan()
+console.log('Pending migrations:', plan)
+
 // Rollback a specific migration (if rollback SQL is provided)
 await rollbackMigration('002')
 ```
+
+### Testing Migrations on Staging (US-007)
+
+**Before running migrations in production, always test on staging first.**
+
+Use the dry-run mode to preview what migrations will be applied:
+
+```typescript
+// Preview pending migrations
+await runMigrations({ dryRun: true, verbose: true })
+```
+
+This will show:
+- Which migrations are pending
+- What each migration does (description)
+- The impact of each migration (tables created, schema changes, etc.)
+- Whether any migrations are breaking changes
+- The rollback SQL (if available)
+
+Process for testing migrations:
+1. Run dry-run on staging: `await runMigrations({ dryRun: true, verbose: true })`
+2. Review the output carefully
+3. Apply migrations on staging: `await runMigrations({ environment: 'staging' })`
+4. Test your application against the staging database
+5. If everything works, apply to production: `await runMigrations({ environment: 'production' })`
 
 ## Transaction Handling
 

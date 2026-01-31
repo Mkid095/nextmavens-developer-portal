@@ -222,8 +222,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created LanguageSelector component at src/components/LanguageSelector.tsx with dropdown for JavaScript, Python, Go, and cURL. Created MultiLanguageCodeBlock component at src/components/MultiLanguageCodeBlock.tsx for rendering different code examples based on selection. Updated all service tabs (Database, Auth, Storage, Realtime, GraphQL) in project detail page to use language selector with multi-language code examples. Preferences saved to localStorage using getSavedLanguage() and saveLanguagePreference() functions. useLanguageSelector() hook provides automatic persistence. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -244,8 +244,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created service status types at src/lib/types/service-status.types.ts with ServiceStatus enum ('enabled', 'disabled', 'provisioning'), ServiceType enum, and helper functions. Updated ServiceStatusIndicator component at src/components/ServiceStatusIndicator.tsx with toggle functionality using the new types. Added service status state tracking to project detail page (src/app/dashboard/projects/[slug]/page.tsx) with ServiceStatuses interface and handleToggleService function that simulates provisioning delay. Integrated status indicators into service tab buttons (database, auth, storage, realtime, graphql) showing current status with click-to-toggle functionality. Status indicators show: Enabled (green checkmark), Disabled (gray X), Provisioning (blue spinner). Click to toggle with confirmation for disabling. Typecheck passes."
     },
     {
       "id": "US-011",
@@ -267,8 +267,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added quick action buttons to all relevant service tabs using the additionalSections prop of ServiceTab component. Buttons include: (1) 'Open Studio' button on database tab linking to /studio/[slug]/database, (2) 'View Users' button on auth tab linking to /studio/[slug]/auth/users, (3) 'Create Bucket' button on storage tab linking to /studio/[slug]/storage/buckets, (4) 'Open GraphQL Playground' button on graphql tab opening the GraphQL endpoint in a new tab. All buttons are styled consistently with emerald theme, include relevant icons, and have hover effects. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

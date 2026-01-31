@@ -98,8 +98,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Column display implemented in SchemaBrowser component at src/features/schema-browser/components/SchemaBrowser.tsx. Shows column name, data_type, is_nullable, and column_default (lines 176-190). Color-coded by data type: blue=numeric, green=text, purple=boolean, orange=date/time, pink=json (lines 72-90). Type icons displayed for each data type (lines 92-101). Typecheck passes."
     },
     {
       "id": "US-005",
@@ -124,8 +124,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: src/app/api/studio/[projectId]/tables/[table]/indexes/route.ts. GET endpoint that queries pg_indexes joined with pg_index for a specific table in tenant_{slug} schema. Returns index_name, index_def, is_unique, and is_primary. JWT authentication with project_id claim verification. Table name validation (regex check) to prevent SQL injection. Table existence check before querying indexes. Indexes ordered by index_name. Typecheck passes."
     },
     {
       "id": "US-006",
@@ -146,8 +146,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Indexes display implemented in SchemaBrowser component at src/features/schema-browser/components/SchemaBrowser.tsx. Added DatabaseIndex interface (index_name, index_def, is_unique, is_primary). Async fetching of indexes when table is expanded via useEffect hook. Indexes section displays below columns with 'Indexes' header. Shows index name, truncated index definition, and icons: Star (amber) for primary keys, ShieldCheck (blue) for unique indexes. Loading state with spinner while fetching indexes. Typecheck passes."
     },
     {
       "id": "US-007",
@@ -173,8 +173,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: GET /api/studio/[projectId]/tables/[table]/foreign-keys endpoint created at src/app/api/studio/[projectId]/tables/[table]/foreign-keys/route.ts. Queries information_schema.table_constraints joined with information_schema.key_column_usage and information_schema.constraint_column_usage. Returns constraint_name, column_name, foreign_table_name, and foreign_column_name. Filters for tenant_{slug} schema and specific table. JWT authentication with project_id claim verification. Table name validation (regex check) to prevent SQL injection. Table existence check before querying foreign keys. Foreign keys ordered by constraint_name and ordinal_position. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -195,8 +195,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Foreign keys display implemented in SchemaBrowser component at src/features/schema-browser/components/SchemaBrowser.tsx. Added DatabaseForeignKey interface (constraint_name, column_name, foreign_table, foreign_column). Async fetching of foreign keys when table is expanded via useEffect hook. Foreign keys section displays below indexes with 'Foreign Keys' header. Shows column name with arrow (→) pointing to referenced table.column (e.g., 'user_id → users.id'). Link2 icon for visual representation of relationship. Loading state with spinner while fetching foreign keys. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -217,8 +217,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Search functionality implemented in SchemaBrowser component at src/features/schema-browser/components/SchemaBrowser.tsx. Search box with icon and clear button (X). Real-time filtering via useMemo hook (filteredTables). Case-insensitive search matching table names. Empty state message when no tables match search query. Table count display shows filtered count (e.g., '3 of 10 tables'). Search and X icons from lucide-react. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -243,8 +243,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: GET /api/studio/[projectId]/tables/[table]/row-count endpoint created at src/app/api/studio/[projectId]/tables/[table]/row-count/route.ts. Executes COUNT(*) query on tenant schema table. Returns rowCount as integer. JWT authentication with project_id claim verification. Table name validation (regex check) to prevent SQL injection. Table existence check before counting. SchemaBrowser component updated with async row count fetching via useEffect hook. Row counts fetched for all tables when schemaData loads. Loading skeleton shown while fetching. Display format: '1,234 rows' with locale formatting. Typecheck passes."
     },
     {
       "id": "US-011",
@@ -267,8 +267,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: VisualSchemaDiagram component created at src/features/schema-browser/components/VisualSchemaDiagram.tsx. Canvas-based rendering using HTML5 Canvas API. Tables rendered as boxes with header (table name) and columns (name + data type). Foreign keys rendered as bezier curve lines with connection points. Draggable boxes with mouse down/move/up handlers. Zoom in/out buttons (1.2x multiplier, range 0.3x to 3x). Pan by clicking and dragging background. Reset view button to restore default zoom/pan. Auto-layout button using grid algorithm. Toolbar with zoom controls and current zoom percentage display. Info footer explaining controls. Shadow effects on tables for depth. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

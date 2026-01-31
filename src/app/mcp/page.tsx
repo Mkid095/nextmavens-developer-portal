@@ -14,6 +14,14 @@ import {
   Code2,
   ChevronRight,
   Loader2,
+  Github,
+  BookOpen,
+  Settings,
+  Key,
+  AlertTriangle,
+  Eye,
+  Edit3,
+  Lock,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -74,6 +82,12 @@ const navItems = [
     label: 'Installation',
     icon: Terminal,
     section: 'installation'
+  },
+  {
+    id: 'token-types',
+    label: 'Token Types',
+    icon: Key,
+    section: 'token-types'
   },
   {
     id: 'database',
@@ -563,6 +577,384 @@ npm install`} />
                           Set your API key as an environment variable:
                         </p>
                         <CodeBlock code="export NEXTMAVENS_API_KEY=nm_live_pk_your_key_here" />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Token Types Section */}
+              {activeSection === 'token-types' && (
+                <motion.div
+                  key="token-types"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="mb-8">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-3 bg-indigo-100 rounded-xl">
+                        <Key className="w-6 h-6 text-indigo-700" />
+                      </div>
+                      <div>
+                        <h1 className="text-3xl font-semibold text-slate-900">MCP Token Types</h1>
+                        <p className="text-slate-600">Understanding the three levels of MCP access</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    {/* Read-Only Token */}
+                    <div className="bg-white rounded-2xl border border-slate-200 p-8">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="p-4 bg-blue-100 rounded-xl">
+                            <Eye className="w-8 h-8 text-blue-700" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <h2 className="text-2xl font-semibold text-slate-900">Read-Only Token</h2>
+                              <code className="px-3 py-1 bg-blue-100 text-blue-700 rounded-lg text-sm font-mono">mcp_ro_</code>
+                            </div>
+                            <p className="text-slate-600">Safest option for AI assistants that only need to read data</p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                          Default
+                        </span>
+                      </div>
+
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-3">Scopes</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { scope: 'db:select', desc: 'Query database' },
+                            { scope: 'storage:read', desc: 'Read files' },
+                            { scope: 'realtime:subscribe', desc: 'Subscribe to events' },
+                          ].map((s) => (
+                            <div key={s.scope} className="px-4 py-2 bg-slate-100 rounded-lg">
+                              <code className="text-sm font-mono text-slate-900">{s.scope}</code>
+                              <p className="text-xs text-slate-600 mt-1">{s.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {[
+                            { scope: 'auth:signin', desc: 'Sign in users', disabled: true },
+                            { scope: 'graphql:execute', desc: 'GraphQL queries', disabled: true },
+                          ].map((s) => (
+                            <div key={s.scope} className="px-4 py-2 bg-slate-50 rounded-lg opacity-60">
+                              <code className="text-sm font-mono text-slate-500">{s.scope}</code>
+                              <p className="text-xs text-slate-500 mt-1">{s.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-3">Use Cases</h3>
+                        <ul className="space-y-2">
+                          {[
+                            'AI assistants that analyze data but never modify it',
+                            'Code generation tools that need schema context',
+                            'Chatbots that answer questions about your data',
+                            'Documentation assistants that explain your database structure',
+                          ].map((useCase, i) => (
+                            <li key={i} className="flex items-start gap-2 text-slate-700">
+                              <span className="text-blue-600 mt-1">✓</span>
+                              <span>{useCase}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                        <div className="flex items-start gap-3">
+                          <Shield className="w-5 h-5 text-blue-700 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="font-semibold text-blue-900 mb-1">Safest Option</h4>
+                            <p className="text-sm text-blue-700">Read-only tokens cannot modify your data, making them safe to use with untrusted AI tools. Ideal for exploration and analysis.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Read-Write Token */}
+                    <div className="bg-white rounded-2xl border border-slate-200 p-8">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="p-4 bg-amber-100 rounded-xl">
+                            <Edit3 className="w-8 h-8 text-amber-700" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <h2 className="text-2xl font-semibold text-slate-900">Read-Write Token</h2>
+                              <code className="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-sm font-mono">mcp_rw_</code>
+                            </div>
+                            <p className="text-slate-600">For trusted AI tools that need to create and modify data</p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Requires opt-in
+                        </span>
+                      </div>
+
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-3">Scopes</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { scope: 'db:select', desc: 'Query database' },
+                            { scope: 'db:insert', desc: 'Insert records' },
+                            { scope: 'db:update', desc: 'Update records' },
+                            { scope: 'storage:read', desc: 'Read files' },
+                            { scope: 'storage:write', desc: 'Upload files' },
+                            { scope: 'realtime:subscribe', desc: 'Subscribe to events' },
+                          ].map((s) => (
+                            <div key={s.scope} className="px-4 py-2 bg-slate-100 rounded-lg">
+                              <code className="text-sm font-mono text-slate-900">{s.scope}</code>
+                              <p className="text-xs text-slate-600 mt-1">{s.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {[
+                            { scope: 'db:delete', desc: 'Delete records', disabled: true },
+                            { scope: 'auth:manage', desc: 'User management', disabled: true },
+                            { scope: 'realtime:publish', desc: 'Publish events', disabled: true },
+                          ].map((s) => (
+                            <div key={s.scope} className="px-4 py-2 bg-slate-50 rounded-lg opacity-60">
+                              <code className="text-sm font-mono text-slate-500">{s.scope}</code>
+                              <p className="text-xs text-slate-500 mt-1">{s.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-3">Use Cases</h3>
+                        <ul className="space-y-2">
+                          {[
+                            'AI coding assistants that create database migrations',
+                            'Automation tools that insert or update records',
+                            'Data processing pipelines that modify your data',
+                            'Trusted AI tools that need full read/write access',
+                          ].map((useCase, i) => (
+                            <li key={i} className="flex items-start gap-2 text-slate-700">
+                              <span className="text-amber-600 mt-1">✓</span>
+                              <span>{useCase}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="w-5 h-5 text-amber-700 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="font-semibold text-amber-900 mb-1">Write Access Warning</h4>
+                            <p className="text-sm text-amber-700 mb-2">This token allows AI assistants to modify your data. Only grant to trusted AI systems that you control.</p>
+                            <ul className="text-sm text-amber-700 space-y-1">
+                              <li>• Read/write tokens can insert, update, and query data</li>
+                              <li>• Cannot delete records or manage users</li>
+                              <li>• Requires explicit opt-in confirmation during creation</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Admin Token */}
+                    <div className="bg-white rounded-2xl border border-slate-200 p-8">
+                      <div className="flex items-start justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                          <div className="p-4 bg-red-100 rounded-xl">
+                            <Lock className="w-8 h-8 text-red-700" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3 mb-2">
+                              <h2 className="text-2xl font-semibold text-slate-900">Admin Token</h2>
+                              <code className="px-3 py-1 bg-red-100 text-red-700 rounded-lg text-sm font-mono">mcp_admin_</code>
+                            </div>
+                            <p className="text-slate-600">Full access including destructive operations - use with extreme caution</p>
+                          </div>
+                        </div>
+                        <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          Extra confirmation
+                        </span>
+                      </div>
+
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-3">Scopes</h3>
+                        <p className="text-sm text-slate-600 mb-4">Full access to all operations:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { scope: 'db:select', desc: 'Query database' },
+                            { scope: 'db:insert', desc: 'Insert records' },
+                            { scope: 'db:update', desc: 'Update records' },
+                            { scope: 'db:delete', desc: 'Delete records' },
+                            { scope: 'storage:read', desc: 'Read files' },
+                            { scope: 'storage:write', desc: 'Upload files' },
+                            { scope: 'auth:manage', desc: 'User management' },
+                            { scope: 'realtime:subscribe', desc: 'Subscribe to events' },
+                            { scope: 'realtime:publish', desc: 'Publish events' },
+                            { scope: 'graphql:execute', desc: 'GraphQL queries' },
+                          ].map((s) => (
+                            <div key={s.scope} className="px-4 py-2 bg-slate-100 rounded-lg">
+                              <code className="text-sm font-mono text-slate-900">{s.scope}</code>
+                              <p className="text-xs text-slate-600 mt-1">{s.desc}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold text-slate-900 mb-3">Use Cases</h3>
+                        <ul className="space-y-2">
+                          {[
+                            'AI operations tools that manage your entire stack',
+                            'Automation scripts that need full lifecycle management',
+                            'Trusted AI DevOps assistants for production systems',
+                            'Advanced AI tools that require destructive operations',
+                          ].map((useCase, i) => (
+                            <li key={i} className="flex items-start gap-2 text-slate-700">
+                              <span className="text-red-600 mt-1">✓</span>
+                              <span>{useCase}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="bg-red-50 rounded-xl p-4 border border-red-200 mb-4">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="w-5 h-5 text-red-700 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <h4 className="font-semibold text-red-900 mb-1">Critical Warning - Full Access</h4>
+                            <p className="text-sm text-red-700 mb-2">This token has full administrative access including destructive operations.</p>
+                            <ul className="text-sm text-red-700 space-y-1">
+                              <li>• Can delete records and drop tables</li>
+                              <li>• Can manage users and authentication</li>
+                              <li>• Can perform any database operation</li>
+                              <li>• Requires TWO confirmation steps during creation</li>
+                              <li>• Only grant to AI systems you fully trust and control</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-100 rounded-xl p-4 border border-slate-300">
+                        <h4 className="font-semibold text-slate-900 mb-2">Best Practices</h4>
+                        <ul className="text-sm text-slate-700 space-y-1">
+                          <li>• Start with read-only tokens, upgrade only when needed</li>
+                          <li>• Use admin tokens only in controlled environments</li>
+                          <li>• Rotate admin tokens regularly</li>
+                          <li>• Monitor admin token usage in audit logs</li>
+                          <li>• Never share admin tokens in public repositories</li>
+                        </ul>
+                      </div>
+                    </div>
+
+                    {/* Comparison Table */}
+                    <div className="bg-white rounded-2xl border border-slate-200 p-8">
+                      <h2 className="text-2xl font-semibold text-slate-900 mb-6">Token Comparison</h2>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-slate-200">
+                              <th className="text-left py-3 px-4 font-semibold text-slate-900">Feature</th>
+                              <th className="text-center py-3 px-4 font-semibold text-blue-700">Read-Only</th>
+                              <th className="text-center py-3 px-4 font-semibold text-amber-700">Read-Write</th>
+                              <th className="text-center py-3 px-4 font-semibold text-red-700">Admin</th>
+                            </tr>
+                          </thead>
+                          <tbody className="text-sm">
+                            {[
+                              { feature: 'Query database', ro: true, rw: true, admin: true },
+                              { feature: 'Insert records', ro: false, rw: true, admin: true },
+                              { feature: 'Update records', ro: false, rw: true, admin: true },
+                              { feature: 'Delete records', ro: false, rw: false, admin: true },
+                              { feature: 'Read files', ro: true, rw: true, admin: true },
+                              { feature: 'Upload files', ro: false, rw: true, admin: true },
+                              { feature: 'User management', ro: false, rw: false, admin: true },
+                              { feature: 'Publish events', ro: false, rw: false, admin: true },
+                            ].map((row) => (
+                              <tr key={row.feature} className="border-b border-slate-100">
+                                <td className="py-3 px-4 text-slate-700">{row.feature}</td>
+                                <td className="py-3 px-4 text-center">
+                                  {row.ro ? <span className="text-blue-600">✓</span> : <span className="text-slate-300">—</span>}
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  {row.rw ? <span className="text-amber-600">✓</span> : <span className="text-slate-300">—</span>}
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  {row.admin ? <span className="text-red-600">✓</span> : <span className="text-slate-300">—</span>}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* When to use each type */}
+                    <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-8 text-white">
+                      <h2 className="text-2xl font-bold mb-6">Which token type should I use?</h2>
+                      <div className="grid md:grid-cols-3 gap-6">
+                        <div className="bg-white/10 rounded-xl p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-blue-500 rounded-lg">
+                              <Eye className="w-5 h-5 text-white" />
+                            </div>
+                            <h3 className="font-semibold">Start Here</h3>
+                          </div>
+                          <p className="text-slate-300 text-sm mb-3">
+                            Use <code className="bg-white/20 px-2 py-0.5 rounded text-blue-300">mcp_ro_</code> for:
+                          </p>
+                          <ul className="text-sm text-slate-300 space-y-1">
+                            <li>• Exploring your data</li>
+                            <li>• Generating reports</li>
+                            <li>• Code review and analysis</li>
+                            <li>• Documentation assistance</li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-white/10 rounded-xl p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-amber-500 rounded-lg">
+                              <Edit3 className="w-5 h-5 text-white" />
+                            </div>
+                            <h3 className="font-semibold">Need to Modify?</h3>
+                          </div>
+                          <p className="text-slate-300 text-sm mb-3">
+                            Use <code className="bg-white/20 px-2 py-0.5 rounded text-amber-300">mcp_rw_</code> for:
+                          </p>
+                          <ul className="text-sm text-slate-300 space-y-1">
+                            <li>• Creating migrations</li>
+                            <li>• Data processing tasks</li>
+                            <li>• Trusted AI coding tools</li>
+                            <li>• Automation scripts</li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-white/10 rounded-xl p-6">
+                          <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-red-500 rounded-lg">
+                              <Lock className="w-5 h-5 text-white" />
+                            </div>
+                            <h3 className="font-semibold">Full Control</h3>
+                          </div>
+                          <p className="text-slate-300 text-sm mb-3">
+                            Use <code className="bg-white/20 px-2 py-0.5 rounded text-red-300">mcp_admin_</code> for:
+                          </p>
+                          <ul className="text-sm text-slate-300 space-y-1">
+                            <li>• AI DevOps operations</li>
+                            <li>• Production automation</li>
+                            <li>• Full lifecycle management</li>
+                            <li>• Destructive operations needed</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>

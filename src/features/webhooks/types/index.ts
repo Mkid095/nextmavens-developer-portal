@@ -40,6 +40,7 @@ export interface EventLog {
  * Event types that can trigger webhooks
  *
  * US-003: Define Event Types (from webhooks-events PRD)
+ * US-007: Add secret.rotated event type (from secrets-versioning PRD)
  */
 export type EventType =
   | 'project.created'
@@ -54,6 +55,9 @@ export type EventType =
   | 'key.revoked'
   | 'function.executed'
   | 'usage.threshold'
+  | 'secret.created'
+  | 'secret.rotated'
+  | 'secret.deleted'
 
 /**
  * Webhook delivery result
@@ -62,6 +66,8 @@ export interface WebhookDeliveryResult {
   success: boolean
   statusCode?: number
   error?: string
+  delivered?: boolean
+  duration?: number
 }
 
 /**

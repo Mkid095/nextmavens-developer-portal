@@ -22,6 +22,8 @@ import {
   Calendar,
 } from 'lucide-react'
 import CreateApiKeyModal, { type CreateKeyData } from '@/components/CreateApiKeyModal'
+import { McpTokenBadge } from '@/components/McpTokenBadge'
+import ProjectStatusBadge from '@/components/ProjectStatusBadge'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
 
 interface Developer {
@@ -728,7 +730,10 @@ export default function DashboardPage() {
                     <div key={key.id} className="p-4 bg-slate-50 rounded-lg">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="font-medium text-slate-900 mb-1">{key.name}</div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="font-medium text-slate-900">{key.name}</div>
+                            <McpTokenBadge apiKey={key} compact />
+                          </div>
                           <code className="text-sm text-slate-600 block break-all">
                             {key.public_key && key.public_key.length > 20 ? key.public_key : `${key.public_key}•••• (incomplete)`}
                           </code>
@@ -803,6 +808,9 @@ export default function DashboardPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-slate-900">{project.name}</span>
+                            {project.status && (
+                              <ProjectStatusBadge status={project.status} size="sm" />
+                            )}
                             {project.environment && (
                               <span
                                 className={`px-2 py-0.5 text-xs font-medium rounded-full ${

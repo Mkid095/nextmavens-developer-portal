@@ -28,7 +28,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Created migration file 009_create_webhooks_table.sql with webhooks table in control_plane schema"
+      "notes": "Created migration 009_create_webhooks_table.sql with webhooks table in control_plane schema. Includes id (UUID PK), project_id (UUID FK), event (VARCHAR 100), target_url (VARCHAR 2048), secret (VARCHAR 255, auto-generated hex), enabled (BOOLEAN, default TRUE), consecutive_failures (INTEGER, default 0), updated_at (TIMESTAMPTZ), created_at. Indexes on project_id, event, and (project_id, event). Typecheck passes."
     },
     {
       "id": "US-002",
@@ -54,7 +54,7 @@
       },
       "priority": 1,
       "passes": true,
-      "notes": "Completed: Migration 010_create_event_log_table.sql created with event_log table in control_plane schema. All required columns: id (UUID PK), project_id (UUID FK to projects.id), event_type (VARCHAR 100), payload (JSONB with default {}), delivered_at (TIMESTAMPTZ, nullable), status (VARCHAR 20 with CHECK constraint for pending/delivered/failed), created_at. Indexes on (project_id, status), project_id, event_type, status, and created_at DESC. Migration record inserted into schema_migrations. Typecheck passes."
+      "notes": "Completed: Migration 010_create_event_log_table.sql created with event_log table in control_plane schema. All required columns: id (UUID PK), project_id (UUID FK to projects.id), webhook_id (UUID FK to webhooks.id, nullable), event_type (VARCHAR 100), payload (JSONB with default {}), delivered_at (TIMESTAMPTZ, nullable), status (VARCHAR 20 with CHECK constraint for pending/delivered/failed), response_code (INTEGER, nullable), response_body (TEXT, nullable), retry_count (INTEGER, default 0), created_at. Indexes on (project_id, status), project_id, event_type, status, and created_at DESC. Migration record inserted into schema_migrations. Typecheck passes."
     },
     {
       "id": "US-003",
@@ -136,8 +136,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Background job (webhook-processor-job.ts, 439 lines) with runWebhookProcessor() function. Processes pending event_log entries with exponential backoff retry (calculateBackoffDelay: 1s * 2^retry_count with jitter, max 60s). POSTs payload to target_url with HMAC-SHA256 signature (X-Webhook-Signature header). Updates event_log status (pending/delivered/failed), response_code, response_body, delivered_at. Implements 5 retries with consecutive_failures tracking. Auto-disables webhooks after 5 consecutive failures (US-011 integration). Typecheck passes."
     },
     {
       "id": "US-006",
@@ -163,8 +163,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created signature verification library at src/features/webhooks/lib/webhook-signature.ts (270+ lines) with verifyWebhookSignature(), generateSignature(), extractSignature(), and parseVerifiedWebhook() helper functions. Verification uses HMAC-SHA256 with constant-time comparison to prevent timing attacks. The X-Webhook-Signature header (format: sha256=<hex>) is already sent by webhook-delivery.ts (line 103). Documentation created at docs/webhooks-signature-verification.md with comprehensive guide including how signature verification works, headers reference, verification steps, and example code in Node.js/TypeScript (Express, Next.js), Python (Flask), and Go. Includes security best practices (constant-time comparison, timestamp checks, proper status codes, idempotency handling) and troubleshooting section. Typecheck passes."
     },
     {
       "id": "US-007",
@@ -191,8 +191,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Implemented event emissions for all four required events. project.created: Emitted at control-plane-api/src/app/api/v1/projects/route.ts with project_id, project_name, tenant_id, environment, developer_id, created_at. user.signedup: Emitted at src/app/api/developer/register/route.ts using new emitPlatformEvent function (for platform events without project_id) with user_id, email, name, organization, created_at. file.uploaded: Emitted at src/app/api/storage/upload/route.ts with project_id, file_name, file_size, content_type, storage_path, uploaded_at. key.rotated: Emitted at control-plane-api/src/app/api/v1/keys/[id]/rotate/route.ts with project_id, old_key_id, new_key_id, key_name, key_type, rotated_at, expires_at. Created emitPlatformEvent function in webhook-delivery.ts for platform-level events (uses system project_id '00000000-0000-0000-0000-000000000000'). All emissions use fire-and-forget pattern. Events are created in event_log table. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -218,8 +218,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: All Webhooks API endpoints implemented. GET /api/webhooks (control-plane-api/src/app/api/v1/webhooks/route.ts:40-142) lists webhooks with filters for project_id, event, enabled status, limit, and offset. GET /api/webhooks/:id (control-plane-api/src/app/api/v1/webhooks/[id]/route.ts:35-95) returns webhook details. PUT /api/webhooks/:id (control-plane-api/src/app/api/v1/webhooks/[id]/route.ts:98-216) updates webhook fields (event, target_url, secret, enabled). DELETE /api/webhooks/:id (control-plane-api/src/app/api/v1/webhooks/[id]/route.ts:219-273) deletes webhook. All endpoints include authentication, project ownership validation, and proper error handling. Validation schemas defined in control-plane-api/src/lib/validation.ts (createWebhookSchema, updateWebhookSchema, listWebhooksQuerySchema)."
     },
     {
       "id": "US-009",
@@ -244,8 +244,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Webhooks management UI at src/app/dashboard/projects/[slug]/webhooks/page.tsx (603 lines). Lists all webhooks for project with event type, target URL, enabled status, created date, and consecutive failures. Create webhook form with event type dropdown (all 12 event types), target URL input with validation, enable toggle defaulting to true. Test webhook button with visual feedback (success/error states). Enable/disable toggle with animated switches. Delete webhook button with confirmation modal. Secret display only on creation (show once with copy button). Error handling with user-friendly messages. Loading states for all async operations. Responsive design with Framer Motion animations. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -268,8 +268,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created GET /api/v1/webhooks/history endpoint in control-plane-api with filtering by project_id, webhook_id, event_type, status, and pagination support. Added POST /api/v1/webhooks/retry endpoint to retry failed webhook deliveries. Added EventLog types to webhook.types.ts with all required fields (id, project_id, webhook_id, event_type, status, response_code, response_body, retry_count, delivered_at, created_at). Updated control-plane-client.ts with listEventLogs() and retryWebhook() methods. Added webhook history UI section to webhooks page with event type, delivered_at, status, response code display, retry count indicator, retry failed webhooks button (now functional), individual retry button for each failed webhook, and status filter (all/delivered/failed/pending). Added View History button in page header and individual webhook cards. Typecheck passes."
     },
     {
       "id": "US-011",
@@ -295,8 +295,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added WEBHOOK_DISABLED notification type to abuse-controls types. Implemented sendWebhookDisabledNotification() function in notifications.ts that sends email notification to project owner and org members when webhook is auto-disabled after 5 consecutive failures. Updated incrementWebhookFailures() in webhook-delivery.ts to call notification function on auto-disable. Auto-disable logic (enabled = FALSE after 5 failures) was already implemented in the SQL UPDATE statement. Manual re-enable is already available via PUT /api/webhooks/:id endpoint (US-008). Typecheck passes."
     }
   ],
   "relatedPRDs": [],

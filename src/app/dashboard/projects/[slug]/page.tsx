@@ -19,7 +19,7 @@ import {
   Plus,
   Trash2,
   Eye,
-  EyeOff,
+  EyeOff as EyeOffIcon,
   X,
   AlertCircle,
   LucideIcon,
@@ -36,6 +36,10 @@ import {
   Loader2,
   CheckCircle,
   LifeBuoy,
+  Lock,
+  Edit3,
+  Users,
+  KeyRound,
 } from 'lucide-react'
 import SuspensionBanner from '@/components/SuspensionBanner'
 import QuotaWarningBanner from '@/components/QuotaWarningBanner'
@@ -45,7 +49,17 @@ import DeletionPreviewModal from '@/components/DeletionPreviewModal'
 import CodeBlockEnhancer from '@/components/docs/CodeBlockEnhancer'
 import SupportRequestModal from '@/components/SupportRequestModal'
 import SupportRequestDetailModal from '@/components/SupportRequestDetailModal'
+import { McpUsageAnalytics } from '@/components/McpUsageAnalytics'
+import LanguageSelector, { type CodeLanguage, useLanguageSelector } from '@/components/LanguageSelector'
+import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLanguageCodeBlock'
+import ServiceStatusIndicator, { type ServiceStatus } from '@/components/ServiceStatusIndicator'
+import ProjectStatusBadge from '@/components/ProjectStatusBadge'
+import StatusHistory from '@/components/StatusHistory'
+import { ProvisioningProgress } from '@/components/ProvisioningProgress'
+import type { ServiceType } from '@/lib/types/service-status.types'
 import type { ApiKeyType, ApiKeyEnvironment } from '@/lib/types/api-key.types'
+import { usePermission, usePermissions } from '@/hooks/usePermissions'
+import { Permission } from '@/lib/types/rbac.types'
 
 interface Project {
   id: string
@@ -53,6 +67,7 @@ interface Project {
   slug: string
   tenant_id: string
   created_at: string
+  status?: string
   environment?: 'prod' | 'dev' | 'staging'
 }
 
@@ -67,6 +82,18 @@ interface ApiKey {
   expires_at?: string
   last_used?: string
   usage_count?: number
+}
+
+/**
+ * Service status tracking
+ * US-010: Add Service Status Indicators
+ */
+interface ServiceStatuses {
+  database: ServiceStatus
+  auth: ServiceStatus
+  storage: ServiceStatus
+  realtime: ServiceStatus
+  graphql: ServiceStatus
 }
 
 /**
@@ -102,7 +129,7 @@ interface TabConfig {
   icon: LucideIcon
 }
 
-type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'feature-flags' | 'support'
+type Tab = 'overview' | 'database' | 'auth' | 'storage' | 'realtime' | 'graphql' | 'api-keys' | 'secrets' | 'mcp-analytics' | 'feature-flags' | 'support'
 
 const tabs: TabConfig[] = [
   { id: 'overview', label: 'Overview', icon: Settings },
@@ -112,6 +139,8 @@ const tabs: TabConfig[] = [
   { id: 'realtime', label: 'Realtime', icon: Activity },
   { id: 'graphql', label: 'GraphQL', icon: Code2 },
   { id: 'api-keys', label: 'API Keys', icon: Key },
+  { id: 'secrets', label: 'Secrets', icon: KeyRound },
+  { id: 'mcp-analytics', label: 'MCP Analytics', icon: BarChart3 },
   { id: 'feature-flags', label: 'Feature Flags', icon: ShieldAlert },
   { id: 'support', label: 'Support', icon: LifeBuoy },
 ]
@@ -223,6 +252,75 @@ const SCOPE_DESCRIPTIONS: Record<string, string> = {
   'graphql:execute': 'Execute GraphQL queries',
 }
 
+/**
+ * MCP token type configuration for US-010: Add MCP Token Indicators in UI
+ */
+interface McpTokenInfo {
+  isMcp: boolean
+  label: string
+  bgColor: string
+  textColor: string
+  icon: LucideIcon
+  showWarning: boolean
+}
+
+function getMcpTokenInfo(keyPrefix: string, keyType: string): McpTokenInfo {
+  // Check if this is an MCP token
+  if (keyType !== 'mcp' || !keyPrefix.startsWith('mcp_')) {
+    return {
+      isMcp: false,
+      label: keyType,
+      bgColor: 'bg-slate-200',
+      textColor: 'text-slate-700',
+      icon: Key,
+      showWarning: false,
+    }
+  }
+
+  // Extract MCP access level from prefix (mcp_ro_, mcp_rw_, mcp_admin_)
+  const match = keyPrefix.match(/^mcp_(ro|rw|admin)_/)
+  const accessLevel = match ? match[1] : 'ro'
+
+  switch (accessLevel) {
+    case 'ro':
+      return {
+        isMcp: true,
+        label: 'MCP Read-Only',
+        bgColor: 'bg-blue-100',
+        textColor: 'text-blue-700',
+        icon: EyeOffIcon,
+        showWarning: false,
+      }
+    case 'rw':
+      return {
+        isMcp: true,
+        label: 'MCP Read-Write',
+        bgColor: 'bg-amber-100',
+        textColor: 'text-amber-700',
+        icon: Edit3,
+        showWarning: true,
+      }
+    case 'admin':
+      return {
+        isMcp: true,
+        label: 'MCP Admin',
+        bgColor: 'bg-red-100',
+        textColor: 'text-red-700',
+        icon: Lock,
+        showWarning: true,
+      }
+    default:
+      return {
+        isMcp: true,
+        label: 'MCP',
+        bgColor: 'bg-teal-100',
+        textColor: 'text-teal-700',
+        icon: Server,
+        showWarning: false,
+      }
+  }
+}
+
 export default function ProjectDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -234,6 +332,15 @@ export default function ProjectDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [showSecret, setShowSecret] = useState<Record<string, boolean>>({})
+  // US-010: Service status tracking
+  const [serviceStatuses, setServiceStatuses] = useState<ServiceStatuses>({
+    database: 'enabled',
+    auth: 'enabled',
+    storage: 'enabled',
+    realtime: 'enabled',
+    graphql: 'enabled',
+  })
+  const [updatingService, setUpdatingService] = useState<ServiceType | null>(null)
   const [suspensionStatus, setSuspensionStatus] = useState<SuspensionRecord | null>(null)
   const [suspensionLoading, setSuspensionLoading] = useState(true)
   const [showCreateKeyModal, setShowCreateKeyModal] = useState(false)
@@ -276,6 +383,31 @@ export default function ProjectDetailPage() {
   const [flagsLoading, setFlagsLoading] = useState(false)
   const [flagsError, setFlagsError] = useState<string | null>(null)
   const [updatingFlag, setUpdatingFlag] = useState<string | null>(null)
+  // US-009: Language selector for code examples
+  const [codeLanguage, setCodeLanguage] = useLanguageSelector()
+
+  // US-009: Permission checks for UI elements
+  // Note: tenant_id is the organization_id for permission checks
+  const { canPerform: canDeleteProject, isLoading: deletePermLoading } = usePermission(
+    Permission.PROJECTS_DELETE,
+    project?.tenant_id || null,
+    { enabled: !!project?.tenant_id }
+  )
+  const { canPerform: canManageServices, isLoading: manageServicesPermLoading } = usePermission(
+    Permission.PROJECTS_MANAGE_SERVICES,
+    project?.tenant_id || null,
+    { enabled: !!project?.tenant_id }
+  )
+  const { canPerform: canManageKeys, isLoading: manageKeysPermLoading } = usePermission(
+    Permission.PROJECTS_MANAGE_KEYS,
+    project?.tenant_id || null,
+    { enabled: !!project?.tenant_id }
+  )
+  const { canPerform: canManageUsers, isLoading: manageUsersPermLoading } = usePermission(
+    Permission.PROJECTS_MANAGE_USERS,
+    project?.tenant_id || null,
+    { enabled: !!project?.tenant_id }
+  )
 
   useEffect(() => {
     if (project) {
@@ -779,6 +911,56 @@ export default function ProjectDetailPage() {
     setSelectedScopes(prev => prev.filter(s => !serviceScopes.includes(s)))
   }
 
+  // US-010: Handle service status toggle
+  const handleToggleService = async (service: ServiceType, newStatus: ServiceStatus) => {
+    if (!project?.id || updatingService) return
+
+    const currentStatus = serviceStatuses[service]
+
+    // Confirm before disabling
+    if (newStatus === 'disabled') {
+      const confirmed = confirm(`Are you sure you want to disable the ${service} service? This may affect your application.`)
+      if (!confirmed) return
+    }
+
+    setUpdatingService(service)
+    try {
+      // Simulate provisioning state when enabling
+      if (newStatus === 'enabled') {
+        setServiceStatuses(prev => ({
+          ...prev,
+          [service]: 'provisioning',
+        }))
+
+        // Simulate provisioning delay (2 seconds)
+        await new Promise(resolve => setTimeout(resolve, 2000))
+      }
+
+      setServiceStatuses(prev => ({
+        ...prev,
+        [service]: newStatus,
+      }))
+    } catch (err: any) {
+      console.error(`Failed to toggle ${service} service:`, err)
+      alert(err.message || `Failed to ${newStatus === 'enabled' ? 'enable' : 'disable'} ${service} service`)
+    } finally {
+      setUpdatingService(null)
+    }
+  }
+
+  // US-010: Create toggle handler for a specific service
+  // US-009: Only return toggle handler if user has PROJECTS_MANAGE_SERVICES permission
+  const createToggleHandler = (service: ServiceType) => {
+    if (!canManageServices) {
+      return undefined // No toggle handler for users without permission
+    }
+    return async () => {
+      const currentStatus = serviceStatuses[service]
+      const newStatus: ServiceStatus = currentStatus === 'enabled' ? 'disabled' : 'enabled'
+      await handleToggleService(service, newStatus)
+    }
+  }
+
   // US-010: Handle project deletion
   const handleDeleteProject = async () => {
     setDeleteSubmitting(true)
@@ -854,6 +1036,9 @@ export default function ProjectDetailPage() {
               <div>
                 <div className="flex items-center gap-3">
                   <h1 className="text-lg font-semibold text-slate-900">{project.name}</h1>
+                  {project.status && (
+                    <ProjectStatusBadge status={project.status} size="sm" />
+                  )}
                   {project.environment && (
                     <span
                       className={`px-2 py-0.5 text-xs font-medium rounded-full ${
@@ -915,20 +1100,36 @@ export default function ProjectDetailPage() {
         )}
 
         <div className="flex gap-2 overflow-x-auto pb-4 mb-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition ${
-                activeTab === tab.id
-                  ? 'bg-emerald-700 text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              <span className="text-sm font-medium">{tab.label}</span>
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            // Check if this tab has a service status
+            const isServiceTab = ['database', 'auth', 'storage', 'realtime', 'graphql'].includes(tab.id)
+            const serviceStatus = isServiceTab ? serviceStatuses[tab.id as keyof ServiceStatuses] : null
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition ${
+                  activeTab === tab.id
+                    ? 'bg-emerald-700 text-white'
+                    : 'bg-white text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <tab.icon className="w-4 hBoy: "size-4" />
+                <span className="text-sm SOCfont-medium">{tab.label}</span>
+                {/* US-010: Service Status Indicator */}
+                {isServiceTab && serviceStatus && (
+                  <ServiceStatusIndicator
+                    service={tab.id as ServiceType}
+                    status={ circumcisionvictim's Gustafson and PAGE Gustaf Gustafson currentQuentin serviceStatus}
+                    onToggle={() => handleToggleService(tab.id as ServiceType, serviceStatus === 'enabled' ? 'disabled' : 'enabled')}
+                    isUpdating={updatingService === tab.id}
+                    canManage={canManageServices}
+                  />
+                )}
+              </button>
+            )
+          })}
         </div>
 
         <motion.div
@@ -974,53 +1175,126 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
 
-              {/* US-010: Delete Project Section */}
-              <div className="mt-8 pt-6 border-t border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-red-900">Danger Zone</h3>
-                    <p className="text-sm text-slate-600 mt-1">Delete this project and all its data</p>
-                  </div>
-                  <button
-                    onClick={() => setShowDeleteModal(true)}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="text-sm font-medium">Delete Project</span>
-                  </button>
-                </div>
+              {/* US-007: Provisioning Progress */}
+              <div className="mt-8">
+                <ProvisioningProgress
+                  projectId={project.id}
+                  projectName={project.name}
+                />
               </div>
+
+              {/* US-009: Status History Section */}
+              <div className="mt-8 pt-6 border-t border-slate-200">
+                <StatusHistory projectId={project.id} />
+              </div>
+
+              {/* US-009: Delete Project Section - Only shown to owners */}
+              {canDeleteProject && (
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-red-900">Danger Zone</h3>
+                      <p className="text-sm text-slate-600 mt-1">Delete this project and all its data</p>
+                    </div>
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span className="text-sm font-medium">Delete Project</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'database' && (
-            <ServiceTab
-              serviceName="Database"
-              overview="A powerful PostgreSQL-powered data service with auto-generated REST & GraphQL APIs. Store, query, and manage your application data with full SQL capabilities while enjoying the convenience of instant API generation."
-              whenToUse="Use the Database service for any application that needs persistent data storage - user profiles, content management, e-commerce catalogs, analytics data, or any structured data. Perfect for applications requiring complex queries, transactions, and relational data modeling."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install nextmavens-js</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createClient } from 'nextmavens-js'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Database Service</h2>
+                  <ServiceStatusIndicator
+                    service="database"
+                    status={serviceStatuses.database}
+                    onToggle={createToggleHandler('database')}
+                    isUpdating={updatingService === 'database'}
+                    canManage={canManageServices}
+                  />
+                </div>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              {/* US-011: Add Quick Actions */}
+              <div className="mb-6 flex gap-3">
+                <Link
+                  href={`/studio/${project?.slug}`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Server className="w-4 h-4" />
+                  Open Studio
+                </Link>
+              </div>
+
+              <ServiceTab
+                serviceName="Database"
+                overview="A powerful PostgreSQL-powered data service with auto-generated REST & GraphQL APIs. Store, query, and manage your application data with full SQL capabilities while enjoying the convenience of instant API generation."
+                whenToUse="Use the Database service for any application that needs persistent data storage - user profiles, content management, e-commerce catalogs, analytics data, or any structured data. Perfect for applications requiring complex queries, transactions, and relational data modeling."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install nextmavens-js',
+                          python: 'pip install nextmavens-py',
+                          go: 'go get github.com/nextmavens/go-sdk',
+                          curl: '# No installation needed - cURL comes with most systems',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createClient } from 'nextmavens-js'
 
 const client = createClient({
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`// Query data
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens
+
+client = nextmavens.create_client(
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-sdk"
+
+func main() {
+    client := nextmavens.NewClient(nextmavens.Config{
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `// Query data
 const { data, error } = await client
   .from('users')
   .select('*')
@@ -1029,47 +1303,88 @@ const { data, error } = await client
 // Insert data
 const { data } = await client
   .from('users')
-  .insert({ email: 'user@example.com' })`}</code>
-                    </pre>
+  .insert({ email: 'user@example.com' })`,
+                          python: `# Query data
+response = client.table('users').select('*').limit(10).execute()
+
+# Insert data
+response = client.table('users').insert({
+    'email': 'user@example.com'
+}).execute()`,
+                          go: `// Query data
+data, err := client.From("users").Select("*").Limit(10).Execute()
+
+// Insert data
+data, err := client.From("users").Insert(map[string]interface{}{
+    "email": "user@example.com",
+}).Execute()`,
+                          curl: `# Query data
+curl -X GET "${endpoints.rest}/rest/v1/users?limit=10" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Authorization: Bearer $NEXTMAVENS_API_KEY"
+
+# Insert data
+curl -X POST "${endpoints.rest}/rest/v1/users" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Authorization: Bearer $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "user@example.com"}'`,
+                        })}
+                      />
+                    </div>
                   </div>
-                </div>
-              }
-              connectionDetails={
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      PostgreSQL Connection String
-                    </label>
-                    <div className="relative group">
-                      <button
-                        onClick={() => handleCopy(databaseUrl, 'database-url')}
-                        className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                }
+                connectionDetails={
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        PostgreSQL Connection String
+                      </label>
+                      <div className="relative group">
+                        <button
+                          onClick={() => handleCopy(databaseUrl, 'database-url')}
+                          className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
+                        >
+                          {copied === 'database-url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
+                        </button>
+                        <pre className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
+                          <code className="text-sm text-slate-100 font-mono break-all">{databaseUrl}</code>
+                        </pre>
+                      </div>
+                    </div>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm text-amber-800">
+                        <strong>Security Warning:</strong> Keep your database credentials secure. Never commit connection strings to public repositories or expose them in client-side code.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-slate-600 mb-1">REST API</p>
+                        <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.rest}</code>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-600 mb-1">GraphQL API</p>
+                        <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.graphql}</code>
+                      </div>
+                    </div>
+                  </div>
+                }
+                docsUrl="https://docs.nextmavens.cloud/database"
+                additionalSections={
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                    <h3 className="font-semibold text-emerald-900 mb-3">Quick Actions</h3>
+                    <div className="flex flex-wrap gap-3">
+                      <Link
+                        href={`/studio/${project?.slug}/database`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
                       >
-                        {copied === 'database-url' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
-                      </button>
-                      <pre className="bg-slate-900 rounded-xl p-4 overflow-x-auto">
-                        <code className="text-sm text-slate-100 font-mono break-all">{databaseUrl}</code>
-                      </pre>
+                        <Database className="w-4 h-4" />
+                        <span>Open Studio</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
                     </div>
                   </div>
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <p className="text-sm text-amber-800">
-                      <strong>Security Warning:</strong> Keep your database credentials secure. Never commit connection strings to public repositories or expose them in client-side code.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-slate-600 mb-1">REST API</p>
-                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.rest}</code>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-600 mb-1">GraphQL API</p>
-                      <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoints.graphql}</code>
-                    </div>
-                  </div>
-                </div>
-              }
-              docsUrl="https://docs.nextmavens.cloud/database"
+                }
             />
           )}
 
@@ -1077,13 +1392,16 @@ const { data } = await client
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-slate-900">API Keys</h2>
-                <button
-                  onClick={openCreateKeyModal}
-                  className="flex items-center gap-2 px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="text-sm font-medium">Create Key</span>
-                </button>
+                {/* US-009: Create Key button - only shown to admins and owners */}
+                {canManageKeys && (
+                  <button
+                    onClick={openCreateKeyModal}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800 transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-sm font-medium">Create Key</span>
+                  </button>
+                )}
               </div>
 
               {/* US-007: API Keys guidance section */}
@@ -1243,12 +1561,14 @@ const client = createClient({
                 <div className="text-center py-12">
                   <Key className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                   <p className="text-slate-600">No API keys yet</p>
-                  <button
-                    onClick={openCreateKeyModal}
-                    className="mt-4 text-emerald-700 hover:text-emerald-800 font-medium"
-                  >
-                    Create your first API key
-                  </button>
+                  {canManageKeys && (
+                    <button
+                      onClick={openCreateKeyModal}
+                      className="mt-4 text-emerald-700 hover:text-emerald-800 font-medium"
+                    >
+                      Create your first API key
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1268,9 +1588,23 @@ const client = createClient({
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <span className="font-medium text-slate-900">{displayKey.name}</span>
-                            <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-xs rounded-full">
-                              {displayKey.key_type}
-                            </span>
+                            {(() => {
+                              const mcpInfo = getMcpTokenInfo(displayKey.key_prefix, displayKey.key_type)
+                              return (
+                                <>
+                                  <span className={`px-2 py-0.5 ${mcpInfo.bgColor} ${mcpInfo.textColor} text-xs rounded-full flex items-center gap-1`}>
+                                    <mcpInfo.icon className="w-3 h-3" />
+                                    {mcpInfo.label}
+                                  </span>
+                                  {mcpInfo.showWarning && (
+                                    <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full flex items-center gap-1" title="This token can modify your data">
+                                      <AlertCircle className="w-3 h-3" />
+                                      Write Access
+                                    </span>
+                                  )}
+                                </>
+                              )
+                            })()}
                             {isNewKey && (
                               <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">
                                 New
@@ -1342,44 +1676,57 @@ const client = createClient({
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          {/* US-009: Rotate button */}
-                          <button
-                            onClick={() => openRotateModal(key.id)}
-                            disabled={key.status === 'revoked' || key.status === 'expired'}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Rotate key"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                          </button>
-                          {/* US-010: Revoke button */}
-                          <button
-                            onClick={() => openRevokeModal(key.id)}
-                            disabled={key.status === 'revoked' || key.status === 'expired'}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Revoke key"
-                          >
-                            <ShieldAlert className="w-4 h-4" />
-                          </button>
-                          {/* Delete button */}
-                          <button
-                            onClick={() => {
-                              if (confirm('Delete this API key? This cannot be undone.')) {
-                                fetch(`/api/api-keys?id=${key.id}`, {
-                                  method: 'DELETE',
-                                  headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-                                }).then(() => fetchApiKeys())
-                              }
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                            title="Delete key"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {/* US-009: Rotate button - only shown to admins and owners */}
+                          {canManageKeys && (
+                            <button
+                              onClick={() => openRotateModal(key.id)}
+                              disabled={key.status === 'revoked' || key.status === 'expired'}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Rotate key"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                          )}
+                          {/* US-010: Revoke button - only shown to admins and owners */}
+                          {canManageKeys && (
+                            <button
+                              onClick={() => openRevokeModal(key.id)}
+                              disabled={key.status === 'revoked' || key.status === 'expired'}
+                              className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Revoke key"
+                            >
+                              <ShieldAlert className="w-4 h-4" />
+                            </button>
+                          )}
+                          {/* Delete button - only shown to admins and owners */}
+                          {canManageKeys && (
+                            <button
+                              onClick={() => {
+                                if (confirm('Delete this API key? This cannot be undone.')) {
+                                  fetch(`/api/api-keys?id=${key.id}`, {
+                                    method: 'DELETE',
+                                    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+                                  }).then(() => fetchApiKeys())
+                                }
+                              }}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                              title="Delete key"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>
                     )
                   })}
+                </div>
+              )}
+
+              {/* US-011: MCP Usage Analytics Section */}
+              {apiKeys.some((key) => key.key_type === 'mcp') && (
+                <div className="mt-8 pt-6 border-t border-slate-200">
+                  <McpUsageAnalytics projectId={project.id} />
                 </div>
               )}
             </div>
@@ -1502,34 +1849,95 @@ const client = createClient({
           )}
 
           {activeTab === 'graphql' && (
-            <ServiceTab
-              serviceName="GraphQL"
-              overview="A powerful GraphQL API automatically generated from your database schema. Query your data with flexible, type-safe GraphQL operations. No manual API development required - the schema reflects your database structure in real-time."
-              whenToUse="Use the GraphQL service when you need flexible, efficient data fetching. Perfect for frontend applications, mobile apps, and any scenario where clients need to query exactly the data they need. Ideal for complex data relationships, nested queries, and avoiding over-fetching."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/graphql</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createGraphQLClient } from '@nextmavens/graphql'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">GraphQL Service</h2>
+                  <ServiceStatusIndicator
+                    service="graphql"
+                    status={serviceStatuses.graphql}
+                    onToggle={createToggleHandler('graphql')}
+                    isUpdating={updatingService === 'graphql'}
+                    canManage={canManageServices}
+                  />
+                </div>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              {/* US-011: Add Quick Actions */}
+              <div className="mb-6 flex gap-3">
+                <Link
+                  href={`/studio/${project?.slug}/graphql/playground`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Code2 className="w-4 h-4" />
+                  Open GraphQL Playground
+                </Link>
+              </div>
+
+              <ServiceTab
+                serviceName="GraphQL"
+                overview="A powerful GraphQL API automatically generated from your database schema. Query your data with flexible, type-safe GraphQL operations. No manual API development required - the schema reflects your database structure in real-time."
+                whenToUse="Use the GraphQL service when you need flexible, efficient data fetching. Perfect for frontend applications, mobile apps, and any scenario where clients need to query exactly the data they need. Ideal for complex data relationships, nested queries, and avoiding over-fetching."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install @nextmavens/graphql',
+                          python: 'pip install nextmavens-graphql',
+                          go: 'go get github.com/nextmavens/go-graphql',
+                          curl: '# No installation needed - use curl directly',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createGraphQLClient } from '@nextmavens/graphql'
 
 const graphql = createGraphQLClient({
   url: '${endpoints.graphql}',
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { data, error } = await graphql.query(\`query {
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens_graphql
+
+graphql = nextmavens_graphql.create_client(
+    url='${endpoints.graphql}',
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-graphql"
+
+func main() {
+    graphql := gographql.NewClient(gographql.Config{
+        URL: "${endpoints.graphql}",
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"
+export GRAPHQL_URL="${endpoints.graphql}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Query Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { data, error } = await graphql.query(\`query {
   users(limit: 10, order_by: { created_at: desc }) {
     id
     email
@@ -1539,13 +1947,50 @@ const graphql = createGraphQLClient({
       avatar_url
     }
   }
-}\`)`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Mutation Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { data, error } = await graphql.mutation(\`mutation {
+}\`)`,
+                          python: `query = \"""
+query {
+  users(limit: 10, order_by: { created_at: desc }) {
+    id
+    email
+    created_at
+    profiles {
+      full_name
+      avatar_url
+    }
+  }
+}
+\"""
+
+result = graphql.query(query)`,
+                          go: `query := \`query {
+  users(limit: 10, order_by: { created_at: desc }) {
+    id
+    email
+    created_at
+    profiles {
+      full_name
+      avatar_url
+    }
+  }
+}\`
+
+result, err := graphql.Query(query)`,
+                          curl: `curl -X POST "$GRAPHQL_URL/graphql" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "query { users(limit: 10) { id email } }"
+  }'`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Mutation Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { data, error } = await graphql.mutation(\`mutation {
   insert_users_one(object: {
     email: "user@example.com"
     profiles: {
@@ -1555,11 +2000,46 @@ const graphql = createGraphQLClient({
     id
     email
   }
-}\`)`}</code>
-                    </pre>
+}\`)`,
+                          python: `mutation = \"""
+mutation {
+  insert_users_one(object: {
+    email: "user@example.com"
+    profiles: {
+      data: { full_name: "John Doe" }
+    }
+  }) {
+    id
+    email
+  }
+}
+\"""
+
+result = graphql.mutate(mutation)`,
+                          go: `mutation := \`mutation {
+  insert_users_one(object: {
+    email: "user@example.com"
+    profiles: {
+      data: { full_name: "John Doe" }
+    }
+  }) {
+    id
+    email
+  }
+}\`
+
+result, err := graphql.Mutate(mutation)`,
+                          curl: `curl -X POST "$GRAPHQL_URL/graphql" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "query": "mutation { insert_users_one(object: { email: \\"user@example.com\\" }) { id email } }"
+  }'`,
+                        })}
+                      />
+                    </div>
                   </div>
-                </div>
-              }
+                }
               connectionDetails={
                 <div className="space-y-4">
                   <div>
@@ -1600,54 +2080,160 @@ const graphql = createGraphQLClient({
                 </div>
               }
               docsUrl="https://docs.nextmavens.cloud/graphql"
+              additionalSections={
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-900 mb-3">Quick Actions</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href={endpoints.graphql}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
+                    >
+                      <Code2 className="w-4 h-4" />
+                      <span>Open GraphQL Playground</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+              }
             />
           )}
 
           {activeTab === 'auth' && (
-            <ServiceTab
-              serviceName="Auth"
-              overview="A complete authentication service that handles user registration, login, session management, and JWT token generation. Built-in security features including password hashing, token refresh, and session management."
-              whenToUse="Use the Auth service whenever your application needs user authentication and authorization. Perfect for user accounts, admin panels, API authentication, and any scenario requiring secure access control. Supports email/password authentication with plans for social providers (OAuth)."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/auth</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createAuthClient } from '@nextmavens/auth'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Auth Service</h2>
+                  <ServiceStatusIndicator
+                    service="auth"
+                    status={serviceStatuses.auth}
+                    onToggle={createToggleHandler('auth')}
+                    isUpdating={updatingService === 'auth'}
+                    canManage={canManageServices}
+                  />
+                </div>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              {/* US-011: Add Quick Actions */}
+              <div className="mb-6 flex gap-3">
+                <Link
+                  href={`/studio/${project?.slug}/auth/users`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <Shield className="w-4 h-4" />
+                  View Users
+                </Link>
+              </div>
+
+              <ServiceTab
+                serviceName="Auth"
+                overview="A complete authentication service that handles user registration, login, session management, and JWT token generation. Built-in security features including password hashing, token refresh, and session management."
+                whenToUse="Use the Auth service whenever your application needs user authentication and authorization. Perfect for user accounts, admin panels, API authentication, and any scenario requiring secure access control. Supports email/password authentication with plans for social providers (OAuth)."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install @nextmavens/auth',
+                          python: 'pip install nextmavens-auth',
+                          go: 'go get github.com/nextmavens/go-auth',
+                          curl: '# No installation needed - use cURL directly',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createAuthClient } from '@nextmavens/auth'
 
 const auth = createAuthClient({
   url: '${endpoints.auth}',
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Sign Up Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { user, error } = await auth.signUp({
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens_auth
+
+auth = nextmavens_auth.create_client(
+    url='${endpoints.auth}',
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-auth"
+
+func main() {
+    auth := goauth.NewClient(goauth.Config{
+        URL: "${endpoints.auth}",
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"
+export AUTH_URL="${endpoints.auth}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Sign Up Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { user, error } = await auth.signUp({
   email: 'user@example.com',
   password: 'secure_password'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Sign In Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { session, error } = await auth.signIn({
+})`,
+                          python: `response = auth.sign_up(
+    email='user@example.com',
+    password='secure_password'
+)`,
+                          go: `user, err := auth.SignUp(goauth.SignUpRequest{
+    Email:    "user@example.com",
+    Password: "secure_password",
+})`,
+                          curl: `curl -X POST "$AUTH_URL/v1/auth/signup" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "user@example.com", "password": "secure_password"}'`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Sign In Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { session, error } = await auth.signIn({
   email: 'user@example.com',
   password: 'secure_password'
-})`}</code>
-                    </pre>
+})`,
+                          python: `response = auth.sign_in(
+    email='user@example.com',
+    password='secure_password'
+)`,
+                          go: `session, err := auth.SignIn(goauth.SignInRequest{
+    Email:    "user@example.com",
+    Password: "secure_password",
+})`,
+                          curl: `curl -X POST "$AUTH_URL/v1/auth/signin" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "user@example.com", "password": "secure_password"}'`,
+                        })}
+                      />
+                    </div>
                   </div>
-                </div>
-              }
+                }
               connectionDetails={
                 <div className="space-y-4">
                   <div>
@@ -1688,59 +2274,179 @@ const auth = createAuthClient({
                 </div>
               }
               docsUrl="https://docs.nextmavens.cloud/auth"
+              additionalSections={
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-900 mb-3">Quick Actions</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href={`/studio/${project?.slug}/auth/users`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>View Users</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              }
             />
           )}
 
           {activeTab === 'storage' && (
-            <ServiceTab
-              serviceName="Storage"
-              overview="A transparent storage abstraction that automatically routes files to optimal backends. Raw files go to Telegram for permanent storage, while web-optimized assets are served through Cloudinary CDN. Zero configuration needed - just upload and we handle the rest."
-              whenToUse="Use the Storage service for all file handling needs - user uploads, images, videos, documents, backups, and static assets. Perfect for profile pictures, document management, media galleries, and any application requiring file storage with automatic optimization and CDN delivery."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/storage</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createStorageClient } from '@nextmavens/storage'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Storage Service</h2>
+                  <ServiceStatusIndicator
+                    service="storage"
+                    status={serviceStatuses.storage}
+                    onToggle={createToggleHandler('storage')}
+                    isUpdating={updatingService === 'storage'}
+                    canManage={canManageServices}
+                  />
+                </div>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              {/* US-011: Add Quick Actions */}
+              <div className="mb-6 flex gap-3">
+                <Link
+                  href={`/studio/${project?.slug}/storage/buckets`}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  <HardDrive className="w-4 h-4" />
+                  Create Bucket
+                </Link>
+              </div>
+
+              <ServiceTab
+                serviceName="Storage"
+                overview="A transparent storage abstraction that automatically routes files to optimal backends. Raw files go to Telegram for permanent storage, while web-optimized assets are served through Cloudinary CDN. Zero configuration needed - just upload and we handle the rest."
+                whenToUse="Use the Storage service for all file handling needs - user uploads, images, videos, documents, backups, and static assets. Perfect for profile pictures, document management, media galleries, and any application requiring file storage with automatic optimization and CDN delivery."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install @nextmavens/storage',
+                          python: 'pip install nextmavens-storage',
+                          go: 'go get github.com/nextmavens/go-storage',
+                          curl: '# No installation needed - use cURL directly',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createStorageClient } from '@nextmavens/storage'
 
 const storage = createStorageClient({
   url: '${endpoints.storage}',
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Upload File Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const file = document.querySelector('input[type="file"]').files[0]
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens_storage
+
+storage = nextmavens_storage.create_client(
+    url='${endpoints.storage}',
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-storage"
+
+func main() {
+    storage := gostorage.NewClient(gostorage.Config{
+        URL: "${endpoints.storage}",
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"
+export STORAGE_URL="${endpoints.storage}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Upload File Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const file = document.querySelector('input[type="file"]').files[0]
 
 const { data, error } = await storage.upload({
   file: file,
   bucket: 'uploads',
   path: \`avatars/\${Date.now()}_\${file.name}\`
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Get Public URL Example</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`const { publicUrl } = storage.getPublicUrl({
+})`,
+                          python: `# Upload file
+with open('avatar.jpg', 'rb') as f:
+    response = storage.upload(
+        file=f,
+        bucket='uploads',
+        path='avatars/avatar.jpg'
+    )`,
+                          go: `file, err := os.Open("avatar.jpg")
+if err != nil {
+    log.Fatal(err)
+}
+defer file.Close()
+
+result, err := storage.Upload(gostorage.UploadRequest{
+    File:   file,
+    Bucket: "uploads",
+    Path:   "avatars/avatar.jpg",
+})`,
+                          curl: `# Upload file using cURL
+curl -X POST "$STORAGE_URL/v1/storage/upload" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -F "file=@avatar.jpg" \\
+  -F "bucket=uploads" \\
+  -F "path=avatars/avatar.jpg"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Get Public URL Example</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `const { publicUrl } = storage.getPublicUrl({
   bucket: 'uploads',
   path: 'avatars/1234567890_profile.jpg'
 })
 
-// &lt;img src={publicUrl} alt="Profile" /&gt;`}</code>
-                    </pre>
+// <img src={publicUrl} alt="Profile" />`,
+                          python: `# Get public URL
+public_url = storage.get_public_url(
+    bucket='uploads',
+    path='avatars/1234567890_profile.jpg'
+)
+
+# <img src="{{ public_url }}" alt="Profile" />`,
+                          go: `// Get public URL
+publicURL := storage.GetPublicURL(gostorage.PublicURLRequest{
+    Bucket: "uploads",
+    Path:   "avatars/1234567890_profile.jpg",
+})
+
+// <img src="{{ publicURL }}" alt="Profile" />`,
+                          curl: `# Get public URL (construct it manually)
+echo "https://cdn.nextmavens.cloud/$PROJECT_ID/uploads/avatars/1234567890_profile.jpg"`,
+                        })}
+                      />
+                    </div>
                   </div>
-                </div>
-              }
+                }
               connectionDetails={
                 <div className="space-y-4">
                   <div>
@@ -1781,38 +2487,103 @@ const { data, error } = await storage.upload({
                 </div>
               }
               docsUrl="https://docs.nextmavens.cloud/storage"
+              additionalSections={
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-emerald-900 mb-3">Quick Actions</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href={`/studio/${project?.slug}/storage/buckets`}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
+                    >
+                      <HardDrive className="w-4 h-4" />
+                      <span>Create Bucket</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              }
             />
           )}
 
           {activeTab === 'realtime' && (
-            <ServiceTab
-              serviceName="Realtime"
-              overview="A real-time data synchronization service powered by PostgreSQL Change Data Capture (CDC). Subscribe to database changes and receive instant updates via WebSocket connections. Perfect for collaborative apps, live dashboards, and multi-user experiences."
-              whenToUse="Use the Realtime service when you need live data updates in your application. Ideal for collaborative editing, live dashboards, chat applications, notifications, activity feeds, and any scenario where users need to see changes instantly across multiple clients."
-              quickStart={
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-100 font-mono">npm install @nextmavens/realtime</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`import { createRealtimeClient } from '@nextmavens/realtime'
+            <>
+              {/* US-009: Language Selector for Code Examples */}
+              {/* US-010: Service Status Indicator */}
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-xl font-semibold text-slate-900">Realtime Service</h2>
+                  <ServiceStatusIndicator
+                    service="realtime"
+                    status={serviceStatuses.realtime}
+                    onToggle={createToggleHandler('realtime')}
+                    isUpdating={updatingService === 'realtime'}
+                    canManage={canManageServices}
+                  />
+                </div>
+                <LanguageSelector value={codeLanguage} onChange={setCodeLanguage} />
+              </div>
+
+              <ServiceTab
+                serviceName="Realtime"
+                overview="A real-time data synchronization service powered by PostgreSQL Change Data Capture (CDC). Subscribe to database changes and receive instant updates via WebSocket connections. Perfect for collaborative apps, live dashboards, and multi-user experiences."
+                whenToUse="Use the Realtime service when you need live data updates in your application. Ideal for collaborative editing, live dashboards, chat applications, notifications, activity feeds, and any scenario where users need to see changes instantly across multiple clients."
+                quickStart={
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Installation</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: 'npm install @nextmavens/realtime',
+                          python: 'pip install nextmavens-realtime',
+                          go: 'go get github.com/nextmavens/go-realtime',
+                          curl: '# No installation needed - use websocat or wscat',
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Initialize Client</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `import { createRealtimeClient } from '@nextmavens/realtime'
 
 const realtime = createRealtimeClient({
   url: '${endpoints.realtime}',
   apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Connect to WebSocket</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`// Connect to the realtime service
+  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
+})`,
+                          python: `import nextmavens_realtime
+
+realtime = nextmavens_realtime.create_client(
+    url='${endpoints.realtime}',
+    api_key=os.environ['NEXTMAVENS_API_KEY'],
+    project_id='${project?.id || 'YOUR_PROJECT_ID'}'
+)`,
+                          go: `package main
+
+import "github.com/nextmavens/go-realtime"
+
+func main() {
+    realtime := gorealtime.NewClient(gorealtime.Config{
+        URL: "${endpoints.realtime}",
+        APIKey: os.Getenv("NEXTMAVENS_API_KEY"),
+        ProjectID: "${project?.id || 'YOUR_PROJECT_ID'}",
+    })
+}`,
+                          curl: `# Set your API key and project ID as environment variables
+export NEXTMAVENS_API_KEY="your_api_key_here"
+export PROJECT_ID="${project?.id || 'YOUR_PROJECT_ID'}"
+export REALTIME_URL="${endpoints.realtime}"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Connect to WebSocket</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `// Connect to the realtime service
 const { socket, error } = await realtime.connect()
 
 // Handle connection events
@@ -1822,13 +2593,50 @@ socket.on('connected', () => {
 
 socket.on('disconnected', () => {
   console.log('Disconnected from realtime')
-})`}</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-2">Subscribe to Table Changes</h4>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">{`// Subscribe to all changes on the 'users' table
+})`,
+                          python: `# Connect to the realtime service
+socket = await realtime.connect()
+
+# Handle connection events
+@socket.on('connected')
+def on_connected():
+    print('Connected to realtime!')
+
+@socket.on('disconnected')
+def on_disconnected():
+    print('Disconnected from realtime')`,
+                          go: `// Connect to the realtime service
+socket, err := realtime.Connect()
+if err != nil {
+    log.Fatal(err)
+}
+
+// Handle connection events
+socket.On("connected", func() {
+    fmt.Println("Connected to realtime!")
+})
+
+socket.On("disconnected", func() {
+    fmt.Println("Disconnected from realtime")
+})`,
+                          curl: `# Connect using websocat or wscat
+# First, get a JWT token from the auth endpoint
+TOKEN=$(curl -s -X POST "$REALTIME_URL/v1/auth/token" \\
+  -H "apikey: $NEXTMAVENS_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"project_id": "'"$PROJECT_ID"'"}' | jq -r '.token')
+
+# Then connect to WebSocket
+wscat -c "$REALTIME_URL/v1/realtime?token=$TOKEN"`,
+                        })}
+                      />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 mb-2">Subscribe to Table Changes</h4>
+                      <MultiLanguageCodeBlock
+                        selectedLanguage={codeLanguage}
+                        examples={createCodeExamples({
+                          javascript: `// Subscribe to all changes on the 'users' table
 const subscription = socket
   .channel('users')
   .on('INSERT', (payload) => {
@@ -1837,8 +2645,34 @@ const subscription = socket
   .on('UPDATE', (payload) => {
     console.log('User updated:', payload.new)
   })
-  .subscribe()`}</code>
-                    </pre>
+  .subscribe()`,
+                          python: `# Subscribe to all changes on the 'users' table
+@socket.channel('users')
+def on_insert(payload):
+    print(f'New user: {payload["new"]}')
+
+@socket.channel('users')
+def on_update(payload):
+    print(f'User updated: {payload["new"]}')
+
+subscription = socket.subscribe('users')`,
+                          go: `// Subscribe to all changes on the 'users' table
+subscription := socket.Channel("users").
+    On("INSERT", func(payload map[string]interface{}) {
+        fmt.Println("New user:", payload["new"])
+    }).
+    On("UPDATE", func(payload map[string]interface{}) {
+        fmt.Println("User updated:", payload["new"])
+    }).
+    Subscribe()`,
+                          curl: `# Subscribe to table changes (send JSON message via WebSocket)
+echo '{"event": "phx_join", "topic": "users", "payload": {"events": ["INSERT", "UPDATE"]}}' | \\
+  wscat -c "$REALTIME_URL/v1/realtime?token=$TOKEN"`,
+                        })}
+                      />
+                    </div>
+                  </div>
+                }
                   </div>
                 </div>
               }
@@ -2679,8 +3513,8 @@ const client = createClient({
         </div>
       )}
 
-      {/* US-010: Deletion Preview Modal */}
-      {project && (
+      {/* US-010: Deletion Preview Modal - only shown to owners */}
+      {project && canDeleteProject && (
         <DeletionPreviewModal
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}

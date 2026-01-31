@@ -16,18 +16,33 @@ import {
   HardDrive,
   Activity,
   Users,
+  Terminal,
+  AlertCircle,
+  Clock,
+  Bookmark,
 } from 'lucide-react'
 import { TablesView, type TableData } from '@/features/studio/components/TablesView'
 import { UserList } from '@/features/auth-users/components/UserList'
 import { UserDetail } from '@/features/auth-users/components/UserDetail'
+import { SqlEditor } from '@/features/sql-editor'
+import { ResultsTable } from '@/features/sql-editor/components/ResultsTable'
+import { QueryHistoryPanel, addQueryToHistory } from '@/features/sql-editor/components/QueryHistory'
+import { SavedQueriesPanel } from '@/features/sql-editor/components/SavedQueries'
+import { Permission } from '@/lib/types/rbac.types'
 
 interface DatabaseTable {
   name: string
   type: string
 }
 
+/**
+ * User role in the organization for RBAC permissions
+ */
+type UserRole = 'owner' | 'admin' | 'developer' | 'viewer' | null
+
 const navItems = [
   { id: 'tables', label: 'Tables', icon: Table },
+  { id: 'sql', label: 'SQL Query', icon: Terminal },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'api-keys', label: 'API Keys', icon: Shield },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -45,9 +60,129 @@ export default function StudioPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [usersKey, setUsersKey] = useState(0)
 
+  // US-005: SQL Query state
+  const [sqlQuery, setSqlQuery] = useState('')
+  const [queryResults, setQueryResults] = useState<any>(null)
+  const [queryError, setQueryError] = useState<string | null>(null)
+  const [isExecuting, setIsExecuting] = useState(false)
+
+  // US-004: Query History state
+  const [showQueryHistory, setShowQueryHistory] = useState(true)
+
+  // US-010: Saved Queries state
+  const [showSavedQueries, setShowSavedQueries] = useState(false)
+
+  // US-011: RBAC state for SQL execution permissions
+  const [userRole, setUserRole] = useState<UserRole>(null)
+  const [organizationId, setOrganizationId] = useState<string | null>(null)
+  const [permissionsLoading, setPermissionsLoading] = useState(true)
+
   useEffect(() => {
     fetchTables()
+    fetchUserPermissions()
   }, [params.slug])
+
+  /**
+   * US-011: Fetch user role and organization ID for RBAC permissions
+   * Viewers can only SELECT, Developers can SELECT/INSERT/UPDATE,
+   * Admins/Owners have full access
+   */
+  const fetchUserPermissions = async () => {
+    try {
+      const token = localStorage.getItem('accessToken')
+
+      // Get project info to find organization ID
+      const projectRes = await fetch(`/api/projects?slug=${params.slug}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!projectRes.ok) {
+        return
+      }
+
+      const projectData = await projectRes.json()
+      const project = projectData.projects?.[0]
+
+      if (!project) {
+        return
+      }
+
+      // Get organization ID from project
+      setOrganizationId(project.tenant_id || null)
+
+      // Fetch user's database.write permission to determine role
+      if (project.tenant_id) {
+        const permRes = await fetch(
+          `/api/permissions/check?permission=${encodeURIComponent(Permission.DATABASE_WRITE)}&organizationId=${encodeURIComponent(project.tenant_id)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
+
+        if (permRes.ok) {
+          const permData = await permRes.json()
+          setUserRole(permData.role || null)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch user permissions:', err)
+    } finally {
+      setPermissionsLoading(false)
+    }
+  }
+
+  /**
+   * US-011: Check if user can execute a specific query based on their role
+   * - Viewers: only SELECT
+   * - Developers: SELECT, INSERT, UPDATE
+   * - Admins/Owners: full access (SELECT, INSERT, UPDATE, DELETE, DDL)
+   */
+  const canExecuteQuery = (query: string, readonly: boolean): boolean => {
+    // If readonly mode is on, only SELECT queries are allowed (for all authenticated users)
+    if (readonly) {
+      const trimmedQuery = query.trim()
+      const command = extractSqlCommand(trimmedQuery)
+      return command === 'SELECT'
+    }
+
+    // If readonly mode is OFF, check role-based permissions
+    if (!userRole) {
+      return false // No role = no permission
+    }
+
+    const trimmedQuery = query.trim()
+    const command = extractSqlCommand(trimmedQuery)
+
+    // Viewers can only SELECT even when readonly is off
+    if (userRole === 'viewer') {
+      return command === 'SELECT'
+    }
+
+    // Developers can SELECT, INSERT, UPDATE (but not DELETE or DDL)
+    if (userRole === 'developer') {
+      return ['SELECT', 'INSERT', 'UPDATE'].includes(command)
+    }
+
+    // Admins and Owners have full access
+    if (userRole === 'admin' || userRole === 'owner') {
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * Extract the first SQL command from a query
+   */
+  const extractSqlCommand = (queryText: string): string => {
+    const trimmed = queryText.trim()
+    const withoutComments = trimmed
+      .replace(/--.*$/gm, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .trim()
+    const match = withoutComments.match(/^(\w+)/)
+    return match ? match[1].toUpperCase() : ''
+  }
 
   useEffect(() => {
     if (selectedTable) {
@@ -106,6 +241,103 @@ export default function StudioPage() {
   const handleUserUpdated = () => {
     // Trigger a refresh of the user list
     setUsersKey(prev => prev + 1)
+  }
+
+  /**
+   * US-004: Handle selecting a query from history
+   */
+  const handleSelectQueryFromHistory = (query: string, readonly: boolean) => {
+    setSqlQuery(query)
+    setQueryError(null)
+  }
+
+  /**
+   * US-010: Handle selecting a saved query
+   */
+  const handleSelectSavedQuery = (query: string) => {
+    setSqlQuery(query)
+    setQueryError(null)
+  }
+
+  /**
+   * US-005: Execute SQL query with readonly mode
+   * US-011: Enforce RBAC permissions for SQL execution
+   * - Viewers can only SELECT
+   * - Developers can SELECT/INSERT/UPDATE
+   * - Admins/Owners have full access
+   * US-004: Add query to history after successful execution
+   * US-008: Support explain mode for query plan analysis
+   */
+  const handleExecuteQuery = async (query: string, readonly: boolean, explain?: boolean) => {
+    // US-011: Check if user can execute this query based on their role
+    if (!canExecuteQuery(query, readonly)) {
+      const command = extractSqlCommand(query.trim())
+      const permissionMessage =
+        userRole === 'viewer'
+          ? `Viewers can only execute SELECT queries. Your current role '${userRole}' does not permit ${command} operations.`
+          : userRole === 'developer'
+            ? `Developers can execute SELECT, INSERT, and UPDATE queries. Your current role '${userRole}' does not permit ${command} operations.`
+            : `You do not have permission to execute this query. Your role '${userRole || 'unknown'}' does not permit ${command} operations.`
+
+      setQueryError(permissionMessage)
+      return
+    }
+
+    setIsExecuting(true)
+    setQueryError(null)
+    setQueryResults(null)
+
+    try {
+      const token = localStorage.getItem('accessToken')
+      // First, get the project ID from the slug
+      const projectRes = await fetch(`/api/projects?slug=${params.slug}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!projectRes.ok) {
+        throw new Error('Failed to get project info')
+      }
+
+      const projectData = await projectRes.json()
+      const projectId = projectData.projects?.[0]?.id
+
+      if (!projectId) {
+        throw new Error('Project not found')
+      }
+
+      // US-008: Execute query with readonly and explain parameters
+      const res = await fetch(`/api/studio/${projectId}/query`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ query, readonly, explain }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        // Handle validation errors for readonly mode
+        if (data.error) {
+          setQueryError(data.error)
+        } else {
+          setQueryError('Query execution failed')
+        }
+        return
+      }
+
+      if (data.success) {
+        setQueryResults(data.data)
+        // US-004: Add successful query to history
+        addQueryToHistory(query, readonly)
+      }
+    } catch (err: any) {
+      console.error('Query execution failed:', err)
+      setQueryError(err.message || 'Query execution failed')
+    } finally {
+      setIsExecuting(false)
+    }
   }
 
   return (
@@ -192,7 +424,9 @@ export default function StudioPage() {
               </Link>
               <div>
                 <h1 className="text-lg font-semibold text-slate-900">
-                  {activeNav === 'users' ? 'Users' : selectedTable || 'Select a table'}
+                  {activeNav === 'users' ? 'Users' :
+                   activeNav === 'sql' ? 'SQL Query' :
+                   selectedTable || 'Select a table'}
                 </h1>
                 {tableData && activeNav === 'tables' && (
                   <p className="text-sm text-slate-500">
@@ -209,20 +443,164 @@ export default function StudioPage() {
                     User details
                   </p>
                 )}
+                {activeNav === 'sql' && (
+                  <p className="text-sm text-slate-500">
+                    Execute SQL queries on your database
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
-                <Plus className="w-4 h-4" />
-                <span className="text-sm font-medium">New Row</span>
-              </button>
+              {activeNav === 'tables' && (
+                <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                  <Plus className="w-4 h-4" />
+                  <span className="text-sm font-medium">New Row</span>
+                </button>
+              )}
             </div>
           </div>
         </header>
 
         {/* Main Content Area */}
         <div className="flex-1 overflow-auto p-6">
-          {activeNav === 'users' ? (
+          {activeNav === 'sql' ? (
+            <div className="flex gap-6 h-full">
+              {/* Main SQL Editor Section */}
+              <div className={`flex flex-col gap-6 ${(showQueryHistory || showSavedQueries) ? 'flex-1' : 'w-full'}`}>
+                {/* US-011: Permission banner showing user's role and allowed operations */}
+                {!permissionsLoading && (
+                  <div className={`flex items-start gap-3 p-4 rounded-lg border ${
+                    userRole === 'viewer'
+                      ? 'bg-blue-50 border-blue-200'
+                      : userRole === 'developer'
+                        ? 'bg-amber-50 border-amber-200'
+                        : 'bg-emerald-50 border-emerald-200'
+                  }`}>
+                    <Shield className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                      userRole === 'viewer'
+                        ? 'text-blue-600'
+                        : userRole === 'developer'
+                          ? 'text-amber-600'
+                          : 'text-emerald-600'
+                    }`} />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-slate-900">
+                        SQL Query Permissions
+                      </p>
+                      <p className="text-xs text-slate-700 mt-1">
+                        Your role: <strong className="capitalize">{userRole || 'unknown'}</strong>
+                        {userRole === 'viewer' && (
+                          <span> • You can only execute <strong>SELECT</strong> queries</span>
+                        )}
+                        {userRole === 'developer' && (
+                          <span> • You can execute <strong>SELECT, INSERT, UPDATE</strong> queries</span>
+                        )}
+                        {(userRole === 'admin' || userRole === 'owner') && (
+                          <span> • You have <strong>full access</strong> to all SQL operations</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* US-005: SQL Editor with read-only mode */}
+                <SqlEditor
+                  value={sqlQuery}
+                  onChange={setSqlQuery}
+                  onExecute={handleExecuteQuery}
+                  userRole={userRole}
+                  height="300px"
+                />
+
+                {/* Error display */}
+                {queryError && (
+                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm font-medium text-red-900">Query Error</p>
+                    <p className="text-sm text-red-700 mt-1">{queryError}</p>
+                  </div>
+                )}
+
+                {/* Loading indicator */}
+                {isExecuting && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin" />
+                    <span className="ml-3 text-sm text-slate-600">Executing query...</span>
+                  </div>
+                )}
+
+                {/* Query results */}
+                {queryResults && !isExecuting && (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-slate-900">
+                        Query Results
+                      </h3>
+                      <span className="text-xs text-slate-500">
+                        {queryResults.rowCount} row{queryResults.rowCount !== 1 ? 's' : ''} • {queryResults.executionTime}ms
+                      </span>
+                    </div>
+                    <ResultsTable
+                      columns={queryResults.columns || []}
+                      rows={queryResults.rows || []}
+                      rowCount={queryResults.rowCount || 0}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* US-004: Query History Panel / US-010: Saved Queries Panel */}
+              {(showQueryHistory || showSavedQueries) && (
+                <div className="w-80 flex-shrink-0 flex flex-col">
+                  {/* Tab toggle between History and Saved Queries */}
+                  <div className="flex border-b border-slate-200 bg-white rounded-t-lg">
+                    <button
+                      onClick={() => {
+                        setShowQueryHistory(true)
+                        setShowSavedQueries(false)
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition ${
+                        showQueryHistory
+                          ? 'text-emerald-700 border-b-2 border-emerald-700 bg-emerald-50'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Clock className="w-4 h-4" />
+                      History
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowQueryHistory(false)
+                        setShowSavedQueries(true)
+                      }}
+                      className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition ${
+                        showSavedQueries
+                          ? 'text-indigo-700 border-b-2 border-indigo-700 bg-indigo-50'
+                          : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      <Bookmark className="w-4 h-4" />
+                      Saved
+                    </button>
+                  </div>
+
+                  {/* Panel content */}
+                  <div className="flex-1 overflow-auto bg-white border border-t-0 border-slate-200 rounded-b-lg">
+                    {showQueryHistory && (
+                      <QueryHistoryPanel
+                        onSelectQuery={handleSelectQueryFromHistory}
+                      />
+                    )}
+                    {showSavedQueries && (
+                      <SavedQueriesPanel
+                        onSelectQuery={handleSelectSavedQuery}
+                        className="border-0 rounded-none"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : activeNav === 'users' ? (
             selectedUserId ? (
               <UserDetail
                 key={selectedUserId}

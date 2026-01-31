@@ -19,6 +19,7 @@ import {
   type StepHandler,
   type StepExecutionResult,
 } from './steps'
+import { getStepHandler, hasStepHandler } from './handlers'
 
 /**
  * Result of running a provisioning step
@@ -354,17 +355,25 @@ export function getNextPendingStep(steps: ProvisioningStep[]): ProvisioningStep 
 /**
  * Get default step handler by name
  *
- * This is a placeholder for step-specific handlers.
- * In production, each step would have its own implementation.
+ * Story: US-008 - Implement Verify Services Step
+ *
+ * This function retrieves the appropriate handler for a given step.
+ * If a dedicated handler exists, it returns that handler.
+ * Otherwise, it returns a mock handler that succeeds (for backward compatibility).
  *
  * @param stepName - The step name
  * @returns Step handler function or null
  */
 function getDefaultStepHandler(stepName: string): StepHandler | null {
-  // TODO: Implement actual step handlers for each step type
-  // For now, return a mock handler that succeeds
+  // Check if a dedicated handler exists for this step
+  if (hasStepHandler(stepName)) {
+    return getStepHandler(stepName)
+  }
+
+  // For steps without dedicated handlers, return a mock handler
+  // This provides backward compatibility while handlers are being implemented
   return async (_projectId: string, _pool: Pool): Promise<StepExecutionResult> => {
-    // Simulate step execution
+    // Mock handler - simulates successful step execution
     return {
       success: true,
     }
@@ -397,4 +406,230 @@ export function isValidStateTransition(
   }
 
   return validTransitions[fromStatus]?.includes(toStatus) ?? false
+}
+
+/**
+ * Result of retrying a provisioning step
+ */
+export interface RetryProvisioningStepResult {
+  /** Whether the retry was successful */
+  success: boolean
+  /** Current status of the step after retry */
+  status: ProvisioningStepStatus
+  /** Error message if the retry failed */
+  error?: string
+  /** Detailed error information */
+  errorDetails?: ProvisioningErrorDetails
+  /** When the retry started */
+  startedAt?: Date
+  /** When the retry completed */
+  completedAt?: Date
+  /** Updated retry count after this attempt */
+  retryCount: number
+  /** Whether the max retries has been exceeded */
+  maxRetriesExceeded?: boolean
+}
+
+/**
+ * Retry a failed provisioning step
+ *
+ * Story: US-004 - Implement Step Retry Logic
+ *
+ * This function implements retry logic for failed provisioning steps:
+ * 1. Validates the step can be retried (is retryable, hasn't exceeded max retries)
+ * 2. Resets status to PENDING
+ * 3. Increments retry_count
+ * 4. Re-runs the step handler
+ * 5. Already successful steps are skipped (not re-run)
+ *
+ * The retry flow:
+ * - FAILED (retry_count=0) → PENDING (retry_count=1) → RUNNING → SUCCESS/FAILED
+ * - FAILED (retry_count=1) → PENDING (retry_count=2) → RUNNING → SUCCESS/FAILED
+ * - FAILED (retry_count=maxRetries) → Cannot retry anymore
+ *
+ * @param projectId - The project ID being provisioned
+ * @param stepName - The name of the provisioning step to retry
+ * @param pool - Database connection pool
+ * @param handler - Optional step handler function (if not provided, looks up by step name)
+ * @returns Result of the retry attempt with updated status and retry count
+ */
+export async function retryProvisioningStep(
+  projectId: string,
+  stepName: string,
+  pool: Pool,
+  handler?: StepHandler
+): Promise<RetryProvisioningStepResult> {
+  // Get the current step record
+  const currentStep = await getStepStatus(pool, projectId, stepName)
+
+  if (!currentStep) {
+    return {
+      success: false,
+      status: 'failed',
+      error: `Provisioning step not found: ${stepName}`,
+      errorDetails: {
+        error_type: 'NotFoundError',
+        context: { projectId, stepName },
+      },
+      retryCount: 0,
+      maxRetriesExceeded: false,
+    }
+  }
+
+  // Get step definition to check retry limits
+  const stepDefinition = PROVISIONING_STEPS.find(s => s.name === stepName)
+  if (!stepDefinition) {
+    return {
+      success: false,
+      status: 'failed',
+      error: `Unknown provisioning step: ${stepName}`,
+      errorDetails: {
+        error_type: 'ValidationError',
+        context: { projectId, stepName },
+      },
+      retryCount: currentStep.retry_count,
+      maxRetriesExceeded: false,
+    }
+  }
+
+  // Check if step is already successful - skip retry
+  if (currentStep.status === 'success') {
+    return {
+      success: true,
+      status: 'success',
+      error: 'Step already completed successfully',
+      retryCount: currentStep.retry_count,
+    }
+  }
+
+  // Check if step is retryable
+  if (!stepDefinition.retryable) {
+    return {
+      success: false,
+      status: currentStep.status,
+      error: `Step is not retryable: ${stepName}`,
+      errorDetails: {
+        error_type: 'ValidationError',
+        context: {
+          projectId,
+          stepName,
+          currentRetryCount: currentStep.retry_count,
+        },
+      },
+      retryCount: currentStep.retry_count,
+      maxRetriesExceeded: false,
+    }
+  }
+
+  // Check if max retries exceeded
+  if (currentStep.retry_count >= stepDefinition.maxRetries) {
+    return {
+      success: false,
+      status: currentStep.status,
+      error: `Maximum retry attempts exceeded for step: ${stepName} (${currentStep.retry_count}/${stepDefinition.maxRetries})`,
+      errorDetails: {
+        error_type: 'MaxRetriesExceededError',
+        context: {
+          projectId,
+          stepName,
+          currentRetryCount: currentStep.retry_count,
+          maxRetries: stepDefinition.maxRetries,
+        },
+      },
+      retryCount: currentStep.retry_count,
+      maxRetriesExceeded: true,
+    }
+  }
+
+  const newRetryCount = currentStep.retry_count + 1
+
+  try {
+    // Step 1: Reset status to PENDING and increment retry_count
+    await pool.query(
+      `
+      UPDATE provisioning_steps
+      SET status = $1,
+          retry_count = $2,
+          error_message = NULL,
+          error_details = NULL,
+          started_at = NULL,
+          completed_at = NULL
+      WHERE project_id = $3 AND step_name = $4
+      `,
+      ['pending', newRetryCount, projectId, stepName]
+    )
+
+    // Step 2: Re-run the step handler (which will transition PENDING → RUNNING → SUCCESS/FAILED)
+    const retryResult = await runProvisioningStep(projectId, stepName, pool, handler)
+
+    return {
+      success: retryResult.success,
+      status: retryResult.status,
+      error: retryResult.error,
+      errorDetails: retryResult.errorDetails,
+      startedAt: retryResult.startedAt,
+      completedAt: retryResult.completedAt,
+      retryCount: newRetryCount,
+      maxRetriesExceeded: false,
+    }
+  } catch (error) {
+    // Catch any unexpected errors during retry
+    const completedAt = new Date()
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails: ProvisioningErrorDetails = {
+      error_type: error instanceof Error ? error.constructor.name : 'Error',
+      stack_trace: error instanceof Error ? error.stack : undefined,
+      context: {
+        projectId,
+        stepName,
+        retryCount: newRetryCount,
+        maxRetries: stepDefinition.maxRetries,
+      },
+    }
+
+    // Update step with error
+    await setStepStatus(
+      pool,
+      projectId,
+      stepName,
+      'failed',
+      undefined,
+      completedAt,
+      errorMessage,
+      errorDetails
+    )
+
+    return {
+      success: false,
+      status: 'failed',
+      error: errorMessage,
+      errorDetails,
+      retryCount: newRetryCount,
+      maxRetriesExceeded: newRetryCount >= stepDefinition.maxRetries,
+    }
+  }
+}
+
+/**
+ * Get remaining retry attempts for a step
+ *
+ * @param stepName - The step name
+ * @param currentRetryCount - Current retry count
+ * @returns Number of remaining retry attempts
+ */
+export function getRemainingRetries(stepName: string, currentRetryCount: number): number {
+  const stepDefinition = PROVISIONING_STEPS.find(s => s.name === stepName)
+  if (!stepDefinition || !stepDefinition.retryable) return 0
+  return Math.max(0, stepDefinition.maxRetries - currentRetryCount)
+}
+
+/**
+ * Check if a step can be retried
+ *
+ * @param stepName - The step name
+ * @param currentRetryCount - Current retry count
+ * @returns True if the step can be retried
+ */
+export function canRetryStep(stepName: string, currentRetryCount: number): boolean {
+  return getRemainingRetries(stepName, currentRetryCount) > 0
 }

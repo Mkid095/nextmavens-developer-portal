@@ -217,8 +217,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created ProjectStatusBadge component (src/components/ProjectStatusBadge.tsx) with color-coded badges for all project statuses: Active (green/emerald with CheckCircle icon), Suspended (red with XCircle icon), Archived (yellow with Archive icon), Created (blue with Clock icon), Deleted (gray with XCircle icon). Badge includes tooltip with status description on hover. Added status badge to project detail page header (next to environment badge) and to project list cards (in dashboard). All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -240,8 +240,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created StatusHistory component (src/components/StatusHistory.tsx) and API endpoint (src/app/api/projects/[projectId]/status-history/route.ts). The component displays status change history with previous status, new status, reason, timestamp, and actor information. Links to audit log entries. Explains how to resolve suspension with resolution steps. Added to project overview section in settings. All acceptance criteria met. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -267,8 +267,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: (1) Created migration 021_add_suspension_type_column.sql to add suspension_type column ('manual' or 'automatic') to suspensions table for distinguishing between manual and automatic suspensions. (2) Updated suspensions.ts to accept suspension_type parameter in suspendProject(), set SuspensionType.AUTOMATIC for background job suspensions, and include suspension_type in SuspensionRecord interface and query results. (3) Updated quota-reset-job.ts to auto-resume manually suspended projects after quota reset - finds all suspended projects with suspension_type='manual' and calls unsuspendProject(). Added projectsResumed to QuotaResetJobResult interface. (4) Updated handlers.ts (verify_services_handler) to auto-transition CREATED → ACTIVE after provisioning completes - checks if project.status='created' and all provisioning steps are complete using isProvisioningComplete(), then updates status to 'active'. (5) Created src/lib/lifecycle/background-jobs.ts with runAutoStatusTransitionsJob() function that orchestrates all automatic status transitions (suspension check + quota reset job) in a single unified job. (6) Created src/lib/lifecycle/index.ts to export the background job functions. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

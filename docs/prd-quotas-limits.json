@@ -189,8 +189,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Usage dashboard at src/app/dashboard/projects/[slug]/usage/page.tsx (540 lines). Shows current usage per service with breakdown by metric. Displays quota percentage with color-coded progress bars (red >=90%, yellow >=70%, green <70%). Shows reset date for each quota. Historical usage chart with bar visualization showing time series data. API endpoint at /api/usage/[projectId] provides aggregation support (day/week/month, 7/30/90 days). Includes export to CSV, refresh button, and period selectors. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -216,8 +216,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created quota-reset-job.ts (470+ lines) with runQuotaResetJob() function. Sets reset_at to next month using getNextMonthResetDate() (handles last day of month correctly). Archives usage snapshots older than retention period (default 3 months) via archiveOldUsageSnapshots(). Sends HTML email notifications to project owners via sendQuotaResetNotification() using existing email-service.ts. API endpoint at POST /api/admin/quota-reset/run with optional retention_months query param. GET endpoint for checking quotas needing reset. Transaction-based quota updates with rollback support. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -242,8 +242,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created quota-error-messages.ts module with functions for generating clear, actionable error messages. getQuotaExceededMessage() shows usage percentage, current/limit amounts, and reset date with guidance (e.g., 'You've used 85% of your monthly database queries quota (12,345 / 15,000). Your quota will reset in 12 days (January 31, 2025).'). getRateLimitMessage() provides retry-after timing in human-readable format (seconds/minutes/hours). getHardCapExceededMessage() clearly indicates project suspension with service-specific details. createQuotaErrorResponse() returns message + guidance array + details. Updated /api/usage/check endpoint to use these clearer messages for PROJECT_SUSPENDED and QUOTA_EXCEEDED errors. Messages include actionable guidance like 'Consider upgrading your plan', 'Review usage patterns', 'Implement exponential backoff'. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

@@ -10,6 +10,10 @@
  * - Block operations when project is not active
  * - Block operations when storage service is disabled
  * - Enforce storage quotas from snapshot
+ *
+ * US-007: Add Correlation ID to Storage Service
+ * - Supports correlation ID propagation via x-request-id header
+ * - All logs include correlation ID for request tracing
  */
 
 export {
@@ -33,6 +37,10 @@ export {
   clearStorageSnapshotCache,
   getStorageSnapshotCacheStats,
   cleanupExpiredStorageCacheEntries,
+  // Correlation ID support (US-007)
+  setStorageCorrelationId,
+  getStorageCorrelationId,
+  clearStorageContext,
 } from './snapshot-client'
 
 /**

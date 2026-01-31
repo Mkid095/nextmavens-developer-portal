@@ -6,7 +6,7 @@
  */
 
 import { getPool } from '@/lib/db'
-import { HardCapType } from '../types'
+import { HardCapType, SuspensionType } from '../types'
 import type { SuspensionReason, SuspensionRecord } from '../types'
 import { getCurrentUsage, checkQuota } from './enforcement'
 import { getProjectQuota } from './quotas'
@@ -18,14 +18,18 @@ import { getEnvironmentConfig, type Environment } from '@/lib/environment'
 /**
  * Suspend a project due to cap violation
  *
+ * PRD: US-010 - Implement Auto-Status Transitions
+ *
  * @param projectId - The project to suspend
  * @param reason - Details about why the project is being suspended
  * @param notes - Optional notes about the suspension
+ * @param suspensionType - Type of suspension (manual or automatic). Default: manual
  */
 export async function suspendProject(
   projectId: string,
   reason: SuspensionReason,
-  notes?: string
+  notes?: string,
+  suspensionType: SuspensionType = SuspensionType.MANUAL
 ): Promise<void> {
   const pool = getPool()
 
@@ -66,10 +70,10 @@ export async function suspendProject(
       // Insert suspension record
       await pool.query(
         `
-        INSERT INTO suspensions (project_id, reason, cap_exceeded, notes)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO suspensions (project_id, reason, cap_exceeded, notes, suspension_type)
+        VALUES ($1, $2, $3, $4, $5)
         `,
-        [projectId, JSON.stringify(reason), reason.cap_type, notes || null]
+        [projectId, JSON.stringify(reason), reason.cap_type, notes || null, suspensionType]
       )
 
       // Add to suspension history
@@ -242,7 +246,8 @@ export async function getSuspensionStatus(
         cap_exceeded,
         suspended_at,
         resolved_at,
-        notes
+        notes,
+        suspension_type
       FROM suspensions
       WHERE project_id = $1 AND resolved_at IS NULL
       `,
@@ -263,6 +268,7 @@ export async function getSuspensionStatus(
       suspended_at: row.suspended_at,
       resolved_at: row.resolved_at,
       notes: row.notes,
+      suspension_type: row.suspension_type as SuspensionType,
     }
   } catch (error) {
     console.error('[Suspensions] Error getting suspension status:', error)
@@ -363,11 +369,12 @@ export async function checkAllProjectsForSuspension(): Promise<
               details: `Project exceeded ${capType} limit`,
             }
 
-            // Suspend the project
+            // Suspend the project with automatic suspension type
             await suspendProject(
               projectId,
               reason,
-              'Auto-suspended by background job'
+              'Auto-suspended by background job',
+              SuspensionType.AUTOMATIC
             )
 
             // Get the suspension record
@@ -423,6 +430,7 @@ export async function getAllActiveSuspensions(): Promise<
         s.suspended_at,
         s.resolved_at,
         s.notes,
+        s.suspension_type,
         p.project_name
       FROM suspensions s
       JOIN projects p ON s.project_id = p.id
@@ -439,6 +447,7 @@ export async function getAllActiveSuspensions(): Promise<
       suspended_at: row.suspended_at,
       resolved_at: row.resolved_at,
       notes: row.notes,
+      suspension_type: row.suspension_type as SuspensionType,
     }))
   } catch (error) {
     console.error('[Suspensions] Error getting active suspensions:', error)

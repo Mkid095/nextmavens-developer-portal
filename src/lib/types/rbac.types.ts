@@ -82,7 +82,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, Readonly<Permission[]>>> = 
   [Role.ADMIN]: [
     Permission.PROJECTS_MANAGE_SERVICES,
     Permission.PROJECTS_MANAGE_KEYS,
-    Permission.PROJECTS_MANAGE_USERS,
+    // US-008: Only owners can manage users (invite/remove members) so admins can't add other admins
+    // Permission.PROJECTS_MANAGE_USERS, // Removed - only owners can manage users
     Permission.PROJECTS_VIEW_LOGS,
     Permission.PROJECTS_USE_SERVICES,
     Permission.DATABASE_WRITE,

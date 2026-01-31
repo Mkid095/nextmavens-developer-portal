@@ -22,6 +22,7 @@ export enum ScopeErrorType {
   INVALID_TOKEN = 'INVALID_TOKEN',
   KEY_REVOKED = 'KEY_REVOKED',
   MCP_WRITE_DENIED = 'MCP_WRITE_DENIED', // US-007: MCP read-only token denied write operation
+  MCP_AUTH_DENIED = 'MCP_AUTH_DENIED', // US-012: MCP non-admin token denied auth operation
 }
 
 /**
@@ -305,17 +306,67 @@ export function isWriteOperation(operation: string): boolean {
 }
 
 /**
+ * Auth operations that require admin access.
+ * US-012: MCP tokens have no auth access by default.
+ */
+const AUTH_OPERATIONS: string[] = ['auth:manage', 'auth:signin', 'auth:signup']
+
+/**
+ * Check if an operation is an auth operation.
+ * US-012: Auth operations require explicit admin token.
+ */
+function isAuthOperation(operation: string): boolean {
+  return AUTH_OPERATIONS.includes(operation)
+}
+
+/**
+ * Get the MCP access level from a token's key prefix.
+ */
+function getMcpAccessLevelFromPrefix(apiKey: ApiKey): 'ro' | 'rw' | 'admin' | null {
+  if (!isMcpToken(apiKey)) {
+    return null
+  }
+
+  const prefix = apiKey.key_prefix
+  if (prefix.startsWith('mcp_ro_')) return 'ro'
+  if (prefix.startsWith('mcp_rw_')) return 'rw'
+  if (prefix.startsWith('mcp_admin_')) return 'admin'
+
+  return null
+}
+
+/**
  * US-007: Enforce MCP scope restrictions.
  *
  * MCP read-only tokens are rejected for write operations with a clear error message.
+ * US-012: MCP non-admin tokens are rejected for auth operations.
  *
  * @param apiKey - The API key to check
  * @param operation - The operation being performed
- * @throws ScopeErrorResponse if MCP read-only token attempts write operation
+ * @throws ScopeErrorResponse if MCP token attempts operation beyond its access level
  */
 export function enforceMcpScopeRestrictions(apiKey: ApiKey, operation: string): void {
   // Only enforce for MCP tokens
   if (!isMcpToken(apiKey)) {
+    return
+  }
+
+  const accessLevel = getMcpAccessLevelFromPrefix(apiKey)
+
+  // US-012: Auth operations require admin access
+  if (isAuthOperation(operation)) {
+    if (accessLevel !== 'admin') {
+      const error: ScopeErrorResponse = {
+        error: 'PERMISSION_DENIED',
+        code: ScopeErrorType.MCP_AUTH_DENIED,
+        required_scope: REQUIRED_SCOPES[operation] as ApiKeyScope,
+        service: 'auth',
+        message: `MCP ${accessLevel || ''} token cannot perform auth operations. User management is restricted to MCP admin tokens (mcp_admin_) only. This token cannot execute: ${operation}.`,
+      }
+
+      throw error
+    }
+    // Admin tokens can proceed - they'll still need the auth:manage scope
     return
   }
 

@@ -175,8 +175,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: Created /status page (src/app/status/page.tsx) with service status display for all 6 services (API Gateway, Auth, Realtime, GraphQL, Storage, Control Plane). Status types: Operational, Degraded, Outage with appropriate icons and colors. Shows active incidents and resolved incident history (last 7 days). Auto-refreshes every 60 seconds with manual refresh button. API endpoint at src/app/api/status/route.ts fetches from control_plane.service_status and control_plane.incidents tables. Migration 020_create_incidents_tables.sql creates all required tables. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -201,8 +201,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented: Email notifications for support requests via @/lib/support-notifications.ts. Created email on support request creation with HTML template showing request details (request_id, subject, project, status) and link to view. Created email on status change with previous and current status, color-coded status badges. Both emails include project link. Added migration 024_add_previous_status_to_support_requests.sql to track previous status. Notifications sent as fire-and-forget from POST /api/support/request and PUT /api/support/requests/[id]. Uses Resend email service. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -228,8 +228,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented US-008: Admin APIs for incident management - PUT /api/admin/status/[service] updates service status, POST/GET /api/admin/incidents for creating/listing incidents, GET/PUT /api/admin/incidents/[id] for incident details and updates, POST /api/admin/incidents/[id]/updates for progress tracking. Status changes logged with timestamps. Incident history tracked via incident_updates table. /api/status includes incident updates. Typecheck passes."
     },
     {
       "id": "US-010",
@@ -253,8 +253,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Implemented US-010: Admin Support UI - Created GET /api/admin/support/requests endpoint that lists all support requests with filtering by status and project_id, pagination support. Created GET/PUT /api/admin/support/requests/[id] for viewing details and updating status with admin notes. Added migration 025_add_admin_notes_to_support_requests.sql. Created admin dashboard page at src/app/admin/support/page.tsx with: list all requests (open, in_progress, resolved, closed), filter by status buttons (all, open, in_progress, resolved, closed), search by subject/email/project, click to view details modal with full context, update status (open/in_progress/resolved/closed), add admin notes, pagination. Status changes trigger notification emails to users (US-009). Uses requireOperatorOrAdmin for authorization. Typecheck passes."
     }
   ],
   "relatedPRDs": [],

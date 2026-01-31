@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Tag, ArrowLeft, ArrowRight, BookOpen, Github, FileText } from 'lucide-react'
+import { Tag, ArrowLeft, ArrowRight, BookOpen, Github, FileText, FileText as FileTextIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 
@@ -479,6 +479,14 @@ Link: <https://api.nextmavens.cloud/v2>; rel="successor-version"`}</code>
             <li>0 months: Version sunset, support discontinued</li>
           </ul>
         </div>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
+          <p className="text-sm text-slate-700">
+            <a href="/docs/sunset-policy.md" className="text-emerald-700 hover:text-emerald-900 font-medium underline">
+              View detailed Sunset Policy documentation
+            </a> for complete information on emergency security patches, extension requests, and best practices.
+          </p>
+        </div>
       </div>
     ),
   },
@@ -628,6 +636,10 @@ export default function VersioningPage() {
           <Link href="/docs/infrastructure" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
             <ArrowLeft className="w-4 h-4" />
             Infrastructure Docs
+          </Link>
+          <Link href="/docs/changelog" className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900">
+            Changelog
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </main>

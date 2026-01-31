@@ -58,6 +58,16 @@ export interface MigrationOptions {
    * Default: 500 (0.5 seconds)
    */
   lockCheckInterval?: number
+
+  /**
+   * US-007: Dry run mode - show what migrations would be applied without actually running them
+   */
+  dryRun?: boolean
+
+  /**
+   * US-007: Verbose output for dry-run mode
+   */
+  verbose?: boolean
 }
 
 /**
@@ -79,6 +89,125 @@ function logBreakingChangeWarning(migration: Migration, version: string): void {
   console.warn(`⚠️  This migration may cause issues if not properly tested.`)
   console.warn(`⚠️  Ensure you have tested this on a staging environment first.`)
   console.warn('')
+}
+
+/**
+ * US-007: Estimate the impact of a migration for dry-run output
+ */
+function estimateMigrationImpact(sql: string): string {
+  const upperSql = sql.toUpperCase()
+
+  // Check for table creation
+  if (upperSql.includes('CREATE TABLE')) {
+    const tableMatches = sql.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)/gi)
+    if (tableMatches) {
+      return `Creates ${tableMatches.length} table${tableMatches.length > 1 ? 's' : ''}`
+    }
+  }
+
+  // Check for table drops
+  if (upperSql.includes('DROP TABLE')) {
+    return 'DESTRUCTIVE: Drops tables'
+  }
+
+  // Check for column additions
+  if (upperSql.includes('ADD COLUMN') || upperSql.includes('ALTER TABLE')) {
+    return 'Modifies table schema'
+  }
+
+  // Check for index creation
+  if (upperSql.includes('CREATE INDEX') || upperSql.includes('CREATE UNIQUE INDEX')) {
+    return 'Creates indexes'
+  }
+
+  return 'Schema change'
+}
+
+/**
+ * US-007: Get migration plan - shows what migrations would be applied
+ * This is the dry-run functionality
+ */
+export async function getMigrationPlan(options?: MigrationOptions): Promise<MigrationPlan[]> {
+  const pool = getPool()
+  const { readdir, readFile } = await import('fs/promises')
+  const { join } = await import('path')
+
+  const migrationsDir = join(process.cwd(), 'migrations')
+  const files = await readdir(migrationsDir)
+  const migrationFiles = files
+    .filter(f => f.endsWith('.sql') && f.match(/^\d{3}_/))
+    .sort()
+
+  const client = await pool.connect()
+
+  try {
+    // Get applied migrations
+    const result = await client.query<MigrationRecord>(
+      'SELECT * FROM control_plane.schema_migrations'
+    )
+    const appliedVersions = new Set(result.rows.map(r => r.version))
+
+    const plans: MigrationPlan[] = []
+
+    for (const file of migrationFiles) {
+      const version = file.split('_')[0]
+
+      // Skip if already applied
+      if (appliedVersions.has(version)) {
+        continue
+      }
+
+      const migrationPath = join(migrationsDir, file)
+      const migrationSql = await readFile(migrationPath, 'utf-8')
+
+      // Extract metadata from comments
+      const lines = migrationSql.split('\n')
+
+      // Extract breaking flag
+      const breakingLine = lines.find(line =>
+        line.trim().startsWith('-- Breaking:') ||
+        line.trim().startsWith('-- breaking:')
+      )
+      const breaking = breakingLine
+        ?.replace(/^--\s*(Breaking|breaking):\s*/, '')
+        ?.trim()?.toLowerCase() === 'true'
+
+      // Extract description
+      const descLine = lines.find(line =>
+        line.trim().startsWith('--') &&
+        !line.trim().startsWith('--===')
+      ) || lines[0]
+      const description = descLine
+        ?.replace(/^--\s*/, '')
+        ?.trim() ||
+        `Migration ${version}`
+
+      // Extract rollback SQL
+      const rollbackLine = lines.find(line =>
+        line.trim().startsWith('-- Rollback:') ||
+        line.trim().startsWith('-- rollback:')
+      )
+      const rollbackSql = rollbackLine
+        ?.replace(/^--\s*(Rollback|rollback):\s*/, '')
+        ?.trim()
+
+      // Estimate impact
+      const estimatedImpact = estimateMigrationImpact(migrationSql)
+
+      plans.push({
+        version,
+        description,
+        file,
+        breaking,
+        rollbackSql,
+        estimatedImpact
+      })
+    }
+
+    return plans
+  } finally {
+    client.release()
+  }
 }
 
 /**
@@ -202,6 +331,47 @@ async function acquireMigrationLock(
  */
 export async function runMigrations(options?: MigrationOptions): Promise<void> {
   const pool = getPool()
+
+  // US-007: If dry-run, just show the plan without executing
+  if (options?.dryRun) {
+    console.log('🔍 DRY RUN MODE - Showing what migrations would be applied:')
+    console.log('')
+
+    const plans = await getMigrationPlan(options)
+
+    if (plans.length === 0) {
+      console.log('No pending migrations to apply.')
+      return
+    }
+
+    console.log(`Found ${plans.length} pending migration${plans.length > 1 ? 's' : ''}:\n`)
+
+    for (const plan of plans) {
+      console.log(`📋 Migration ${plan.version}: ${plan.description}`)
+      console.log(`   File: ${plan.file}`)
+
+      if (plan.estimatedImpact) {
+        console.log(`   Impact: ${plan.estimatedImpact}`)
+      }
+
+      if (plan.breaking) {
+        console.log(`   ⚠️  BREAKING CHANGE`)
+      }
+
+      if (plan.rollbackSql && options?.verbose) {
+        console.log(`   Rollback: ${plan.rollbackSql}`)
+      }
+
+      console.log('')
+    }
+
+    if (options?.verbose) {
+      console.log('Dry run complete. No actual changes were made.')
+      console.log('To apply these migrations, remove the dryRun option.')
+    }
+
+    return
+  }
 
   // First, ensure schema_migrations table exists (outside migration loop)
   const setupClient = await pool.connect()
@@ -424,4 +594,16 @@ export async function rollbackMigration(version: string): Promise<void> {
   } finally {
     client.release()
   }
+}
+
+/**
+ * US-007: Migration plan - describes a migration that would be applied (used for dry-run)
+ */
+export interface MigrationPlan {
+  version: string
+  description: string
+  file: string
+  breaking?: boolean
+  rollbackSql?: string
+  estimatedImpact?: string
 }

@@ -76,8 +76,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created ResultsTable component at src/features/sql-editor/components/ResultsTable.tsx. Features include: column headers from query results, row rendering with null handling, sortable columns (click to cycle asc/desc/unsorted), pagination (configurable pageSize, default 50), empty states for no data/no results, column width resizing via drag handle, CSV export button with proper escaping for commas/quotes/newlines, loading state with spinner, error state display. Shows execution time and row count in header. Type-safe with QueryResult interface exported. Component exported via src/features/sql-editor/index.ts. Typecheck passes."
     },
     {
       "id": "US-005",
@@ -106,8 +106,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added read-only checkbox to SqlEditor component (checked by default for safety). Checkbox shows 'Write enabled' badge when unchecked. Destructive query detection implemented with warning banner showing which command was detected and requiring user to uncheck readonly mode. handleExecute passes readonly parameter to API. Studio page updated with SQL Query tab that integrates SqlEditor with ResultsTable. Query execution via /api/studio/:projectId/query with readonly parameter. Typecheck passes."
     },
     {
       "id": "US-006",
@@ -133,8 +133,8 @@
         "step10": []
       },
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: RBAC enforcement for writes implemented in POST /api/studio/:projectId/query endpoint at src/app/api/studio/[projectId]/query/route.ts. Query API checks user permissions using checkUserPermission() from lib/rbac.ts. Permission matrix enforced: Viewers can only SELECT (database.read only), Developers can only SELECT (database.read only, no database.write), Admins and Owners can write (database.write permission granted). Returns PERMISSION_DENIED (403) with detailed error message for unauthorized writes, explaining the required permission and user's role. Typecheck passes."
     },
     {
       "id": "US-004",
@@ -157,8 +157,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Created QueryHistoryPanel component at src/features/sql-editor/components/QueryHistory.tsx with all acceptance criteria: (1) Query history stored in localStorage with key 'sql-query-history', (2) Last 50 queries saved (MAX_HISTORY_SIZE=50), (3) History panel shows previous queries with query text, timestamp (formatted as 'Just now', 'Xm ago', 'Xh ago', 'Xd ago', or date), SQL command badge (SELECT, INSERT, etc.), execution count, (4) Click to load query into editor via onSelectQuery callback, (5) Clear history button with trash icon and confirmation dialog. Added search/filter functionality with Search icon and X clear button. Includes useQueryHistory hook for state management. Exported addQueryToHistory helper function for external use. Component exported via src/features/sql-editor/index.ts (QueryHistoryPanel, useQueryHistory, addQueryToHistory, QueryHistoryItem type). Integrated into Studio page (src/app/studio/[slug]/page.tsx) with side-by-side layout (80 width panel), handleSelectQueryFromHistory callback, and addQueryToHistory call in handleExecuteQuery after successful query execution. Panel shows empty state with Clock icon when no history. Footer shows query count vs max storage. Typecheck passes."
     },
     {
       "id": "US-007",
@@ -184,8 +184,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Migration 026_add_query_timeout_to_projects.sql adds query_timeout column to projects table (default 30000ms, range 1000-300000ms). Updated query route at src/app/api/studio/[projectId]/query/route.ts with getQueryTimeout() function to fetch per-project timeout, and executeQueryWithTimeout() using Promise.race to enforce timeout. Returns 408 status with QUERY_TIMEOUT error code when exceeded. Error message includes timeout value and suggestion to optimize query or increase timeout. Typecheck passes."
     },
     {
       "id": "US-008",
@@ -207,8 +207,8 @@
         "step10": []
       },
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Added query stats to POST /api/studio/:projectId/query response at src/app/api/studio/[projectId]/query/route.ts. Added isExplainQuery() and wrapWithExplain() helper functions. Request accepts optional 'explain' boolean parameter. Response includes: executionTime (ms), rowCount (for SELECT), rowsAffected (for INSERT/UPDATE/DELETE), queryPlan (when explain=true, returns parsed EXPLAIN ANALYZE output in JSON format). GET endpoint documentation updated with queryStats info explaining all returned statistics. Typecheck passes."
     },
     {
       "id": "US-009",
@@ -230,8 +230,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Format SQL button added to SqlEditor component (src/features/sql-editor/components/SqlEditor.tsx) with Wand2 icon. Uses sql-formatter library with PostgreSQL language support. Formatting options: 2-space indent, uppercase keywords, lowercase identifiers/functions/types, standard indent style, logical operators before newline, 60 char expression width, 2 lines between queries. Keyboard shortcut Ctrl+Shift+F registered via editor.addCommand(). Button disabled when query is empty or editor is read-only. handleFormat() function formats query, updates state, and updates editor value. Error handling for incomplete queries (warns and keeps original). Typecheck passes."
     },
     {
       "id": "US-010",
@@ -254,8 +254,8 @@
         "step10": []
       },
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed: Save query button added to SqlEditor component (Bookmark icon, violet color). Button prompts for query name via window.prompt() with default suggestion. Saves to localStorage via SavedQueries module with max 100 saved queries. Saved queries panel integrated into Studio page with tab toggle (History/Saved). Panel shows: query name, SQL command badge, query preview, timestamp, and delete button. Click to load saved query into editor via handleSelectSavedQuery(). Search/filter functionality included. All acceptance criteria met. Typecheck passes."
     }
   ],
   "relatedPRDs": [],
