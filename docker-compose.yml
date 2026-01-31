@@ -4,12 +4,14 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: nextmavens-developer-portal
+    env_file:
+      - .env
     environment:
-      - PORT=3000
-      - DATABASE_URL=postgresql://nextmavens:Elishiba@95@nextmavens-db-m4sxnf:5432/nextmavens
-      - JWT_SECRET=nextmavens-auth-secret-key-2024-production-secure
-      - REFRESH_SECRET=nextmavens-refresh-secret
-      - NODE_ENV=production
+      - PORT=${PORT:-3000}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_SECRET=${REFRESH_SECRET}
+      - NODE_ENV=${NODE_ENV:-production}
     ports:
       - "3006:3000"
     restart: unless-stopped
