@@ -6,8 +6,8 @@ import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 
 const mcpConfig = {
   gatewayDomain: 'https://api.nextmavens.cloud',
-  mcpServerPackage: '@nextmavens/mcp-server',
-  installCommand: 'npx -y @nextmavens/mcp-server',
+  mcpServerPackage: '@nextmavenspacks/mcp-server',
+  installCommand: 'npx -y @nextmavenspacks/mcp-server',
   available: true,
   protocol: 'MCP (Model Context Protocol) 2024-11-05',
   toolsCount: 36,
@@ -465,7 +465,7 @@ Description: "For AI-assisted development"
   "mcpServers": {
     "nextmavens": {
       "command": "npx",
-      "args": ["-y", "@nextmavens/mcp-server"],
+      "args": ["-y", "@nextmavenspacks/mcp-server"],
       "env": {
         "NEXTMAVENS_API_KEY": "your_mcp_ro_token_here",
         "NEXTMAVENS_API_URL": "https://api.nextmavens.cloud"
