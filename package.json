@@ -15,7 +15,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "db:setup": "tsx scripts/setup-database.ts",
+    "db:verify": "tsx scripts/verify-database.ts"
   },
   "dependencies": {
     "@nextmavens/audit-logs-database": "git+https://github.com/Mkid095/nextmavens-database.git#8ce2b12",

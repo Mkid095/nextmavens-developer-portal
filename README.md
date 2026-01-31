@@ -195,6 +195,60 @@ Each project gets its own tenant in the database. The tenant has:
 - Row Level Security (RLS) enabled
 - Isolated data per tenant
 
+### Database Setup
+
+The developer portal uses PostgreSQL with automatic schema migrations.
+
+#### Setup Database
+
+```bash
+# Run all pending migrations
+pnpm db:setup
+
+# Verify database setup
+pnpm db:verify
+```
+
+The database setup creates 27 tables across two schemas:
+
+**Public Schema:**
+- `developers` - Developer accounts for authentication
+
+**Control Plane Schema:**
+- `organizations` - Multi-tenant team structures
+- `organization_members` - Team membership and roles
+- `projects` - Project definitions
+- `provisioning_steps` - Project provisioning state machine
+- `api_keys` - API keys for authentication
+- `secrets` - Encrypted secrets with versioning
+- `webhooks` - Webhook configurations
+- `event_log` - Webhook event delivery log
+- `audit_logs` - Audit trail for compliance
+- `usage_metrics` - API usage tracking
+- `api_usage_logs` - Request logging
+- `usage_snapshots` - Usage statistics snapshots
+- `quotas` - Resource quotas and limits
+- `support_requests` - Customer support tickets
+- `incidents` - Security incident tracking
+- `request_traces` - API request tracing
+- And more...
+
+### Environment Variables
+
+Required for database connection:
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/nextmavens
+
+# JWT secrets
+JWT_SECRET=your-jwt-secret-key-here
+REFRESH_SECRET=your-refresh-secret-key-here
+
+# Secrets encryption
+SECRETS_MASTER_KEY=your-secrets-master-key-here (64 hex chars)
+```
+
 ## Security
 
 - Passwords hashed with bcrypt
@@ -264,7 +318,7 @@ pnpm test:watch
 
 ### Coverage Goals
 
-Current coverage: ~15% (151 tests passing)
+Current coverage: ~18% (203 tests passing, 10 integration tests requiring database)
 Target coverage: 80% across all metrics
 
 Work in progress to improve coverage.
