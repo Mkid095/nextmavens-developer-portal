@@ -1249,8 +1249,8 @@ export default function ProjectDetailPage() {
                       <MultiLanguageCodeBlock
                         selectedLanguage={codeLanguage}
                         examples={createCodeExamples({
-                          javascript: 'npm install nextmavens-js',
-                          python: 'pip install nextmavens-py',
+                          javascript: '# No installation needed - use fetch API',
+                          python: 'pip install requests',
                           go: 'go get github.com/nextmavens/go-sdk',
                           curl: '# No installation needed - cURL comes with most systems',
                         })}
@@ -1261,12 +1261,22 @@ export default function ProjectDetailPage() {
                       <MultiLanguageCodeBlock
                         selectedLanguage={codeLanguage}
                         examples={createCodeExamples({
-                          javascript: `import { createClient } from 'nextmavens-js'
+                          javascript: `// Use fetch API to make requests
+const API_KEY = process.env.NEXTMAVENS_API_KEY
+const PROJECT_ID = '${project?.id || 'YOUR_PROJECT_ID'}'
+const BASE_URL = 'https://api.nextmavens.cloud'
 
-const client = createClient({
-  apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project?.id || 'YOUR_PROJECT_ID'}'
-})`,
+async function query(table, options = {}) {
+  const response = await fetch(\`\${BASE_URL}/api/projects/\${PROJECT_ID}/\${table}\`, {
+    method: options.method || 'GET',
+    headers: {
+      'X-API-Key': API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined,
+  })
+  return response.json()
+}`,
                           python: `import nextmavens
 
 client = nextmavens.create_client(
@@ -1459,26 +1469,26 @@ curl -X POST "${endpoints.rest}/rest/v1/users" \\
                   <h3 className="font-semibold text-emerald-900 mb-3">Quick Integration</h3>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm font-medium text-slate-700 mb-2">Using the SDK</p>
+                      <p className="text-sm font-medium text-slate-700 mb-2">Using Fetch API</p>
                       <div className="relative group">
                         <button
-                          onClick={() => handleCopy(`import { createClient } from 'nextmavens-js'
-
-const client = createClient({
-  apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`, 'sdk-integration')}
+                          onClick={() => handleCopy(`const response = await fetch('https://api.nextmavens.cloud/api/projects/${project.id}/users', {
+  headers: {
+    'X-API-Key': process.env.NEXTMAVENS_API_KEY
+  }
+})
+const data = await response.json()`, 'sdk-integration')}
                           className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
                         >
                           {copied === 'sdk-integration' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
                         </button>
                         <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                          <code className="text-sm text-slate-300 font-mono">{`import { createClient } from 'nextmavens-js'
-
-const client = createClient({
-  apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${project.id}'
-})`}</code>
+                          <code className="text-sm text-slate-300 font-mono">{`const response = await fetch('https://api.nextmavens.cloud/api/projects/${project.id}/users', {
+  headers: {
+    'X-API-Key': process.env.NEXTMAVENS_API_KEY
+  }
+})
+const data = await response.json()`}</code>
                         </pre>
                       </div>
                     </div>
@@ -3386,37 +3396,31 @@ echo '{"event": "phx_join", "topic": "users", "payload": {"events": ["INSERT", "
             </div>
 
             <div className="space-y-6">
-              {/* SDK Integration */}
+              {/* API Integration */}
               <div>
-                <h3 className="font-semibold text-slate-900 mb-3">Using the SDK</h3>
+                <h3 className="font-semibold text-slate-900 mb-3">Using the REST API</h3>
                 <div className="bg-slate-50 rounded-lg p-4 space-y-3">
                   <div>
-                    <p className="text-xs text-slate-600 mb-2">Install the SDK:</p>
-                    <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <code className="text-sm text-slate-300 font-mono">npm install nextmavens-js</code>
-                    </pre>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-600 mb-2">Initialize the client:</p>
+                    <p className="text-xs text-slate-600 mb-2">Make requests with fetch:</p>
                     <div className="relative group">
                       <button
-                        onClick={() => handleCopy(`import { createClient } from 'nextmavens-js'
-
-const client = createClient({
-  apiKey: '${newKey.secretKey || newKey.apiKey.public_key}',
-  projectId: '${project.id}'
-})`, 'sdk-example')}
+                        onClick={() => handleCopy(`const response = await fetch('https://api.nextmavens.cloud/api/projects/${project.id}/users', {
+  headers: {
+    'X-API-Key': '${newKey.secretKey || newKey.apiKey.public_key}'
+  }
+})
+const data = await response.json()`, 'sdk-example')}
                         className="absolute top-3 right-3 p-2 bg-slate-700 hover:bg-slate-600 rounded-lg opacity-0 group-hover:opacity-100 transition"
                       >
                         {copied === 'sdk-example' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-slate-400" />}
                       </button>
                       <pre className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                        <code className="text-sm text-slate-300 font-mono">{`import { createClient } from 'nextmavens-js'
-
-const client = createClient({
-  apiKey: '${newKey.secretKey || newKey.apiKey.public_key}',
-  projectId: '${project.id}'
-})`}</code>
+                        <code className="text-sm text-slate-300 font-mono">{`const response = await fetch('https://api.nextmavens.cloud/api/projects/${project.id}/users', {
+  headers: {
+    'X-API-Key': '${newKey.secretKey || newKey.apiKey.public_key}'
+  }
+})
+const data = await response.json()`}</code>
                       </pre>
                     </div>
                   </div>

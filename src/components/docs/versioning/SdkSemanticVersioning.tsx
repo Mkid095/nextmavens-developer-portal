@@ -69,13 +69,13 @@ export function SdkSemanticVersioning() {
         <h3 className="font-medium text-emerald-900 mb-2">Version Ranges in package.json</h3>
         <p className="text-sm text-emerald-800 mb-3">Use version ranges for automatic compatible updates:</p>
         <CodeBlockWithCopy>{`// Allow patch and minor updates (recommended)
-"nextmavens-js": "^1.2.3"
+"@nextmavenspacks/mcp-server": "^1.2.3"
 
 // Allow only patch updates
-"nextmavens-js": "~1.2.3"
+"@nextmavenspacks/mcp-server": "~1.2.3"
 
 // Exact version (not recommended)
-"nextmavens-js": "1.2.3"`}</CodeBlockWithCopy>
+"@nextmavenspacks/mcp-server": "1.2.3"`}</CodeBlockWithCopy>
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
