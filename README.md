@@ -263,6 +263,16 @@ The portal is accessible at: `https://portal.nextmavens.cloud`
 
 Environment variables are configured in docker-compose.yml.
 
+### Production Database Migrations
+
+For running database migrations on the production Dokploy deployment, see [Production Deployment Guide](docs/PRODUCTION_DEPLOYMENT.md).
+
+**Quick reference** - Run migrations on production server:
+```bash
+# SSH to production server, then:
+docker exec -it nextmavens-developer-portal bash -c "./scripts/run-production-migrations.sh"
+```
+
 ## CI/CD Pipeline
 
 This project uses GitHub Actions for continuous integration and deployment.
