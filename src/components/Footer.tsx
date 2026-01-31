@@ -4,14 +4,6 @@ export default function Footer() {
       <div className="container-custom">
         <div className="flex flex-wrap justify-center gap-8 mb-6">
           <a
-            href="https://github.com/Mkid095/nextmavens-js"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-slate-600 hover:text-slate-900 transition-colors"
-          >
-            JavaScript SDK
-          </a>
-          <a
             href="https://github.com/Mkid095/nextmavens-mcp-server"
             target="_blank"
             rel="noopener noreferrer"

@@ -8,10 +8,10 @@ export default function CTA() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
-            href="https://github.com/Mkid095/nextmavens-js"
+            href="https://github.com/Mkid095/nextmavens-mcp-server"
             className="px-6 py-3 text-sm font-semibold text-white bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
           >
-            View SDK on GitHub
+            View MCP Server on GitHub
           </a>
           <a
             href="https://portal.nextmavens.cloud"

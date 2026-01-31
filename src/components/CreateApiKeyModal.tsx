@@ -254,21 +254,21 @@ export default function CreateApiKeyModal({ isOpen, onClose, onCreateKey, projec
         language: 'bash',
       },
       {
-        title: 'JavaScript SDK',
-        code: `import { createClient } from 'nextmavens-js'
-
-const client = createClient({
-  apiKey: process.env.NEXTMAVENS_API_KEY,
-  projectId: '${projectId || 'your-project-id'}'
-})`,
-        language: 'javascript',
+        title: 'cURL Request',
+        code: `curl -X GET "https://api.nextmavens.cloud/api/users" \\
+  -H "X-API-Key: ${key}"`,
+        language: 'bash',
       },
       {
-        title: 'cURL Request',
-        code: `curl -X GET "https://api.nextmavens.cloud/rest/v1/users" \\
-  -H "apikey: ${key}" \\
-  -H "Authorization: Bearer ${key}"`,
-        language: 'bash',
+        title: 'JavaScript (fetch)',
+        code: `const response = await fetch('https://api.nextmavens.cloud/api/users', {
+  headers: {
+    'X-API-Key': '${key}'
+  }
+})
+
+const data = await response.json()`,
+        language: 'javascript',
       },
     ]
 

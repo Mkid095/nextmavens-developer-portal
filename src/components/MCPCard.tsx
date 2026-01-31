@@ -37,7 +37,7 @@ export default function MCPCard() {
 
           <div className="bg-black/30 rounded-xl p-5 mb-6">
             <code className="text-sm text-emerald-300 font-mono">
-              pnpm add -g @nextmavens/mcp-server
+              pnpm add -g @nextmavenspacks/mcp-server
             </code>
           </div>
 

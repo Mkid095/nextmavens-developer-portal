@@ -50,17 +50,23 @@ export default function Services() {
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold text-slate-900 mb-4">SDK Installation</h4>
+              <h4 className="text-lg font-semibold text-slate-900 mb-4">MCP Server Installation</h4>
               <div className="bg-slate-900 rounded-xl p-6 overflow-x-auto">
                 <pre className="text-sm text-slate-100 font-mono leading-relaxed">
                   <code className="text-emerald-400">
-                    {`# Install from GitHub
-pnpm add https://github.com/Mkid095/nextmavens-js.git
+                    {`# Install MCP Server for AI/IDE integration
+npx -y @nextmavenspacks/mcp-server
 
-# Or add to package.json
+# Or add to Claude Code config (~/.claude/mcp.json)
 {
-  "dependencies": {
-    "nextmavens-js": "github:Mkid095/nextmavens-js"
+  "mcpServers": {
+    "nextmavens": {
+      "command": "npx",
+      "args": ["-y", "@nextmavenspacks/mcp-server"],
+      "env": {
+        "NEXTMAVENS_API_KEY": "your_api_key_here"
+      }
+    }
   }
 }`}
                   </code>
