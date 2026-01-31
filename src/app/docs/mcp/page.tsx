@@ -10,7 +10,7 @@ const mcpConfig = {
   installCommand: 'npx -y @nextmavens/mcp-server',
   available: true,
   protocol: 'MCP (Model Context Protocol) 2024-11-05',
-  toolsCount: 11,
+  toolsCount: 36,
 }
 
 const mcpTools = [
@@ -100,6 +100,175 @@ const mcpTools = [
       },
     ],
   },
+  {
+    category: 'Schema Management',
+    tools: [
+      {
+        name: 'nextmavens_create_table',
+        description: 'Create a new database table with columns',
+        parameters: 'tableName, columns, primaryKeys',
+        scopes: ['db:admin'],
+      },
+      {
+        name: 'nextmavens_add_column',
+        description: 'Add a column to an existing table',
+        parameters: 'tableName, column (name, type, nullable, default)',
+        scopes: ['db:admin'],
+      },
+      {
+        name: 'nextmavens_create_policy',
+        description: 'Create or update an RLS policy on a table',
+        parameters: 'tableName, policyName, operation, using, check, roles',
+        scopes: ['db:admin'],
+      },
+      {
+        name: 'nextmavens_enable_rls',
+        description: 'Enable Row Level Security on a table',
+        parameters: 'tableName',
+        scopes: ['db:admin'],
+      },
+      {
+        name: 'nextmavens_list_tables',
+        description: 'List all database tables',
+        parameters: 'none',
+        scopes: ['db:select'],
+      },
+      {
+        name: 'nextmavens_get_table_schema',
+        description: 'Get schema information for a table',
+        parameters: 'tableName',
+        scopes: ['db:select'],
+      },
+    ],
+  },
+  {
+    category: 'Project Management',
+    tools: [
+      {
+        name: 'nextmavens_create_project',
+        description: 'Create a new project',
+        parameters: 'name, description, domain',
+        scopes: ['project:create'],
+      },
+      {
+        name: 'nextmavens_list_projects',
+        description: 'List all projects',
+        parameters: 'none',
+        scopes: ['project:read'],
+      },
+      {
+        name: 'nextmavens_get_project',
+        description: 'Get project details',
+        parameters: 'projectId',
+        scopes: ['project:read'],
+      },
+      {
+        name: 'nextmavens_update_project',
+        description: 'Update a project',
+        parameters: 'projectId, name, description, domain',
+        scopes: ['project:update'],
+      },
+      {
+        name: 'nextmavens_delete_project',
+        description: 'Delete a project',
+        parameters: 'projectId',
+        scopes: ['project:delete'],
+      },
+    ],
+  },
+  {
+    category: 'API Key Management',
+    tools: [
+      {
+        name: 'nextmavens_create_api_key',
+        description: 'Create an API key with expiration options',
+        parameters: 'name, scopes, expiration (1day, 1week, 2weeks, 3weeks, 30days, 1year, forever)',
+        scopes: ['key:create'],
+      },
+      {
+        name: 'nextmavens_list_api_keys',
+        description: 'List all API keys',
+        parameters: 'none',
+        scopes: ['key:read'],
+      },
+      {
+        name: 'nextmavens_get_api_key',
+        description: 'Get API key details',
+        parameters: 'keyId',
+        scopes: ['key:read'],
+      },
+      {
+        name: 'nextmavens_delete_api_key',
+        description: 'Delete an API key',
+        parameters: 'keyId',
+        scopes: ['key:delete'],
+      },
+    ],
+  },
+  {
+    category: 'Realtime Management',
+    tools: [
+      {
+        name: 'nextmavens_enable_realtime',
+        description: 'Enable realtime for a table',
+        parameters: 'tableName',
+        scopes: ['realtime:manage'],
+      },
+      {
+        name: 'nextmavens_disable_realtime',
+        description: 'Disable realtime for a table',
+        parameters: 'tableName',
+        scopes: ['realtime:manage'],
+      },
+      {
+        name: 'nextmavens_list_realtime_tables',
+        description: 'List tables with realtime enabled',
+        parameters: 'none',
+        scopes: ['realtime:read'],
+      },
+      {
+        name: 'nextmavens_realtime_connection_info',
+        description: 'Get realtime connection information',
+        parameters: 'none',
+        scopes: ['realtime:read'],
+      },
+    ],
+  },
+  {
+    category: 'Storage Management',
+    tools: [
+      {
+        name: 'nextmavens_create_bucket',
+        description: 'Create a storage bucket',
+        parameters: 'name, publicAccess, fileSizeLimit',
+        scopes: ['storage:admin'],
+      },
+      {
+        name: 'nextmavens_list_buckets',
+        description: 'List all storage buckets',
+        parameters: 'none',
+        scopes: ['storage:read'],
+      },
+      {
+        name: 'nextmavens_delete_bucket',
+        description: 'Delete a storage bucket',
+        parameters: 'bucketId',
+        scopes: ['storage:delete'],
+      },
+      {
+        name: 'nextmavens_create_folder',
+        description: 'Create a folder in a bucket',
+        parameters: 'bucketId, folderPath',
+        scopes: ['storage:write'],
+      },
+      {
+        name: 'nextmavens_update_bucket',
+        description: 'Update bucket settings',
+        parameters: 'bucketId, publicAccess, fileSizeLimit',
+        scopes: ['storage:admin'],
+      },
+    ],
+  },
 ]
 
 const tokenTypes = [
@@ -107,22 +276,30 @@ const tokenTypes = [
     type: 'mcp_ro_',
     name: 'MCP Read-Only',
     color: 'emerald',
-    scopes: ['db:select', 'storage:read', 'graphql:execute'],
+    scopes: ['db:select', 'storage:read', 'graphql:execute', 'realtime:read', 'project:read', 'key:read'],
     description: 'Safe for most AI tools - read database access only',
   },
   {
     type: 'mcp_rw_',
     name: 'MCP Read-Write',
     color: 'amber',
-    scopes: ['db:select', 'db:insert', 'db:update', 'storage:read', 'storage:write', 'graphql:execute'],
+    scopes: ['db:select', 'db:insert', 'db:update', 'storage:read', 'storage:write', 'graphql:execute', 'realtime:read'],
     description: 'For trusted AI tools - can modify data',
   },
   {
     type: 'mcp_admin_',
     name: 'MCP Admin',
     color: 'red',
-    scopes: ['db:select', 'db:insert', 'db:update', 'db:delete', 'storage:read', 'storage:write', 'auth:manage'],
-    description: 'Full access - bypasses RLS - use with extreme caution',
+    scopes: [
+      'db:select', 'db:insert', 'db:update', 'db:delete', 'db:admin',
+      'storage:read', 'storage:write', 'storage:admin',
+      'graphql:execute',
+      'realtime:read', 'realtime:manage',
+      'project:create', 'project:read', 'project:update', 'project:delete',
+      'key:create', 'key:read', 'key:delete',
+      'auth:manage'
+    ],
+    description: 'Full access - includes schema, projects, keys, realtime, storage admin - use with extreme caution',
   },
 ]
 
