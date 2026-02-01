@@ -214,6 +214,11 @@ export const createTenantSchemaHandler: StepHandler = async (
  * - audit_log: Tenant-level audit trail (id, action, actor_id, target_type, target_id, metadata, created_at)
  * - _migrations: Tenant schema version tracking (id, version, applied_at)
  *
+ * Row Level Security (RLS):
+ * - All tables have RLS enabled by default
+ * - Users can only access their own data (based on app.user_id session variable)
+ * - Admins bypass RLS when app.user_role = 'admin'
+ *
  * All tables use IF NOT EXISTS for idempotency.
  * Indexes are created for performance.
  *
@@ -331,8 +336,100 @@ export const createTenantDatabaseHandler: StepHandler = async (
       `
     )
 
+    // 7. Enable Row Level Security on users table
+    await client.query(`ALTER TABLE "${schemaName}".users ENABLE ROW LEVEL SECURITY`)
+
+    // 8. Create RLS policies for users table
+    // Users can read their own record
+    await client.query(
+      `
+      CREATE POLICY IF NOT EXISTS users_select_own ON "${schemaName}".users
+      FOR SELECT
+      USING (
+        id = current_setting('app.user_id', true)::uuid
+        OR current_setting('app.user_role', true) = 'admin'
+      )
+      `
+    )
+
+    // Users can update their own record
+    await client.query(
+      `
+      CREATE POLICY IF NOT EXISTS users_update_own ON "${schemaName}".users
+      FOR UPDATE
+      USING (
+        id = current_setting('app.user_id', true)::uuid
+        OR current_setting('app.user_role', true) = 'admin'
+      )
+      `
+    )
+
+    // Service roles can insert new users (for signup)
+    await client.query(
+      `
+      CREATE POLICY IF NOT EXISTS users_insert_service ON "${schemaName}".users
+      FOR INSERT
+      WITH CHECK (
+        current_setting('app.user_role', true) IN ('service', 'admin')
+      )
+      `
+    )
+
+    // 9. Enable Row Level Security on audit_log table
+    await client.query(`ALTER TABLE "${schemaName}".audit_log ENABLE ROW LEVEL SECURITY`)
+
+    // 10. Create RLS policies for audit_log table
+    // Users can read audit logs where they are the actor
+    await client.query(
+      `
+      CREATE POLICY IF NOT EXISTS audit_log_select_own ON "${schemaName}".audit_log
+      FOR SELECT
+      USING (
+        actor_id = current_setting('app.user_id', true)::uuid
+        OR current_setting('app.user_role', true) = 'admin'
+      )
+      `
+    )
+
+    // Service roles and admins can insert audit logs
+    await client.query(
+      `
+      CREATE POLICY IF NOT EXISTS audit_log_insert_service ON "${schemaName}".audit_log
+      FOR INSERT
+      WITH CHECK (
+        current_setting('app.user_role', true) IN ('service', 'admin')
+      )
+      `
+    )
+
+    // 11. Enable Row Level Security on _migrations table
+    await client.query(`ALTER TABLE "${schemaName}"._migrations ENABLE ROW LEVEL SECURITY`)
+
+    // 12. Create RLS policies for _migrations table
+    // Only service roles and admins can read migrations
+    await client.query(
+      `
+      CREATE POLICY IF NOT EXISTS migrations_select_service ON "${schemaName}"._migrations
+      FOR SELECT
+      USING (
+        current_setting('app.user_role', true) IN ('service', 'admin')
+      )
+      `
+    )
+
+    // Only service roles can insert migrations
+    await client.query(
+      `
+      CREATE POLICY IF NOT EXISTS migrations_insert_service ON "${schemaName}"._migrations
+      FOR INSERT
+      WITH CHECK (
+        current_setting('app.user_role', true) = 'service'
+      )
+      `
+    )
+
     console.log(
-      `[Provisioning] Created tenant tables (users, audit_log, _migrations) in schema: ${schemaName} for project: ${projectId}`
+      `[Provisioning] Created tenant tables (users, audit_log, _migrations) with RLS policies in schema: ${schemaName} for project: ${projectId}`
     )
 
     return {
