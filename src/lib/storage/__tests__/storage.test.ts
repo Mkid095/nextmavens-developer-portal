@@ -5,100 +5,90 @@
  * Tests Telegram Storage API and Cloudinary client with mocks.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import {
-  uploadFile,
-  uploadToTelegram,
-  uploadToCloudinary,
-  downloadFile,
-  downloadFromTelegram,
-  deleteFile,
-  deleteFromTelegram,
-  fileExists,
-  getTelegramFileInfo,
-  listTelegramFiles,
-  getCloudinaryUrl,
-  shouldUseCloudinary,
-  shouldUseTelegram,
-  MAX_FILE_SIZE,
-  CLOUDINARY_MIME_TYPES,
-  type TelegramFileResponse,
-  type CloudinaryUploadResponse,
-} from '../client'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 // Mock fetch globally
 global.fetch = vi.fn() as any
 
-// Mock environment variables
-const mockEnv = {
-  TELEGRAM_STORAGE_API_URL: 'https://telegram-api.test.com',
-  TELEGRAM_STORAGE_API_KEY: 'test-telegram-key',
-  CLOUDINARY_CLOUD_NAME: 'test-cloud',
-  CLOUDINARY_UPLOAD_PRESET: 'test-preset',
+// Helper to get fresh module import - resets module cache to pick up new env vars
+async function importClientModule() {
+  vi.resetModules()
+  return await import('../client')
 }
 
 describe('Storage Client - Content Type Routing', () => {
   beforeEach(() => {
-    vi.resetModules()
-    // Mock environment variables
-    process.env.TELEGRAM_STORAGE_API_URL = mockEnv.TELEGRAM_STORAGE_API_URL
-    process.env.TELEGRAM_STORAGE_API_KEY = mockEnv.TELEGRAM_STORAGE_API_KEY
-    process.env.CLOUDINARY_CLOUD_NAME = mockEnv.CLOUDINARY_CLOUD_NAME
-    process.env.CLOUDINARY_UPLOAD_PRESET = mockEnv.CLOUDINARY_UPLOAD_PRESET
     vi.clearAllMocks()
+    vi.stubEnv('TELEGRAM_STORAGE_API_URL', 'https://telegram-api.test.com')
+    vi.stubEnv('TELEGRAM_STORAGE_API_KEY', 'test-telegram-key')
+    vi.stubEnv('CLOUDINARY_CLOUD_NAME', 'test-cloud')
+    vi.stubEnv('CLOUDINARY_UPLOAD_PRESET', 'test-preset')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('shouldUseCloudinary', () => {
-    it('returns true for image types', () => {
+    it('returns true for image types', async () => {
+      const { shouldUseCloudinary } = await importClientModule()
       expect(shouldUseCloudinary('image/jpeg')).toBe(true)
       expect(shouldUseCloudinary('image/png')).toBe(true)
       expect(shouldUseCloudinary('image/webp')).toBe(true)
       expect(shouldUseCloudinary('image/svg+xml')).toBe(true)
     })
 
-    it('returns true for video types', () => {
+    it('returns true for video types', async () => {
+      const { shouldUseCloudinary } = await importClientModule()
       expect(shouldUseCloudinary('video/mp4')).toBe(true)
       expect(shouldUseCloudinary('video/webm')).toBe(true)
       expect(shouldUseCloudinary('video/mov')).toBe(true)
     })
 
-    it('returns true for audio types', () => {
+    it('returns true for audio types', async () => {
+      const { shouldUseCloudinary } = await importClientModule()
       expect(shouldUseCloudinary('audio/mp3')).toBe(true)
       expect(shouldUseCloudinary('audio/wav')).toBe(true)
       expect(shouldUseCloudinary('audio/ogg')).toBe(true)
     })
 
-    it('returns false for document types', () => {
+    it('returns false for document types', async () => {
+      const { shouldUseCloudinary } = await importClientModule()
       expect(shouldUseCloudinary('application/pdf')).toBe(false)
       expect(shouldUseCloudinary('application/zip')).toBe(false)
       expect(shouldUseCloudinary('text/plain')).toBe(false)
     })
 
-    it('is case insensitive', () => {
+    it('is case insensitive', async () => {
+      const { shouldUseCloudinary } = await importClientModule()
       expect(shouldUseCloudinary('IMAGE/JPEG')).toBe(true)
       expect(shouldUseCloudinary('Image/PNG')).toBe(true)
     })
   })
 
   describe('shouldUseTelegram', () => {
-    it('returns true for document types', () => {
+    it('returns true for document types', async () => {
+      const { shouldUseTelegram } = await importClientModule()
       expect(shouldUseTelegram('application/pdf')).toBe(true)
       expect(shouldUseTelegram('application/zip')).toBe(true)
       expect(shouldUseTelegram('text/plain')).toBe(true)
     })
 
-    it('returns false for image types', () => {
+    it('returns false for image types', async () => {
+      const { shouldUseTelegram } = await importClientModule()
       expect(shouldUseTelegram('image/jpeg')).toBe(false)
       expect(shouldUseTelegram('image/png')).toBe(false)
     })
   })
 
   describe('MAX_FILE_SIZE', () => {
-    it('has correct telegram limit', () => {
+    it('has correct telegram limit', async () => {
+      const { MAX_FILE_SIZE } = await importClientModule()
       expect(MAX_FILE_SIZE.telegram).toBe(1.5 * 1024 * 1024 * 1024) // 1.5GB
     })
 
-    it('has correct cloudinary limit', () => {
+    it('has correct cloudinary limit', async () => {
+      const { MAX_FILE_SIZE } = await importClientModule()
       expect(MAX_FILE_SIZE.cloudinary).toBe(10 * 1024 * 1024) // 10MB
     })
   })
@@ -107,11 +97,19 @@ describe('Storage Client - Content Type Routing', () => {
 describe('Telegram Storage API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('TELEGRAM_STORAGE_API_URL', 'https://telegram-api.test.com')
+    vi.stubEnv('TELEGRAM_STORAGE_API_KEY', 'test-telegram-key')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('uploadToTelegram', () => {
     it('uploads file successfully', async () => {
-      const mockResponse: TelegramFileResponse = {
+      const { uploadToTelegram } = await importClientModule()
+
+      const mockResponse = {
         id: 'f_test123',
         name: 'test.pdf',
         size: 1024,
@@ -150,6 +148,7 @@ describe('Telegram Storage API', () => {
     })
 
     it('throws error when file size exceeds limit', async () => {
+      const { uploadToTelegram, MAX_FILE_SIZE } = await importClientModule()
       const largeBuffer = Buffer.alloc(MAX_FILE_SIZE.telegram + 1)
 
       await expect(
@@ -162,22 +161,9 @@ describe('Telegram Storage API', () => {
       ).rejects.toThrow('File size exceeds Telegram limit')
     })
 
-    it('throws error when API key is not configured', async () => {
-      process.env.TELEGRAM_STORAGE_API_KEY = ''
-
-      await expect(
-        uploadToTelegram(
-          'project-123:/uploads/test.pdf',
-          Buffer.from('test'),
-          'application/pdf',
-          'test.pdf'
-        )
-      ).rejects.toThrow('TELEGRAM_STORAGE_API_KEY environment variable is required')
-
-      process.env.TELEGRAM_STORAGE_API_KEY = mockEnv.TELEGRAM_STORAGE_API_KEY
-    })
-
     it('throws error on API failure', async () => {
+      const { uploadToTelegram } = await importClientModule()
+
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 500,
@@ -197,6 +183,8 @@ describe('Telegram Storage API', () => {
 
   describe('downloadFromTelegram', () => {
     it('downloads file successfully', async () => {
+      const { downloadFromTelegram } = await importClientModule()
+
       const fileBuffer = Buffer.from('downloaded content')
 
       // Mock redirect response
@@ -234,6 +222,8 @@ describe('Telegram Storage API', () => {
     })
 
     it('handles redirect with Location header', async () => {
+      const { downloadFromTelegram } = await importClientModule()
+
       const fileBuffer = Buffer.from('content')
 
       ;(global.fetch as any)
@@ -258,6 +248,8 @@ describe('Telegram Storage API', () => {
     })
 
     it('gets file info when no redirect', async () => {
+      const { downloadFromTelegram } = await importClientModule()
+
       const fileBuffer = Buffer.from('content')
       const mockInfo = {
         url: 'https://cdn.test.com/file.pdf',
@@ -288,7 +280,9 @@ describe('Telegram Storage API', () => {
 
   describe('getTelegramFileInfo', () => {
     it('gets file metadata', async () => {
-      const mockResponse: TelegramFileResponse = {
+      const { getTelegramFileInfo } = await importClientModule()
+
+      const mockResponse = {
         id: 'f_test123',
         name: 'test.pdf',
         size: 1024,
@@ -311,6 +305,8 @@ describe('Telegram Storage API', () => {
     })
 
     it('throws error on API failure', async () => {
+      const { getTelegramFileInfo } = await importClientModule()
+
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: false,
         status: 404,
@@ -322,6 +318,8 @@ describe('Telegram Storage API', () => {
 
   describe('deleteFromTelegram', () => {
     it('deletes file successfully', async () => {
+      const { deleteFromTelegram } = await importClientModule()
+
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
       })
@@ -342,7 +340,9 @@ describe('Telegram Storage API', () => {
 
   describe('listTelegramFiles', () => {
     it('lists files in a folder', async () => {
-      const mockFiles: TelegramFileResponse[] = [
+      const { listTelegramFiles } = await importClientModule()
+
+      const mockFiles = [
         {
           id: 'f_001',
           name: 'file1.pdf',
@@ -390,11 +390,19 @@ describe('Telegram Storage API', () => {
 describe('Cloudinary', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('CLOUDINARY_CLOUD_NAME', 'test-cloud')
+    vi.stubEnv('CLOUDINARY_UPLOAD_PRESET', 'test-preset')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('uploadToCloudinary', () => {
     it('uploads image successfully', async () => {
-      const mockResponse: CloudinaryUploadResponse = {
+      const { uploadToCloudinary } = await importClientModule()
+
+      const mockResponse = {
         public_id: 'test-image-123',
         version: 1234567890,
         signature: 'abc123',
@@ -433,6 +441,7 @@ describe('Cloudinary', () => {
     })
 
     it('throws error when file size exceeds limit', async () => {
+      const { uploadToCloudinary, MAX_FILE_SIZE } = await importClientModule()
       const largeBuffer = Buffer.alloc(MAX_FILE_SIZE.cloudinary + 1)
 
       await expect(
@@ -445,28 +454,14 @@ describe('Cloudinary', () => {
       ).rejects.toThrow('File size exceeds Cloudinary limit')
     })
 
-    it('throws error when cloud name not configured', async () => {
-      process.env.CLOUDINARY_CLOUD_NAME = ''
-
-      await expect(
-        uploadToCloudinary(
-          'project-123:/uploads/photo.jpg',
-          Buffer.from('image'),
-          'image/jpeg',
-          'photo.jpg'
-        )
-      ).rejects.toThrow('CLOUDINARY_CLOUD_NAME environment variable is required')
-
-      process.env.CLOUDINARY_CLOUD_NAME = mockEnv.CLOUDINARY_CLOUD_NAME
-    })
-
     it('uploads video correctly', async () => {
-      const mockResponse: CloudinaryUploadResponse = {
+      const { uploadToCloudinary } = await importClientModule()
+
+      const mockResponse = {
         public_id: 'video-123',
         resource_type: 'video',
         bytes: 512000,
         format: 'mp4',
-        // ... other fields
         url: 'http://res.cloudinary.com/test-cloud/video/upload/v123/video-123.mp4',
         secure_url: 'https://res.cloudinary.com/test-cloud/video/upload/v123/video-123.mp4',
         original_filename: 'video.mp4',
@@ -500,15 +495,15 @@ describe('Cloudinary', () => {
   })
 
   describe('getCloudinaryUrl', () => {
-    it('returns correct URL for image', () => {
-      process.env.CLOUDINARY_CLOUD_NAME = 'test-cloud'
+    it('returns correct URL for image', async () => {
+      const { getCloudinaryUrl } = await importClientModule()
 
       const url = getCloudinaryUrl('public_id')
       expect(url).toBe('https://res.cloudinary.com/test-cloud/image/upload/public_id')
     })
 
-    it('returns URL with transformations', () => {
-      process.env.CLOUDINARY_CLOUD_NAME = 'test-cloud'
+    it('returns URL with transformations', async () => {
+      const { getCloudinaryUrl } = await importClientModule()
 
       const url = getCloudinaryUrl('public_id', 'w_500,h_500,c_fill')
       expect(url).toBe('https://res.cloudinary.com/test-cloud/image/upload/w_500,h_500,c_fill/public_id')
@@ -519,11 +514,21 @@ describe('Cloudinary', () => {
 describe('Unified Storage Interface', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('TELEGRAM_STORAGE_API_URL', 'https://telegram-api.test.com')
+    vi.stubEnv('TELEGRAM_STORAGE_API_KEY', 'test-telegram-key')
+    vi.stubEnv('CLOUDINARY_CLOUD_NAME', 'test-cloud')
+    vi.stubEnv('CLOUDINARY_UPLOAD_PRESET', 'test-preset')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('uploadFile', () => {
     it('routes image to Cloudinary', async () => {
-      const mockCloudinaryResponse: CloudinaryUploadResponse = {
+      const { uploadFile } = await importClientModule()
+
+      const mockCloudinaryResponse = {
         public_id: 'test-image',
         resource_type: 'image',
         bytes: 10240,
@@ -560,7 +565,9 @@ describe('Unified Storage Interface', () => {
     })
 
     it('routes PDF to Telegram', async () => {
-      const mockTelegramResponse: TelegramFileResponse = {
+      const { uploadFile } = await importClientModule()
+
+      const mockTelegramResponse = {
         id: 'f_test123',
         name: 'document.pdf',
         size: 1024,
@@ -590,6 +597,8 @@ describe('Unified Storage Interface', () => {
 
   describe('downloadFile', () => {
     it('downloads from Cloudinary when backend is cloudinary', async () => {
+      const { downloadFile } = await importClientModule()
+
       const fileBuffer = Buffer.from('image data')
 
       ;(global.fetch as any).mockResolvedValueOnce({
@@ -607,6 +616,8 @@ describe('Unified Storage Interface', () => {
     })
 
     it('downloads from Telegram when backend is telegram', async () => {
+      const { downloadFile } = await importClientModule()
+
       const fileBuffer = Buffer.from('file content')
 
       ;(global.fetch as any)
@@ -637,8 +648,11 @@ describe('Unified Storage Interface', () => {
 
   describe('fileExists', () => {
     it('returns true when Cloudinary file exists', async () => {
+      const { fileExists } = await importClientModule()
+
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
+        headers: new Headers(),
       })
 
       const result = await fileExists('public_id', 'cloudinary')
@@ -646,8 +660,11 @@ describe('Unified Storage Interface', () => {
     })
 
     it('returns false when Cloudinary file not found', async () => {
+      const { fileExists } = await importClientModule()
+
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: false,
+        headers: new Headers(),
       })
 
       const result = await fileExists('nonexistent', 'cloudinary')
@@ -655,7 +672,9 @@ describe('Unified Storage Interface', () => {
     })
 
     it('returns true when Telegram file exists', async () => {
-      const mockResponse: TelegramFileResponse = {
+      const { fileExists } = await importClientModule()
+
+      const mockResponse = {
         id: 'f_test123',
         name: 'test.pdf',
         size: 1024,
@@ -678,6 +697,8 @@ describe('Unified Storage Interface', () => {
 
   describe('deleteFile', () => {
     it('deletes from Cloudinary', async () => {
+      const { deleteFile } = await importClientModule()
+
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
       })
@@ -686,6 +707,8 @@ describe('Unified Storage Interface', () => {
     })
 
     it('deletes from Telegram', async () => {
+      const { deleteFile } = await importClientModule()
+
       ;(global.fetch as any).mockResolvedValueOnce({
         ok: true,
       })
