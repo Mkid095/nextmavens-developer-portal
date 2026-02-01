@@ -12,6 +12,7 @@ import type { Pool } from 'pg'
 import type { StepHandler, StepExecutionResult } from './steps'
 import { getAllSteps, isProvisioningComplete } from './state-machine'
 import { isValidTransition } from '@/lib/types/project-lifecycle.types'
+import { generateApiKey, hashApiKey } from '@/lib/auth'
 
 /**
  * Service health check result
@@ -376,9 +377,11 @@ export const registerAuthServiceHandler: StepHandler = async (
   projectId: string,
   pool: Pool
 ): Promise<StepExecutionResult> => {
+  const client = await pool.connect()
+
   try {
     // 1. Get project details
-    const projectResult = await pool.query(
+    const projectResult = await client.query(
       `
       SELECT id, slug, tenant_id, environment
       FROM projects
@@ -419,7 +422,7 @@ export const registerAuthServiceHandler: StepHandler = async (
 
     // 4. Store service registration in project metadata (optional, for tracking)
     // This is stored in the project's metadata column for future reference
-    await pool.query(
+    await client.query(
       `
       UPDATE projects
       SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
@@ -455,6 +458,8 @@ export const registerAuthServiceHandler: StepHandler = async (
       error: `Failed to register with auth service: ${errorMessage}`,
       errorDetails,
     }
+  } finally {
+    client.release()
   }
 }
 
@@ -476,9 +481,11 @@ export const registerRealtimeServiceHandler: StepHandler = async (
   projectId: string,
   pool: Pool
 ): Promise<StepExecutionResult> => {
+  const client = await pool.connect()
+
   try {
     // 1. Get project details
-    const projectResult = await pool.query(
+    const projectResult = await client.query(
       `
       SELECT id, slug, tenant_id, environment
       FROM projects
@@ -520,7 +527,7 @@ export const registerRealtimeServiceHandler: StepHandler = async (
     )
 
     // 4. Store service registration in project metadata
-    await pool.query(
+    await client.query(
       `
       UPDATE projects
       SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
@@ -557,6 +564,8 @@ export const registerRealtimeServiceHandler: StepHandler = async (
       error: `Failed to register with realtime service: ${errorMessage}`,
       errorDetails,
     }
+  } finally {
+    client.release()
   }
 }
 
@@ -578,9 +587,11 @@ export const registerStorageServiceHandler: StepHandler = async (
   projectId: string,
   pool: Pool
 ): Promise<StepExecutionResult> => {
+  const client = await pool.connect()
+
   try {
     // 1. Get project details
-    const projectResult = await pool.query(
+    const projectResult = await client.query(
       `
       SELECT id, slug, tenant_id, environment
       FROM projects
@@ -622,7 +633,7 @@ export const registerStorageServiceHandler: StepHandler = async (
     )
 
     // 4. Store service registration in project metadata
-    await pool.query(
+    await client.query(
       `
       UPDATE projects
       SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
@@ -659,6 +670,8 @@ export const registerStorageServiceHandler: StepHandler = async (
       error: `Failed to register with storage service: ${errorMessage}`,
       errorDetails,
     }
+  } finally {
+    client.release()
   }
 }
 
@@ -686,12 +699,11 @@ export const generateApiKeysHandler: StepHandler = async (
   projectId: string,
   pool: Pool
 ): Promise<StepExecutionResult> => {
-  // Import generateApiKey and hashApiKey functions
-  const { generateApiKey, hashApiKey } = await import('@/lib/auth')
+  const client = await pool.connect()
 
   try {
     // 1. Get project details
-    const projectResult = await pool.query(
+    const projectResult = await client.query(
       `
       SELECT id, slug, tenant_id, environment, developer_id
       FROM projects
@@ -733,7 +745,7 @@ export const generateApiKeysHandler: StepHandler = async (
 
     // 5. Insert keys into database
     // Use INSERT with ON CONFLICT to handle retries
-    await pool.query(
+    await client.query(
       `
       INSERT INTO api_keys (
         id,
@@ -805,7 +817,7 @@ export const generateApiKeysHandler: StepHandler = async (
     )
 
     // Store the keys in project metadata for retrieval (in production, keys would be shown once and never retrievable)
-    await pool.query(
+    await client.query(
       `
       UPDATE projects
       SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
@@ -839,6 +851,8 @@ export const generateApiKeysHandler: StepHandler = async (
       error: `Failed to generate API keys: ${errorMessage}`,
       errorDetails,
     }
+  } finally {
+    client.release()
   }
 }
 
