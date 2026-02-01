@@ -27,8 +27,8 @@ const integrationTest = process.env.INTEGRATION_TEST === 'true' ? describe : des
 
 integrationTest('Provisioning Integration Tests (Real Database)', () => {
   let pool: Pool
-  let testProjectId: string
-  let testDeveloperId: string
+  let testProjectId: number
+  let testDeveloperId: number
   let testTenantId: string
   let testSlug: string
 
@@ -64,8 +64,8 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
       // Delete in proper order due to foreign key constraints
       await client.query('DELETE FROM control_plane.provisioning_steps WHERE project_id = $1', [testProjectId])
 
-      // Delete API keys for test project
-      await client.query('DELETE FROM control_plane.api_keys WHERE project_id = $1', [testProjectId])
+      // Delete API keys for test project (api_keys is in public schema)
+      await client.query('DELETE FROM public.api_keys WHERE project_id = $1', [testProjectId])
 
       // Drop the tenant schema if it exists
       await client.query(`DROP SCHEMA IF EXISTS tenant_${testSlug} CASCADE`)
@@ -88,11 +88,11 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
   beforeEach(async () => {
     // Create a test developer
     const developerResult = await pool.query<{
-      id: string
+      id: number
     }>(
       `
-      INSERT INTO public.developers (id, email, password_hash, full_name)
-      VALUES (gen_random_uuid(), $1, $2, $3)
+      INSERT INTO public.developers (email, password_hash, name)
+      VALUES ($1, $2, $3)
       RETURNING id
       `,
       [`test-${testRunId}@example.com`, 'hash', 'Test Developer']
@@ -101,15 +101,15 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
 
     // Create a test project
     const projectResult = await pool.query<{
-      id: string
+      id: number
       tenant_id: string
     }>(
       `
-      INSERT INTO projects (id, developer_id, name, slug, tenant_id, environment, status)
-      VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)
+      INSERT INTO projects (developer_id, project_name, slug, tenant_id)
+      VALUES ($1, $2, $3, $4)
       RETURNING id, tenant_id
       `,
-      [testDeveloperId, `Integration Test Project ${testRunId}`, testSlug, `tenant-${testRunId}`, 'dev', 'active']
+      [testDeveloperId, `Integration Test Project ${testRunId}`, testSlug, `tenant-${testRunId}`]
     )
     testProjectId = projectResult.rows[0].id
     testTenantId = projectResult.rows[0].tenant_id
@@ -220,7 +220,7 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
       const apiKeysResult = await pool.query(
         `
         SELECT id, name, key_type, key_prefix, environment
-        FROM control_plane.api_keys
+        FROM public.api_keys
         WHERE project_id = $1
         ORDER BY key_type
         `,
@@ -349,7 +349,7 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
       expect(result1.success).toBe(true)
 
       const firstKeys = await pool.query(
-        'SELECT COUNT(*) as count FROM control_plane.api_keys WHERE project_id = $1',
+        'SELECT COUNT(*) as count FROM public.api_keys WHERE project_id = $1',
         [testProjectId]
       )
       const firstCount = parseInt(firstKeys.rows[0].count)
@@ -359,7 +359,7 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
       expect(result2.success).toBe(true)
 
       const secondKeys = await pool.query(
-        'SELECT COUNT(*) as count FROM control_plane.api_keys WHERE project_id = $1',
+        'SELECT COUNT(*) as count FROM public.api_keys WHERE project_id = $1',
         [testProjectId]
       )
       const secondCount = parseInt(secondKeys.rows[0].count)
