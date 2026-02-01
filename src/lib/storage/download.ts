@@ -50,7 +50,7 @@ export async function downloadFileFromStorage(
   const fileRecord = await getStorageFile(storagePath)
 
   if (!fileRecord) {
-    throw new Error(`File not found: ${storagePath}`)
+    throw new Error(`File not found in storage metadata: ${storagePath}`)
   }
 
   // Download from the appropriate backend
