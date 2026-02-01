@@ -68,20 +68,36 @@ export async function POST(req: NextRequest) {
       return setCorrelationHeader(errorResponse, correlationId)
     }
 
-    // Use provided file_size or default to 0
-    const bytesToDownload = file_size || 0
+    // Implement actual file download using the storage service
+    const { downloadFileFromStorage, fileExistsInStorage } = await import('@/lib/storage')
 
-    // TODO: Implement actual file download from Telegram storage service
-    // For now, return a placeholder response
+    // Check if file exists
+    const exists = await fileExistsInStorage(scopedPath)
+    if (!exists) {
+      const errorResponse = notFoundError('File not found', {
+        path: scopedPath,
+      }).toNextResponse()
+      return setCorrelationHeader(errorResponse, correlationId)
+    }
+
+    // Download file from storage
+    const downloadResult = await downloadFileFromStorage(scopedPath, {
+      track: true, // Track the download for analytics
+    })
+
     const responseData = {
       success: true,
-      message: 'File download endpoint ready for integration with Telegram storage service',
+      message: 'File downloaded successfully',
       file: {
-        path: scopedPath,
-        size: bytesToDownload,
+        path: downloadResult.storagePath,
+        size: downloadResult.fileSize,
+        type: downloadResult.contentType,
         downloaded_at: new Date().toISOString(),
+        etag: downloadResult.etag,
+        last_modified: downloadResult.lastModified,
+        // Base64 encode the file content for JSON response
+        data: downloadResult.data.toString('base64'),
       },
-      note: 'This is a placeholder. The actual storage service integration will be implemented separately.',
     }
 
     const response = new Response(
@@ -95,7 +111,8 @@ export async function POST(req: NextRequest) {
     // US-004: Track storage usage (fire and forget)
     // Track the download after sending response to avoid blocking
     // US-007: Include correlation ID in log
-    trackStorageDownload(auth.project_id, bytesToDownload).catch(err => {
+    const downloadedBytes = downloadResult.fileSize
+    trackStorageDownload(auth.project_id, downloadedBytes).catch(err => {
       console.error(`[Storage API] [${correlationId}] Failed to track download usage:`, err)
     })
 

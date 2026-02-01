@@ -99,20 +99,114 @@ export async function POST(req: NextRequest) {
       return setCorrelationHeader(errorResponse, correlationId)
     }
 
-    // TODO: Implement actual file upload to Telegram storage service
-    // For now, return a placeholder response with the scoped path
-    const uploadedAt = new Date().toISOString()
+    // Implement actual file upload using the storage service
+    // Note: This endpoint expects the file content to be provided
+    // For large files, use the presigned URL endpoint instead
+    const {
+      uploadFileWithTracking,
+      validateFileName,
+      sanitizeFileName,
+    } = await import('@/lib/storage')
+
+    // Validate and sanitize the file name
+    const cleanFileName = sanitizeFileName(file_name)
+
+    if (!validateFileName(cleanFileName)) {
+      const errorResponse = validationError('Invalid file name', {
+        file_name,
+        reason: 'File name contains invalid characters or is too long',
+      }).toNextResponse()
+      return setCorrelationHeader(errorResponse, correlationId)
+    }
+
+    // Check if file content is provided in the request
+    let fileBuffer: Buffer
+
+    const contentTypeHeader = req.headers.get('content-type')
+    if (contentTypeHeader?.startsWith('multipart/form-data')) {
+      // Parse multipart form data
+      const formData = await req.formData()
+      const file = formData.get('file') as File
+
+      if (!file) {
+        const errorResponse = validationError('No file provided in form data', {
+          expected: 'multipart/form-data with "file" field',
+        }).toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
+      }
+
+      // Validate file size matches
+      if (file.size !== file_size) {
+        const errorResponse = validationError('File size mismatch', {
+          provided_size: file_size,
+          actual_size: file.size,
+        }).toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
+      }
+
+      // Convert File to Buffer
+      const arrayBuffer = await file.arrayBuffer()
+      fileBuffer = Buffer.from(arrayBuffer)
+    } else {
+      // Expect base64 encoded file content in body
+      const { file_content } = body
+      if (!file_content || typeof file_content !== 'string') {
+        const errorResponse = validationError('file_content is required', {
+          format: 'base64 encoded file content',
+        }).toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
+      }
+
+      try {
+        fileBuffer = Buffer.from(file_content, 'base64')
+      } catch (error) {
+        const errorResponse = validationError('Invalid file_content encoding', {
+          format: 'base64',
+        }).toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
+      }
+
+      // Validate decoded size matches
+      if (fileBuffer.length !== file_size) {
+        const errorResponse = validationError('File size mismatch', {
+          provided_size: file_size,
+          actual_decoded_size: fileBuffer.length,
+        }).toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
+      }
+    }
+
+    // Upload file to storage with metadata tracking
+    const uploadResult = await uploadFileWithTracking(
+      auth.project_id,
+      scopedPath,
+      cleanFileName,
+      fileBuffer,
+      {
+        contentType: content_type,
+        metadata: {
+          originalFileName: file_name,
+          uploadedVia: 'api',
+        },
+      }
+    )
+
     const responseData = {
       success: true,
-      message: 'File upload endpoint ready for integration with Telegram storage service',
+      message: 'File uploaded successfully',
       file: {
-        name: file_name,
-        size: file_size,
-        type: content_type,
-        path: scopedPath,
-        uploaded_at: uploadedAt,
+        id: uploadResult.storagePath,
+        name: cleanFileName,
+        size: uploadResult.fileSize,
+        type: uploadResult.contentType,
+        path: uploadResult.storagePath,
+        uploaded_at: new Date().toISOString(),
+        etag: uploadResult.etag,
       },
-      note: 'This is a placeholder. The actual storage service integration will be implemented separately.',
+      storage_usage: {
+        total_bytes: uploadResult.totalUsage,
+        total_mb: Math.round(uploadResult.totalUsage / 1024 / 1024 * 100) / 100,
+      },
     }
 
     const response = new Response(
