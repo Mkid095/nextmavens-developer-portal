@@ -1,0 +1,32 @@
+# Docker Compose for Integration Testing
+# This compose file exposes the database to localhost for running integration tests
+# Usage: docker compose -f docker-compose.test.yml up --build
+# Then run: INTEGRATION_TEST=true DATABASE_URL="postgresql://nextmavens:Elishiba@95@localhost:15432/nextmavens" npm test -- src/lib/provisioning/__tests__/integration.test.ts
+
+services:
+  integration-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - INTEGRATION_TEST=true
+      - DATABASE_URL=postgresql://nextmavens:Elishiba@95@db-proxy:5432/nextmavens
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: sh -c "npm install && npm test -- src/lib/provisioning/__tests__/integration.test.ts"
+    depends_on:
+      - db-proxy
+    networks:
+      - dokploy-network
+
+  # Port forwarding proxy to expose database to tests
+  db-proxy:
+    image: alpine/socat
+    command: tcp-listen:5432,fork,reuseaddr tcp-connect:10.0.1.4:5432
+    networks:
+      - dokploy-network
+
+networks:
+  dokploy-network:
+    external: true

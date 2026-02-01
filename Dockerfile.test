@@ -1,0 +1,16 @@
+# Dockerfile for running integration tests
+FROM node:18
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json ./
+
+# Install all dependencies (including devDependencies)
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Default command runs tests
+CMD ["npm", "test"]
