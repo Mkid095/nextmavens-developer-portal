@@ -80,6 +80,285 @@ async function checkServiceHealth(
 }
 
 /**
+ * Create Tenant Schema Step Handler
+ *
+ * Story: Database Provisioning Implementation
+ *
+ * This handler creates a tenant-specific schema in the database.
+ * Each tenant gets their own schema (tenant_{slug}) for data isolation.
+ *
+ * Schema pattern: tenant_{slug}
+ * Example: tenant_my-awesome-project
+ *
+ * The handler:
+ * 1. Gets project slug from database
+ * 2. Validates slug contains only safe characters (a-z, 0-9, hyphens)
+ * 3. Creates the schema IF NOT EXISTS (idempotent)
+ * 4. Grants USAGE and CREATE permissions to database user
+ * 5. Returns success with schema name or error details
+ *
+ * @param projectId - The project ID being provisioned
+ * @param pool - Database connection pool
+ * @returns Step execution result
+ */
+export const createTenantSchemaHandler: StepHandler = async (
+  projectId: string,
+  pool: Pool
+): Promise<StepExecutionResult> => {
+  const client = await pool.connect()
+
+  try {
+    // 1. Get project slug
+    const projectResult = await client.query(
+      `
+      SELECT slug
+      FROM projects
+      WHERE id = $1
+      `,
+      [projectId]
+    )
+
+    if (projectResult.rows.length === 0) {
+      return {
+        success: false,
+        error: `Project not found: ${projectId}`,
+        errorDetails: {
+          error_type: 'NotFoundError',
+          context: { projectId },
+        },
+      }
+    }
+
+    const { slug } = projectResult.rows[0]
+
+    if (!slug) {
+      return {
+        success: false,
+        error: `Project slug is required for schema creation`,
+        errorDetails: {
+          error_type: 'ValidationError',
+          context: { projectId },
+        },
+      }
+    }
+
+    // 2. Validate slug contains only safe characters for SQL identifiers
+    // Allow: lowercase letters, numbers, and hyphens
+    const slugValidationRegex = /^[a-z0-9-]+$/
+    if (!slugValidationRegex.test(slug)) {
+      return {
+        success: false,
+        error: `Invalid slug format: "${slug}". Slug must contain only lowercase letters, numbers, and hyphens.`,
+        errorDetails: {
+          error_type: 'ValidationError',
+          context: { projectId, slug },
+        },
+      }
+    }
+
+    // 3. Build schema name
+    const schemaName = `tenant_${slug}`
+
+    // 4. Get database user from environment or use default
+    const dbUser = process.env.DATABASE_USER || 'nextmavens'
+
+    // 5. Create schema with IF NOT EXISTS for idempotency
+    // Using double quotes for identifier quoting (PostgreSQL standard)
+    await client.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`)
+
+    // 6. Grant permissions to database user
+    // USAGE: Allows objects in the schema to be referenced
+    await client.query(`GRANT USAGE ON SCHEMA "${schemaName}" TO "${dbUser}"`)
+
+    // CREATE: Allows creating new objects in the schema
+    await client.query(`GRANT CREATE ON SCHEMA "${schemaName}" TO "${dbUser}"`)
+
+    console.log(`[Provisioning] Created tenant schema: ${schemaName} for project: ${projectId}`)
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails: Record<string, unknown> = {
+      error_type: error instanceof Error ? error.constructor.name : 'Error',
+      context: { projectId },
+    }
+
+    if (error instanceof Error && error.stack) {
+      errorDetails.stack_trace = error.stack
+    }
+
+    return {
+      success: false,
+      error: `Failed to create tenant schema: ${errorMessage}`,
+      errorDetails,
+    }
+  } finally {
+    client.release()
+  }
+}
+
+/**
+ * Create Tenant Database Step Handler
+ *
+ * Story: Database Provisioning Implementation
+ *
+ * This handler creates initial tables in the tenant schema.
+ * Each tenant schema gets core tables for user management,
+ * audit logging, and schema migrations.
+ *
+ * Tables created:
+ * - users: User accounts (id, email, email_confirmed_at, created_at, updated_at, raw_user_meta_data)
+ * - audit_log: Tenant-level audit trail (id, action, actor_id, target_type, target_id, metadata, created_at)
+ * - _migrations: Tenant schema version tracking (id, version, applied_at)
+ *
+ * All tables use IF NOT EXISTS for idempotency.
+ * Indexes are created for performance.
+ *
+ * @param projectId - The project ID being provisioned
+ * @param pool - Database connection pool
+ * @returns Step execution result
+ */
+export const createTenantDatabaseHandler: StepHandler = async (
+  projectId: string,
+  pool: Pool
+): Promise<StepExecutionResult> => {
+  const client = await pool.connect()
+
+  try {
+    // 1. Get project slug
+    const projectResult = await client.query(
+      `
+      SELECT slug
+      FROM projects
+      WHERE id = $1
+      `,
+      [projectId]
+    )
+
+    if (projectResult.rows.length === 0) {
+      return {
+        success: false,
+        error: `Project not found: ${projectId}`,
+        errorDetails: {
+          error_type: 'NotFoundError',
+          context: { projectId },
+        },
+      }
+    }
+
+    const { slug } = projectResult.rows[0]
+
+    if (!slug) {
+      return {
+        success: false,
+        error: `Project slug is required for table creation`,
+        errorDetails: {
+          error_type: 'ValidationError',
+          context: { projectId },
+        },
+      }
+    }
+
+    // 2. Validate slug
+    const slugValidationRegex = /^[a-z0-9-]+$/
+    if (!slugValidationRegex.test(slug)) {
+      return {
+        success: false,
+        error: `Invalid slug format: "${slug}"`,
+        errorDetails: {
+          error_type: 'ValidationError',
+          context: { projectId, slug },
+        },
+      }
+    }
+
+    // 3. Build schema name
+    const schemaName = `tenant_${slug}`
+
+    // 4. Create users table (standard pattern like Supabase)
+    await client.query(
+      `
+      CREATE TABLE IF NOT EXISTS "${schemaName}".users (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) UNIQUE NOT NULL,
+        email_confirmed_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        raw_user_meta_data JSONB DEFAULT '{}'
+      )
+      `
+    )
+
+    // Create index on users.email for lookups
+    await client.query(
+      `CREATE INDEX IF NOT EXISTS idx_users_email ON "${schemaName}".users(email)`
+    )
+
+    // 5. Create audit_log table (tenant-level audit)
+    await client.query(
+      `
+      CREATE TABLE IF NOT EXISTS "${schemaName}".audit_log (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        action VARCHAR(100) NOT NULL,
+        actor_id UUID,
+        target_type VARCHAR(50),
+        target_id UUID,
+        metadata JSONB DEFAULT '{}',
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      )
+      `
+    )
+
+    // Create indexes on audit_log
+    await client.query(
+      `CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON "${schemaName}".audit_log(actor_id)`
+    )
+    await client.query(
+      `CREATE INDEX IF NOT EXISTS idx_audit_log_created ON "${schemaName}".audit_log(created_at DESC)`
+    )
+
+    // 6. Create _migrations table (tenant schema version tracking)
+    await client.query(
+      `
+      CREATE TABLE IF NOT EXISTS "${schemaName}"._migrations (
+        id SERIAL PRIMARY KEY,
+        version VARCHAR(100) NOT NULL UNIQUE,
+        applied_at TIMESTAMPTZ DEFAULT NOW()
+      )
+      `
+    )
+
+    console.log(
+      `[Provisioning] Created tenant tables (users, audit_log, _migrations) in schema: ${schemaName} for project: ${projectId}`
+    )
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails: Record<string, unknown> = {
+      error_type: error instanceof Error ? error.constructor.name : 'Error',
+      context: { projectId },
+    }
+
+    if (error instanceof Error && error.stack) {
+      errorDetails.stack_trace = error.stack
+    }
+
+    return {
+      success: false,
+      error: `Failed to create tenant tables: ${errorMessage}`,
+      errorDetails,
+    }
+  } finally {
+    client.release()
+  }
+}
+
+/**
  * Verify Services Step Handler
  *
  * Story: US-008 - Implement Verify Services Step
@@ -413,12 +692,12 @@ export function getStepHandler(stepName: string): StepHandler {
   switch (stepName) {
     case 'verify_services':
       return verifyServicesHandler
+    case 'create_tenant_schema':
+      return createTenantSchemaHandler
+    case 'create_tenant_database':
+      return createTenantDatabaseHandler
 
     // Other step handlers can be added here as they are implemented
-    // case 'create_tenant_database':
-    //   return createTenantDatabaseHandler
-    // case 'create_tenant_schema':
-    //   return createTenantSchemaHandler
     // case 'register_auth_service':
     //   return registerAuthServiceHandler
     // case 'register_realtime_service':
