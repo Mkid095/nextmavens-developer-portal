@@ -12,7 +12,7 @@ import {
   extractClientIP,
   extractUserAgent,
 } from '@/features/abuse-controls/lib/audit-logger'
-import { logProjectAction, ActorType } from '@nextmavens/audit-logs-database'
+import { logProjectAction, ActorType } from '@nextmavenspacks/audit-logs-database'
 import { ZodError, z } from 'zod'
 
 /**

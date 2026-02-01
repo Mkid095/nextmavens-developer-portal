@@ -15,7 +15,7 @@
  */
 
 import { getPool } from '@/lib/db'
-import { logProjectAction, systemActor } from '@nextmavens/audit-logs-database'
+import { logProjectAction, systemActor } from '@nextmavenspacks/audit-logs-database'
 import { ProjectStatus, isValidTransition } from '@/lib/types/project-lifecycle.types'
 import {
   getAllSteps,

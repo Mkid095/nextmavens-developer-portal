@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest } from '@/lib/middleware'
 import { withCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
-import { logProjectAction, userActor } from '@nextmavens/audit-logs-database'
+import { logProjectAction, userActor } from '@nextmavenspacks/audit-logs-database'
 import {
   ProjectLifecycleStatus,
   isValidTransition,

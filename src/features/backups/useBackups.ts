@@ -13,7 +13,7 @@ import type {
   BackupType,
   BackupResponse,
   BackupStats,
-} from '@nextmavens/audit-logs-database';
+} from '@nextmavenspacks/audit-logs-database';
 import type { BackupOperation, BackupFilters } from './types';
 import {
   fetchBackups,

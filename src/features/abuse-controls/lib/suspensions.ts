@@ -11,7 +11,7 @@ import type { SuspensionReason, SuspensionRecord } from '../types'
 import { getCurrentUsage, checkQuota } from './enforcement'
 import { getProjectQuota } from './quotas'
 import { sendSuspensionNotification } from './notifications'
-import { logProjectAction } from '@nextmavens/audit-logs-database'
+import { logProjectAction } from '@nextmavenspacks/audit-logs-database'
 import { invalidateSnapshot } from '@/lib/snapshot'
 import { getEnvironmentConfig, type Environment } from '@/lib/environment'
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest } from '@/lib/middleware'
 import { requireOperatorOrAdmin, requireAdmin } from '@/features/abuse-controls/lib/authorization'
-import { logUserAction, logAction, userActor, userTarget } from '@nextmavens/audit-logs-database'
+import { logUserAction, logAction, userActor, userTarget } from '@nextmavenspacks/audit-logs-database'
 import { z } from 'zod'
 
 /**

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { authenticateRequest } from '@/lib/middleware'
 import { requireAdmin, UserRole } from '@/features/abuse-controls/lib/authorization'
-import { logUserAction, userActor } from '@nextmavens/audit-logs-database'
+import { logUserAction, userActor } from '@nextmavenspacks/audit-logs-database'
 
 /**
  * PATCH /api/admin/users/[userId]/role

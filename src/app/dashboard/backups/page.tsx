@@ -24,7 +24,7 @@ import {
   BackupTable,
   useBackups,
 } from '@/features/backups';
-import type { Backup } from '@nextmavens/audit-logs-database';
+import type { Backup } from '@nextmavenspacks/audit-logs-database';
 
 interface Developer {
   id: string;

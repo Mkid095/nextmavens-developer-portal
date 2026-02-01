@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { enqueueJob } from '@nextmavens/audit-logs-database';
+import { enqueueJob } from '@nextmavenspacks/audit-logs-database';
 import { authenticateRequest } from '@/lib/middleware';
 import { getPool } from '@/lib/db';
 import { checkRateLimit, RateLimitIdentifierType } from '@/features/abuse-controls/lib/rate-limiter';

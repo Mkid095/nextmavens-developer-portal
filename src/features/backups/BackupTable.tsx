@@ -7,7 +7,7 @@
 'use client';
 
 import { Database, HardDrive, FileText, Clock, Trash2, Send } from 'lucide-react';
-import type { Backup } from '@nextmavens/audit-logs-database';
+import type { Backup } from '@nextmavenspacks/audit-logs-database';
 import {
   formatFileSize,
   formatDate,

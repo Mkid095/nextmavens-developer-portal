@@ -15,7 +15,7 @@ import {
   getAllSteps,
   isProvisioningComplete,
 } from '@/lib/provisioning/state-machine'
-import { logProjectAction } from '@nextmavens/audit-logs-database'
+import { logProjectAction } from '@nextmavenspacks/audit-logs-database'
 
 /**
  * System actor for background job actions

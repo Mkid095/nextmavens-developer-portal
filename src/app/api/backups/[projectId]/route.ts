@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@nextmavens/audit-logs-database';
+import { query } from '@nextmavenspacks/audit-logs-database';
 import { authenticateRequest } from '@/lib/middleware';
 import { getPool } from '@/lib/db';
 

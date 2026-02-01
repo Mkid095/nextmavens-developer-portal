@@ -10,7 +10,7 @@ import type {
   BackupType,
   BackupResponse,
   BackupStats,
-} from '@nextmavens/audit-logs-database';
+} from '@nextmavenspacks/audit-logs-database';
 
 const API_BASE = '/api/backups';
 

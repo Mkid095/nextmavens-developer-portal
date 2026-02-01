@@ -7,7 +7,7 @@
  * US-009: Create Audit Log Viewer UI
  */
 
-import type { AuditLog, ActorType } from '@nextmavens/audit-logs-database';
+import type { AuditLog, ActorType } from '@nextmavenspacks/audit-logs-database';
 
 /**
  * Audit log API response

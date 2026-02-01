@@ -7,7 +7,7 @@
 'use client';
 
 import { Database, HardDrive, FileText, Clock } from 'lucide-react';
-import type { BackupStats } from '@nextmavens/audit-logs-database';
+import type { BackupStats } from '@nextmavenspacks/audit-logs-database';
 import { formatFileSize } from './types';
 
 interface BackupStatsCardsProps {

@@ -9,7 +9,7 @@ import type {
   Backup,
   BackupType,
   BackupStats,
-} from '@nextmavens/audit-logs-database';
+} from '@nextmavenspacks/audit-logs-database';
 
 /**
  * Backup status for UI display
