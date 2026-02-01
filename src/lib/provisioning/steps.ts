@@ -55,18 +55,18 @@ export type StepHandler = (projectId: string, pool: Pool) => Promise<StepExecuti
  */
 export const PROVISIONING_STEPS: readonly ProvisioningStep[] = [
   {
-    name: 'create_tenant_database',
-    description: 'Create tenant database',
+    name: 'create_tenant_schema',
+    description: 'Create tenant schema',
     order: 1,
-    estimatedDuration: 5000,
+    estimatedDuration: 2000,
     retryable: true,
     maxRetries: 3,
   },
   {
-    name: 'create_tenant_schema',
-    description: 'Create tenant schema',
+    name: 'create_tenant_database',
+    description: 'Create tenant database',
     order: 2,
-    estimatedDuration: 2000,
+    estimatedDuration: 5000,
     retryable: true,
     maxRetries: 3,
   },

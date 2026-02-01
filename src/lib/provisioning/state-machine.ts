@@ -82,6 +82,23 @@ export async function runProvisioningStep(
   }
 
   try {
+    // Step 0: Check if project exists (to avoid FK constraint errors)
+    const projectExists = await pool.query('SELECT 1 FROM projects WHERE id = $1', [projectId])
+    if (projectExists.rows.length === 0) {
+      return {
+        success: false,
+        status: 'failed',
+        error: `Project not found: ${projectId}`,
+        errorDetails: {
+          error_type: 'NotFoundError',
+          context: { projectId },
+        },
+        startedAt,
+        completedAt: startedAt,
+        retryCount: 0,
+      }
+    }
+
     // Step 1: Transition PENDING → RUNNING
     await setStepStatus(pool, projectId, stepName, 'running', startedAt)
 
@@ -189,47 +206,68 @@ async function setStepStatus(
   errorMessage?: string,
   errorDetails?: ProvisioningErrorDetails
 ): Promise<void> {
-  const updateFields: string[] = ['status = $1']
-  const values: unknown[] = [status]
-  let paramIndex = 1
+  const values: unknown[] = []
+  const placeholders: string[] = []
+  let paramIndex = 0
 
+  // Build column-value pairs for INSERT and UPDATE
+  const columnValues: string[] = []
+
+  // status (always set)
+  paramIndex++
+  values.push(status)
+  placeholders.push(`$${paramIndex}`)
+  columnValues.push(`status = $${paramIndex}`)
+
+  // started_at
   if (startedAt) {
     paramIndex++
-    updateFields.push(`started_at = $${paramIndex}`)
     values.push(startedAt)
+    placeholders.push(`$${paramIndex}`)
+    columnValues.push(`started_at = $${paramIndex}`)
   }
 
+  // completed_at
   if (completedAt) {
     paramIndex++
-    updateFields.push(`completed_at = $${paramIndex}`)
     values.push(completedAt)
+    placeholders.push(`$${paramIndex}`)
+    columnValues.push(`completed_at = $${paramIndex}`)
   }
 
+  // error_message
   if (errorMessage !== undefined) {
     paramIndex++
-    updateFields.push(`error_message = $${paramIndex}`)
     values.push(errorMessage)
+    placeholders.push(`$${paramIndex}`)
+    columnValues.push(`error_message = $${paramIndex}`)
   }
 
+  // error_details
   if (errorDetails !== undefined) {
     paramIndex++
-    updateFields.push(`error_details = $${paramIndex}`)
     values.push(JSON.stringify(errorDetails))
+    placeholders.push(`$${paramIndex}`)
+    columnValues.push(`error_details = $${paramIndex}`)
   }
 
-  // Add project_id and step_name parameters
+  // project_id and step_name for WHERE clause
   paramIndex++
-  const projectIdParam = `$${paramIndex}`
   values.push(projectId)
+  const projectIdParam = `$${paramIndex}`
 
   paramIndex++
-  const stepNameParam = `$${paramIndex}`
   values.push(stepName)
+  const stepNameParam = `$${paramIndex}`
 
+  // Use INSERT ... ON CONFLICT DO UPDATE to create record if not exists
   const query = `
-    UPDATE provisioning_steps
-    SET ${updateFields.join(', ')}
-    WHERE project_id = ${projectIdParam} AND step_name = ${stepNameParam}
+    INSERT INTO control_plane.provisioning_steps (
+      project_id, step_name, ${columnValues.map(cv => cv.split(' = ')[0]).join(', ')}
+    )
+    VALUES (${projectIdParam}, ${stepNameParam}, ${placeholders.join(', ')})
+    ON CONFLICT (project_id, step_name) DO UPDATE
+      SET ${columnValues.join(', ')}
   `
 
   await pool.query(query, values)
@@ -261,7 +299,7 @@ export async function getStepStatus(
       error_details,
       retry_count,
       created_at
-    FROM provisioning_steps
+    FROM control_plane.provisioning_steps
     WHERE project_id = $1 AND step_name = $2
     `,
     [projectId, stepName]
@@ -294,7 +332,7 @@ export async function getAllSteps(
       error_details,
       retry_count,
       created_at
-    FROM provisioning_steps
+    FROM control_plane.provisioning_steps
     WHERE project_id = $1
     ORDER BY created_at ASC
     `,
@@ -547,7 +585,7 @@ export async function retryProvisioningStep(
     // Step 1: Reset status to PENDING and increment retry_count
     await pool.query(
       `
-      UPDATE provisioning_steps
+      UPDATE control_plane.provisioning_steps
       SET status = $1,
           retry_count = $2,
           error_message = NULL,

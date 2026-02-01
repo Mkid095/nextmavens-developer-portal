@@ -10,16 +10,7 @@ export default defineConfig({
       // Integration tests use Node environment
       ['**/integration.test.ts', 'node'],
     ],
-    setupFiles: ['./vitest.setup.ts'],
-    // Integration tests use separate setup file
-    setupFilesMatchGlobs: [
-      // Default setup for unit tests
-      '!**/integration.test.ts',
-      './vitest.setup.ts',
-      // Integration test setup
-      '**/integration.test.ts',
-      './vitest.integration.setup.ts',
-    ].reverse(), // Reverse to have integration setup processed last for integration tests
+    setupFiles: ['./vitest.setup.ts', './vitest.integration.setup.ts'],
     include: ['src/**/__tests__/**/*.{test,spec}.{ts,tsx}', 'src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', '.next', 'dist'],
     coverage: {

@@ -13,8 +13,9 @@ services:
       - DATABASE_URL=postgresql://nextmavens:Elishiba@95@db-proxy:5432/nextmavens
     volumes:
       - .:/app
+      - /home/ken/developer-portal/node_modules:/app/node_modules:ro
     working_dir: /app
-    command: sh -c "npm install && npm test -- src/lib/provisioning/__tests__/integration.test.ts"
+    command: sh -c "./node_modules/.bin/vitest run src/lib/provisioning/__tests__/integration.test.ts"
     depends_on:
       - db-proxy
     networks:
@@ -23,7 +24,7 @@ services:
   # Port forwarding proxy to expose database to tests
   db-proxy:
     image: alpine/socat
-    command: tcp-listen:5432,fork,reuseaddr tcp-connect:10.0.1.4:5432
+    command: tcp-listen:5432,fork,reuseaddr tcp-connect:dokploy-postgres:5432
     networks:
       - dokploy-network
 

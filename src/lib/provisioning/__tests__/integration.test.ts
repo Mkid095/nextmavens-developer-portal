@@ -56,31 +56,7 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
   })
 
   afterAll(async () => {
-    // Clean up all test data
-    const client = await pool.connect()
-    try {
-      console.log('[Integration Test] Cleaning up test data...')
-
-      // Delete in proper order due to foreign key constraints
-      await client.query('DELETE FROM control_plane.provisioning_steps WHERE project_id = $1', [testProjectId])
-
-      // Delete API keys for test project (api_keys is in public schema)
-      await client.query('DELETE FROM public.api_keys WHERE project_id = $1', [testProjectId])
-
-      // Drop the tenant schema if it exists
-      await client.query(`DROP SCHEMA IF EXISTS tenant_${testSlug} CASCADE`)
-
-      // Delete the test project
-      await client.query('DELETE FROM projects WHERE id = $1', [testProjectId])
-
-      // Delete the test developer
-      await client.query("DELETE FROM public.developers WHERE id = $1", [testDeveloperId])
-
-      console.log('[Integration Test] Cleanup completed')
-    } finally {
-      client.release()
-    }
-
+    // Close the database pool
     await pool.end()
     console.log('[Integration Test] Database pool closed')
   })
@@ -105,7 +81,7 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
       tenant_id: string
     }>(
       `
-      INSERT INTO projects (developer_id, project_name, slug, tenant_id)
+      INSERT INTO projects (developer_id, name, slug, tenant_id)
       VALUES ($1, $2, $3, $4)
       RETURNING id, tenant_id
       `,
@@ -118,8 +94,26 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
   })
 
   afterEach(async () => {
-    // Clean up provisioning steps after each test
-    await pool.query('DELETE FROM control_plane.provisioning_steps WHERE project_id = $1', [testProjectId])
+    // Clean up after each test to avoid duplicate key errors
+    const client = await pool.connect()
+    try {
+      // Delete API keys for test project
+      await client.query('DELETE FROM control_plane.api_keys WHERE project_id = $1', [testProjectId])
+
+      // Delete provisioning steps
+      await client.query('DELETE FROM control_plane.provisioning_steps WHERE project_id = $1', [testProjectId])
+
+      // Drop the tenant schema if it exists
+      await client.query(`DROP SCHEMA IF EXISTS "tenant_${testSlug}" CASCADE`)
+
+      // Delete the test project
+      await client.query('DELETE FROM projects WHERE id = $1', [testProjectId])
+
+      // Delete the test developer
+      await client.query("DELETE FROM public.developers WHERE id = $1", [testDeveloperId])
+    } finally {
+      client.release()
+    }
   })
 
   describe('Full Provisioning Flow', () => {
@@ -130,6 +124,11 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
         console.log(`[Integration Test] Running step: ${step.name}`)
 
         const result = await runProvisioningStep(testProjectId, step.name, pool)
+
+        if (!result.success) {
+          console.log(`[Integration Test] Step ${step.name} failed:`, result.error)
+          console.log(`[Integration Test] Error details:`, JSON.stringify(result.errorDetails, null, 2))
+        }
 
         expect(result.success).toBe(true)
         expect(result.status).toBe('success')
@@ -220,7 +219,7 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
       const apiKeysResult = await pool.query(
         `
         SELECT id, name, key_type, key_prefix, environment
-        FROM public.api_keys
+        FROM control_plane.api_keys
         WHERE project_id = $1
         ORDER BY key_type
         `,
@@ -349,7 +348,7 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
       expect(result1.success).toBe(true)
 
       const firstKeys = await pool.query(
-        'SELECT COUNT(*) as count FROM public.api_keys WHERE project_id = $1',
+        'SELECT COUNT(*) as count FROM control_plane.api_keys WHERE project_id = $1',
         [testProjectId]
       )
       const firstCount = parseInt(firstKeys.rows[0].count)
@@ -359,7 +358,7 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
       expect(result2.success).toBe(true)
 
       const secondKeys = await pool.query(
-        'SELECT COUNT(*) as count FROM public.api_keys WHERE project_id = $1',
+        'SELECT COUNT(*) as count FROM control_plane.api_keys WHERE project_id = $1',
         [testProjectId]
       )
       const secondCount = parseInt(secondKeys.rows[0].count)
@@ -454,24 +453,24 @@ integrationTest('Provisioning Integration Tests (Real Database)', () => {
 
       // Insert test data into first tenant
       await pool.query(
-        `INSERT INTO tenant_${slug1}.users (email) VALUES ($1)`,
+        `INSERT INTO "tenant_${slug1}".users (email) VALUES ($1)`,
         [`user1@${testRunId}.com`]
       )
 
       // Verify data exists only in first tenant
       const tenant1Users = await pool.query(
-        `SELECT COUNT(*) as count FROM tenant_${slug1}.users`
+        `SELECT COUNT(*) as count FROM "tenant_${slug1}".users`
       )
       const tenant2Users = await pool.query(
-        `SELECT COUNT(*) as count FROM tenant_${slug2}.users`
+        `SELECT COUNT(*) as count FROM "tenant_${slug2}".users`
       )
 
       expect(parseInt(tenant1Users.rows[0].count)).toBe(1)
       expect(parseInt(tenant2Users.rows[0].count)).toBe(0)
 
       // Clean up
-      await pool.query(`DROP SCHEMA IF EXISTS tenant_${slug1} CASCADE`)
-      await pool.query(`DROP SCHEMA IF EXISTS tenant_${slug2} CASCADE`)
+      await pool.query(`DROP SCHEMA IF EXISTS "tenant_${slug1}" CASCADE`)
+      await pool.query(`DROP SCHEMA IF EXISTS "tenant_${slug2}" CASCADE`)
       await pool.query('DELETE FROM control_plane.provisioning_steps WHERE project_id = $1', [project1Id])
       await pool.query('DELETE FROM control_plane.provisioning_steps WHERE project_id = $1', [project2Id])
       await pool.query('DELETE FROM projects WHERE id = $1', [project1Id])

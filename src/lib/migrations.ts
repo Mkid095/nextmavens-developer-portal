@@ -485,10 +485,14 @@ export async function runMigrations(options?: MigrationOptions): Promise<void> {
           ?.replace(/^--\s*(Rollback|rollback):\s*/, '')
           ?.trim()
 
-        // Record migration
+        // Record migration (use ON CONFLICT in case migration file already inserted)
         await client.query(
           `INSERT INTO control_plane.schema_migrations (version, description, rollback_sql, breaking)
-           VALUES ($1, $2, $3, $4)`,
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (version) DO UPDATE SET
+             description = EXCLUDED.description,
+             rollback_sql = EXCLUDED.rollback_sql,
+             breaking = EXCLUDED.breaking`,
           [version, description, rollbackSql || null, breaking]
         )
 

@@ -3,16 +3,8 @@ FROM node:18
 
 WORKDIR /app
 
-# Configure git to use HTTPS instead of SSH for GitHub
-RUN git config --global url."https://github.com/".insteadOf ssh://git@github.com/ && \
-    git config --global url."https://github.com/".insteadOf git@github.com:
-
-# Copy package files
-COPY package.json ./
-
-# Install all dependencies (including devDependencies)
-# Using --prefer-offline to use local cache when available
-RUN npm install --prefer-offline --no-audit || npm install --no-audit
+# Install pnpm
+RUN npm install -g pnpm@latest
 
 # Copy source code
 COPY . .
