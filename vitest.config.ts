@@ -6,7 +6,20 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
+    environmentMatchGlobs: [
+      // Integration tests use Node environment
+      ['**/integration.test.ts', 'node'],
+    ],
     setupFiles: ['./vitest.setup.ts'],
+    // Integration tests use separate setup file
+    setupFilesMatchGlobs: [
+      // Default setup for unit tests
+      '!**/integration.test.ts',
+      './vitest.setup.ts',
+      // Integration test setup
+      '**/integration.test.ts',
+      './vitest.integration.setup.ts',
+    ].reverse(), // Reverse to have integration setup processed last for integration tests
     include: ['src/**/__tests__/**/*.{test,spec}.{ts,tsx}', 'src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', '.next', 'dist'],
     coverage: {
@@ -28,8 +41,9 @@ export default defineConfig({
       functions: 80,
       lines: 80,
     },
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    // Integration tests get longer timeout (60 seconds vs 10 seconds)
+    testTimeout: process.env.INTEGRATION_TEST === 'true' ? 60000 : 10000,
+    hookTimeout: process.env.INTEGRATION_TEST === 'true' ? 30000 : 10000,
   },
   resolve: {
     alias: {
