@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/middleware'
-import { cleanupIdempotencyKeys, getIdempotencyKeyStats } from '@/features/idempotency/jobs/cleanup-idempotency-keys'
+import { cleanupExpiredIdempotencyKeys as cleanupIdempotencyKeys, getIdempotencyKeyStats } from '@/features/idempotency/lib/cleanup-job'
 
 /**
  * POST handler - Trigger cleanup of expired idempotency keys

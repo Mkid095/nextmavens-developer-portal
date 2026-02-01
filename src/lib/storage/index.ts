@@ -130,23 +130,6 @@ export {
 } from './download'
 
 // ============================================================================
-// Re-export commonly used types
-// ============================================================================
-
-export type {
-  StorageFile,
-  StorageStats,
-  UploadResult,
-  UploadResultWithTracking,
-  DownloadResult,
-  FileUploadOptions,
-  DownloadOptions,
-  StorageBackend,
-  TelegramFileResponse,
-  CloudinaryUploadResponse,
-}
-
-// ============================================================================
 // Helper functions
 // ============================================================================
 
