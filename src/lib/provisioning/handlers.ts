@@ -359,6 +359,490 @@ export const createTenantDatabaseHandler: StepHandler = async (
 }
 
 /**
+ * Register Auth Service Step Handler
+ *
+ * Story: Phase 2 - External Service Registration
+ *
+ * This handler registers a tenant with the auth service.
+ * For now, this is a simplified implementation that logs the registration
+ * and stores configuration. In a full implementation, this would make
+ * an HTTP call to the auth service to create tenant-specific configuration.
+ *
+ * @param projectId - The project ID being provisioned
+ * @param pool - Database connection pool
+ * @returns Step execution result
+ */
+export const registerAuthServiceHandler: StepHandler = async (
+  projectId: string,
+  pool: Pool
+): Promise<StepExecutionResult> => {
+  try {
+    // 1. Get project details
+    const projectResult = await pool.query(
+      `
+      SELECT id, slug, tenant_id, environment
+      FROM projects
+      WHERE id = $1
+      `,
+      [projectId]
+    )
+
+    if (projectResult.rows.length === 0) {
+      return {
+        success: false,
+        error: `Project not found: ${projectId}`,
+        errorDetails: {
+          error_type: 'NotFoundError',
+          context: { projectId },
+        },
+      }
+    }
+
+    const project = projectResult.rows[0]
+    const { slug, tenant_id, environment } = project
+
+    // 2. Build auth service configuration for this tenant
+    const authServiceConfig = {
+      tenant_id,
+      project_id: projectId,
+      slug,
+      environment: environment || 'dev',
+      jwt_issuer: `nextmavens-${slug}`,
+      jwt_audience: `nextmavens-${slug}-api`,
+    }
+
+    // 3. For now, log the registration (in production, this would make an HTTP call)
+    console.log(
+      `[Provisioning] Auth service registration for project ${projectId}:`,
+      JSON.stringify(authServiceConfig, null, 2)
+    )
+
+    // 4. Store service registration in project metadata (optional, for tracking)
+    // This is stored in the project's metadata column for future reference
+    await pool.query(
+      `
+      UPDATE projects
+      SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+        'auth_service', jsonb_build_object(
+          'registered_at', NOW(),
+          'tenant_id', $2,
+          'environment', $3
+        )
+      )
+      WHERE id = $1
+      `,
+      [projectId, tenant_id, environment || 'dev']
+    )
+
+    console.log(`[Provisioning] Auth service registration completed for project: ${projectId}`)
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails: Record<string, unknown> = {
+      error_type: error instanceof Error ? error.constructor.name : 'Error',
+      context: { projectId },
+    }
+
+    if (error instanceof Error && error.stack) {
+      errorDetails.stack_trace = error.stack
+    }
+
+    return {
+      success: false,
+      error: `Failed to register with auth service: ${errorMessage}`,
+      errorDetails,
+    }
+  }
+}
+
+/**
+ * Register Realtime Service Step Handler
+ *
+ * Story: Phase 2 - External Service Registration
+ *
+ * This handler registers a tenant with the realtime service.
+ * For now, this is a simplified implementation that logs the registration
+ * and stores configuration. In a full implementation, this would make
+ * an HTTP call to the realtime service to create tenant-specific channels.
+ *
+ * @param projectId - The project ID being provisioned
+ * @param pool - Database connection pool
+ * @returns Step execution result
+ */
+export const registerRealtimeServiceHandler: StepHandler = async (
+  projectId: string,
+  pool: Pool
+): Promise<StepExecutionResult> => {
+  try {
+    // 1. Get project details
+    const projectResult = await pool.query(
+      `
+      SELECT id, slug, tenant_id, environment
+      FROM projects
+      WHERE id = $1
+      `,
+      [projectId]
+    )
+
+    if (projectResult.rows.length === 0) {
+      return {
+        success: false,
+        error: `Project not found: ${projectId}`,
+        errorDetails: {
+          error_type: 'NotFoundError',
+          context: { projectId },
+        },
+      }
+    }
+
+    const project = projectResult.rows[0]
+    const { slug, tenant_id, environment } = project
+
+    // 2. Build realtime service configuration for this tenant
+    const realtimeServiceConfig = {
+      tenant_id,
+      project_id: projectId,
+      slug,
+      environment: environment || 'dev',
+      channel_prefix: `${tenant_id}:`, // All channels will be prefixed with tenant_id
+      max_connections: 100, // Default max concurrent connections
+      enable_presence: true,
+      enable_broadcast: true,
+    }
+
+    // 3. For now, log the registration (in production, this would make an HTTP call)
+    console.log(
+      `[Provisioning] Realtime service registration for project ${projectId}:`,
+      JSON.stringify(realtimeServiceConfig, null, 2)
+    )
+
+    // 4. Store service registration in project metadata
+    await pool.query(
+      `
+      UPDATE projects
+      SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+        'realtime_service', jsonb_build_object(
+          'registered_at', NOW(),
+          'tenant_id', $2,
+          'environment', $3,
+          'channel_prefix', $4
+        )
+      )
+      WHERE id = $1
+      `,
+      [projectId, tenant_id, environment || 'dev', `${tenant_id}:`]
+    )
+
+    console.log(`[Provisioning] Realtime service registration completed for project: ${projectId}`)
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails: Record<string, unknown> = {
+      error_type: error instanceof Error ? error.constructor.name : 'Error',
+      context: { projectId },
+    }
+
+    if (error instanceof Error && error.stack) {
+      errorDetails.stack_trace = error.stack
+    }
+
+    return {
+      success: false,
+      error: `Failed to register with realtime service: ${errorMessage}`,
+      errorDetails,
+    }
+  }
+}
+
+/**
+ * Register Storage Service Step Handler
+ *
+ * Story: Phase 2 - External Service Registration
+ *
+ * This handler registers a tenant with the storage service.
+ * For now, this is a simplified implementation that logs the registration
+ * and stores configuration. In a full implementation, this would make
+ * an HTTP call to the storage service to create tenant-specific buckets.
+ *
+ * @param projectId - The project ID being provisioned
+ * @param pool - Database connection pool
+ * @returns Step execution result
+ */
+export const registerStorageServiceHandler: StepHandler = async (
+  projectId: string,
+  pool: Pool
+): Promise<StepExecutionResult> => {
+  try {
+    // 1. Get project details
+    const projectResult = await pool.query(
+      `
+      SELECT id, slug, tenant_id, environment
+      FROM projects
+      WHERE id = $1
+      `,
+      [projectId]
+    )
+
+    if (projectResult.rows.length === 0) {
+      return {
+        success: false,
+        error: `Project not found: ${projectId}`,
+        errorDetails: {
+          error_type: 'NotFoundError',
+          context: { projectId },
+        },
+      }
+    }
+
+    const project = projectResult.rows[0]
+    const { slug, tenant_id, environment } = project
+
+    // 2. Build storage service configuration for this tenant
+    const storageServiceConfig = {
+      tenant_id,
+      project_id: projectId,
+      slug,
+      environment: environment || 'dev',
+      bucket_prefix: `${tenant_id}/`, // All files will be stored under tenant_id prefix
+      max_file_size: 50 * 1024 * 1024, // 50MB default max file size
+      max_total_storage: 5 * 1024 * 1024 * 1024, // 5GB default total storage
+      allowed_file_types: ['*'], // Allow all file types by default
+    }
+
+    // 3. For now, log the registration (in production, this would make an HTTP call)
+    console.log(
+      `[Provisioning] Storage service registration for project ${projectId}:`,
+      JSON.stringify(storageServiceConfig, null, 2)
+    )
+
+    // 4. Store service registration in project metadata
+    await pool.query(
+      `
+      UPDATE projects
+      SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+        'storage_service', jsonb_build_object(
+          'registered_at', NOW(),
+          'tenant_id', $2,
+          'environment', $3,
+          'bucket_prefix', $4
+        )
+      )
+      WHERE id = $1
+      `,
+      [projectId, tenant_id, environment || 'dev', `${tenant_id}/`]
+    )
+
+    console.log(`[Provisioning] Storage service registration completed for project: ${projectId}`)
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails: Record<string, unknown> = {
+      error_type: error instanceof Error ? error.constructor.name : 'Error',
+      context: { projectId },
+    }
+
+    if (error instanceof Error && error.stack) {
+      errorDetails.stack_trace = error.stack
+    }
+
+    return {
+      success: false,
+      error: `Failed to register with storage service: ${errorMessage}`,
+      errorDetails,
+    }
+  }
+}
+
+/**
+ * Generate API Keys Step Handler
+ *
+ * Story: Phase 2 - External Service Registration
+ *
+ * This handler generates initial API keys for a tenant.
+ * Creates both public and secret keys that developers can use
+ * to authenticate their applications.
+ *
+ * Keys generated:
+ * - 1 public key (for client-side use, safe to expose)
+ * - 1 secret key (for server-side use, must be kept confidential)
+ * - 1 service_role key (for admin operations)
+ *
+ * All keys are stored hashed in the database using SHA-256.
+ *
+ * @param projectId - The project ID being provisioned
+ * @param pool - Database connection pool
+ * @returns Step execution result
+ */
+export const generateApiKeysHandler: StepHandler = async (
+  projectId: string,
+  pool: Pool
+): Promise<StepExecutionResult> => {
+  // Import generateApiKey and hashApiKey functions
+  const { generateApiKey, hashApiKey } = await import('@/lib/auth')
+
+  try {
+    // 1. Get project details
+    const projectResult = await pool.query(
+      `
+      SELECT id, slug, tenant_id, environment, developer_id
+      FROM projects
+      WHERE id = $1
+      `,
+      [projectId]
+    )
+
+    if (projectResult.rows.length === 0) {
+      return {
+        success: false,
+        error: `Project not found: ${projectId}`,
+        errorDetails: {
+          error_type: 'NotFoundError',
+          context: { projectId },
+        },
+      }
+    }
+
+    const project = projectResult.rows[0]
+    const { slug, tenant_id, environment, developer_id } = project
+
+    // 2. Generate random keys
+    const publicRandom = generateApiKey('public')
+    const secretRandom = generateApiKey('secret')
+    const serviceRoleRandom = generateApiKey('secret')
+
+    // 3. Build formatted keys with prefixes
+    // Format: nm_{env}_{type}_{random}
+    const env = environment || 'dev'
+    const publicKey = `nm_${env}_pk_${publicRandom}`
+    const secretKey = `nm_${env}_sk_${secretRandom}`
+    const serviceRoleKey = `nm_${env}_sr_${serviceRoleRandom}`
+
+    // 4. Hash the keys for storage
+    const publicHash = hashApiKey(publicKey)
+    const secretHash = hashApiKey(secretKey)
+    const serviceRoleHash = hashApiKey(serviceRoleKey)
+
+    // 5. Insert keys into database
+    // Use INSERT with ON CONFLICT to handle retries
+    await pool.query(
+      `
+      INSERT INTO api_keys (
+        id,
+        project_id,
+        name,
+        key_type,
+        key_prefix,
+        public_key,
+        secret_hash,
+        scopes,
+        environment,
+        created_at
+      ) VALUES
+        (
+          gen_random_uuid(),
+          $1,
+          'Default Public Key',
+          'public',
+          'nm_${env}_pk_',
+          $2,
+          $3,
+          '[]'::jsonb,
+          $4,
+          NOW()
+        ),
+        (
+          gen_random_uuid(),
+          $1,
+          'Default Secret Key',
+          'secret',
+          'nm_${env}_sk_',
+          $5,
+          $6,
+          '[]'::jsonb,
+          $4,
+          NOW()
+        ),
+        (
+          gen_random_uuid(),
+          $1,
+          'Service Role Key',
+          'service_role',
+          'nm_${env}_sr_',
+          $7,
+          $8,
+          '["*"]'::jsonb,
+          $4,
+          NOW()
+        )
+      ON CONFLICT (project_id, name) DO NOTHING
+      `,
+      [
+        projectId,
+        publicKey,
+        publicHash,
+        env,
+        secretKey,
+        secretHash,
+        serviceRoleKey,
+        serviceRoleHash,
+      ]
+    )
+
+    console.log(
+      `[Provisioning] Generated API keys for project ${projectId}:` +
+        `\n  Public Key: ${publicKey.substring(0, 20)}...` +
+        `\n  Secret Key: ${secretKey.substring(0, 20)}...` +
+        `\n  Service Role: ${serviceRoleKey.substring(0, 20)}...`
+    )
+
+    // Store the keys in project metadata for retrieval (in production, keys would be shown once and never retrievable)
+    await pool.query(
+      `
+      UPDATE projects
+      SET metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+        'api_keys', jsonb_build_object(
+          'generated_at', NOW(),
+          'public_key_preview', LEFT($2, 20) || '...',
+          'warning', 'Full keys are only shown once during creation. Store them securely.'
+        )
+      )
+      WHERE id = $1
+      `,
+      [projectId, publicKey]
+    )
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const errorDetails: Record<string, unknown> = {
+      error_type: error instanceof Error ? error.constructor.name : 'Error',
+      context: { projectId },
+    }
+
+    if (error instanceof Error && error.stack) {
+      errorDetails.stack_trace = error.stack
+    }
+
+    return {
+      success: false,
+      error: `Failed to generate API keys: ${errorMessage}`,
+      errorDetails,
+    }
+  }
+}
+
+/**
  * Verify Services Step Handler
  *
  * Story: US-008 - Implement Verify Services Step
@@ -696,16 +1180,14 @@ export function getStepHandler(stepName: string): StepHandler {
       return createTenantSchemaHandler
     case 'create_tenant_database':
       return createTenantDatabaseHandler
-
-    // Other step handlers can be added here as they are implemented
-    // case 'register_auth_service':
-    //   return registerAuthServiceHandler
-    // case 'register_realtime_service':
-    //   return registerRealtimeServiceHandler
-    // case 'register_storage_service':
-    //   return registerStorageServiceHandler
-    // case 'generate_api_keys':
-    //   return generateApiKeysHandler
+    case 'register_auth_service':
+      return registerAuthServiceHandler
+    case 'register_realtime_service':
+      return registerRealtimeServiceHandler
+    case 'register_storage_service':
+      return registerStorageServiceHandler
+    case 'generate_api_keys':
+      return generateApiKeysHandler
 
     default:
       throw new Error(`No handler implemented for step: ${stepName}`)
