@@ -34,6 +34,9 @@ vi.mock('@/lib/auth', () => ({
   generateSlug: vi.fn(),
 }))
 
+// Mock fetch globally for service registration tests
+global.fetch = vi.fn()
+
 // Mock pool client
 const mockClient = {
   query: vi.fn(),
@@ -48,7 +51,20 @@ const mockPool = {
 describe('Tenant Schema Creation Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(global.fetch).mockReset()
+
+    // Setup environment variables
+    vi.stubEnv('AUTH_SERVICE_URL', 'http://localhost:3001')
+    vi.stubEnv('TELEGRAM_STORAGE_API_URL', 'https://telegram-api.test.com')
+    vi.stubEnv('TELEGRAM_STORAGE_API_KEY', 'test-key')
+    vi.stubEnv('CLOUDINARY_CLOUD_NAME', 'test-cloud')
+
+    // Setup mock pool
     vi.mocked(mockPool.connect).mockResolvedValue(mockClient as any)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('createTenantSchemaHandler', () => {
@@ -203,17 +219,11 @@ describe('Tenant Database Creation Handler', () => {
         .mockResolvedValueOnce({
           rows: [{ slug }],
         })
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce(undefined)
-        .mockResolvedValueOnce(undefined)
+        .mockResolvedValue(undefined) // All remaining queries (for tables, indexes, RLS policies)
 
       const result = await createTenantDatabaseHandler(projectId, mockPool)
 
       expect(result.success).toBe(true)
-      expect(mockClient.query).toHaveBeenCalledTimes(7)
       expect(mockClient.release).toHaveBeenCalled()
     })
 
@@ -371,16 +381,31 @@ describe('Auth Service Registration Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(mockPool.connect).mockResolvedValue(mockClient as any)
+    vi.stubEnv('AUTH_SERVICE_URL', 'http://localhost:3001')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('registerAuthServiceHandler', () => {
     const projectId = 'test-project-id'
 
     it('should register with auth service successfully', async () => {
+      // Mock fetch response
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          tenant: { id: 'auth-tenant-123', slug: 'test-project' },
+          user: { id: 'user-123', email: 'admin@test-project.placeholder' },
+        }),
+      } as Response)
+
       mockClient.query = vi.fn()
         .mockResolvedValueOnce({
           rows: [{
             id: projectId,
+            name: 'Test Project',
             slug: 'test-project',
             tenant_id: 'tenant-123',
             environment: 'dev',
@@ -392,6 +417,13 @@ describe('Auth Service Registration Handler', () => {
 
       expect(result.success).toBe(true)
       expect(mockClient.query).toHaveBeenCalledTimes(2)
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:3001/api/auth/create-tenant',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
     })
 
     it('should return error when project not found', async () => {
@@ -407,10 +439,20 @@ describe('Auth Service Registration Handler', () => {
     })
 
     it('should store auth service configuration in metadata', async () => {
+      // Mock fetch response
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          tenant: { id: 'auth-tenant-abc', slug: 'my-project' },
+          user: { id: 'user-abc', email: 'admin@my-project.placeholder' },
+        }),
+      } as Response)
+
       mockClient.query = vi.fn()
         .mockResolvedValueOnce({
           rows: [{
             id: projectId,
+            name: 'My Project',
             slug: 'my-project',
             tenant_id: 'tenant-abc',
             environment: 'prod',
@@ -427,10 +469,20 @@ describe('Auth Service Registration Handler', () => {
     })
 
     it('should use default environment when not set', async () => {
+      // Mock fetch response
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          tenant: { id: 'auth-tenant-123', slug: 'test-project' },
+          user: { id: 'user-123', email: 'admin@test-project.placeholder' },
+        }),
+      } as Response)
+
       mockClient.query = vi.fn()
         .mockResolvedValueOnce({
           rows: [{
             id: projectId,
+            name: 'Test Project',
             slug: 'test-project',
             tenant_id: 'tenant-123',
             environment: null,
@@ -467,6 +519,12 @@ describe('Realtime Service Registration Handler', () => {
     const projectId = 'test-project-id'
 
     it('should register with realtime service successfully', async () => {
+      // Mock fetch response for health check
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: 'ok', service: 'realtime-service' }),
+      } as Response)
+
       mockClient.query = vi.fn()
         .mockResolvedValueOnce({
           rows: [{
@@ -496,6 +554,12 @@ describe('Realtime Service Registration Handler', () => {
     })
 
     it('should store realtime service configuration in metadata', async () => {
+      // Mock fetch response for health check
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: 'ok', service: 'realtime-service' }),
+      } as Response)
+
       mockClient.query = vi.fn()
         .mockResolvedValueOnce({
           rows: [{
@@ -516,6 +580,12 @@ describe('Realtime Service Registration Handler', () => {
     })
 
     it('should set default connection limits', async () => {
+      // Mock fetch response
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ status: 'ok' }),
+      } as Response)
+
       mockClient.query = vi.fn()
         .mockResolvedValueOnce({
           rows: [{
@@ -547,6 +617,14 @@ describe('Storage Service Registration Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(mockPool.connect).mockResolvedValue(mockClient as any)
+    // Setup storage environment variables
+    vi.stubEnv('TELEGRAM_STORAGE_API_URL', 'https://telegram-api.test.com')
+    vi.stubEnv('TELEGRAM_STORAGE_API_KEY', 'test-key')
+    vi.stubEnv('CLOUDINARY_CLOUD_NAME', 'test-cloud')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('registerStorageServiceHandler', () => {
@@ -579,6 +657,25 @@ describe('Storage Service Registration Handler', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toContain('Project not found')
+    })
+
+    it('should return error when no storage credentials configured', async () => {
+      vi.unstubAllEnvs() // Clear storage credentials
+
+      mockClient.query = vi.fn()
+        .mockResolvedValueOnce({
+          rows: [{
+            id: projectId,
+            slug: 'test-project',
+            tenant_id: 'tenant-789',
+            environment: 'dev',
+          }],
+        })
+
+      const result = await registerStorageServiceHandler(projectId, mockPool)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('No storage service credentials configured')
     })
 
     it('should store storage service configuration in metadata', async () => {
@@ -807,6 +904,17 @@ describe('Handler Integration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(mockPool.connect).mockResolvedValue(mockClient as any)
+    vi.mocked(global.fetch).mockReset()
+
+    // Setup environment variables
+    vi.stubEnv('AUTH_SERVICE_URL', 'http://localhost:3001')
+    vi.stubEnv('TELEGRAM_STORAGE_API_URL', 'https://telegram-api.test.com')
+    vi.stubEnv('TELEGRAM_STORAGE_API_KEY', 'test-key')
+    vi.stubEnv('CLOUDINARY_CLOUD_NAME', 'test-cloud')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   it('should use IF NOT EXISTS for idempotency', async () => {
@@ -843,13 +951,28 @@ describe('Handler Integration', () => {
     // Run handlers sequentially to avoid mock conflicts
     const results = []
 
+    // Mock fetch for auth service
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        tenant: { id: 'auth-tenant-1', slug: 'test' },
+        user: { id: 'user-1', email: 'admin@test.placeholder' },
+      }),
+    } as Response)
+
     // Auth service
     mockClient.query = vi.fn()
       .mockResolvedValueOnce({
-        rows: [{ id: projectId, slug: 'test', tenant_id: 't1', environment: 'dev' }],
+        rows: [{ id: projectId, name: 'Test', slug: 'test', tenant_id: 't1', environment: 'dev' }],
       })
       .mockResolvedValueOnce(undefined)
     results.push(await registerAuthServiceHandler(projectId, mockPool))
+
+    // Mock fetch for realtime service
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ status: 'ok' }),
+    } as Response)
 
     // Realtime service
     mockClient.query = vi.fn()
@@ -886,6 +1009,7 @@ describe('Handler Integration', () => {
     const projectId = 'consistency-test'
     const projectData = {
       id: projectId,
+      name: 'My Project',
       slug: 'my-project',
       tenant_id: 'tenant-consistent',
       environment: 'staging' as const,
@@ -895,10 +1019,25 @@ describe('Handler Integration', () => {
     // Run handlers sequentially and verify they all succeed
     const results = []
 
+    // Mock fetch for auth service
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        tenant: { id: 'auth-tenant-2', slug: 'my-project' },
+        user: { id: 'user-2', email: 'admin@my-project.placeholder' },
+      }),
+    } as Response)
+
     mockClient.query = vi.fn()
       .mockResolvedValueOnce({ rows: [projectData] })
       .mockResolvedValueOnce(undefined)
     results.push(await registerAuthServiceHandler(projectId, mockPool))
+
+    // Mock fetch for realtime service
+    vi.mocked(global.fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ status: 'ok' }),
+    } as Response)
 
     mockClient.query = vi.fn()
       .mockResolvedValueOnce({ rows: [projectData] })

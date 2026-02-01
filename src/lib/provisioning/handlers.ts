@@ -461,10 +461,9 @@ export const createTenantDatabaseHandler: StepHandler = async (
  *
  * Story: Phase 2 - External Service Registration
  *
- * This handler registers a tenant with the auth service.
- * For now, this is a simplified implementation that logs the registration
- * and stores configuration. In a full implementation, this would make
- * an HTTP call to the auth service to create tenant-specific configuration.
+ * This handler registers a tenant with the auth service by calling the
+ * auth service's create-tenant API endpoint. This creates a tenant entry
+ * in the auth service's database and an initial admin user.
  *
  * @param projectId - The project ID being provisioned
  * @param pool - Database connection pool
@@ -480,7 +479,7 @@ export const registerAuthServiceHandler: StepHandler = async (
     // 1. Get project details
     const projectResult = await client.query(
       `
-      SELECT id, slug, tenant_id, environment
+      SELECT id, slug, tenant_id, environment, name
       FROM projects
       WHERE id = $1
       `,
@@ -499,26 +498,62 @@ export const registerAuthServiceHandler: StepHandler = async (
     }
 
     const project = projectResult.rows[0]
-    const { slug, tenant_id, environment } = project
+    const { slug, tenant_id, environment, name } = project
 
-    // 2. Build auth service configuration for this tenant
-    const authServiceConfig = {
-      tenant_id,
-      project_id: projectId,
-      slug,
-      environment: environment || 'dev',
-      jwt_issuer: `nextmavens-${slug}`,
-      jwt_audience: `nextmavens-${slug}-api`,
+    // 2. Get auth service URL from environment
+    const authServiceUrl = process.env.AUTH_SERVICE_URL
+    if (!authServiceUrl) {
+      return {
+        success: false,
+        error: 'AUTH_SERVICE_URL environment variable is not configured',
+        errorDetails: {
+          error_type: 'ConfigurationError',
+          context: { projectId },
+        },
+      }
     }
 
-    // 3. For now, log the registration (in production, this would make an HTTP call)
+    // 3. Call auth service to create tenant
+    // Note: We use a placeholder admin email/password that should be changed by the tenant admin
+    const createTenantUrl = `${authServiceUrl}/api/auth/create-tenant`
+    const tenantPayload = {
+      name: name || slug,
+      slug: slug,
+      adminEmail: `admin@${slug}.placeholder`, // Placeholder email
+      adminPassword: `${tenant_id}-${slug}-change-me`, // Placeholder password
+      adminName: 'Admin',
+    }
+
     console.log(
-      `[Provisioning] Auth service registration for project ${projectId}:`,
-      JSON.stringify(authServiceConfig, null, 2)
+      `[Provisioning] Calling auth service create-tenant for project ${projectId}:`,
+      createTenantUrl
     )
 
-    // 4. Store service registration in project metadata (optional, for tracking)
-    // This is stored in the project's metadata column for future reference
+    const response = await fetch(createTenantUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(tenantPayload),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      return {
+        success: false,
+        error: `Auth service returned error: ${response.status} ${response.statusText}`,
+        errorDetails: {
+          error_type: 'ServiceError',
+          status: response.status,
+          service_response: errorData,
+          context: { projectId, createTenantUrl },
+        },
+      }
+    }
+
+    const tenantData = await response.json()
+
+    // 4. Store service registration in project metadata
     await client.query(
       `
       UPDATE projects
@@ -526,18 +561,35 @@ export const registerAuthServiceHandler: StepHandler = async (
         'auth_service', jsonb_build_object(
           'registered_at', NOW(),
           'tenant_id', $2,
-          'environment', $3
+          'environment', $3,
+          'auth_tenant_id', $4,
+          'auth_user_id', $5,
+          'placeholder_admin_email', $6
         )
       )
       WHERE id = $1
       `,
-      [projectId, tenant_id, environment || 'dev']
+      [
+        projectId,
+        tenant_id,
+        environment || 'dev',
+        tenantData.tenant?.id || tenant_id,
+        tenantData.user?.id,
+        tenantPayload.adminEmail,
+      ]
     )
 
-    console.log(`[Provisioning] Auth service registration completed for project: ${projectId}`)
+    console.log(
+      `[Provisioning] Auth service registration completed for project ${projectId}. Tenant: ${tenantData.tenant?.id}, User: ${tenantData.user?.id}`
+    )
 
     return {
       success: true,
+      data: {
+        auth_tenant_id: tenantData.tenant?.id,
+        auth_user_id: tenantData.user?.id,
+        placeholder_admin_email: tenantPayload.adminEmail,
+      },
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -565,10 +617,10 @@ export const registerAuthServiceHandler: StepHandler = async (
  *
  * Story: Phase 2 - External Service Registration
  *
- * This handler registers a tenant with the realtime service.
- * For now, this is a simplified implementation that logs the registration
- * and stores configuration. In a full implementation, this would make
- * an HTTP call to the realtime service to create tenant-specific channels.
+ * This handler verifies the realtime service is accessible and stores
+ * the configuration for the tenant. The realtime service doesn't require
+ * explicit tenant registration - it validates JWT tokens and uses the
+ * tenant_id from the token for channel isolation.
  *
  * @param projectId - The project ID being provisioned
  * @param pool - Database connection pool
@@ -605,23 +657,58 @@ export const registerRealtimeServiceHandler: StepHandler = async (
     const project = projectResult.rows[0]
     const { slug, tenant_id, environment } = project
 
-    // 2. Build realtime service configuration for this tenant
-    const realtimeServiceConfig = {
-      tenant_id,
-      project_id: projectId,
-      slug,
-      environment: environment || 'dev',
-      channel_prefix: `${tenant_id}:`, // All channels will be prefixed with tenant_id
-      max_connections: 100, // Default max concurrent connections
-      enable_presence: true,
-      enable_broadcast: true,
+    // 2. Build realtime service URL
+    // Default to localhost in dev, or construct from control plane URL
+    let realtimeServiceUrl = process.env.REALTIME_SERVICE_URL
+
+    if (!realtimeServiceUrl) {
+      // Construct from control plane URL if available
+      const controlPlaneUrl = process.env.CONTROL_PLANE_URL
+      if (controlPlaneUrl) {
+        const url = new URL(controlPlaneUrl)
+        realtimeServiceUrl = `${url.protocol}//realtime.${url.hostname}`
+      } else {
+        // Fallback to localhost for development
+        realtimeServiceUrl = 'http://localhost:4003'
+      }
     }
 
-    // 3. For now, log the registration (in production, this would make an HTTP call)
+    // 3. Verify realtime service is accessible
+    const healthCheckUrl = `${realtimeServiceUrl}/health`
+
     console.log(
-      `[Provisioning] Realtime service registration for project ${projectId}:`,
-      JSON.stringify(realtimeServiceConfig, null, 2)
+      `[Provisioning] Checking realtime service health for project ${projectId}:`,
+      healthCheckUrl
     )
+
+    const healthResponse = await fetch(healthCheckUrl, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'NextMavens-Provisioning/1.0',
+      },
+    }).catch((error) => {
+      // Realtime service might not be running, log warning but don't fail
+      console.warn(
+        `[Provisioning] Realtime service health check failed for project ${projectId}:`,
+        error.message
+      )
+      return null
+    })
+
+    let healthData: any = null
+    if (healthResponse) {
+      if (healthResponse.ok) {
+        healthData = await healthResponse.json()
+        console.log(
+          `[Provisioning] Realtime service health check passed for project ${projectId}:`,
+          healthData
+        )
+      } else {
+        console.warn(
+          `[Provisioning] Realtime service returned non-OK status: ${healthResponse.status}`
+        )
+      }
+    }
 
     // 4. Store service registration in project metadata
     await client.query(
@@ -632,18 +719,34 @@ export const registerRealtimeServiceHandler: StepHandler = async (
           'registered_at', NOW(),
           'tenant_id', $2,
           'environment', $3,
-          'channel_prefix', $4
+          'channel_prefix', $4,
+          'service_url', $5,
+          'health_status', $6
         )
       )
       WHERE id = $1
       `,
-      [projectId, tenant_id, environment || 'dev', `${tenant_id}:`]
+      [
+        projectId,
+        tenant_id,
+        environment || 'dev',
+        `${tenant_id}:`,
+        realtimeServiceUrl,
+        healthData ? 'ok' : 'unknown',
+      ]
     )
 
-    console.log(`[Provisioning] Realtime service registration completed for project: ${projectId}`)
+    console.log(
+      `[Provisioning] Realtime service registration completed for project ${projectId}. URL: ${realtimeServiceUrl}`
+    )
 
     return {
       success: true,
+      data: {
+        service_url: realtimeServiceUrl,
+        channel_prefix: `${tenant_id}:`,
+        health_status: healthData ? 'ok' : 'unknown',
+      },
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
@@ -671,10 +774,10 @@ export const registerRealtimeServiceHandler: StepHandler = async (
  *
  * Story: Phase 2 - External Service Registration
  *
- * This handler registers a tenant with the storage service.
- * For now, this is a simplified implementation that logs the registration
- * and stores configuration. In a full implementation, this would make
- * an HTTP call to the storage service to create tenant-specific buckets.
+ * This handler verifies the storage service credentials are configured
+ * and stores the configuration for the tenant. The storage service uses
+ * Telegram Storage API and Cloudinary, which are configured via
+ * environment variables and shared across all tenants.
  *
  * @param projectId - The project ID being provisioned
  * @param pool - Database connection pool
@@ -711,25 +814,68 @@ export const registerStorageServiceHandler: StepHandler = async (
     const project = projectResult.rows[0]
     const { slug, tenant_id, environment } = project
 
-    // 2. Build storage service configuration for this tenant
+    // 2. Verify storage service credentials are configured
+    const telegramStorageUrl = process.env.TELEGRAM_STORAGE_API_URL
+    const telegramStorageKey = process.env.TELEGRAM_STORAGE_API_KEY
+    const cloudinaryCloudName = process.env.CLOUDINARY_CLOUD_NAME
+
+    const storageConfig: {
+      telegram: boolean
+      cloudinary: boolean
+    } = {
+      telegram: !!(telegramStorageUrl && telegramStorageKey),
+      cloudinary: !!cloudinaryCloudName,
+    }
+
+    if (!storageConfig.telegram && !storageConfig.cloudinary) {
+      return {
+        success: false,
+        error: 'No storage service credentials configured. Please set TELEGRAM_STORAGE_API_URL/KEY or CLOUDINARY_CLOUD_NAME',
+        errorDetails: {
+          error_type: 'ConfigurationError',
+          context: { projectId },
+        },
+      }
+    }
+
+    console.log(
+      `[Provisioning] Storage service verification for project ${projectId}:`,
+      `Telegram: ${storageConfig.telegram ? 'configured' : 'not configured'}, Cloudinary: ${storageConfig.cloudinary ? 'configured' : 'not configured'}`
+    )
+
+    // 3. Test storage service availability (optional, don't fail on errors)
+    if (storageConfig.telegram) {
+      try {
+        const testResponse = await fetch(`${telegramStorageUrl}/health`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${telegramStorageKey}`,
+            'User-Agent': 'NextMavens-Provisioning/1.0',
+          },
+        }).catch(() => null)
+
+        if (testResponse?.ok) {
+          console.log(`[Provisioning] Telegram Storage API is accessible`)
+        } else {
+          console.warn(`[Provisioning] Telegram Storage API health check failed`)
+        }
+      } catch {
+        console.warn(`[Provisioning] Could not verify Telegram Storage API availability`)
+      }
+    }
+
+    // 4. Build storage service configuration for this tenant
     const storageServiceConfig = {
       tenant_id,
       project_id: projectId,
       slug,
       environment: environment || 'dev',
-      bucket_prefix: `${tenant_id}/`, // All files will be stored under tenant_id prefix
-      max_file_size: 50 * 1024 * 1024, // 50MB default max file size
-      max_total_storage: 5 * 1024 * 1024 * 1024, // 5GB default total storage
-      allowed_file_types: ['*'], // Allow all file types by default
+      storage_path_prefix: `${tenant_id}/`, // All files will be stored under this prefix
+      telegram_enabled: storageConfig.telegram,
+      cloudinary_enabled: storageConfig.cloudinary,
     }
 
-    // 3. For now, log the registration (in production, this would make an HTTP call)
-    console.log(
-      `[Provisioning] Storage service registration for project ${projectId}:`,
-      JSON.stringify(storageServiceConfig, null, 2)
-    )
-
-    // 4. Store service registration in project metadata
+    // 5. Store service registration in project metadata
     await client.query(
       `
       UPDATE projects
@@ -738,18 +884,34 @@ export const registerStorageServiceHandler: StepHandler = async (
           'registered_at', NOW(),
           'tenant_id', $2,
           'environment', $3,
-          'bucket_prefix', $4
+          'storage_path_prefix', $4,
+          'telegram_enabled', $5,
+          'cloudinary_enabled', $6
         )
       )
       WHERE id = $1
       `,
-      [projectId, tenant_id, environment || 'dev', `${tenant_id}/`]
+      [
+        projectId,
+        tenant_id,
+        environment || 'dev',
+        `${tenant_id}/`,
+        storageConfig.telegram,
+        storageConfig.cloudinary,
+      ]
     )
 
-    console.log(`[Provisioning] Storage service registration completed for project: ${projectId}`)
+    console.log(
+      `[Provisioning] Storage service registration completed for project ${projectId}`
+    )
 
     return {
       success: true,
+      data: {
+        telegram_enabled: storageConfig.telegram,
+        cloudinary_enabled: storageConfig.cloudinary,
+        storage_path_prefix: `${tenant_id}/`,
+      },
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
