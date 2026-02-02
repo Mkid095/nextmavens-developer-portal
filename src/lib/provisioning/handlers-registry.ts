@@ -9,9 +9,7 @@
  */
 
 import type { StepHandler } from './steps'
-
-// Import all step handlers from the handlers subdirectory
-export {
+import {
   createTenantSchemaHandler,
   createTenantDatabaseHandler,
   registerAuthServiceHandler,
@@ -20,10 +18,26 @@ export {
   generateApiKeysHandler,
   verifyServicesHandler,
 } from './handlers'
+import {
+  createPolicyIdempotently,
+  checkServiceHealth,
+} from './handlers'
+import type { ServiceHealthResult } from './handlers'
+
+// Re-export all step handlers
+export {
+  createTenantSchemaHandler,
+  createTenantDatabaseHandler,
+  registerAuthServiceHandler,
+  registerRealtimeServiceHandler,
+  registerStorageServiceHandler,
+  generateApiKeysHandler,
+  verifyServicesHandler,
+}
 
 // Re-export utilities for backward compatibility
-export { createPolicyIdempotently, checkServiceHealth } from './handlers'
-export type { ServiceHealthResult } from './handlers'
+export { createPolicyIdempotently, checkServiceHealth }
+export type { ServiceHealthResult }
 
 /**
  * Get step handler by step name

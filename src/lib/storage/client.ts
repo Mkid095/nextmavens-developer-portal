@@ -131,7 +131,9 @@ export async function uploadToTelegram(
 
   // Create FormData
   const formData = new FormData()
-  const blob = new Blob([buffer], { type: contentType })
+  // Convert Buffer to Uint8Array then to Blob to avoid SharedArrayBuffer issue
+  const uint8Array = new Uint8Array(buffer)
+  const blob = new Blob([uint8Array], { type: contentType })
   formData.append('file', blob, fileName)
   formData.append('folder', folder)
   formData.append('metadata', JSON.stringify({
@@ -403,7 +405,9 @@ export async function uploadToCloudinary(
 
   // Create FormData for Cloudinary upload
   const formData = new FormData()
-  formData.append('file', new Blob([buffer], { type: contentType }))
+  // Convert Buffer to Uint8Array then to Blob to avoid SharedArrayBuffer issue
+  const uint8Array = new Uint8Array(buffer)
+  formData.append('file', new Blob([uint8Array], { type: contentType }))
   formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET || 'unsigned_preset')
   formData.append('folder', folder)
   formData.append('public_id', `${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`)

@@ -55,7 +55,7 @@ interface RateLimitCheckResult {
 /**
  * Gateway service types
  */
-type GatewayService = 'auth' | 'graphql' | 'realtime' | 'storage' | 'database' | 'functions'
+export type GatewayService = 'auth' | 'graphql' | 'realtime' | 'storage' | 'database' | 'functions'
 
 /**
  * Default configuration

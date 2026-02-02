@@ -55,7 +55,7 @@ vi.mock('next/headers', () => ({
 
 // Mock crypto.randomUUID for Node < 19 (fallback)
 if (!global.crypto.randomUUID) {
-  global.crypto.randomUUID = vi.fn(() => 'test-uuid-' + Math.random().toString(36).substring(7))
+  ;(global.crypto.randomUUID as any) = vi.fn(() => 'test-uuid-' + Math.random().toString(36).substring(7))
 }
 
 // Setup performance API

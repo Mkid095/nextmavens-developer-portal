@@ -20,7 +20,7 @@
  */
 
 import type { Pool, PoolClient } from 'pg'
-import type { JWTPayload } from '@/lib/auth'
+import type { JwtPayload } from '@/lib/auth'
 import { setUserIdContext, setUserRoleContext, setUserContext, clearUserContext } from './context'
 
 /**
@@ -53,7 +53,7 @@ export function extractTokenFromHeader(authHeader: string | null): string | null
 export async function withRLSContext<T>(
   pool: Pool,
   request: Request,
-  callback: (userId: string, userRole: string, payload: JWTPayload) => Promise<T>
+  callback: (userId: string, userRole: string, payload: JwtPayload) => Promise<T>
 ): Promise<T> {
   const authHeader = request.headers.get('authorization')
   const token = extractTokenFromHeader(authHeader)
@@ -70,8 +70,8 @@ export async function withRLSContext<T>(
     throw new Error('Unauthorized: Invalid token')
   }
 
-  const userId = payload.sub
-  const userRole = payload.role || 'user'
+  const userId = payload.id
+  const userRole = 'user'
 
   if (!userId) {
     throw new Error('Unauthorized: No user ID in token')

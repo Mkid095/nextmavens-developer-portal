@@ -379,21 +379,21 @@ export function logResponse(
 /**
  * Log error with full stack trace in debug mode
  *
- * @param error - The error to log
+ * @param err - The error to log
  * @param context - Optional context string
  */
-export function logError(error: unknown, context?: string): void {
+export function logError(err: unknown, context?: string): void {
   const message = context || 'Error occurred'
   const metadata: Record<string, unknown> = {}
 
-  if (error instanceof Error) {
-    metadata.name = error.name
-    metadata.message = error.message
+  if (err instanceof Error) {
+    metadata.name = err.name
+    metadata.message = err.message
     if (currentLogLevel === 'debug') {
-      metadata.stack = error.stack
+      metadata.stack = err.stack
     }
   } else {
-    metadata.error = String(error)
+    metadata.error = String(err)
   }
 
   error(message, metadata)

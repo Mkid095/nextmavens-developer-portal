@@ -27,6 +27,26 @@
 import type { Pool, PoolClient } from 'pg'
 
 /**
+ * Helper to get a client from pool or return the client directly
+ */
+async function getClient(poolOrClient: Pool | PoolClient): Promise<{
+  client: PoolClient
+  shouldRelease: boolean
+}> {
+  if ('connect' in poolOrClient && typeof poolOrClient.connect === 'function') {
+    const client = await (poolOrClient as Pool).connect()
+    return {
+      client,
+      shouldRelease: true,
+    }
+  }
+  return {
+    client: poolOrClient as PoolClient,
+    shouldRelease: false,
+  }
+}
+
+/**
  * Set the current user ID in the database session
  *
  * This sets a PostgreSQL session variable that can be referenced
@@ -39,12 +59,12 @@ export async function setUserIdContext(
   poolOrClient: Pool | PoolClient,
   userId: string
 ): Promise<void> {
-  const client = 'connect' in poolOrClient ? await poolOrClient.connect() : poolOrClient
+  const { client, shouldRelease } = await getClient(poolOrClient)
 
   try {
     await client.query(`SET LOCAL app.user_id = '${userId}'`)
   } finally {
-    if ('connect' in poolOrClient) {
+    if (shouldRelease) {
       client.release()
     }
   }
@@ -63,12 +83,12 @@ export async function setUserRoleContext(
   poolOrClient: Pool | PoolClient,
   role: string
 ): Promise<void> {
-  const client = 'connect' in poolOrClient ? await poolOrClient.connect() : poolOrClient
+  const { client, shouldRelease } = await getClient(poolOrClient)
 
   try {
     await client.query(`SET LOCAL app.user_role = '${role}'`)
   } finally {
-    if ('connect' in poolOrClient) {
+    if (shouldRelease) {
       client.release()
     }
   }
@@ -86,13 +106,13 @@ export async function setUserContext(
   userId: string,
   role: string = 'user'
 ): Promise<void> {
-  const client = 'connect' in poolOrClient ? await poolOrClient.connect() : poolOrClient
+  const { client, shouldRelease } = await getClient(poolOrClient)
 
   try {
     await client.query(`SET LOCAL app.user_id = '${userId}'`)
     await client.query(`SET LOCAL app.user_role = '${role}'`)
   } finally {
-    if ('connect' in poolOrClient) {
+    if (shouldRelease) {
       client.release()
     }
   }
@@ -108,13 +128,13 @@ export async function setUserContext(
 export async function clearUserContext(
   poolOrClient: Pool | PoolClient
 ): Promise<void> {
-  const client = 'connect' in poolOrClient ? await poolOrClient.connect() : poolOrClient
+  const { client, shouldRelease } = await getClient(poolOrClient)
 
   try {
     await client.query(`SET LOCAL app.user_id = NULL`)
     await client.query(`SET LOCAL app.user_role = NULL`)
   } finally {
-    if ('connect' in poolOrClient) {
+    if (shouldRelease) {
       client.release()
     }
   }
@@ -134,7 +154,7 @@ export async function withAdminBypass<T>(
   poolOrClient: Pool | PoolClient,
   callback: (client: PoolClient) => Promise<T>
 ): Promise<T> {
-  const client = 'connect' in poolOrClient ? await poolOrClient.connect() : poolOrClient
+  const { client, shouldRelease } = await getClient(poolOrClient)
 
   try {
     // Set role to postgres (superuser) to bypass RLS
@@ -144,7 +164,7 @@ export async function withAdminBypass<T>(
   } finally {
     // Reset role
     await client.query(`RESET ROLE`)
-    if ('connect' in poolOrClient) {
+    if (shouldRelease) {
       client.release()
     }
   }
@@ -159,13 +179,13 @@ export async function withAdminBypass<T>(
 export async function getCurrentUserId(
   poolOrClient: Pool | PoolClient
 ): Promise<string | null> {
-  const client = 'connect' in poolOrClient ? await poolOrClient.connect() : poolOrClient
+  const { client, shouldRelease } = await getClient(poolOrClient)
 
   try {
     const result = await client.query(`SELECT current_setting('app.user_id', true) as user_id`)
     return result.rows[0]?.user_id || null
   } finally {
-    if ('connect' in poolOrClient) {
+    if (shouldRelease) {
       client.release()
     }
   }
@@ -180,13 +200,13 @@ export async function getCurrentUserId(
 export async function getCurrentUserRole(
   poolOrClient: Pool | PoolClient
 ): Promise<string | null> {
-  const client = 'connect' in poolOrClient ? await poolOrClient.connect() : poolOrClient
+  const { client, shouldRelease } = await getClient(poolOrClient)
 
   try {
     const result = await client.query(`SELECT current_setting('app.user_role', true) as user_role`)
     return result.rows[0]?.user_role || null
   } finally {
-    if ('connect' in poolOrClient) {
+    if (shouldRelease) {
       client.release()
     }
   }

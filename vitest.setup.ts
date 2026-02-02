@@ -47,7 +47,7 @@ global.performance = {
 
 // Mock crypto.randomUUID for Node < 19
 if (!global.crypto.randomUUID) {
-  global.crypto.randomUUID = vi.fn(() => 'test-uuid-' + Math.random().toString(36).substring(7))
+  ;(global.crypto.randomUUID as any) = vi.fn(() => 'test-uuid-' + Math.random().toString(36).substring(7))
 }
 
 // Mock idempotency library

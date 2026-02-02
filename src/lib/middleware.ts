@@ -62,8 +62,8 @@ export async function authenticateRequest(req: NextRequest, projectId?: string):
   }
 
   return {
-    user: { id: payload.userId },
-    id: payload.userId,
+    user: { id: payload.id },
+    id: payload.id,
     email: payload.email
   }
 }
@@ -102,7 +102,7 @@ export interface PermissionMiddlewareOptions {
 /**
  * Type for a Next.js API route handler with context support.
  */
-type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
+type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<Response>
 
 /**
  * Create a middleware that requires authentication.
@@ -124,7 +124,7 @@ type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> 
  * ```
  */
 export function withAuth(
-  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<Response>
 ): ApiHandler {
   return async (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => {
     try {
@@ -169,7 +169,7 @@ export function withAuth(
  */
 export function requirePermission(
   options: PermissionMiddlewareOptions,
-  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<Response>
 ): ApiHandler {
   return async (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => {
     // First, authenticate the request
@@ -236,7 +236,7 @@ export function requirePermission(
  */
 export function requireAllPermissions(
   options: Omit<PermissionMiddlewareOptions, 'permission'> & { permissions: Permission[] },
-  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<Response>
 ): ApiHandler {
   return async (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => {
     let user: User
@@ -303,7 +303,7 @@ export function requireAllPermissions(
  */
 export function requireAnyPermission(
   options: Omit<PermissionMiddlewareOptions, 'permission'> & { permissions: Permission[] },
-  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<Response>
 ): ApiHandler {
   return async (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => {
     let user: User

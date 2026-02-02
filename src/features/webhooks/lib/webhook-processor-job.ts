@@ -16,7 +16,7 @@
  */
 
 import { getPool } from '@/lib/db'
-import { performWebhookDelivery, type Webhook, type WebhookDeliveryOptions } from './webhook-delivery'
+import { performWebhookDelivery, type Webhook, type WebhookDeliveryOptions, type WebhookDeliveryResult } from './webhook-delivery'
 
 /**
  * Webhook processor job result interface
@@ -158,6 +158,8 @@ async function processWebhookDelivery(eventLog: {
       JOB_DELIVERY_OPTIONS
     )
 
+    const body = result.body as WebhookDeliveryResult
+
     // Check if webhook was auto-disabled
     const webhookDisabledResult = await pool.query(
       `
@@ -170,17 +172,17 @@ async function processWebhookDelivery(eventLog: {
 
     const wasDisabled = !webhookDisabledResult.rows[0]?.enabled
 
-    if (result.body.success) {
+    if (body.success) {
       return {
         status: 'delivered',
-        statusCode: result.body.statusCode,
+        statusCode: body.statusCode,
         webhookDisabled: wasDisabled,
       }
     } else {
       return {
         status: 'failed',
         statusCode: result.status,
-        error: result.body.error || 'Unknown error',
+        error: body.error || 'Unknown error',
         webhookDisabled: wasDisabled,
       }
     }

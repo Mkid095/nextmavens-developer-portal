@@ -40,7 +40,7 @@ export type Environment = z.infer<typeof EnvironmentSchema>
  */
 export const ServiceConfigSchema = z.object({
   enabled: z.boolean(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
 })
 
 export type ServiceConfig = z.infer<typeof ServiceConfigSchema>
@@ -157,9 +157,7 @@ export function validateSnapshot(data: unknown): ControlPlaneSnapshot {
 /**
  * Safe validation - returns result instead of throwing
  */
-export function validateSnapshotSafe(
-  data: unknown
-): z.SafeParseReturnType<unknown, ControlPlaneSnapshot> {
+export function validateSnapshotSafe(data: unknown) {
   return ControlPlaneSnapshotSchema.safeParse(data)
 }
 
@@ -179,10 +177,12 @@ export function getValidationErrorDetails(error: z.ZodError): {
   expected: string
   received: unknown
 }[] {
-  return error.errors.map((err) => ({
+  return error.issues.map((err) => ({
     field: err.path.join('.'),
     message: err.message,
-    expected: `Expected ${err.expected}`,
-    received: err.received,
+    // Zod v4 doesn't have expected/received in the base issue type
+    // These are only available in specific issue types like ZodIssueInvalid
+    expected: 'N/A',
+    received: 'N/A',
   }))
 }

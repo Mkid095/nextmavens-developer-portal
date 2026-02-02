@@ -15,7 +15,7 @@
 
 import { NextRequest } from 'next/server'
 import { getPool } from '@/lib/db'
-import { type ApiKeyAuth } from '@/lib/auth'
+import { authenticateApiKey, type ApiKeyAuth } from '@/lib/auth'
 
 /**
  * US-008: Import correlation ID utilities
@@ -366,9 +366,16 @@ export async function withMcpAuditLogging<T>(
     }
   }
 
+  // Declare variables outside try block so they're accessible in catch block
+  let apiKey: ApiKeyAuth | undefined
+  let startTime = Date.now()
+  let url = req.nextUrl
+  let method = req.method
+  let payload: Record<string, unknown> = {}
+
   try {
     // Authenticate API key
-    const apiKey = await authenticateApiKey(apiKeyHeader)
+    apiKey = await authenticateApiKey(apiKeyHeader)
 
     // Check if this is an MCP token
     if (apiKey.key_type !== 'mcp') {
@@ -376,12 +383,11 @@ export async function withMcpAuditLogging<T>(
       return handler(req, apiKey)
     }
 
-    const startTime = Date.now()
-    const url = req.nextUrl
-    const method = req.method
+    startTime = Date.now()
+    url = req.nextUrl
+    method = req.method
 
     // Parse request body for payload
-    let payload: Record<string, unknown> = {}
     try {
       if (req.body) {
         // Clone the body for logging
@@ -414,12 +420,17 @@ export async function withMcpAuditLogging<T>(
       responseTimeMs,
       ipAddress: extractClientIp(req),
       userAgent: extractUserAgent(req),
-      requestId, // US-008: Correlation ID
+      requestId: requestId ?? undefined, // US-008: Correlation ID
       occurredAt: new Date(),
     })
 
     return result
   } catch (error: any) {
+    // Only log if we have an API key (i.e., authentication succeeded)
+    if (!apiKey) {
+      throw error
+    }
+
     const responseTimeMs = Date.now() - startTime
 
     // US-008: Extract correlation ID for request tracing
@@ -441,7 +452,7 @@ export async function withMcpAuditLogging<T>(
         responseTimeMs,
         ipAddress: extractClientIp(req),
         userAgent: extractUserAgent(req),
-        requestId, // US-008: Correlation ID
+        requestId: requestId ?? undefined, // US-008: Correlation ID
         occurredAt: new Date(),
       })
     } catch (logError) {
@@ -529,7 +540,7 @@ export async function logMcpScopeCheck(
     statusCode: allowed ? 200 : 403,
     ipAddress: extractClientIp(req),
     userAgent: extractUserAgent(req),
-    requestId, // US-008: Correlation ID
+    requestId: requestId ?? undefined, // US-008: Correlation ID
     occurredAt: new Date(),
   })
 }
@@ -578,14 +589,14 @@ export async function logMcpAuthFailure(req: NextRequest, reason: string): Promi
         ipAddress,
         `${userAgent}${aiTool ? ` | AI: ${aiTool}` : ''}`,
         new Date(),
-        requestId, // US-008: Correlation ID
+        requestId ?? undefined, // US-008: Correlation ID
       ]
     )
 
     console.warn('[MCP Audit] Authentication failure', {
       reason,
       aiTool,
-      requestId, // US-008: Include in console log
+      requestId: requestId ?? undefined, // US-008: Include in console log
       endpoint: req.nextUrl.pathname,
       ipAddress,
     })

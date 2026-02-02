@@ -7,6 +7,21 @@ import { addQueryToHistory } from './QueryHistory'
 import { format } from 'sql-formatter'
 import { saveQuery } from './SavedQueries'
 
+declare global {
+  interface Window {
+    monaco?: {
+      KeyMod: {
+        CtrlCmd: number
+        Shift: number
+      }
+      KeyCode: {
+        Enter: number
+        KEY_F: number
+      }
+    }
+  }
+}
+
 type UserRole = 'owner' | 'admin' | 'developer' | 'viewer' | null
 
 interface SqlEditorProps {
@@ -141,7 +156,7 @@ export function SqlEditor({
 
     // Add Ctrl+Enter shortcut to execute query
     editor.addCommand(
-      window.monaco?.KeyMod.CtrlCmd | window.monaco?.KeyCode.Enter,
+      (window.monaco?.KeyMod.CtrlCmd || 0) | (window.monaco?.KeyCode.Enter || 0),
       () => {
         handleExecute()
       }
@@ -149,7 +164,7 @@ export function SqlEditor({
 
     // US-009: Add Ctrl+Shift+F shortcut to format SQL
     editor.addCommand(
-      window.monaco?.KeyMod.CtrlCmd | window.monaco?.KeyMod.Shift | window.monaco?.KeyCode.KEY_F,
+      (window.monaco?.KeyMod.CtrlCmd || 0) | (window.monaco?.KeyMod.Shift || 0) | (window.monaco?.KeyCode.KEY_F || 0),
       () => {
         handleFormat()
       }
@@ -421,10 +436,6 @@ export function SqlEditor({
               other: true,
               comments: false,
               strings: false,
-            },
-            suggest: {
-              keywords: true,
-              builtins: true,
             },
           }}
           loading={

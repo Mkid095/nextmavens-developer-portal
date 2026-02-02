@@ -14,12 +14,13 @@ import type {
   ProvisioningStepStatus,
   ProvisioningErrorDetails,
 } from '@/features/provisioning/types/provisioning.types'
+import { ProvisioningStepStatus as StepStatusEnum } from '@/features/provisioning/types/provisioning.types'
 import {
   PROVISIONING_STEPS,
   type StepHandler,
   type StepExecutionResult,
 } from './steps'
-import { getStepHandler, hasStepHandler } from './handlers'
+import { getStepHandler, hasStepHandler } from './handlers-registry'
 
 /**
  * Result of running a provisioning step
@@ -69,7 +70,7 @@ export async function runProvisioningStep(
   if (!stepDefinition) {
     return {
       success: false,
-      status: 'failed',
+      status: StepStatusEnum.FAILED,
       error: `Unknown provisioning step: ${stepName}`,
       errorDetails: {
         error_type: 'ValidationError',
@@ -87,7 +88,7 @@ export async function runProvisioningStep(
     if (projectExists.rows.length === 0) {
       return {
         success: false,
-        status: 'failed',
+        status: StepStatusEnum.FAILED,
         error: `Project not found: ${projectId}`,
         errorDetails: {
           error_type: 'NotFoundError',
@@ -100,7 +101,7 @@ export async function runProvisioningStep(
     }
 
     // Step 1: Transition PENDING → RUNNING
-    await setStepStatus(pool, projectId, stepName, 'running', startedAt)
+    await setStepStatus(pool, projectId, stepName, StepStatusEnum.RUNNING, startedAt)
 
     // Step 2: Execute step handler
     const stepHandler = handler || getDefaultStepHandler(stepName)
@@ -113,10 +114,10 @@ export async function runProvisioningStep(
 
     // Step 3: Transition RUNNING → SUCCESS or FAILED based on outcome
     if (executionResult.success) {
-      await setStepStatus(pool, projectId, stepName, 'success', undefined, completedAt)
+      await setStepStatus(pool, projectId, stepName, StepStatusEnum.SUCCESS, undefined, completedAt)
       return {
         success: true,
-        status: 'success',
+        status: StepStatusEnum.SUCCESS,
         startedAt,
         completedAt,
         retryCount: 0,
@@ -126,7 +127,7 @@ export async function runProvisioningStep(
         pool,
         projectId,
         stepName,
-        'failed',
+        StepStatusEnum.FAILED,
         undefined,
         completedAt,
         executionResult.error,
@@ -135,7 +136,7 @@ export async function runProvisioningStep(
 
       return {
         success: false,
-        status: 'failed',
+        status: StepStatusEnum.FAILED,
         error: executionResult.error || 'Step execution failed',
         errorDetails: executionResult.errorDetails,
         startedAt,
@@ -162,7 +163,7 @@ export async function runProvisioningStep(
       pool,
       projectId,
       stepName,
-      'failed',
+      StepStatusEnum.FAILED,
       undefined,
       completedAt,
       errorMessage,
@@ -171,7 +172,7 @@ export async function runProvisioningStep(
 
     return {
       success: false,
-      status: 'failed',
+      status: StepStatusEnum.FAILED,
       error: errorMessage,
       errorDetails,
       startedAt,
@@ -353,7 +354,7 @@ export function calculateProgress(steps: ProvisioningStep[]): number {
 
   // Count steps that are success or skipped
   const completedSteps = steps.filter(
-    s => s.status === 'success' || s.status === 'skipped'
+    s => s.status === StepStatusEnum.SUCCESS || s.status === StepStatusEnum.SKIPPED
   ).length
 
   return Math.round((completedSteps / steps.length) * 100)
@@ -366,7 +367,7 @@ export function calculateProgress(steps: ProvisioningStep[]): number {
  * @returns True if all steps are success or skipped
  */
 export function isProvisioningComplete(steps: ProvisioningStep[]): boolean {
-  return steps.every(s => s.status === 'success' || s.status === 'skipped')
+  return steps.every(s => s.status === StepStatusEnum.SUCCESS || s.status === StepStatusEnum.SKIPPED)
 }
 
 /**
@@ -387,7 +388,7 @@ export function hasProvisioningFailed(steps: ProvisioningStep[]): boolean {
  */
 export function getNextPendingStep(steps: ProvisioningStep[]): ProvisioningStep | null {
   // Find the first pending step
-  return steps.find(s => s.status === 'pending') || null
+  return steps.find(s => s.status === StepStatusEnum.PENDING) || null
 }
 
 /**
@@ -436,10 +437,10 @@ export function isValidStateTransition(
   toStatus: ProvisioningStepStatus
 ): boolean {
   const validTransitions: Record<ProvisioningStepStatus, ProvisioningStepStatus[]> = {
-    pending: ['running', 'skipped'],
-    running: ['success', 'failed'],
+    pending: [StepStatusEnum.RUNNING, StepStatusEnum.SKIPPED],
+    running: [StepStatusEnum.SUCCESS, StepStatusEnum.FAILED],
     success: [], // Terminal state
-    failed: ['running'], // Can retry
+    failed: [StepStatusEnum.RUNNING], // Can retry
     skipped: [], // Terminal state
   }
 
@@ -503,7 +504,7 @@ export async function retryProvisioningStep(
   if (!currentStep) {
     return {
       success: false,
-      status: 'failed',
+      status: StepStatusEnum.FAILED,
       error: `Provisioning step not found: ${stepName}`,
       errorDetails: {
         error_type: 'NotFoundError',
@@ -519,7 +520,7 @@ export async function retryProvisioningStep(
   if (!stepDefinition) {
     return {
       success: false,
-      status: 'failed',
+      status: StepStatusEnum.FAILED,
       error: `Unknown provisioning step: ${stepName}`,
       errorDetails: {
         error_type: 'ValidationError',
@@ -531,10 +532,10 @@ export async function retryProvisioningStep(
   }
 
   // Check if step is already successful - skip retry
-  if (currentStep.status === 'success') {
+  if (currentStep.status === StepStatusEnum.SUCCESS) {
     return {
       success: true,
-      status: 'success',
+      status: StepStatusEnum.SUCCESS,
       error: 'Step already completed successfully',
       retryCount: currentStep.retry_count,
     }
@@ -594,7 +595,7 @@ export async function retryProvisioningStep(
           completed_at = NULL
       WHERE project_id = $3 AND step_name = $4
       `,
-      ['pending', newRetryCount, projectId, stepName]
+      [StepStatusEnum.PENDING, newRetryCount, projectId, stepName]
     )
 
     // Step 2: Re-run the step handler (which will transition PENDING → RUNNING → SUCCESS/FAILED)
@@ -630,7 +631,7 @@ export async function retryProvisioningStep(
       pool,
       projectId,
       stepName,
-      'failed',
+      StepStatusEnum.FAILED,
       undefined,
       completedAt,
       errorMessage,
@@ -639,7 +640,7 @@ export async function retryProvisioningStep(
 
     return {
       success: false,
-      status: 'failed',
+      status: StepStatusEnum.FAILED,
       error: errorMessage,
       errorDetails,
       retryCount: newRetryCount,

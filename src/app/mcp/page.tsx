@@ -249,16 +249,6 @@ export default function MCPPage() {
 
   return (
     <div className="min-h-screen w-full bg-[#F3F5F7]">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        :root { --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; }
-        .font-jakarta { font-family: var(--font-sans); }
-        .sidebar-scroll::-webkit-scrollbar { width: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .sidebar-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-      `}</style>
-
       {/* Top Navigation */}
       <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="mx-auto max-w-[1400px] px-4 py-3 flex items-center justify-between">
@@ -445,17 +435,18 @@ export default function MCPPage() {
 
               {/* Installation Section */}
               {activeSection === 'installation' && (
-                <motion.div
-                  key="installation"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <h1 className="text-3xl font-semibold text-slate-900 mb-6">Installation Guide</h1>
+                <>
+                  <motion.div
+                    key="installation"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <h1 className="text-3xl font-semibold text-slate-900 mb-6">Installation Guide</h1>
 
-                  {/* GitHub Installation */}
-                  <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
+                    {/* GitHub Installation */}
+                    <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="p-3 bg-slate-900 rounded-xl">
                         <Github className="w-5 h-5 text-white" />
@@ -495,17 +486,18 @@ npm install`} />
                         </p>
                       </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-3">
-                4. Start the server
-              </label>
-              <CodeBlock code="npm start" />
-            </div>
-          </div>
-        </motion.div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-3">
+                          4. Start the server
+                        </label>
+                        <CodeBlock code="npm start" />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
 
-        {/* Configuration Section */}
-        <motion.div
+                {/* Configuration Section */}
+                <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -581,6 +573,7 @@ npm install`} />
                     </div>
                   </div>
                 </motion.div>
+                </>
               )}
 
               {/* Token Types Section */}

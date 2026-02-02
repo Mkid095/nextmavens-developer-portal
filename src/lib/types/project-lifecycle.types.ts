@@ -44,7 +44,7 @@ export interface StateBehavior {
   /** Description of the state */
   description: string
   /** Error code to return if requests are blocked */
-  errorCode?: string
+  errorCode?: ProjectStateError
 }
 
 /**

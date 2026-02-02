@@ -269,7 +269,7 @@ export class StorageServiceSnapshotClient {
       return false
     }
 
-    const isActive = snapshot.project.status === 'active'
+    const isActive = snapshot.project.status === 'ACTIVE'
 
     if (!isActive) {
       console.log(this.formatLog(`Project ${projectId} is not active: ${snapshot.project.status}`))
@@ -331,13 +331,13 @@ export class StorageServiceSnapshotClient {
 
       let reason: string
       switch (status) {
-        case 'suspended':
+        case 'SUSPENDED':
           reason = 'PROJECT_SUSPENDED'
           break
-        case 'archived':
+        case 'ARCHIVED':
           reason = 'PROJECT_ARCHIVED'
           break
-        case 'deleted':
+        case 'DELETED':
           reason = 'PROJECT_DELETED'
           break
         default:

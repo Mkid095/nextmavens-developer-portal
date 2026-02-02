@@ -6,7 +6,7 @@
  */
 
 import type { ApiKey } from './types/api-key.types'
-import type { Environment } from './features/environment-parity/types/environment.types'
+import type { Environment } from '../features/environment-parity/types/environment.types'
 
 /**
  * Error thrown when an API key is used in the wrong environment.

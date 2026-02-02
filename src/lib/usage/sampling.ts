@@ -14,7 +14,7 @@
  * @returns Sample rate between 0 and 1 (e.g., 0.1 = 10% sampling)
  */
 export function getSampleRate(): number {
-  const env = process.env.NODE_ENV || 'development'
+  const env = (process.env.NODE_ENV || 'development') as string
 
   switch (env) {
     case 'production':

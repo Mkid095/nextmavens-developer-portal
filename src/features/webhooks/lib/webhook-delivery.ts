@@ -15,6 +15,9 @@ import {
 } from '@/lib/idempotency'
 import type { EventLog, Webhook, WebhookDeliveryResult, WebhookDeliveryOptions } from '../types'
 
+// Re-export types for convenience
+export type { Webhook, WebhookDeliveryOptions, WebhookDeliveryResult }
+
 /**
  * Default options for webhook delivery
  */
@@ -60,7 +63,7 @@ export async function deliverWebhook(
   const idempotencyKey = `webhook:${event_id}`
 
   // Wrap the webhook delivery in idempotency middleware
-  const result = await withIdempotency(
+  const idempotencyResponse = await withIdempotency(
     idempotencyKey,
     async () => {
       return await performWebhookDelivery(webhook, payload, opts)
@@ -68,7 +71,8 @@ export async function deliverWebhook(
     { ttl: 86400 } // 24 hours
   )
 
-  return result
+  // Extract the body from the idempotency response
+  return idempotencyResponse.body as WebhookDeliveryResult
 }
 
 /**
@@ -79,7 +83,7 @@ export async function deliverWebhook(
  * @param options - Delivery options
  * @returns Delivery result
  */
-async function performWebhookDelivery(
+export async function performWebhookDelivery(
   webhook: Webhook,
   payload: Record<string, unknown>,
   options: Required<WebhookDeliveryOptions>
@@ -126,7 +130,7 @@ async function performWebhookDelivery(
       // Successful delivery - reset consecutive failures
       await resetWebhookFailures(webhook.id)
 
-      return {
+      const result = {
         status: 200,
         headers: {},
         body: {
@@ -135,12 +139,17 @@ async function performWebhookDelivery(
           delivered: true,
           duration,
         },
+        success: true,
+        statusCode: response.status,
+        delivered: true,
+        duration,
       }
+      return result
     } else {
       // Failed delivery - increment consecutive failures
       await incrementWebhookFailures(webhook.id, options.maxRetries)
 
-      return {
+      const result = {
         status: response.status,
         headers: {},
         body: {
@@ -149,7 +158,12 @@ async function performWebhookDelivery(
           error: `Webhook delivery failed with status ${response.status}`,
           delivered: false,
         },
+        success: false,
+        statusCode: response.status,
+        error: `Webhook delivery failed with status ${response.status}`,
+        delivered: false,
       }
+      return result
     }
   } catch (error) {
     const duration = Date.now() - startTime
@@ -169,6 +183,10 @@ async function performWebhookDelivery(
         delivered: false,
         duration,
       },
+      success: false,
+      error: errorMessage,
+      delivered: false,
+      duration,
     }
   }
 }

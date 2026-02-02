@@ -30,8 +30,9 @@ export function getDateRange(
     end.setHours(23, 59, 59, 999)
     return { startDate: start.toISOString(), endDate: end.toISOString() }
   }
-  const ms = { '1h': 3600000, '24h': 86400000, '7d': 604800000, '30d': 2592000000 }
-  start = new Date(now.getTime() - (ms[filter] || 86400000))
+  const ms: Record<string, number> = { '1h': 3600000, '24h': 86400000, '7d': 604800000, '30d': 2592000000 }
+  const msValue = filter !== 'custom' ? ms[filter] : 86400000
+  start = new Date(now.getTime() - (msValue || 86400000))
   return { startDate: start.toISOString(), endDate: now.toISOString() }
 }
 

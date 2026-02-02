@@ -392,17 +392,18 @@ export interface StorageStats {
 export async function getStorageStats(projectId: number): Promise<StorageStats> {
   const pool = getPool()
 
-  const result = await pool.query<
-    StorageStats & {
-      largest_file_name: string | null
-      largest_file_size: bigint | null
-      largest_file_backend: StorageBackend | null
-      telegram_bytes: bigint | null
-      telegram_count: bigint | null
-      cloudinary_bytes: bigint | null
-      cloudinary_count: bigint | null
-    }
-  >(
+  const result = await pool.query<{
+    total_bytes: bigint
+    file_count: bigint
+    largest_file_name: string | null
+    largest_file_size: bigint | null
+    largest_file_backend: StorageBackend | null
+    average_file_size: number
+    telegram_bytes: bigint
+    telegram_count: bigint
+    cloudinary_bytes: bigint
+    cloudinary_count: bigint
+  }>(
     `
     SELECT
       COALESCE(SUM(file_size), 0) as total_bytes,
@@ -436,12 +437,12 @@ export async function getStorageStats(projectId: number): Promise<StorageStats> 
     averageFileSize: Number(row.average_file_size),
     backendBreakdown: {
       telegram: {
-        bytes: Number(row.telegram_bytes || 0),
-        count: Number(row.telegram_count || 0),
+        bytes: Number(row.telegram_bytes),
+        count: Number(row.telegram_count),
       },
       cloudinary: {
-        bytes: Number(row.cloudinary_bytes || 0),
-        count: Number(row.cloudinary_count || 0),
+        bytes: Number(row.cloudinary_bytes),
+        count: Number(row.cloudinary_count),
       },
     },
   }

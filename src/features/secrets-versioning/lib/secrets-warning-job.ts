@@ -7,7 +7,7 @@
  */
 
 import { getPool } from '@/lib/db';
-import { logAuditEntry, AuditTargetType, AuditActorType } from '@/lib/audit-logger';
+import { logAuditEntry } from '@/lib/audit-logger';
 
 interface GracePeriodWarningResult {
   success: boolean;
@@ -72,10 +72,10 @@ export async function runSecretsWarningJob(): Promise<GracePeriodWarningResult> 
         // This serves as the "warning" - in production, this could trigger
         // webhooks, notifications, or emails
         await logAuditEntry({
-          actor_type: AuditActorType.SYSTEM,
+          actor_type: 'system',
           actor_id: 'secrets-warning-job',
           action: 'secret.grace_period_warning',
-          target_type: AuditTargetType.SECRET,
+          target_type: 'secret',
           target_id: row.id,
           project_id: row.project_id,
           metadata: {
@@ -132,6 +132,7 @@ export async function runSecretsWarningJob(): Promise<GracePeriodWarningResult> 
  * Useful for monitoring and dashboards
  */
 export async function getSecretsInGracePeriod(projectId?: string) {
+  const pool = getPool();
   const query = projectId
     ? `
       SELECT

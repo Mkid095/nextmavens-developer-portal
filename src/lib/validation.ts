@@ -9,7 +9,7 @@ import { z } from 'zod'
 
 // Organization role enum
 export const organizationRoleEnum = z.enum(['owner', 'admin', 'developer', 'viewer'], {
-  errorMap: () => ({ message: 'Role must be one of: owner, admin, developer, viewer' }),
+  message: 'Role must be one of: owner, admin, developer, viewer',
 })
 
 // Invite member schema

@@ -11,7 +11,8 @@
  * - Block operations when GraphQL service is disabled
  */
 
-export {
+// Import items for internal use and re-export
+import {
   // Main class
   GraphQLServiceSnapshotClient,
   // Singleton instance
@@ -42,6 +43,40 @@ export {
   isGraphQLError,
   toGraphQLErrorNextResponse,
 } from './snapshot-client'
+import type { ControlPlaneSnapshot } from '@/lib/snapshot/types'
+
+// Re-export everything for convenience
+export {
+  // Main class
+  GraphQLServiceSnapshotClient,
+  // Singleton instance
+  graphqlServiceSnapshotClient,
+  // Validation functions
+  validateGraphQLOperation,
+  canExecuteQuery,
+  isGraphQLProjectActive,
+  isGraphQLServiceEnabled,
+  // Configuration getters
+  getGraphQLQuotas,
+  getGraphQLRateLimits,
+  getGraphQLProjectEnvironment,
+  // Cache management
+  invalidateGraphQLSnapshotCache,
+  clearGraphQLSnapshotCache,
+  getGraphQLSnapshotCacheStats,
+  cleanupExpiredGraphQLCacheEntries,
+  // US-005: Correlation ID support for request tracing
+  setGraphQLCorrelationId,
+  getGraphQLCorrelationId,
+  clearGraphQLContext,
+  // US-007: GraphQL-specific error helpers
+  graphQLSchemaError,
+  graphQLExecutionError,
+  graphQLIntrospectionError,
+  getGraphQLErrorResponse,
+  isGraphQLError,
+  toGraphQLErrorNextResponse,
+}
 
 /**
  * GraphQL operation types for logging

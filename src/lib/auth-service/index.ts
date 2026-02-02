@@ -112,7 +112,7 @@ export async function canResetPassword(projectId: string): Promise<boolean> {
  */
 export async function getProjectStatus(
   projectId: string
-): Promise<'ACTIVE' | 'SUSPENDED' | 'ARCHIVED' | 'DELETED' | null> {
+): Promise<'ACTIVE' | 'CREATED' | 'SUSPENDED' | 'ARCHIVED' | 'DELETED' | null> {
   const snapshot = await (await import('./snapshot-client')).authServiceSnapshotClient.getSnapshot(projectId)
 
   if (!snapshot) {

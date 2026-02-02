@@ -12,7 +12,8 @@
  * - Enforce connection limits from quotas
  */
 
-export {
+import type { ControlPlaneSnapshot } from '@/lib/snapshot/types'
+import {
   // Main class
   RealtimeServiceSnapshotClient,
   // Singleton instance
@@ -39,6 +40,35 @@ export {
   getRealtimeSnapshotCacheStats,
   cleanupExpiredRealtimeCacheEntries,
 } from './snapshot-client'
+
+// Re-export everything for convenience
+export {
+  // Main class
+  RealtimeServiceSnapshotClient,
+  // Singleton instance
+  realtimeServiceSnapshotClient,
+  // Validation functions
+  validateRealtimeConnection,
+  canAcceptConnection,
+  isRealtimeProjectActive,
+  isRealtimeServiceEnabled,
+  // Connection management
+  getRealtimeConnectionLimit,
+  getActiveConnectionCount,
+  incrementConnectionCount,
+  decrementConnectionCount,
+  resetRealtimeConnectionCount,
+  clearAllConnectionCounts,
+  // Configuration getters
+  getRealtimeRateLimits,
+  getRealtimeQuotas,
+  getRealtimeProjectEnvironment,
+  // Cache management
+  invalidateRealtimeSnapshotCache,
+  clearRealtimeSnapshotCache,
+  getRealtimeSnapshotCacheStats,
+  cleanupExpiredRealtimeCacheEntries,
+}
 
 /**
  * Connection validation result with detailed information
@@ -100,7 +130,7 @@ export async function getRealtimeConfiguration(projectId: string): Promise<{
   }
 
   return {
-    projectActive: snapshot.project.status === 'active',
+    projectActive: snapshot.project.status === 'ACTIVE',
     serviceEnabled: snapshot.services.realtime?.enabled ?? false,
     environment: snapshot.project.environment,
     connectionLimit: snapshot.quotas.realtime_connections,

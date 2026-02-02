@@ -16,6 +16,7 @@
  * - Individual jobs (runSuspensionCheck, runQuotaResetJob) can also be called separately
  */
 
+import { getPool } from '@/lib/db'
 import { runSuspensionCheck } from '@/features/abuse-controls/lib/background-job'
 import { runQuotaResetJob } from '@/features/quotas-limits/lib/quota-reset-job'
 import { runAutoActivationJob } from '@/features/project-lifecycle/lib/auto-activation-job'

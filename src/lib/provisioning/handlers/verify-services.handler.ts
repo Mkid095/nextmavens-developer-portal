@@ -7,7 +7,7 @@
 import type { Pool } from 'pg'
 import type { StepHandler, StepExecutionResult } from '../steps'
 import { getAllSteps, isProvisioningComplete } from '../state-machine'
-import { isValidTransition } from '@/lib/types/project-lifecycle.types'
+import { isValidTransition, ProjectStatus } from '@/lib/types/project-lifecycle.types'
 import { checkServiceHealth, type ServiceHealthResult } from './utils'
 
 export const verifyServicesHandler: StepHandler = async (
@@ -124,10 +124,10 @@ export const verifyServicesHandler: StepHandler = async (
 
     if (allServicesHealthy) {
       // Auto-transition CREATED to ACTIVE
-      if (project.status === 'created') {
+      if (project.status === ProjectStatus.CREATED) {
         try {
           const allSteps = await getAllSteps(pool, projectId)
-          if (isProvisioningComplete(allSteps) && isValidTransition('created', 'active')) {
+          if (isProvisioningComplete(allSteps) && isValidTransition(ProjectStatus.CREATED, ProjectStatus.ACTIVE)) {
             await pool.query('UPDATE projects SET status = active, updated_at = NOW() WHERE id = $1', [projectId])
             console.log(`[Provisioning] Project ${projectId} transitioned from CREATED to ACTIVE`)
           }

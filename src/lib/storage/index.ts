@@ -50,6 +50,8 @@
 // Client exports (Telegram & Cloudinary APIs)
 // ============================================================================
 
+import type { StorageBackend } from './client'
+
 export {
   uploadFile,
   uploadToTelegram,

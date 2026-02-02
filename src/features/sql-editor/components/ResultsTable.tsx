@@ -69,9 +69,10 @@ export function ResultsTable({
 
     // Apply sorting
     if (sortState.column && sortState.direction) {
+      const column = sortState.column
       processedRows.sort((a, b) => {
-        const aVal = a[sortState.column]
-        const bVal = b[sortState.column]
+        const aVal = a[column]
+        const bVal = b[column]
 
         // Handle null/undefined values
         if (aVal == null && bVal == null) return 0

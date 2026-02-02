@@ -7,7 +7,7 @@
  */
 
 import { getPool } from '@/lib/db';
-import { logAuditEntry, AuditTargetType, AuditActorType } from '@/lib/audit-logger';
+import { logAuditEntry } from '@/lib/audit-logger';
 
 interface GracePeriodCleanupResult {
   success: boolean;
@@ -58,10 +58,10 @@ export async function runSecretsGracePeriodJob(): Promise<GracePeriodCleanupResu
 
         // Log the deletion to audit trail
         await logAuditEntry({
-          actor_type: AuditActorType.SYSTEM,
+          actor_type: 'system',
           actor_id: 'secrets-grace-period-job',
           action: 'secret.grace_period_deleted',
-          target_type: AuditTargetType.SECRET,
+          target_type: 'secret',
           target_id: row.id,
           project_id: row.project_id,
           metadata: {

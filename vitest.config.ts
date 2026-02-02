@@ -6,10 +6,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    environmentMatchGlobs: [
-      // Integration tests use Node environment
-      ['**/integration.test.ts', 'node'],
-    ],
     setupFiles: ['./vitest.setup.ts', './vitest.integration.setup.ts'],
     include: ['src/**/__tests__/**/*.{test,spec}.{ts,tsx}', 'src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', '.next', 'dist'],
@@ -27,10 +23,12 @@ export default defineConfig({
         'src/**/__tests__/**',
         'src/middleware.ts',
       ],
-      statements: 80,
-      branches: 80,
-      functions: 80,
-      lines: 80,
+      thresholds: {
+        statements: 80,
+        branches: 80,
+        functions: 80,
+        lines: 80,
+      },
     },
     // Integration tests get longer timeout (60 seconds vs 10 seconds)
     testTimeout: process.env.INTEGRATION_TEST === 'true' ? 60000 : 10000,

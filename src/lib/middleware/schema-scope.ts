@@ -64,9 +64,9 @@ export interface ScopedClient extends PoolClient {
 
 /**
  * Cache for tenant slug lookups
- * Maps project_id -> tenant_slug
+ * Maps project_id -> CacheEntry
  */
-const tenantSlugCache = new Map<string, string>();
+const tenantSlugCache = new Map<string, CacheEntry>();
 
 /**
  * Cache TTL in milliseconds (5 minutes)
@@ -91,7 +91,7 @@ interface CacheEntry {
  */
 async function getTenantSlug(projectId: string): Promise<string> {
   // Check cache first
-  const cached = tenantSlugCache.get(projectId) as CacheEntry | undefined;
+  const cached = tenantSlugCache.get(projectId);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return cached.slug;
   }
@@ -322,13 +322,13 @@ export async function getScopedClient(req: NextRequest): Promise<ScopedClient> {
  * ```
  */
 export function withSchemaScopeHandler<T extends NextRequest>(
-  handler: (req: T, pool: ScopedPool) => Promise<Response> | Response
-): (req: T, ...args: any[]) => Promise<NextResponse> {
-  return async (req: T, ...args: any[]): Promise<NextResponse> => {
+  handler: (req: T, pool: ScopedPool, ...args: any[]) => Promise<Response> | Response
+): (req: T, ...args: any[]) => Promise<Response> {
+  return async (req: T, ...args: any[]): Promise<Response> => {
     try {
       const pool = await withSchemaScope(req);
       const response = await handler(req, pool, ...args);
-      return response as NextResponse;
+      return response;
     } catch (error: any) {
       // Handle schema scoping errors using standard error factory
       if (error.message === SchemaScopeError.CROSS_SCHEMA_ACCESS) {

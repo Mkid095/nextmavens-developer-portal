@@ -40,6 +40,7 @@ export interface StepExecutionResult {
   success: boolean
   error?: string
   errorDetails?: Record<string, unknown>
+  data?: Record<string, unknown>
 }
 
 /**

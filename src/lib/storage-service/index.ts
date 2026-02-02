@@ -16,7 +16,8 @@
  * - All logs include correlation ID for request tracing
  */
 
-export {
+import type { ControlPlaneSnapshot } from '@/lib/snapshot/types'
+import {
   // Main class
   StorageServiceSnapshotClient,
   // Singleton instance
@@ -42,6 +43,34 @@ export {
   getStorageCorrelationId,
   clearStorageContext,
 } from './snapshot-client'
+
+// Re-export everything for convenience
+export {
+  // Main class
+  StorageServiceSnapshotClient,
+  // Singleton instance
+  storageServiceSnapshotClient,
+  // Validation functions
+  validateStorageOperation,
+  canPerformStorageOperation,
+  isStorageProjectActive,
+  isStorageServiceEnabled,
+  // Quota management
+  getStorageUploadQuota,
+  getStorageQuotas,
+  // Configuration getters
+  getStorageRateLimits,
+  getStorageProjectEnvironment,
+  // Cache management
+  invalidateStorageSnapshotCache,
+  clearStorageSnapshotCache,
+  getStorageSnapshotCacheStats,
+  cleanupExpiredStorageCacheEntries,
+  // Correlation ID support (US-007)
+  setStorageCorrelationId,
+  getStorageCorrelationId,
+  clearStorageContext,
+}
 
 /**
  * Storage operation validation result with detailed information
@@ -96,7 +125,7 @@ export async function getStorageConfiguration(projectId: string): Promise<{
   }
 
   return {
-    projectActive: snapshot.project.status === 'active',
+    projectActive: snapshot.project.status === 'ACTIVE',
     serviceEnabled: snapshot.services.storage?.enabled ?? false,
     environment: snapshot.project.environment,
     storageUploadQuota: snapshot.quotas.storage_uploads_per_day,

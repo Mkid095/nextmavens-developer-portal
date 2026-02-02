@@ -478,6 +478,10 @@ export default function LogsPage() {
 
     // Build query parameters
     const urlParams = new URLSearchParams()
+    if (!project?.id) {
+      setConnecting(false)
+      return
+    }
     urlParams.append('project_id', project.id)
 
     if (serviceFilter !== 'all') {
