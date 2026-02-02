@@ -128,9 +128,18 @@ async function isRequestAlreadyTracked(
  * POST handler for usage tracking
  */
 export async function POST(req: NextRequest) {
+  // Parse request body outside try block to access in catch
+  let body: TrackRequest
   try {
-    const body = (await req.json()) as TrackRequest
+    body = await req.json() as TrackRequest
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Invalid JSON body' },
+      { status: 400 }
+    )
+  }
 
+  try {
     // Validate request
     const validation = validateRequest(body)
     if (!validation.valid) {

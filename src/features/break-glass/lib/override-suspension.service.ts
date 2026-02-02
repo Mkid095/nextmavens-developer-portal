@@ -190,7 +190,7 @@ export async function overrideSuspension(
 
   if (newHardCaps && newHardCaps.length > 0) {
     for (const cap of newHardCaps) {
-      const previousValue = quotaMap.get(cap.type);
+      const previousValue = quotaMap.get(cap.type as HardCapType);
       if (previousValue === undefined) {
         // New cap - set it
         await QuotaManager.updateQuota(

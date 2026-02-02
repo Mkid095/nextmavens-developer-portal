@@ -6,7 +6,7 @@
  * - Logs deletion to audit trail
  */
 
-import { pool } from '@/lib/db';
+import { getPool } from '@/lib/db';
 import { logAuditEntry, AuditTargetType, AuditActorType } from '@/lib/audit-logger';
 
 interface GracePeriodCleanupResult {
@@ -25,6 +25,8 @@ export async function runSecretsGracePeriodJob(): Promise<GracePeriodCleanupResu
   const deletedSecrets: Array<{ id: string; name: string; version: number; project_id: string }> = [];
 
   try {
+    const pool = getPool();
+
     // Find all secrets that have expired grace periods
     // These are old versions (active = FALSE) where grace_period_ends_at has passed
     const selectQuery = `
@@ -103,6 +105,7 @@ export async function runSecretsGracePeriodJob(): Promise<GracePeriodCleanupResu
  * Useful for monitoring and alerting
  */
 export async function getSecretsGracePeriodStats() {
+  const pool = getPool();
   const query = `
     SELECT
       COUNT(*) FILTER (WHERE grace_period_ends_at IS NOT NULL AND active = FALSE) as in_grace_period,

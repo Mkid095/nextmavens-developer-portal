@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
-import { authenticateRequest } from '@/lib/middleware'
+import { authenticateRequest, type Developer } from '@/lib/auth'
 import { requireOperatorOrAdmin, requireAdmin } from '@/features/abuse-controls/lib/authorization'
 import { logUserAction, logAction, userActor, userTarget } from '@nextmavenspacks/audit-logs-database'
 import { z } from 'zod'
@@ -17,7 +17,14 @@ export async function GET(
 ) {
   try {
     // Authenticate and authorize
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
     await requireOperatorOrAdmin(developer)
 
     const { userId } = params
@@ -114,7 +121,14 @@ export async function PATCH(
 ) {
   try {
     // Authenticate and authorize
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
     const authorizedDeveloper = await requireOperatorOrAdmin(developer)
 
     const { userId } = params
@@ -267,7 +281,14 @@ export async function DELETE(
   let pool
   try {
     // Authenticate and authorize
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
     const admin = await requireAdmin(developer)
 
     const { userId } = params

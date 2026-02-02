@@ -1,5 +1,5 @@
 import { ToggleLeft, ToggleRight, Loader2, AlertCircle } from 'lucide-react'
-import type { FeatureFlag } from '../../hooks'
+import type { FeatureFlag } from '../hooks'
 
 interface FeatureFlagsTabProps {
   projectId: string

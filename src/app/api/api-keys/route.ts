@@ -85,18 +85,18 @@ export async function GET(req: NextRequest) {
         getOrganizationId: async () => {
           // For listing keys, we'll use the user's first project's organization
           // In a proper multi-tenant setup, this should filter by the requested organization
-          const { getPayload } = await import('@/lib/auth')
+          const { verifyAccessToken } = await import('@/lib/auth')
           const authHeader = req.headers.get('authorization')
           if (!authHeader || !authHeader.startsWith('Bearer ')) {
             throw new Error('No token provided')
           }
           const token = authHeader.substring(7)
-          const payload = getPayload(token)
+          const payload = verifyAccessToken(token)
 
           const pool = getPool()
           const result = await pool.query(
             'SELECT tenant_id FROM projects WHERE developer_id = $1 LIMIT 1',
-            [payload.userId]
+            [payload.id]
           )
 
           if (result.rows.length === 0) {

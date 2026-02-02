@@ -93,9 +93,9 @@ export function withCorrelationId(req: NextRequest): string {
  * Ensures the correlation ID is propagated back to the client
  * in the response headers for traceability.
  *
- * @param res - Next.js response object
+ * @param res - Next.js response object or standard Response
  * @param correlationId - The correlation ID to add to headers
- * @returns The modified response with correlation ID header
+ * @returns The modified response with correlation ID header (preserves type)
  *
  * @example
  * ```typescript
@@ -107,12 +107,22 @@ export function withCorrelationId(req: NextRequest): string {
  * }
  * ```
  */
-export function setCorrelationHeader(
-  res: NextResponse,
+export function setCorrelationHeader<T = unknown>(
+  res: NextResponse<T> | Response,
   correlationId: string
-): NextResponse {
-  res.headers.set(CORRELATION_HEADER, correlationId);
-  return res;
+): NextResponse<T> {
+  if (res instanceof NextResponse) {
+    res.headers.set(CORRELATION_HEADER, correlationId);
+    return res;
+  }
+  // Convert standard Response to NextResponse
+  const nextRes = new NextResponse(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: res.headers,
+  });
+  nextRes.headers.set(CORRELATION_HEADER, correlationId);
+  return nextRes as NextResponse<T>;
 }
 
 /**

@@ -79,9 +79,14 @@ export const DELETE = requirePermission(
       return getOrganizationIdFromKey(keyId)
     }
   },
-  async (req: NextRequest, user: User, context: RouteContext) => {
-    const params = await context.params
-    const keyId = params.id
+  async (req: NextRequest, user: User, context) => {
+    const params = await context?.params
+    const keyId = params?.id || (() => {
+      // Fallback: extract keyId from URL
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      return pathParts[pathParts.indexOf('keys') + 1]
+    })()
 
     // Generate idempotency key: revoke:{key_id}
     const idempotencyKey = getIdempotencyKey('revoke', req.headers, keyId)

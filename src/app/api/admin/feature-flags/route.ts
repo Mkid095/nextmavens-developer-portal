@@ -10,14 +10,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/middleware'
+import { authenticateRequest, type Developer } from '@/lib/auth'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { getFeatureFlags } from '@/lib/features'
 
 export async function GET(req: NextRequest) {
   try {
     // Authenticate the request
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
 
     // Authorize - only operators and admins can view feature flags
     await requireOperatorOrAdmin(developer)

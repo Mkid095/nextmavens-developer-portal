@@ -400,7 +400,20 @@ export default function DashboardPage() {
                 </button>
               </div>
 
-              <form onSubmit={handleCreateApiKey}>
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                // Map form values to API values
+                const environmentMap: Record<string, 'prod' | 'dev' | 'staging'> = {
+                  'live': 'prod',
+                  'test': 'staging',
+                  'dev': 'dev',
+                }
+                handleCreateApiKey({
+                  name: apiKeyName,
+                  key_type: 'secret',
+                  environment: environmentMap[keyEnvironment] || 'dev',
+                })
+              }}>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     API Key Name
@@ -732,7 +745,7 @@ export default function DashboardPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <div className="font-medium text-slate-900">{key.name}</div>
-                            <McpTokenBadge apiKey={key} compact />
+                            <McpTokenBadge apiKey={key as any} compact />
                           </div>
                           <code className="text-sm text-slate-600 block break-all">
                             {key.public_key && key.public_key.length > 20 ? key.public_key : `${key.public_key}•••• (incomplete)`}

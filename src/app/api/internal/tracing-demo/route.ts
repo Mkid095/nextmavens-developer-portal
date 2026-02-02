@@ -14,8 +14,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { withRequestTracing } from '@/lib/middleware/request-tracing';
-import { logServiceHitForRequest } from '@/lib/middleware';
+import { withRequestTracing, logServiceHitForRequest } from '@/lib/middleware/request-tracing';
 import type { ServiceName } from '@/lib/request-tracing';
 
 /**

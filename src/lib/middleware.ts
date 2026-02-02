@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyAccessToken, checkProjectStatus, type JwtPayload } from '@/lib/auth'
+import { verifyAccessToken, checkProjectStatus, type JwtPayload, AuthenticatedEntity } from '@/lib/auth'
 import { checkUserPermission, User } from '@/lib/rbac'
 import { Permission } from '@/lib/types/rbac.types'
 import { toErrorNextResponse } from '@/lib/errors'
@@ -18,8 +18,9 @@ import { toErrorNextResponse } from '@/lib/errors'
  * Result of authenticated request.
  * Contains the user information extracted from the JWT token.
  */
-export interface AuthenticatedRequest {
+export interface AuthenticatedRequest extends AuthenticatedEntity {
   user: User
+  id: string // Alias for user.id for backward compatibility
 }
 
 /**
@@ -61,7 +62,9 @@ export async function authenticateRequest(req: NextRequest, projectId?: string):
   }
 
   return {
-    user: { id: payload.userId }
+    user: { id: payload.userId },
+    id: payload.userId,
+    email: payload.email
   }
 }
 
@@ -97,9 +100,9 @@ export interface PermissionMiddlewareOptions {
 }
 
 /**
- * Type for a Next.js API route handler.
+ * Type for a Next.js API route handler with context support.
  */
-type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> }) => Promise<NextResponse>
+type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
 
 /**
  * Create a middleware that requires authentication.
@@ -121,12 +124,12 @@ type ApiHandler = (req: NextRequest, context?: { params: Record<string, string> 
  * ```
  */
 export function withAuth(
-  handler: (req: NextRequest, user: User) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
 ): ApiHandler {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => {
     try {
       const { user } = await authenticateRequest(req)
-      return handler(req, user)
+      return handler(req, user, context)
     } catch (error) {
       // US-007: Handle PlatformError for project status checks
       // Returns 403 for suspended/archived/deleted projects
@@ -166,9 +169,9 @@ export function withAuth(
  */
 export function requirePermission(
   options: PermissionMiddlewareOptions,
-  handler: (req: NextRequest, user: User) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
 ): ApiHandler {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => {
     // First, authenticate the request
     let user: User
     try {
@@ -198,7 +201,7 @@ export function requirePermission(
       }
 
       // User is authenticated and has permission, proceed with handler
-      return handler(req, user)
+      return handler(req, user, context)
     } catch (error) {
       return NextResponse.json(
         {
@@ -233,9 +236,9 @@ export function requirePermission(
  */
 export function requireAllPermissions(
   options: Omit<PermissionMiddlewareOptions, 'permission'> & { permissions: Permission[] },
-  handler: (req: NextRequest, user: User) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
 ): ApiHandler {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => {
     let user: User
     try {
       const authResult = await authenticateRequest(req)
@@ -265,7 +268,7 @@ export function requireAllPermissions(
         }
       }
 
-      return handler(req, user)
+      return handler(req, user, context)
     } catch (error) {
       return NextResponse.json(
         {
@@ -300,9 +303,9 @@ export function requireAllPermissions(
  */
 export function requireAnyPermission(
   options: Omit<PermissionMiddlewareOptions, 'permission'> & { permissions: Permission[] },
-  handler: (req: NextRequest, user: User) => Promise<NextResponse>
+  handler: (req: NextRequest, user: User, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => Promise<NextResponse>
 ): ApiHandler {
-  return async (req: NextRequest) => {
+  return async (req: NextRequest, context?: { params: Record<string, string> | Promise<Record<string, string>> }) => {
     let user: User
     try {
       const authResult = await authenticateRequest(req)
@@ -323,7 +326,7 @@ export function requireAnyPermission(
         const result = await checkUserPermission(user, organizationId, permission)
         lastResult = result
         if (result.granted) {
-          return handler(req, user)
+          return handler(req, user, context)
         }
       }
 

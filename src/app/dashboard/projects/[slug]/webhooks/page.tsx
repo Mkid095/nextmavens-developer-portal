@@ -363,7 +363,7 @@ export default function WebhooksPage() {
         return null
       }}}
 
-      await client.retryWebhook({ event_log_id }, headers)
+      await client.retryWebhook({ event_log_id: eventLogId }, headers)
 
       // Show success feedback
       setTestResult({

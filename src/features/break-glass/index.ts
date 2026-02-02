@@ -27,9 +27,9 @@ export {
   type CreateAdminSessionParams,
   type LogAdminActionParams,
   type AdminSessionValidation,
-  enum AdminAccessMethod,
-  enum AdminActionType,
-  enum AdminTargetType,
+  AdminAccessMethod,
+  AdminActionType,
+  AdminTargetType,
 } from './lib/admin-database';
 
 // Services
@@ -38,16 +38,30 @@ export {
   getUnlockHistory,
   validateUnlockRequest,
   type UnlockProjectParams,
-  type UnlockProjectResponse,
 } from './lib/unlock-project.service';
+
+// Re-export types from the types file
+export type {
+  UnlockProjectResponse,
+  UnlockProjectError,
+  UnlockedProjectState,
+  UnlockActionLog,
+} from './types/unlock-project.types';
 
 export {
   overrideSuspension,
   getOverrideHistory,
   validateOverrideRequest,
   type OverrideSuspensionParams,
-  type OverrideSuspensionResponse,
 } from './lib/override-suspension.service';
+
+// Re-export override suspension types
+export type {
+  OverrideSuspensionResponse,
+  OverrideSuspensionError,
+  OverrideProjectState,
+  OverrideActionLog,
+} from './types/override-suspension.types';
 
 // Aggressive audit logging
 export {

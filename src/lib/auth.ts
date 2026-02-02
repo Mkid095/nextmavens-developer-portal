@@ -6,6 +6,15 @@ import { createError, ErrorCode, type PlatformError, projectSuspendedError, proj
 import { logApiUsage, type ApiUsageLog } from './key-usage-tracking'
 import { ProjectStatus, getErrorCodeForStatus, keysWorkForStatus } from './types/project-lifecycle.types'
 
+/**
+ * Common base type for authenticated entities
+ * Used for type compatibility between Developer and JwtPayload
+ */
+export interface AuthenticatedEntity {
+  id: string
+  email: string
+}
+
 const JWT_SECRET = process.env.JWT_SECRET
 const REFRESH_SECRET = process.env.REFRESH_SECRET
 
@@ -32,9 +41,7 @@ const getRefreshSecret = (): string => {
   return REFRESH_SECRET
 }
 
-export interface Developer {
-  id: string
-  email: string
+export interface Developer extends AuthenticatedEntity {
   name: string
   organization?: string
 }
@@ -43,9 +50,7 @@ export interface Developer {
  * JWT payload with project_id claim.
  * US-001: Require project_id in JWT
  */
-export interface JwtPayload {
-  id: string
-  email: string
+export interface JwtPayload extends AuthenticatedEntity {
   project_id: string
 }
 

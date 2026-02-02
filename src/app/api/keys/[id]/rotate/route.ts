@@ -77,9 +77,14 @@ export const POST = requirePermission(
       return getOrganizationIdFromKey(keyId)
     }
   },
-  async (req: NextRequest, user: User, context: RouteContext) => {
-    const params = await context.params
-    const keyId = params.id
+  async (req: NextRequest, user: User, context) => {
+    const params = await context?.params
+    const keyId = params?.id || (() => {
+      // Fallback: extract keyId from URL
+      const url = new URL(req.url)
+      const pathParts = url.pathname.split('/')
+      return pathParts[pathParts.indexOf('keys') + 1]
+    })()
 
     // Generate idempotency key: rotate_key:{key_id}
     const idempotencyKey = getIdempotencyKey('rotate_key', req.headers, keyId)

@@ -6,7 +6,7 @@
  */
 
 import { getPool } from '@/lib/db'
-import type { Developer } from '@/lib/auth'
+import type { Developer, AuthenticatedEntity } from '@/lib/auth'
 
 /**
  * User roles for authorization
@@ -185,7 +185,7 @@ export function isAdmin(developer: DeveloperWithRole): boolean {
  * Use this function in API endpoints to ensure only operators/admins
  * can perform sensitive operations like manual suspension/unsuspension.
  *
- * @param developer - The authenticated developer
+ * @param developer - The authenticated developer (or JwtPayload with id and email)
  * @throws AuthorizationError if the developer is not an operator/admin
  *
  * @example
@@ -198,7 +198,7 @@ export function isAdmin(developer: DeveloperWithRole): boolean {
  * ```
  */
 export async function requireOperatorOrAdmin(
-  developer: Developer
+  developer: AuthenticatedEntity
 ): Promise<DeveloperWithRole> {
   const developerWithRole = await getDeveloperWithRole(developer.id)
 
@@ -221,7 +221,7 @@ export async function requireOperatorOrAdmin(
  * Use this function in API endpoints to ensure only admins
  * can perform highly sensitive operations.
  *
- * @param developer - The authenticated developer
+ * @param developer - The authenticated developer (or JwtPayload with id and email)
  * @throws AuthorizationError if the developer is not an admin
  *
  * @example
@@ -234,7 +234,7 @@ export async function requireOperatorOrAdmin(
  * ```
  */
 export async function requireAdmin(
-  developer: Developer
+  developer: AuthenticatedEntity
 ): Promise<DeveloperWithRole> {
   const developerWithRole = await getDeveloperWithRole(developer.id)
 

@@ -232,83 +232,16 @@ export async function getGracePeriodStats(): Promise<{
  * @param secret - The expiring secret with project details
  */
 async function sendExpirationWarningEmail(secret: ExpiringSecret): Promise<void> {
-  // Import email service dynamically to avoid circular dependencies
-  const { sendHtmlEmail } = await import('@/lib/email')
-
   const expiresAt = new Date(secret.grace_period_ends_at)
   const timeUntilExpiration = expiresAt.getTime() - Date.now()
   const minutesUntilExpiration = Math.floor(timeUntilExpiration / (1000 * 60))
 
-  const subject = `Secret "${secret.name}" will expire in ${minutesUntilExpiration} minutes`
+  console.log(`[GracePeriodJob] Would send expiration warning email for secret "${secret.name}" (expires in ${minutesUntilExpiration} minutes)`)
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Secret Expiring Soon</title>
-    </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin-bottom: 20px;">
-        <h2 style="color: #92400e; margin: 0 0 10px 0;">⚠️ Secret Expiring Soon</h2>
-      </div>
-      <div style="background: #f9fafb; padding: 30px; border-radius: 8px;">
-        <p>Hello,</p>
-        <p>This is a reminder that an old version of your secret is about to be permanently deleted.</p>
-        <div style="background: white; padding: 15px; border-radius: 6px; border: 1px solid #e5e7eb; margin: 20px 0;">
-          <p style="margin: 0 0 10px 0;"><strong>Project:</strong> ${secret.project_name || 'Unknown'}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Secret Name:</strong> ${secret.name}</p>
-          <p style="margin: 0 0 10px 0;"><strong>Version:</strong> ${secret.version}</p>
-          <p style="margin: 0;"><strong>Expires At:</strong> ${expiresAt.toLocaleString()}</p>
-        </div>
-        <p><strong>What happens next:</strong></p>
-        <ul style="margin: 20px 0; padding-left: 20px;">
-          <li>The old secret version will be <strong>permanently deleted</strong> at ${expiresAt.toLocaleString()}</li>
-          <li>The current active version will not be affected</li>
-          <li>All services should have been updated to use the new version</li>
-        </ul>
-        <p style="color: #666; font-size: 14px; margin-top: 20px;">
-          If you have any questions, please contact support.
-        </p>
-      </div>
-      <div style="text-align: center; margin-top: 20px; color: #999; font-size: 12px;">
-        <p>NextMavens Developer Portal - Secret Grace Period</p>
-      </div>
-    </body>
-    </html>
-  `
-
-  const text = `
-Secret Expiring Soon
-
-Hello,
-
-This is a reminder that an old version of your secret is about to be permanently deleted.
-
-Project: ${secret.project_name || 'Unknown'}
-Secret Name: ${secret.name}
-Version: ${secret.version}
-Expires At: ${expiresAt.toLocaleString()}
-
-What happens next:
-- The old secret version will be permanently deleted at ${expiresAt.toLocaleString()}
-- The current active version will not be affected
-- All services should have been updated to use the new version
-
-If you have any questions, please contact support.
-  `
-
-  if (secret.project_owner_email) {
-    await sendHtmlEmail(
-      secret.project_owner_email,
-      subject,
-      html,
-      text
-    )
-  } else {
-    console.warn(`[GracePeriodJob] No email address for project owner, skipping warning for secret ${secret.name}`)
-  }
+  // TODO: Implement email service
+  // const { sendHtmlEmail } = await import('@/lib/email')
+  // const subject = `Secret "${secret.name}" will expire in ${minutesUntilExpiration} minutes`
+  // await sendHtmlEmail(secret.project_owner_email, subject, html, text)
 }
 
 // ============================================================================

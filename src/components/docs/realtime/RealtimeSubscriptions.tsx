@@ -110,7 +110,7 @@ ws.onmessage = (event) => {
           <div>
             <p className="text-sm text-slate-300 mb-2">Greater than:</p>
             <pre className="bg-slate-900 rounded-lg p-3">
-              <code className="text-xs text-slate-300">amount > gte.100</code>
+              <code className="text-xs text-slate-300">amount {'>'} gte.100</code>
             </pre>
           </div>
           <div>

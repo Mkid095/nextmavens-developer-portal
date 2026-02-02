@@ -138,7 +138,7 @@ export async function getKeyUsageStats(keyId: string): Promise<{
       success: true,
       data: {
         totalUsage: usage_count || 0,
-        lastUsed,
+        lastUsed: last_used,
         last7Days,
         last30Days,
         successRate,

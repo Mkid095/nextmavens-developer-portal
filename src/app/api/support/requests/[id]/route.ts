@@ -148,11 +148,13 @@ export async function PUT(
     const updateValues: any[] = [body.status, id]
     let updateQuery = `UPDATE control_plane.support_requests SET status = $1`
 
-    // Set resolved_at when status is resolved
-    if (body.status === 'resolved') {
+    // Set resolved_at when status is closed
+    const newStatus = body.status as string
+    const oldStatus = previousStatus as string
+    if (newStatus === 'closed') {
       updateQuery += `, resolved_at = NOW()`
-    } else if (previousStatus === 'resolved' && body.status !== 'resolved') {
-      // Clear resolved_at if moving away from resolved
+    } else if (oldStatus === 'closed' && newStatus !== 'closed') {
+      // Clear resolved_at if moving away from closed
       updateQuery += `, resolved_at = NULL`
     }
 

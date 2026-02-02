@@ -15,14 +15,14 @@ import {
   getAllSteps,
   isProvisioningComplete,
 } from '@/lib/provisioning/state-machine'
-import { logProjectAction } from '@nextmavenspacks/audit-logs-database'
+import { logProjectAction, ActorType } from '@nextmavenspacks/audit-logs-database'
 
 /**
  * System actor for background job actions
  */
 function systemActor() {
   return {
-    type: 'system' as const,
+    type: ActorType.SYSTEM,
     id: 'auto-status-transitions-job',
     name: 'Auto Status Transitions Background Job',
   }

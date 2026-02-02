@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
-import { authenticateRequest } from '@/lib/middleware'
+import { authenticateRequest, type Developer } from '@/lib/auth'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 
 /**
@@ -16,7 +16,14 @@ import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorizat
 export async function GET(req: NextRequest) {
   try {
     // Authenticate and authorize
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
     await requireOperatorOrAdmin(developer)
 
     const { searchParams } = new URL(req.url)

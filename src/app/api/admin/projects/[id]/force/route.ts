@@ -98,7 +98,7 @@ export async function POST(
         };
         return NextResponse.json(errorResponse, { status: 401 });
       }
-      token = tokenValidation.session?.id;
+      token = tokenValidation.session?.id ?? null;
     }
 
     if (!token) {

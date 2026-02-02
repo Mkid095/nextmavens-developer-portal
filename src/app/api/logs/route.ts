@@ -93,10 +93,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total count
-    const countQuery = query.replace(
-      /SELECT.*FROM/s,
-      'SELECT COUNT(*) FROM'
-    )
+    const selectIndex = query.toUpperCase().indexOf('SELECT')
+    const fromIndex = query.toUpperCase().indexOf('FROM')
+    const countQuery = 'SELECT COUNT(*) ' + query.substring(fromIndex)
     const countResult = await pool.query(countQuery, params)
     const total = parseInt(countResult.rows[0].count, 10)
 

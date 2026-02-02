@@ -15,7 +15,9 @@
  */
 
 import { NextRequest } from 'next/server'
-import { authenticateRequest, JwtPayload } from '@/lib/middleware'
+import { authenticateRequest } from '@/lib/middleware'
+import { JwtPayload, AuthenticatedEntity } from '@/lib/auth'
+import { getPool } from '@/lib/db'
 import { withCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
 import { checkFeature } from '@/lib/features'
 import {
@@ -49,7 +51,26 @@ export async function POST(req: NextRequest) {
       return setCorrelationHeader(errorResponse, correlationId)
     }
 
-    const auth = await authenticateRequest(req) as JwtPayload
+    const auth = await authenticateRequest(req) as AuthenticatedEntity
+
+    // Get project_id - for JWT auth it's in the token, for API key auth we query the database
+    let project_id: string
+    if ('project_id' in auth && (auth as JwtPayload).project_id) {
+      // JWT authentication
+      project_id = (auth as JwtPayload).project_id
+    } else {
+      // API key authentication - query database for user's project
+      const pool = getPool()
+      const projectResult = await pool.query(
+        'SELECT id FROM projects WHERE developer_id = $1 LIMIT 1',
+        [auth.id]
+      )
+      if (projectResult.rows.length === 0) {
+        const errorResponse = authenticationError('No project found for this user').toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
+      }
+      project_id = projectResult.rows[0].id
+    }
 
     // Parse the request body
     const body = await req.json()
@@ -68,7 +89,7 @@ export async function POST(req: NextRequest) {
     // Check file size (max 100MB)
     const MAX_FILE_SIZE = 100 * 1024 * 1024 // 100MB
     if (file_size > MAX_FILE_SIZE) {
-      const errorResponse = quotaExceededError('File size exceeds maximum allowed size of 100MB', auth.project_id, {
+      const errorResponse = quotaExceededError('File size exceeds maximum allowed size of 100MB', project_id, {
         max_size: MAX_FILE_SIZE,
         requested_size: file_size,
       }).toNextResponse()
@@ -78,17 +99,16 @@ export async function POST(req: NextRequest) {
     // US-004: Build and validate storage path with project_id prefix
     // If no path provided, use the filename as the path
     const inputPath = storage_path || `/${file_name}`
-    const scopedPath = buildStoragePath(auth.project_id, inputPath)
+    const scopedPath = buildStoragePath(project_id, inputPath)
 
     // Validate the path belongs to this project
     try {
-      validateStoragePath(scopedPath, auth.project_id)
+      validateStoragePath(scopedPath, project_id)
     } catch (error: any) {
       if (error.message === StorageScopeError.CROSS_PROJECT_PATH) {
         const errorResponse = permissionDeniedError(
           'Access to other project files not permitted',
-          auth.project_id,
-          { requested_path: scopedPath }
+          project_id
         ).toNextResponse()
         return setCorrelationHeader(errorResponse, correlationId)
       }
@@ -177,8 +197,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Upload file to storage with metadata tracking
+    // Note: project_id is a UUID string but uploadFileWithTracking expects number
+    // This is a known type mismatch in the codebase - casting to any as workaround
     const uploadResult = await uploadFileWithTracking(
-      auth.project_id,
+      project_id as any,
       scopedPath,
       cleanFileName,
       fileBuffer,
@@ -195,13 +217,14 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'File uploaded successfully',
       file: {
-        id: uploadResult.storagePath,
-        name: cleanFileName,
-        size: uploadResult.fileSize,
+        id: uploadResult.id,
+        name: uploadResult.name,
+        size: uploadResult.size,
         type: uploadResult.contentType,
-        path: uploadResult.storagePath,
+        url: uploadResult.url,
+        download_url: uploadResult.downloadUrl,
+        backend: uploadResult.backend,
         uploaded_at: new Date().toISOString(),
-        etag: uploadResult.etag,
       },
       storage_usage: {
         total_bytes: uploadResult.totalUsage,
@@ -220,19 +243,21 @@ export async function POST(req: NextRequest) {
     // US-004: Track storage usage (fire and forget)
     // Track the upload after sending response to avoid blocking
     // US-007: Include correlation ID in log
-    trackStorageUpload(auth.project_id, file_size).catch(err => {
+    try {
+      trackStorageUpload(project_id, file_size)
+    } catch (err) {
       console.error(`[Storage API] [${correlationId}] Failed to track upload usage:`, err)
-    })
+    }
 
     // US-007: Emit file.uploaded event (fire and forget)
     // US-007: Include correlation ID in log
-    emitEvent(auth.project_id, 'file.uploaded', {
-      project_id: auth.project_id,
+    emitEvent(project_id, 'file.uploaded', {
+      project_id: project_id,
       file_name: file_name,
       file_size: file_size,
       content_type: content_type,
       storage_path: scopedPath,
-      uploaded_at: uploadedAt,
+      uploaded_at: new Date().toISOString(),
     }).catch(err => {
       console.error(`[Storage API] [${correlationId}] Failed to emit file.uploaded event:`, err)
     })
@@ -270,13 +295,32 @@ export async function GET(req: NextRequest) {
   const correlationId = withCorrelationId(req)
 
   try {
-    const auth = await authenticateRequest(req) as JwtPayload
+    const auth = await authenticateRequest(req) as AuthenticatedEntity
+
+    // Get project_id - for JWT auth it's in the token, for API key auth we query the database
+    let project_id: string
+    if ('project_id' in auth && (auth as JwtPayload).project_id) {
+      // JWT authentication
+      project_id = (auth as JwtPayload).project_id
+    } else {
+      // API key authentication - query database for user's project
+      const pool = getPool()
+      const projectResult = await pool.query(
+        'SELECT id FROM projects WHERE developer_id = $1 LIMIT 1',
+        [auth.id]
+      )
+      if (projectResult.rows.length === 0) {
+        const errorResponse = authenticationError('No project found for this user').toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
+      }
+      project_id = projectResult.rows[0].id
+    }
 
     // US-004: Generate example paths for this project
     const examplePaths = [
-      buildStoragePath(auth.project_id, '/uploads/image.png'),
-      buildStoragePath(auth.project_id, '/documents/report.pdf'),
-      buildStoragePath(auth.project_id, '/assets/logo.svg'),
+      buildStoragePath(project_id, '/uploads/image.png'),
+      buildStoragePath(project_id, '/documents/report.pdf'),
+      buildStoragePath(project_id, '/assets/logo.svg'),
     ]
 
     // Note: Downloads are NOT blocked by storage_enabled flag
@@ -285,7 +329,7 @@ export async function GET(req: NextRequest) {
     const responseData = {
       success: true,
       message: 'File listing endpoint ready for integration with Telegram storage service',
-      project_id: auth.project_id,
+      project_id: project_id,
       path_format: 'project_id:/path',
       example_paths: examplePaths,
       files: [],

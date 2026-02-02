@@ -151,7 +151,7 @@ export async function POST(
  */
 async function runProvisioningStepsAsync(
   projectId: string,
-  pool: Parameters<typeof getPool>[0]
+  pool: import ('pg').Pool
 ): Promise<void> {
   const orderedStepNames = getOrderedStepNames()
 

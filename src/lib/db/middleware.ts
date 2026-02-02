@@ -62,9 +62,9 @@ export async function withRLSContext<T>(
     throw new Error('Unauthorized: No token provided')
   }
 
-  // Import verifyJWT here to avoid circular dependency
-  const { verifyJWT } = await import('@/lib/auth')
-  const payload = verifyJWT(token)
+  // Import verifyAccessToken here to avoid circular dependency
+  const { verifyAccessToken } = await import('@/lib/auth')
+  const payload = verifyAccessToken(token)
 
   if (!payload) {
     throw new Error('Unauthorized: Invalid token')

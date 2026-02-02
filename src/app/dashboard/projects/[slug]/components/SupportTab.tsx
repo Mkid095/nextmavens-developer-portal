@@ -1,5 +1,5 @@
 import { Plus, LifeBuoy, AlertCircle } from 'lucide-react'
-import type { SupportRequest } from '../../hooks'
+import type { SupportRequest } from '../hooks'
 
 interface SupportTabProps {
   projectId: string

@@ -26,13 +26,9 @@ export function DeleteProjectModal({
   return (
     <DeletionPreviewModal
       isOpen={isOpen}
-      title="Delete Project"
-      entityType="Project"
-      entityName={project.name}
-      warningMessage="This action cannot be undone. All data, API keys, and resources associated with this project will be permanently deleted."
       onClose={onClose}
-      onConfirm={handleDelete}
-      isSubmitting={isSubmitting}
+      projectId={project.id}
+      onConfirmDelete={handleDelete}
     />
   )
 }

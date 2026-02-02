@@ -2,9 +2,9 @@ import Link from 'next/link'
 import { Shield, Server, Code2, ChevronRight, HardDrive } from 'lucide-react'
 import ServiceTab from '@/components/ServiceTab'
 import ServiceStatusIndicator from '@/components/ServiceStatusIndicator'
-import LanguageSelector from '@/components/LanguageSelector'
+import LanguageSelector, { type CodeLanguage } from '@/components/LanguageSelector'
 import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLanguageCodeBlock'
-import type { CodeLanguage, ServiceEndpoints } from '../types'
+import type { ServiceEndpoints } from '../types'
 import type { ServiceType } from '@/lib/types/service-status.types'
 
 interface ServiceTabComponentProps {

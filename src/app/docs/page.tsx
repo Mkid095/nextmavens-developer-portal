@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Database, Shield, HardDrive, Globe, BookOpen, ChevronRight, Server, Lightbulb, Radio, Code2, AlertCircle, Key, FileText, Tag, Zap, ArrowRight } from 'lucide-react'
+import { Database, Shield, HardDrive, Globe, BookOpen, ChevronRight, Server, Lightbulb, Radio, Code2, AlertCircle, Key, FileText, Tag, Zap, ArrowRight, DatabaseBackup } from 'lucide-react'
 
 const services = [
   {

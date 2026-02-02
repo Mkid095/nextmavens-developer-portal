@@ -17,7 +17,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/middleware'
+import { authenticateRequest, type Developer } from '@/lib/auth'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { getPool } from '@/lib/db'
 
@@ -56,7 +56,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
     await requireOperatorOrAdmin(developer)
 
     const { id } = params
@@ -132,7 +139,14 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
     await requireOperatorOrAdmin(developer)
 
     const { id } = params
@@ -140,7 +154,7 @@ export async function PUT(
     const pool = getPool()
 
     // Validate status
-    const validStatuses = ['open', 'in_progress', 'resolved', 'closed']
+    const validStatuses: Array<'open' | 'in_progress' | 'resolved' | 'closed'> = ['open', 'in_progress', 'resolved', 'closed']
     if (!body.status || !validStatuses.includes(body.status)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
@@ -169,9 +183,9 @@ export async function PUT(
                        SET status = $1, admin_notes = $2`
 
     // Set resolved_at when status is resolved
-    if (body.status === 'resolved') {
+    if ((body.status as string) === 'resolved') {
       updateQuery += `, resolved_at = NOW()`
-    } else if (previousStatus === 'resolved' && body.status !== 'resolved') {
+    } else if (previousStatus === 'resolved' && (body.status as string) !== 'resolved') {
       // Clear resolved_at if moving away from resolved
       updateQuery += `, resolved_at = NULL`
     }

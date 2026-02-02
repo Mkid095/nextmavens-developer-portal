@@ -182,7 +182,7 @@ async function getUsageByService(
 
     // For each service, get metric breakdown
     const services = await Promise.all(
-      result.rows.map(async (row) => {
+      result.rows.map(async (row: { service: string; total_quantity: string }) => {
         const metricWhereConditions: string[] = [
           'project_id = $1',
           'service = $2',
@@ -212,7 +212,7 @@ async function getUsageByService(
         return {
           service: row.service,
           total_quantity: parseInt(row.total_quantity) || 0,
-          metric_breakdown: metricResult.rows.map((m) => ({
+          metric_breakdown: metricResult.rows.map((m: { metric_type: string; quantity: string }) => ({
             metric_type: m.metric_type,
             quantity: parseInt(m.quantity) || 0,
           })),
@@ -264,7 +264,7 @@ async function getUsageByMetric(
 
     const result = await pool.query(query, queryParams)
 
-    return result.rows.map((row) => ({
+    return result.rows.map((row: { metric_type: string; total_quantity: string }) => ({
       metric_type: row.metric_type,
       total_quantity: parseInt(row.total_quantity) || 0,
     }))
@@ -315,7 +315,7 @@ async function getTimeSeries(
 
     const result = await pool.query(query, queryParams)
 
-    return result.rows.map((row) => ({
+    return result.rows.map((row: { period: string; service: string; metric_type: string; quantity: string }) => ({
       period: row.period,
       service: row.service,
       metric_type: row.metric_type,
@@ -374,12 +374,13 @@ async function getQuotaInfo(
     const quotaResult = await pool.query(quotaQuery, [projectId])
 
     // Merge usage and quota data
-    const quotaMap = new Map(quotaResult.rows.map((q) => [q.service, q]))
+    type QuotaRow = { service: string; monthly_limit?: string; hard_cap?: string; reset_at?: string }
+    const quotaMap = new Map<string, QuotaRow>(quotaResult.rows.map((q: QuotaRow) => [q.service, q]))
 
-    return usageResult.rows.map((u) => {
+    return usageResult.rows.map((u: { service: string; current_usage: string }) => {
       const quota = quotaMap.get(u.service)
-      const monthlyLimit = quota?.monthly_limit || 0
-      const hardCap = quota?.hard_cap || 0
+      const monthlyLimit = parseInt(quota?.monthly_limit || '0') || 0
+      const hardCap = parseInt(quota?.hard_cap || '0') || 0
       const currentUsage = parseInt(u.current_usage) || 0
       const usagePercentage = monthlyLimit > 0 ? (currentUsage / monthlyLimit) * 100 : 0
 

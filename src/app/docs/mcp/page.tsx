@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Shield, Code2, AlertTriangle, CheckCircle, Zap, Server, Key, Lock, Globe, Terminal, Database, Cloud, FolderTree, Timeline, Folder } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Shield, Code2, AlertTriangle, CheckCircle, Zap, Server, Key, Lock, Globe, Terminal, Database, Cloud, FolderTree, Folder, Clock } from 'lucide-react'
 import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
 
 const mcpConfig = {
@@ -309,7 +309,7 @@ const mcpTools = [
   },
   {
     category: 'Realtime Management',
-    icon: Timeline,
+    icon: Clock,
     tools: [
       {
         name: 'nextmavens_enable_realtime',

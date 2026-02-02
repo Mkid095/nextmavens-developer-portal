@@ -98,7 +98,7 @@ export function McpTokenBadge({ apiKey, compact = false }: McpTokenBadgeProps) {
         <Icon className={`w-3 h-3 ${textColor}`} />
       </div>
       {showWarning && (
-        <WarningIcon className={`w-3.5 h-3.5 ${textColor}`} title={description} />
+        <WarningIcon className={`w-3.5 h-3.5 ${textColor}`} />
       )}
     </div>
   )

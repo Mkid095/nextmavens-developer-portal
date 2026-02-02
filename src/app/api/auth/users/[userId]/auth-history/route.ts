@@ -7,7 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/auth'
+import { authenticateRequest, type Developer } from '@/lib/auth'
 import { requireAuthServiceClient } from '@/lib/api/auth-service-client'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { logAuditEntry, AuditLogType, AuditLogLevel, extractClientIP, extractUserAgent } from '@/features/abuse-controls/lib/audit-logger'
@@ -22,7 +22,14 @@ export async function GET(
 
   try {
     // Authenticate the request
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
 
     // Authorize - only operators and admins can view auth history
     const developerWithRole = await requireOperatorOrAdmin(developer)

@@ -188,7 +188,7 @@ interface DocsSidebarProps {
 export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, onMobileMenuClose }: DocsSidebarProps) {
   const pathname = usePathname()
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['getting-started', 'database']))
-  const activeItemRef = useRef<HTMLAnchorElement>(null)
+  const activeItemRef = useRef<HTMLDivElement>(null)
 
   // Load expanded sections from localStorage on mount
   useEffect(() => {
@@ -361,7 +361,7 @@ export default function DocsSidebar({ isCollapsed, onToggle, isMobileMenuOpen, o
                           transition={{ duration: 0.2, ease: 'easeInOut' }}
                           className="ml-12 mt-1 space-y-1 overflow-hidden"
                         >
-                          {section.children.map((child) => (
+                          {section.children?.map((child) => (
                             <li key={child.path}>
                               <Link
                                 href={child.path}

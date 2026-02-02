@@ -34,6 +34,7 @@ import {
   DEFAULT_SCOPES,
   mapProjectEnvironmentToKeyEnvironment,
   type ApiKey,
+  type ApiKeyEnvironment,
 } from '@/lib/types/api-key.types';
 import { invalidateSnapshot } from '@/lib/snapshot';
 import type {
@@ -196,7 +197,15 @@ export async function regenerateKeys(
   // Step 4: Generate new service_role keys
   const newServiceRoleKeys: GeneratedServiceRoleKey[] = [];
   const scopes = DEFAULT_SCOPES.service_role;
-  const keyPrefix = getKeyPrefix('service_role', environment);
+
+  // Map environment to ApiKeyEnvironment type
+  const envMapping: Record<string, ApiKeyEnvironment> = {
+    live: 'prod',
+    test: 'staging',
+    dev: 'dev',
+  };
+  const apiKeyEnv = envMapping[environment] || 'dev';
+  const keyPrefix = getKeyPrefix('service_role', apiKeyEnv);
 
   for (let i = 0; i < keyCount; i++) {
     // Generate a new secret key
@@ -220,7 +229,7 @@ export async function regenerateKeys(
         hashedSecretKey,
         `Service Role Key ${i + 1} (Regenerated ${new Date().toISOString()})`,
         JSON.stringify(scopes),
-        environment,
+        apiKeyEnv,
       ]
     );
 

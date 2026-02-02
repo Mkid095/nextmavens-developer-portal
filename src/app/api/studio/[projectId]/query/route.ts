@@ -275,12 +275,7 @@ export async function POST(
         throw permissionDeniedError(
           `You do not have permission to read from the database. ` +
           `Your role '${permissionResult.role}' does not have the 'database.read' permission. ` +
-          `Please contact your organization owner to request this permission.`,
-          {
-            required_permission: 'database.read',
-            your_role: permissionResult.role,
-            query_type: extractSqlCommand(trimmedQuery),
-          }
+          `Please contact your organization owner to request this permission.`
         )
       }
     } else if (isWriteQuery(trimmedQuery)) {
@@ -296,12 +291,7 @@ export async function POST(
         throw permissionDeniedError(
           `You do not have permission to perform write operations on the database. ` +
           `Your role '${permissionResult.role}' does not have the 'database.write' permission. ` +
-          `Developers have read-only access. Please contact your organization owner to request write access.`,
-          {
-            required_permission: 'database.write',
-            your_role: permissionResult.role,
-            query_type: extractSqlCommand(trimmedQuery),
-          }
+          `Developers have read-only access. Please contact your organization owner to request write access.`
         )
       }
     }
@@ -317,12 +307,7 @@ export async function POST(
         throw permissionDeniedError(
           `You do not have permission to perform this operation on the database. ` +
           `Your role '${permissionResult.role}' does not have the 'database.write' permission. ` +
-          `DDL operations require write access. Please contact your organization owner to request this permission.`,
-          {
-            required_permission: 'database.write',
-            your_role: permissionResult.role,
-            query_type: extractSqlCommand(trimmedQuery),
-          }
+          `DDL operations require write access. Please contact your organization owner to request this permission.`
         )
       }
     }

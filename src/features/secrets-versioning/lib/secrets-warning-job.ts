@@ -6,7 +6,7 @@
  * - Logs warning to audit trail
  */
 
-import { pool } from '@/lib/db';
+import { getPool } from '@/lib/db';
 import { logAuditEntry, AuditTargetType, AuditActorType } from '@/lib/audit-logger';
 
 interface GracePeriodWarningResult {
@@ -38,6 +38,8 @@ export async function runSecretsWarningJob(): Promise<GracePeriodWarningResult> 
   }> = [];
 
   try {
+    const pool = getPool();
+
     // Find secrets that need warnings:
     // - Grace period ends within 1 hour
     // - Warning hasn't been sent yet

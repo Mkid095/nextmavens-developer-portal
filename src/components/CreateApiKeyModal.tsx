@@ -237,10 +237,6 @@ export default function CreateApiKeyModal({ isOpen, onClose, onCreateKey, projec
     setTimeout(() => setCopied(null), 2000)
   }
 
-  const handleBack = () => {
-    setStep('type')
-  }
-
   const generateUsageExamples = () => {
     if (!createdKey) return []
 

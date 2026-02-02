@@ -26,9 +26,9 @@ NEXTMAVENS_API_URL=https://api.nextmavens.cloud`}</CodeBlockWithCopy>
 
       <h3 className="text-lg font-semibold text-slate-900 mt-8 mb-4">Making Authenticated Requests</h3>
       <CodeBlockWithCopy>{`// Using fetch with Authorization header
-const response = await fetch(`${process.env.NEXTMAVENS_API_URL}/api/users`, {
+const response = await fetch(\`\${process.env.NEXTMAVENS_API_URL}/api/users\`, {
   headers: {
-    'Authorization': `Bearer ${process.env.NEXTMAVENS_API_KEY}`,
+    'Authorization': \`Bearer \${process.env.NEXTMAVENS_API_KEY}\`,
     'Content-Type': 'application/json'
   }
 });

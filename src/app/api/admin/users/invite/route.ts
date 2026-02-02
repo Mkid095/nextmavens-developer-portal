@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
-import { authenticateRequest } from '@/lib/middleware'
+import { authenticateRequest, type Developer } from '@/lib/auth'
 import { requireAdmin } from '@/features/abuse-controls/lib/authorization'
 import { logUserAction, userActor } from '@nextmavenspacks/audit-logs-database'
 import { UserRole } from '@/features/abuse-controls/lib/authorization'
@@ -26,7 +26,14 @@ export async function POST(req: NextRequest) {
   let pool
   try {
     // Authenticate and authorize
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
     const admin = await requireAdmin(developer)
 
     // Parse request body

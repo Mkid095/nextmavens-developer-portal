@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { pool } from '@/lib/db'
+import { getPool } from '@/lib/db'
 
 export interface ServiceStatus {
   service: string
@@ -39,6 +39,8 @@ export interface StatusResponse {
 
 export async function GET(request: NextRequest) {
   try {
+    const pool = getPool()
+
     // Get all service statuses
     const serviceResult = await pool.query(
       `SELECT service, status, last_updated, message
@@ -75,16 +77,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate overall status
-    let overall_status: 'operational' | 'degraded' | 'outage' = 'operational'
-
-    for (const service of services) {
-      if (service.status === 'outage') {
-        overall_status = 'outage'
-        break
-      } else if (service.status === 'degraded' && overall_status !== 'outage') {
-        overall_status = 'degraded'
-      }
-    }
+    const overall_status: 'operational' | 'degraded' | 'outage' = services.reduce(
+      (status: 'operational' | 'degraded' | 'outage', service: ServiceStatus) => {
+        if (service.status === 'outage') return 'outage'
+        if (service.status === 'degraded' && status !== 'outage') return 'degraded'
+        return status
+      },
+      'operational'
+    )
 
     const response: StatusResponse = {
       services,

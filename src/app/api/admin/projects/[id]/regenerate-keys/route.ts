@@ -98,11 +98,11 @@ export async function POST(
         const errorResponse: RegenerateKeysError = {
           error: 'Invalid or expired break glass token',
           details: `A valid break glass session token is required. Reason: ${tokenValidation.reason}`,
-          code: tokenValidation.reason === 'expired' ? 'EXPIRED_TOKEN' : 'INVALID_TOKEN',
+          code: 'INVALID_TOKEN',
         };
         return NextResponse.json(errorResponse, { status: 401 });
       }
-      token = tokenValidation.session?.id;
+      token = tokenValidation.session?.id ?? null;
     }
 
     if (!token) {
@@ -121,7 +121,7 @@ export async function POST(
       const errorResponse: RegenerateKeysError = {
         error: 'Invalid or expired break glass token',
         details: `Reason: ${tokenValidation.reason}`,
-        code: tokenValidation.reason === 'expired' ? 'EXPIRED_TOKEN' : 'INVALID_TOKEN',
+        code: 'INVALID_TOKEN',
       };
       return NextResponse.json(errorResponse, { status: 401 });
     }
@@ -232,7 +232,7 @@ export async function GET(
       return NextResponse.json(
         {
           error: 'Invalid or expired break glass token',
-          code: tokenValidation.reason === 'expired' ? 'EXPIRED_TOKEN' : 'INVALID_TOKEN',
+          code: 'INVALID_TOKEN',
         },
         { status: 401 }
       );

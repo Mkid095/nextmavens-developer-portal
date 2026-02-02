@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
-import { verifyJwt } from '@/lib/auth'
+import { verifyAccessToken } from '@/lib/auth'
 
 interface ChartDataPoint {
   timestamp: string
@@ -47,11 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     const token = authHeader.substring(7)
-    const payload = verifyJwt(token)
-
-    if (!payload) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-    }
+    const payload = verifyAccessToken(token)
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams

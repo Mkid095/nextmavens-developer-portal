@@ -67,7 +67,7 @@ export const DEFAULT_ENVIRONMENT_CONFIGS: Record<Environment, EnvironmentConfig>
 import { z } from 'zod'
 
 export const environmentSchema = z.enum(['prod', 'dev', 'staging'], {
-  errorMap: () => ({ message: 'Environment must be one of: prod, dev, staging' }),
+  message: 'Environment must be one of: prod, dev, staging',
 })
 
 export type EnvironmentInput = z.infer<typeof environmentSchema>

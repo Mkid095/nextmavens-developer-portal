@@ -477,10 +477,10 @@ export function SchemaBrowser({
                             {index.index_def}
                           </span>
                           {index.is_primary && (
-                            <Star className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" title="Primary key" />
+                            <Star className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
                           )}
                           {index.is_unique && !index.is_primary && (
-                            <ShieldCheck className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" title="Unique" />
+                            <ShieldCheck className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
                           )}
                         </div>
                       ))}

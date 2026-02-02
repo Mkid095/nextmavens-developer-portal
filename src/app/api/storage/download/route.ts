@@ -12,7 +12,9 @@
  */
 
 import { NextRequest } from 'next/server'
-import { authenticateRequest, JwtPayload } from '@/lib/middleware'
+import { authenticateRequest } from '@/lib/middleware'
+import { JwtPayload, AuthenticatedEntity } from '@/lib/auth'
+import { getPool } from '@/lib/db'
 import { withCorrelationId, setCorrelationHeader } from '@/lib/middleware/correlation'
 import {
   validateStoragePath,
@@ -32,7 +34,22 @@ export async function POST(req: NextRequest) {
   // US-007: Apply correlation ID middleware
   const correlationId = withCorrelationId(req)
   try {
-    const auth = await authenticateRequest(req) as JwtPayload
+    const auth = await authenticateRequest(req)
+
+    // Get project_id from the user's first project (or query based on the storage path)
+    // For now, we'll query the user's projects to get a project_id
+    const pool = getPool()
+    const projectResult = await pool.query(
+      'SELECT id FROM projects WHERE developer_id = $1 LIMIT 1',
+      [auth.id]
+    )
+
+    if (projectResult.rows.length === 0) {
+      const errorResponse = authenticationError('No project found for this user').toNextResponse()
+      return setCorrelationHeader(errorResponse, correlationId)
+    }
+
+    const project_id = projectResult.rows[0].id
 
     // Parse the request body
     const body = await req.json()
@@ -47,17 +64,16 @@ export async function POST(req: NextRequest) {
     }
 
     // US-004: Build and validate storage path with project_id prefix
-    const scopedPath = buildStoragePath(auth.project_id, storage_path)
+    const scopedPath = buildStoragePath(project_id, storage_path)
 
     // Validate the path belongs to this project
     try {
-      validateStoragePath(scopedPath, auth.project_id)
+      validateStoragePath(scopedPath, project_id)
     } catch (error: any) {
       if (error.message === StorageScopeError.CROSS_PROJECT_PATH) {
         const errorResponse = permissionDeniedError(
           'Access to other project files not permitted',
-          auth.project_id,
-          { requested_path: scopedPath }
+          project_id
         ).toNextResponse()
         return setCorrelationHeader(errorResponse, correlationId)
       }
@@ -74,9 +90,7 @@ export async function POST(req: NextRequest) {
     // Check if file exists
     const exists = await fileExistsInStorage(scopedPath)
     if (!exists) {
-      const errorResponse = notFoundError('File not found', {
-        path: scopedPath,
-      }).toNextResponse()
+      const errorResponse = notFoundError('File not found', project_id).toNextResponse()
       return setCorrelationHeader(errorResponse, correlationId)
     }
 
@@ -90,11 +104,10 @@ export async function POST(req: NextRequest) {
       message: 'File downloaded successfully',
       file: {
         path: downloadResult.storagePath,
+        name: downloadResult.fileName,
         size: downloadResult.fileSize,
         type: downloadResult.contentType,
         downloaded_at: new Date().toISOString(),
-        etag: downloadResult.etag,
-        last_modified: downloadResult.lastModified,
         // Base64 encode the file content for JSON response
         data: downloadResult.data.toString('base64'),
       },
@@ -112,9 +125,11 @@ export async function POST(req: NextRequest) {
     // Track the download after sending response to avoid blocking
     // US-007: Include correlation ID in log
     const downloadedBytes = downloadResult.fileSize
-    trackStorageDownload(auth.project_id, downloadedBytes).catch(err => {
+    try {
+      trackStorageDownload(project_id, downloadedBytes)
+    } catch (err) {
       console.error(`[Storage API] [${correlationId}] Failed to track download usage:`, err)
-    })
+    }
 
     return responseWithCorrelationId
   } catch (error: any) {
@@ -146,12 +161,31 @@ export async function GET(req: NextRequest) {
   const correlationId = withCorrelationId(req)
 
   try {
-    const auth = await authenticateRequest(req) as JwtPayload
+    const auth = await authenticateRequest(req) as AuthenticatedEntity
+
+    // Get project_id - for JWT auth it's in the token, for API key auth we query the database
+    let project_id: string
+    if ('project_id' in auth && (auth as JwtPayload).project_id) {
+      // JWT authentication
+      project_id = (auth as JwtPayload).project_id
+    } else {
+      // API key authentication - query database for user's project
+      const pool = getPool()
+      const projectResult = await pool.query(
+        'SELECT id FROM projects WHERE developer_id = $1 LIMIT 1',
+        [auth.id]
+      )
+      if (projectResult.rows.length === 0) {
+        const errorResponse = authenticationError('No project found for this user').toNextResponse()
+        return setCorrelationHeader(errorResponse, correlationId)
+      }
+      project_id = projectResult.rows[0].id
+    }
 
     const responseData = {
       success: true,
       message: 'Storage download endpoint',
-      project_id: auth.project_id,
+      project_id: project_id,
       path_format: 'project_id:/path',
       usage: 'POST to download a file with tracking',
     }

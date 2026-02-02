@@ -453,7 +453,7 @@ export default function OrganizationSettingsPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          setActiveMenu(activeMenu === member.user_id ? null : member.user_id)
+                          setActiveMenu(activeMenu === member.user_id ? null : (member.user_id ?? null))
                         }}
                         className="p-2 hover:bg-slate-100 rounded-lg transition"
                       >

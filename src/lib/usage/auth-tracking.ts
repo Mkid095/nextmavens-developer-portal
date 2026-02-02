@@ -145,6 +145,7 @@ export async function recordAuthMetrics(
  * Convenience function for recording a single signup.
  *
  * @param projectId - The project ID
+ * @returns Promise that resolves when tracking is complete
  *
  * @example
  * // Fire and forget
@@ -152,14 +153,12 @@ export async function recordAuthMetrics(
  */
 export function trackAuthSignup(
   projectId: string
-): void {
-  // Don't await - fire and forget
-  recordAuthMetric({
+): Promise<void> {
+  // Return the promise for fire-and-forget usage
+  return recordAuthMetric({
     projectId,
     metricType: 'auth_signup',
     quantity: 1,
-  }).catch(err => {
-    // Silent fail - logging errors in the recording function
   })
 }
 
@@ -169,6 +168,7 @@ export function trackAuthSignup(
  * Convenience function for recording a single signin.
  *
  * @param projectId - The project ID
+ * @returns Promise that resolves when tracking is complete
  *
  * @example
  * // Fire and forget
@@ -176,14 +176,12 @@ export function trackAuthSignup(
  */
 export function trackAuthSignin(
   projectId: string
-): void {
-  // Don't await - fire and forget
-  recordAuthMetric({
+): Promise<void> {
+  // Return the promise for fire-and-forget usage
+  return recordAuthMetric({
     projectId,
     metricType: 'auth_signin',
     quantity: 1,
-  }).catch(err => {
-    // Silent fail - logging errors in the recording function
   })
 }
 

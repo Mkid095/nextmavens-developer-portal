@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     if (!token) {
       const error = authenticationError('JWT token is required for realtime connection');
-      return setCorrelationHeader(error.toNextResponse(), correlationId);
+      return setCorrelationHeader(NextResponse.json(error), correlationId);
     }
 
     // Verify JWT and extract project_id
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     if (!auth.project_id) {
       const error = authenticationError('JWT token must contain project_id claim');
-      return setCorrelationHeader(error.toNextResponse(), correlationId);
+      return setCorrelationHeader(NextResponse.json(error), correlationId);
     }
 
     // Create handshake response
@@ -99,14 +99,14 @@ export async function POST(req: NextRequest) {
 
     if (error.message === 'Missing project_id claim') {
       const authError = authenticationError('JWT token must contain project_id claim');
-      return setCorrelationHeader(authError.toNextResponse(), correlationId);
+      return setCorrelationHeader(NextResponse.json(authError), correlationId);
     }
 
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       const authError = authenticationError(error.message || 'Token verification failed');
-      return setCorrelationHeader(authError.toNextResponse(), correlationId);
+      return setCorrelationHeader(NextResponse.json(authError), correlationId);
     }
 
-    return setCorrelationHeader(toErrorNextResponse(error), correlationId);
+    return setCorrelationHeader(NextResponse.json({ error: 'Internal server error', message: 'Failed to establish realtime connection' }), correlationId);
   }
 }

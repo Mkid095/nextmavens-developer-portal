@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 
     const project = projectResult.rows[0];
 
-    if (project.developer_id !== developer.id) {
+    if (project.developer_id !== developer.user.id) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 
     // Check rate limit (simple in-memory check)
     // In production, use Redis or similar for distributed rate limiting
-    const rateLimitKey = `export:${developer.id}:${Date.now() / EXPORT_WINDOW_MS}`;
+    const rateLimitKey = `export:${developer.user.id}:${Date.now() / EXPORT_WINDOW_MS}`;
     // Note: This is a simplified rate limit. Implement proper rate limiting in production.
 
     // Create exports directory if it doesn't exist
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
         await fs.writeFile(outputPath, dumpBuffer);
 
         // Return the file
-        return new NextResponse(dumpBuffer, {
+        return new NextResponse(new Uint8Array(dumpBuffer), {
           status: 200,
           headers: {
             'Content-Type': 'application/octet-stream',

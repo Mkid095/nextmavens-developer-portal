@@ -18,7 +18,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticateRequest } from '@/lib/middleware'
+import { authenticateRequest, type Developer } from '@/lib/auth'
 import { requireOperatorOrAdmin } from '@/features/abuse-controls/lib/authorization'
 import { getPool } from '@/lib/db'
 
@@ -49,7 +49,14 @@ interface SupportRequestsResponse {
  */
 export async function GET(req: NextRequest) {
   try {
-    const developer = await authenticateRequest(req)
+    const jwtPayload = await authenticateRequest(req)
+
+    // Convert JwtPayload to Developer for authorization
+    const developer: Developer = {
+      id: jwtPayload.id,
+      email: jwtPayload.email,
+      name: '', // Name not available in JWT payload
+    }
     await requireOperatorOrAdmin(developer)
 
     const { searchParams } = new URL(req.url)

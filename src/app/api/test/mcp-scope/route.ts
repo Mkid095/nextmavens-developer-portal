@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
         ErrorCode.AUTHENTICATION_ERROR,
         'API key is required. Provide it via x-api-key header.'
       )
-      return NextResponse.json(error.toJson(), { status: 401 })
+      return NextResponse.json(error.toResponse(), { status: 401 })
     }
 
     // Authenticate the API key
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     // Handle PlatformError
     if (error.code) {
       const platformError = error as PlatformError
-      return NextResponse.json(platformError.toJson(), { status: platformError.httpCode || 500 })
+      return NextResponse.json(platformError.toResponse(), { status: platformError.statusCode || 500 })
     }
 
     // Handle generic errors

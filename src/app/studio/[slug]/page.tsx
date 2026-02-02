@@ -540,9 +540,7 @@ export default function StudioPage() {
                       </span>
                     </div>
                     <ResultsTable
-                      columns={queryResults.columns || []}
-                      rows={queryResults.rows || []}
-                      rowCount={queryResults.rowCount || 0}
+                      result={queryResults}
                     />
                   </div>
                 )}
