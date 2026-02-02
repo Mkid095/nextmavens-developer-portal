@@ -15,12 +15,10 @@ import {
 } from '../download'
 
 // Mock dependencies
-vi.mock('../client', () => ({
   downloadFile: vi.fn(),
   fileExists: vi.fn(),
 }))
 
-vi.mock('../metadata', () => ({
   getStorageFile: vi.fn(),
 }))
 

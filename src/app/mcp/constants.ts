@@ -5,26 +5,7 @@
  */
 
 import { Globe, Terminal, Key, Database, Shield, HardDrive, Code2, BookOpen, Settings } from 'lucide-react'
-
-export interface NavItem {
-  id: string
-  label: string
-  icon: any
-  section: string
-  tools?: Array<{ name: string; desc: string }>
-}
-
-export interface ToolParam {
-  name: string
-  type: string
-  required: boolean
-  description: string
-}
-
-export interface ToolDetail {
-  description: string
-  params: ToolParam[]
-}
+import type { NavItem, ToolDetail } from './types'
 
 export const navItems: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: Globe, section: 'overview' },

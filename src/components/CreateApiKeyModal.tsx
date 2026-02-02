@@ -1,274 +1,51 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  X,
-  Key,
-  Shield,
-  Globe,
-  Cpu,
-  AlertTriangle,
-  Check,
-  Copy,
-  ChevronRight,
-  Database,
-  HardDrive,
-  Lock,
-  Eye,
-  Sparkles,
-} from 'lucide-react'
-import { ApiKeyType, ApiKeyEnvironment, ApiKeyScope, DEFAULT_SCOPES, getKeyPrefix, SCOPES_BY_SERVICE } from '@/lib/types/api-key.types'
-
-interface CreateApiKeyModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onCreateKey: (data: CreateKeyData) => Promise<void>
-  projectId?: string
-}
-
-export interface CreateKeyData {
-  name: string
-  key_type: ApiKeyType
-  environment: ApiKeyEnvironment
-  scopes?: ApiKeyScope[]
-  mcpAccessLevel?: 'ro' | 'rw' | 'admin'
-}
-
-interface KeyTypeOption {
-  type: ApiKeyType
-  title: string
-  description: string
-  icon: React.ElementType
-  color: string
-  bgColor: string
-  borderColor: string
-  warning: string
-  defaultScopes: ApiKeyScope[]
-  useCases: string[]
-}
-
-const KEY_TYPE_OPTIONS: KeyTypeOption[] = [
-  {
-    type: 'public',
-    title: 'Public Key',
-    description: 'Safe for client-side apps. Read-only access to data.',
-    icon: Globe,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-200',
-    warning: 'This key is intended for client-side use in browsers or mobile apps. It has read-only access and can be safely exposed in public code.',
-    defaultScopes: DEFAULT_SCOPES.public,
-    useCases: ['Frontend web apps', 'Mobile apps', 'Public APIs', 'Browser SDKs'],
-  },
-  {
-    type: 'secret',
-    title: 'Secret Key',
-    description: 'Full CRUD access. For server-side applications only.',
-    icon: Key,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    warning: 'This key must be kept secret and never exposed in client-side code (browsers, mobile apps). Only use this key in server-side environments where it cannot be accessed by users.',
-    defaultScopes: DEFAULT_SCOPES.secret,
-    useCases: ['Backend servers', 'API integrations', 'CLI tools', 'Serverless functions'],
-  },
-  {
-    type: 'service_role',
-    title: 'Service Role Key',
-    description: 'Bypasses RLS. Full admin access for trusted services.',
-    icon: Shield,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
-    warning: 'WARNING: This is a service role key that bypasses row-level security (RLS) and has full administrative access. It must be kept secret and never exposed in client-side code. Only use this key in trusted server-side environments for admin operations.',
-    defaultScopes: DEFAULT_SCOPES.service_role,
-    useCases: ['Admin tasks', 'Database migrations', 'Trusted backend services', 'Cron jobs'],
-  },
-  {
-    type: 'mcp',
-    title: 'MCP Token',
-    description: 'For AI tools and Model Context Protocol integrations.',
-    icon: Cpu,
-    color: 'text-amber-600',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
-    warning: 'This token is for use with AI assistants and MCP-compatible tools. Different access levels provide varying permissions. Keep tokens secure and rotate regularly.',
-    defaultScopes: DEFAULT_SCOPES.mcp_ro,
-    useCases: ['AI assistants', 'Claude MCP integration', 'Automated agents', 'Tool integrations'],
-  },
-]
-
-const ENVIRONMENT_OPTIONS: { value: ApiKeyEnvironment; label: string; description: string }[] = [
-  { value: 'prod', label: 'Production', description: 'Live environment for production applications' },
-  { value: 'staging', label: 'Staging', description: 'Pre-production testing environment' },
-  { value: 'dev', label: 'Development', description: 'Development and testing environment' },
-]
-
-const MCP_ACCESS_LEVELS = [
-  { value: 'ro' as const, label: 'Read Only', description: 'Can only read data', color: 'text-emerald-600' },
-  { value: 'rw' as const, label: 'Read/Write', description: 'Can read and modify data', color: 'text-amber-600' },
-  { value: 'admin' as const, label: 'Admin', description: 'Full access including delete', color: 'text-red-600' },
-]
-
-interface CreatedKeyDisplay {
-  apiKey: {
-    id: string
-    name: string
-    public_key: string
-    key_type: string
-    key_prefix: string
-  }
-  secretKey?: string
-}
+import { X, Key, ChevronRight } from 'lucide-react'
+import { useCreateApiKeyModal } from './create-api-key/useCreateApiKeyModal'
+import { KeyConfigStep, WriteWarningStep, AdminWarningStep, SuccessStep, KEY_TYPE_OPTIONS } from './create-api-key'
+import type { CreateApiKeyModalProps, KeyTypeOption } from './create-api-key/types'
 
 export default function CreateApiKeyModal({ isOpen, onClose, onCreateKey, projectId }: CreateApiKeyModalProps) {
-  const [step, setStep] = useState<'type' | 'config' | 'confirm-write' | 'confirm-admin' | 'success'>('type')
-  const [selectedKeyType, setSelectedKeyType] = useState<KeyTypeOption | null>(null)
-  const [keyName, setKeyName] = useState('')
-  const [environment, setEnvironment] = useState<ApiKeyEnvironment>('prod')
-  const [selectedScopes, setSelectedScopes] = useState<ApiKeyScope[]>([])
-  const [mcpAccessLevel, setMcpAccessLevel] = useState<'ro' | 'rw' | 'admin'>('ro')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState('')
-  const [writeWarningConfirmed, setWriteWarningConfirmed] = useState(false)
-  const [adminWarningConfirmed, setAdminWarningConfirmed] = useState(false)
-  const [createdKey, setCreatedKey] = useState<CreatedKeyDisplay | null>(null)
-  const [copied, setCopied] = useState<string | null>(null)
+  const {
+    step,
+    selectedKeyType,
+    keyName,
+    environment,
+    selectedScopes,
+    mcpAccessLevel,
+    submitting,
+    error,
+    writeWarningConfirmed,
+    adminWarningConfirmed,
+    copied,
+    setKeyName,
+    setEnvironment,
+    setSelectedScopes,
+    setMcpAccessLevel,
+    setWriteWarningConfirmed,
+    setAdminWarningConfirmed,
+    handleKeyTypeSelect,
+    handleBack,
+    handleScopeToggle,
+    handleCreateKey,
+    handleCopy,
+    resetForm,
+  } = useCreateApiKeyModal({ isOpen, onCreateKey })
 
-  // Reset state when modal opens/closes
-  useEffect(() => {
-    if (isOpen) {
-      setStep('type')
-      setSelectedKeyType(null)
-      setKeyName('')
-      setEnvironment('prod')
-      setSelectedScopes([])
-      setMcpAccessLevel('ro')
-      setError('')
-      setWriteWarningConfirmed(false)
-      setAdminWarningConfirmed(false)
-      setCreatedKey(null)
+  const getStepTitle = () => {
+    switch (step) {
+      case 'type':
+        return 'Choose the type of key you need'
+      case 'config':
+        return 'Configure your key settings'
+      case 'confirm-write':
+        return 'Confirm write access'
+      case 'confirm-admin':
+        return 'Admin token confirmation'
+      case 'success':
+        return 'Your key has been created'
     }
-  }, [isOpen])
-
-  // Update scopes when key type changes
-  useEffect(() => {
-    if (selectedKeyType) {
-      if (selectedKeyType.type === 'mcp') {
-        setSelectedScopes(DEFAULT_SCOPES[`mcp_${mcpAccessLevel}`] || DEFAULT_SCOPES.mcp_ro)
-      } else {
-        setSelectedScopes(selectedKeyType.defaultScopes)
-      }
-    }
-  }, [selectedKeyType, mcpAccessLevel])
-
-  const handleKeyTypeSelect = (option: KeyTypeOption) => {
-    setSelectedKeyType(option)
-    setStep('config')
-  }
-
-  const handleBack = () => {
-    setStep('type')
-  }
-
-  const handleScopeToggle = (scope: ApiKeyScope) => {
-    setSelectedScopes((prev) =>
-      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]
-    )
-  }
-
-  const handleCreateKey = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedKeyType || !keyName.trim()) {
-      setError('Please fill in all required fields')
-      return
-    }
-
-    // US-006: Show warning confirmation for MCP write/admin tokens
-    // US-005: Admin tokens require EXTRA confirmation beyond write confirmation
-    if (selectedKeyType.type === 'mcp' && mcpAccessLevel === 'admin') {
-      if (!writeWarningConfirmed) {
-        setStep('confirm-write')
-        return
-      }
-      if (!adminWarningConfirmed) {
-        setStep('confirm-admin')
-        return
-      }
-    }
-    if (selectedKeyType.type === 'mcp' && mcpAccessLevel === 'rw') {
-      if (!writeWarningConfirmed) {
-        setStep('confirm-write')
-        return
-      }
-    }
-
-    setSubmitting(true)
-    setError('')
-
-    try {
-      const data: CreateKeyData = {
-        name: keyName.trim(),
-        key_type: selectedKeyType.type,
-        environment,
-        scopes: selectedScopes,
-      }
-
-      if (selectedKeyType.type === 'mcp') {
-        data.mcpAccessLevel = mcpAccessLevel
-      }
-
-      await onCreateKey(data)
-
-      // For now, we'll show a success message
-      // In real implementation, the API would return the created key
-      setStep('success')
-    } catch (err: any) {
-      setError(err.message || 'Failed to create API key')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  const handleCopy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopied(id)
-    setTimeout(() => setCopied(null), 2000)
-  }
-
-  const generateUsageExamples = () => {
-    if (!createdKey) return []
-
-    const key = createdKey.secretKey || createdKey.apiKey.public_key
-    const prefix = getKeyPrefix(selectedKeyType!.type, environment, mcpAccessLevel)
-
-    const examples = [
-      {
-        title: 'Environment Variable',
-        code: `NEXTMAVENS_API_KEY=${key}`,
-        language: 'bash',
-      },
-      {
-        title: 'cURL Request',
-        code: `curl -X GET "https://api.nextmavens.cloud/api/users" \\
-  -H "X-API-Key: ${key}"`,
-        language: 'bash',
-      },
-      {
-        title: 'JavaScript (fetch)',
-        code: `const response = await fetch('https://api.nextmavens.cloud/api/users', {
-  headers: {
-    'X-API-Key': '${key}'
-  }
-})
-
-const data = await response.json()`,
-        language: 'javascript',
-      },
-    ]
-
-    return examples
   }
 
   return (
@@ -296,13 +73,7 @@ const data = await response.json()`,
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-slate-900">Create API Key</h2>
-                  <p className="text-sm text-slate-500">
-                    {step === 'type' && 'Choose the type of key you need'}
-                    {step === 'config' && 'Configure your key settings'}
-                    {step === 'confirm-write' && 'Confirm write access'}
-                    {step === 'confirm-admin' && 'Admin token confirmation'}
-                    {step === 'success' && 'Your key has been created'}
-                  </p>
+                  <p className="text-sm text-slate-500">{getStepTitle()}</p>
                 </div>
               </div>
               <button
@@ -318,6 +89,7 @@ const data = await response.json()`,
               {/* Step 1: Key Type Selection */}
               {step === 'type' && (
                 <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Choose Key Type</h3>
                   <div className="grid md:grid-cols-2 gap-4">
                     {KEY_TYPE_OPTIONS.map((option) => {
                       const Icon = option.icon
@@ -360,497 +132,68 @@ const data = await response.json()`,
 
               {/* Step 2: Configuration */}
               {step === 'config' && selectedKeyType && (
-                <form onSubmit={handleCreateKey} className="space-y-6">
-                  {/* Key Type Summary */}
-                  <div className={`p-4 rounded-xl border ${selectedKeyType.borderColor} ${selectedKeyType.bgColor}`}>
-                    <div className="flex items-center gap-3">
-                      <selectedKeyType.icon className={`w-5 h-5 ${selectedKeyType.color}`} />
-                      <div>
-                        <h3 className="font-semibold text-slate-900">{selectedKeyType.title}</h3>
-                        <p className="text-sm text-slate-600">{selectedKeyType.description}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Warning */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm text-amber-800">{selectedKeyType.warning}</p>
-                    </div>
-                  </div>
-
-                  {/* Key Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Key Name <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={keyName}
-                      onChange={(e) => setKeyName(e.target.value)}
-                      placeholder="e.g., Production App, Development Server"
-                      className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:border-transparent"
-                      autoFocus
-                      required
-                    />
-                  </div>
-
-                  {/* Environment Selector */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Environment <span className="text-red-500">*</span>
-                    </label>
-                    <div className="grid md:grid-cols-3 gap-3">
-                      {ENVIRONMENT_OPTIONS.map((env) => (
-                        <button
-                          key={env.value}
-                          type="button"
-                          onClick={() => setEnvironment(env.value)}
-                          className={`p-4 rounded-xl border-2 text-left transition-all ${
-                            environment === env.value
-                              ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200'
-                              : 'border-slate-200 bg-white hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="font-medium text-slate-900">{env.label}</div>
-                          <div className="text-xs text-slate-500 mt-1">{env.description}</div>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-2">
-                      Key prefix: <code className="px-1 py-0.5 bg-slate-100 rounded text-emerald-700">
-                        {getKeyPrefix(selectedKeyType.type, environment, mcpAccessLevel)}
-                      </code>
-                    </p>
-                  </div>
-
-                  {/* MCP Access Level (only for MCP keys) */}
-                  {selectedKeyType.type === 'mcp' && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">
-                        Access Level <span className="text-red-500">*</span>
-                      </label>
-                      <div className="grid md:grid-cols-3 gap-3">
-                        {MCP_ACCESS_LEVELS.map((level) => (
-                          <button
-                            key={level.value}
-                            type="button"
-                            onClick={() => {
-                              setMcpAccessLevel(level.value)
-                              setWriteWarningConfirmed(false)
-                              setAdminWarningConfirmed(false)
-                            }}
-                            className={`p-4 rounded-xl border-2 text-left transition-all ${
-                              mcpAccessLevel === level.value
-                                ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200'
-                                : 'border-slate-200 bg-white hover:border-slate-300'
-                            }`}
-                          >
-                            <div className={`font-medium ${level.color}`}>{level.label}</div>
-                            <div className="text-xs text-slate-500 mt-1">{level.description}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Scope Selector */}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Scopes <span className="text-slate-400">(Permissions)</span>
-                    </label>
-                    <div className="space-y-3">
-                      {Object.entries(SCOPES_BY_SERVICE).map(([service, scopes]) => (
-                        <div key={service} className="border border-slate-200 rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              {service === 'db' && <Database className="w-4 h-4 text-slate-600" />}
-                              {service === 'storage' && <HardDrive className="w-4 h-4 text-slate-600" />}
-                              {service === 'auth' && <Lock className="w-4 h-4 text-slate-600" />}
-                              {service === 'realtime' && <Sparkles className="w-4 h-4 text-slate-600" />}
-                              {service === 'graphql' && <Eye className="w-4 h-4 text-slate-600" />}
-                              <span className="font-medium text-slate-900 capitalize">{service}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const allSelected = scopes.every((s) => selectedScopes.includes(s))
-                                if (allSelected) {
-                                  setSelectedScopes((prev) => prev.filter((s) => !scopes.includes(s)))
-                                } else {
-                                  setSelectedScopes((prev) => [
-                                    ...new Set([...prev, ...scopes]),
-                                  ])
-                                }
-                              }}
-                              className="text-xs text-emerald-700 hover:text-emerald-800"
-                            >
-                              {scopes.every((s) => selectedScopes.includes(s)) ? 'Deselect All' : 'Select All'}
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {scopes.map((scope) => (
-                              <label
-                                key={scope}
-                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition ${
-                                  selectedScopes.includes(scope)
-                                    ? 'bg-emerald-50 border border-emerald-200'
-                                    : 'bg-slate-50 border border-transparent hover:bg-slate-100'
-                                }`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedScopes.includes(scope)}
-                                  onChange={() => handleScopeToggle(scope)}
-                                  className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
-                                />
-                                <span className="text-sm text-slate-700">{scope}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Error Display */}
-                  {error && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-                      <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                      <span className="text-sm text-red-700">{error}</span>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-4 border-t border-slate-200">
-                    <button
-                      type="button"
-                      onClick={handleBack}
-                      disabled={submitting}
-                      className="px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition disabled:opacity-50"
-                    >
-                      Back
-                    </button>
-                    <div className="flex-1" />
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      disabled={submitting}
-                      className="px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting || !keyName.trim()}
-                      className="px-6 py-3 bg-emerald-700 text-white rounded-xl font-medium hover:bg-emerald-800 transition disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Key className="w-4 h-4" />
-                          Create Key
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
+                <KeyConfigStep
+                  selectedKeyType={selectedKeyType}
+                  keyName={keyName}
+                  environment={environment}
+                  selectedScopes={selectedScopes}
+                  mcpAccessLevel={mcpAccessLevel}
+                  error={error}
+                  submitting={submitting}
+                  onKeyNameChange={setKeyName}
+                  onEnvironmentChange={setEnvironment}
+                  onScopeToggle={handleScopeToggle}
+                  onMcpAccessLevelChange={(level) => {
+                    setMcpAccessLevel(level)
+                    setWriteWarningConfirmed(false)
+                    setAdminWarningConfirmed(false)
+                  }}
+                  onBack={handleBack}
+                  onSubmit={handleCreateKey}
+                  onClose={onClose}
+                  onResetConfirmations={() => {
+                    setWriteWarningConfirmed(false)
+                    setAdminWarningConfirmed(false)
+                  }}
+                />
               )}
 
-              {/* US-006: Step 3: Write Access Warning Confirmation */}
+              {/* Step 3: Write Access Warning */}
               {step === 'confirm-write' && selectedKeyType && selectedKeyType.type === 'mcp' && (
-                <div className="space-y-6">
-                  {/* Warning Icon */}
-                  <div className="text-center py-6">
-                    <Cpu className="w-16 h-16 text-amber-600 mx-auto mb-4" />
-                    <h3 className="text-2xl font-semibold text-slate-900 mb-2">Confirm Write Access</h3>
-                    <p className="text-slate-600 max-w-md mx-auto">
-                      You are about to create an MCP token with {mcpAccessLevel === 'rw' ? 'read/write' : 'admin'} access.
-                    </p>
-                  </div>
-
-                  {/* Warning Alert */}
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-5">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="font-semibold text-red-900 mb-2">This AI Can Modify Your Data</h4>
-                        <p className="text-sm text-red-800 mb-3">
-                          This token will allow AI assistants to make changes to your data. Only grant write access to trusted AI systems that you control.
-                        </p>
-                        <ul className="text-sm text-red-800 space-y-1 list-disc list-inside">
-                          <li>Read/write tokens can insert, update, and delete data</li>
-                          <li>Admin tokens have full access including destructive operations</li>
-                          <li>These permissions should only be granted to trusted systems</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Checkbox Confirmation */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={writeWarningConfirmed}
-                        onChange={(e) => setWriteWarningConfirmed(e.target.checked)}
-                        className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 mt-0.5"
-                      />
-                      <p className="text-sm text-amber-900">
-                        <span className="font-semibold">I understand</span> that this token can modify my data and I am granting this access only to a trusted AI system.
-                      </p>
-                    </label>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-4 border-t border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => setStep('config')}
-                      className="px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition"
-                    >
-                      Back
-                    </button>
-                    <div className="flex-1" />
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => handleCreateKey(e as any)}
-                      disabled={!writeWarningConfirmed}
-                      className="px-6 py-3 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Key className="w-4 h-4" />
-                          Confirm & Create Key
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <WriteWarningStep
+                  mcpAccessLevel={mcpAccessLevel}
+                  writeWarningConfirmed={writeWarningConfirmed}
+                  submitting={submitting}
+                  onConfirmChange={setWriteWarningConfirmed}
+                  onBack={() => setStep('config')}
+                  onSubmit={handleCreateKey}
+                  onClose={onClose}
+                />
               )}
 
-              {/* US-005: Step 4: Admin Token Extra Confirmation */}
+              {/* Step 4: Admin Warning */}
               {step === 'confirm-admin' && selectedKeyType && selectedKeyType.type === 'mcp' && (
-                <div className="space-y-6">
-                  {/* Critical Warning Icon */}
-                  <div className="text-center py-6">
-                    <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Shield className="w-10 h-10 text-red-600" />
-                    </div>
-                    <h3 className="text-2xl font-semibold text-slate-900 mb-2">Critical: Admin Access</h3>
-                    <p className="text-slate-600 max-w-md mx-auto">
-                      You are about to create an MCP admin token with <span className="font-bold text-red-600">FULL DESTRUCTIVE ACCESS</span>.
-                    </p>
-                  </div>
-
-                  {/* Critical Warning Alert */}
-                  <div className="bg-red-100 border-2 border-red-300 rounded-lg p-5">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-7 h-7 text-red-700 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="font-bold text-red-900 mb-3 text-lg">⚠️ CRITICAL SECURITY WARNING</h4>
-                        <p className="text-sm text-red-900 mb-4 font-medium">
-                          Admin tokens have FULL ACCESS including data deletion and user management.
-                        </p>
-                        <ul className="text-sm text-red-900 space-y-2">
-                          <li className="flex items-start gap-2">
-                            <span className="text-red-700 font-bold">•</span>
-                            <span><strong>Can DELETE all data</strong> - Destructive operations cannot be undone</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-red-700 font-bold">•</span>
-                            <span><strong>Can MANAGE users</strong> - Create, disable, and delete user accounts</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-red-700 font-bold">•</span>
-                            <span><strong>Can PUBLISH to realtime</strong> - Send data to all WebSocket connections</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <span className="text-red-700 font-bold">•</span>
-                            <span><strong>NO scope limitations</strong> - Full access to all services</span>
-                          </li>
-                        </ul>
-                        <div className="mt-4 p-3 bg-red-200 rounded-lg">
-                          <p className="text-xs text-red-900 font-medium">
-                            <strong>Best Practice:</strong> Only use admin tokens for trusted AI operations tools in controlled environments. Never expose admin tokens in client-side code or untrusted environments.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Double Checkbox Confirmation */}
-                  <div className="space-y-3">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <label className="flex items-start gap-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={adminWarningConfirmed}
-                          onChange={(e) => setAdminWarningConfirmed(e.target.checked)}
-                          className="w-5 h-5 text-red-600 rounded focus:ring-red-500 mt-0.5"
-                        />
-                        <p className="text-sm text-red-900">
-                          <span className="font-semibold">I understand</span> that this admin token has full destructive access and I am accepting full responsibility for any data loss or security issues.
-                        </p>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-4 border-t border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => setStep('confirm-write')}
-                      className="px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition"
-                    >
-                      Back
-                    </button>
-                    <div className="flex-1" />
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => handleCreateKey(e as any)}
-                      disabled={!adminWarningConfirmed}
-                      className="px-6 py-3 bg-red-700 text-white rounded-xl font-medium hover:bg-red-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                    >
-                      {submitting ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Shield className="w-4 h-4" />
-                          Create Admin Token
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
+                <AdminWarningStep
+                  adminWarningConfirmed={adminWarningConfirmed}
+                  submitting={submitting}
+                  onConfirmChange={setAdminWarningConfirmed}
+                  onBack={() => setStep('confirm-write')}
+                  onSubmit={handleCreateKey}
+                  onClose={onClose}
+                />
               )}
 
               {/* Step 5: Success */}
-              {step === 'success' && (
-                <div className="space-y-6">
-                  {/* Success Message */}
-                  <div className="text-center py-6">
-                    <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Check className="w-8 h-8 text-emerald-600" />
-                    </div>
-                    <h3 className="text-2xl font-semibold text-slate-900 mb-2">API Key Created!</h3>
-                    <p className="text-slate-600">Your API key has been created successfully.</p>
-                  </div>
-
-                  {/* Warning */}
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="font-semibold text-red-900 mb-1">Important: Save Your Key Now</h4>
-                        <p className="text-sm text-red-800">
-                          You will only see this key <strong>one time</strong>. Make sure to copy it and store it securely.
-                          You won't be able to retrieve it again after closing this modal.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Key Display (placeholder - would show actual key in production) */}
-                  <div className="bg-slate-900 rounded-xl p-4">
-                    <label className="block text-xs text-slate-400 mb-2">Your API Key</label>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 text-emerald-400 text-sm break-all">
-                        {getKeyPrefix(selectedKeyType!.type, environment, mcpAccessLevel)}••••••••••••••••
-                      </code>
-                      <button
-                        onClick={() => handleCopy('your-api-key-here', 'created-key')}
-                        className="p-2 hover:bg-slate-800 rounded-lg transition"
-                      >
-                        {copied === 'created-key' ? (
-                          <Check className="w-5 h-5 text-emerald-400" />
-                        ) : (
-                          <Copy className="w-5 h-5 text-slate-400" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Usage Examples */}
-                  <div>
-                    <h4 className="font-semibold text-slate-900 mb-3">Quick Start Examples</h4>
-                    <div className="space-y-4">
-                      {generateUsageExamples().map((example, index) => (
-                        <div key={index} className="border border-slate-200 rounded-lg overflow-hidden">
-                          <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex items-center justify-between">
-                            <span className="font-medium text-slate-700 text-sm">{example.title}</span>
-                            <button
-                              onClick={() => handleCopy(example.code, `example-${index}`)}
-                              className="text-xs text-emerald-700 hover:text-emerald-800 flex items-center gap-1"
-                            >
-                              {copied === `example-${index}` ? (
-                                <>
-                                  <Check className="w-3 h-3" />
-                                  Copied!
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3" />
-                                  Copy
-                                </>
-                              )}
-                            </button>
-                          </div>
-                          <pre className="bg-slate-900 p-4 overflow-x-auto">
-                            <code className="text-sm text-slate-300 font-mono">{example.code}</code>
-                          </pre>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3 pt-4 border-t border-slate-200">
-                    <button
-                      onClick={() => {
-                        setStep('type')
-                        setSelectedKeyType(null)
-                        setKeyName('')
-                      }}
-                      className="flex-1 px-4 py-3 border border-slate-300 rounded-xl text-slate-700 font-medium hover:bg-slate-50 transition"
-                    >
-                      Create Another Key
-                    </button>
-                    <button
-                      onClick={onClose}
-                      className="flex-1 px-4 py-3 bg-emerald-700 text-white rounded-xl font-medium hover:bg-emerald-800 transition"
-                    >
-                      Done
-                    </button>
-                  </div>
-                </div>
+              {step === 'success' && selectedKeyType && (
+                <SuccessStep
+                  selectedKeyType={selectedKeyType.type}
+                  environment={environment}
+                  mcpAccessLevel={mcpAccessLevel}
+                  copied={copied}
+                  onCopy={handleCopy}
+                  onCreateAnother={resetForm}
+                  onClose={onClose}
+                />
               )}
             </div>
           </motion.div>
@@ -859,3 +202,6 @@ const data = await response.json()`,
     </AnimatePresence>
   )
 }
+
+// Export types for backward compatibility
+export type { CreateKeyData } from './create-api-key/types'

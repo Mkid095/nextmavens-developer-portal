@@ -18,7 +18,6 @@ import {
 } from '../index'
 
 // Mock all dependencies
-vi.mock('../client', () => ({
   uploadFile: vi.fn(),
   downloadFile: vi.fn(),
   fileExists: vi.fn(),
@@ -30,7 +29,6 @@ vi.mock('../client', () => ({
   },
 }))
 
-vi.mock('../metadata', () => ({
   createStorageFile: vi.fn(),
   getStorageFile: vi.fn(),
   listStorageFiles: vi.fn(),

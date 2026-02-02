@@ -1,8 +1,11 @@
-'use client'
+/**
+ * GraphQL Documentation Page
+ *
+ * @deprecated This file has been refactored into the graphql-module.
+ * Please import from './graphql-module' instead.
+ */
 
-import Link from 'next/link'
-import { Globe, ArrowLeft, ArrowRight, Server, CheckCircle, Code, Zap } from 'lucide-react'
-import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
+export { default as GraphQLDocsView } from './graphql-module/GraphQLDocsView'
 
 const graphqlConfig = {
   domain: 'https://api.nextmavens.cloud',

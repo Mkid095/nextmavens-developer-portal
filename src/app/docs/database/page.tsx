@@ -1,8 +1,11 @@
-'use client'
+/**
+ * Database Documentation Page
+ *
+ * @deprecated This file has been refactored into the database-module.
+ * Please import from './database-module' instead.
+ */
 
-import Link from 'next/link'
-import { Database, ArrowLeft, ArrowRight, Server, CheckCircle, Code, Table, Filter } from 'lucide-react'
-import CodeBlockWithCopy from '@/components/docs/CodeBlockWithCopy'
+export { default as DatabaseDocsView } from './database-module/DatabaseDocsView'
 
 const databaseConfig = {
   domain: 'https://api.nextmavens.cloud',

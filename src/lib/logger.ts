@@ -6,121 +6,20 @@
  * Prod uses info level with sampled logging for performance.
  *
  * US-006: Implement Verbose Logging in Dev
- */
-
-import { getEnvironmentConfig, type Environment } from './environment'
-
-/**
- * Log levels in order of severity (lower = more verbose)
- */
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
-
-/**
- * Log level priority (lower number = less severe)
- */
-const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
-}
-
-/**
- * Current log level for the application
- * Can be overridden by setting environment-specific log level
- */
-let currentLogLevel: LogLevel = 'info'
-
-/**
- * Sample rate for production logs (0-1)
- * In production, only log this fraction of info/debug logs to reduce noise
- */
-const PRODUCTION_SAMPLE_RATE = 0.1
-
-/**
- * Set the current log level based on environment
  *
- * @param environment - The environment to set log level for
+ * @module logger
  */
-export function setLogLevel(environment: Environment): void {
-  const config = getEnvironmentConfig(environment)
-  currentLogLevel = config.log_level
-}
 
-/**
- * Check if a log should be output based on current log level
- *
- * @param level - The log level to check
- * @returns True if the log should be output
- */
-function shouldLog(level: LogLevel): boolean {
-  return LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[currentLogLevel]
-}
+import type { Environment } from './environment'
+import { setLogLevel, getCurrentLogLevel, type LogLevel } from './logger/config'
+import { sanitizeSensitiveData, sanitizeHeaders } from './logger/formatters'
+import { transportLog, transportWarn, transportError } from './logger/transports'
 
-/**
- * Check if production sampling should apply to this log
- *
- * @param level - The log level to check
- * @returns True if sampling should be applied
- */
-function shouldSample(level: LogLevel): boolean {
-  // Only sample debug and info logs in production (info level)
-  if (currentLogLevel !== 'info') {
-    return false
-  }
-  if (level === 'warn' || level === 'error') {
-    return false // Always log warnings and errors
-  }
-  return Math.random() > PRODUCTION_SAMPLE_RATE
-}
+// Re-export commonly used types
+export type { LogLevel } from './logger/config'
 
-/**
- * Format log metadata for output
- *
- * @param metadata - Optional metadata object
- * @returns Formatted metadata string
- */
-function formatMetadata(metadata?: Record<string, unknown>): string {
-  if (!metadata || Object.keys(metadata).length === 0) {
-    return ''
-  }
-
-  // In debug mode, include full metadata
-  if (currentLogLevel === 'debug') {
-    try {
-      return JSON.stringify(metadata, null, 2)
-    } catch {
-      return '[metadata unavailable]'
-    }
-  }
-
-  // In other modes, include summary
-  const keys = Object.keys(metadata)
-  if (keys.length <= 3) {
-    try {
-      return JSON.stringify(metadata)
-    } catch {
-      return '[metadata unavailable]'
-    }
-  }
-
-  // Too many keys, show summary
-  return `{ ${keys.slice(0, 3).join(', ')}... (+${keys.length - 3} more) }`
-}
-
-/**
- * Format a log entry with timestamp and level
- *
- * @param level - The log level
- * @param message - The log message
- * @param metadata - Optional metadata
- * @returns Formatted log string
- */
-function formatLog(level: LogLevel, message: string, metadata?: Record<string, unknown>): string {
-  const timestamp = new Date().toISOString()
-  const metadataStr = formatMetadata(metadata)
-  return `[${timestamp}] [${level.toUpperCase()}] ${message}${metadataStr ? ' ' + metadataStr : ''}`
-}
+// Re-export API helpers for convenience
+export { logApiRequest, logApiResponse, withLogging } from './logger/api-helpers'
 
 /**
  * Log a debug message
@@ -130,9 +29,7 @@ function formatLog(level: LogLevel, message: string, metadata?: Record<string, u
  * @param metadata - Optional metadata to include
  */
 export function debug(message: string, metadata?: Record<string, unknown>): void {
-  if (shouldLog('debug') && !shouldSample('debug')) {
-    console.log(formatLog('debug', message, metadata))
-  }
+  transportLog('debug', message, metadata)
 }
 
 /**
@@ -143,9 +40,7 @@ export function debug(message: string, metadata?: Record<string, unknown>): void
  * @param metadata - Optional metadata to include
  */
 export function info(message: string, metadata?: Record<string, unknown>): void {
-  if (shouldLog('info') && !shouldSample('info')) {
-    console.log(formatLog('info', message, metadata))
-  }
+  transportLog('info', message, metadata)
 }
 
 /**
@@ -156,8 +51,7 @@ export function info(message: string, metadata?: Record<string, unknown>): void 
  * @param metadata - Optional metadata to include
  */
 export function warn(message: string, metadata?: Record<string, unknown>): void {
-  // Warnings are never sampled
-  console.warn(formatLog('warn', message, metadata))
+  transportWarn(message, metadata)
 }
 
 /**
@@ -168,8 +62,7 @@ export function warn(message: string, metadata?: Record<string, unknown>): void 
  * @param metadata - Optional metadata to include
  */
 export function error(message: string, metadata?: Record<string, unknown>): void {
-  // Errors are never sampled
-  console.error(formatLog('error', message, metadata))
+  transportError(message, metadata)
 }
 
 /**
@@ -223,70 +116,6 @@ export function createLogger(context: string): Logger {
 }
 
 /**
- * Sanitize sensitive data from objects before logging
- * Removes passwords, tokens, and other sensitive fields
- *
- * @param data - The data to sanitize
- * @returns Sanitized data
- */
-function sanitizeSensitiveData(data: unknown): unknown {
-  if (data === null || data === undefined) {
-    return data
-  }
-
-  const SENSITIVE_KEYS = [
-    'password',
-    'token',
-    'secret',
-    'apiKey',
-    'api_key',
-    'authorization',
-    'cookie',
-    'session',
-    'jwt',
-    'private',
-    'credentials',
-  ]
-
-  if (typeof data === 'string') {
-    // Check if it looks like a JWT token
-    if (data.length > 50 && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(data)) {
-      return '[SANITIZED: Token]'
-    }
-    // Check if it looks like a bearer token
-    if (data.toLowerCase().startsWith('bearer ')) {
-      return '[SANITIZED: Bearer token]'
-    }
-    return data
-  }
-
-  if (Array.isArray(data)) {
-    return data.map(item => sanitizeSensitiveData(item))
-  }
-
-  if (typeof data === 'object') {
-    const sanitized: Record<string, unknown> = {}
-
-    for (const [key, value] of Object.entries(data)) {
-      const lowerKey = key.toLowerCase()
-
-      // Check if this is a sensitive key
-      if (SENSITIVE_KEYS.some(sk => lowerKey.includes(sk))) {
-        sanitized[key] = '[SANITIZED]'
-      } else if (typeof value === 'object' && value !== null) {
-        sanitized[key] = sanitizeSensitiveData(value)
-      } else {
-        sanitized[key] = value
-      }
-    }
-
-    return sanitized
-  }
-
-  return data
-}
-
-/**
  * Log an HTTP request with full details in debug mode
  *
  * @param method - HTTP method
@@ -305,7 +134,7 @@ export function logRequest(
   const message = `${method} ${path}`
 
   // In debug mode, include full request details
-  if (currentLogLevel === 'debug') {
+  if (getCurrentLogLevel() === 'debug') {
     const fullMetadata: Record<string, unknown> = { ...metadata }
 
     if (body !== undefined) {
@@ -313,17 +142,7 @@ export function logRequest(
     }
 
     if (headers) {
-      // Sanitize headers but keep most for debugging
-      const sanitizedHeaders: Record<string, unknown> = {}
-      for (const [key, value] of Object.entries(headers)) {
-        const lowerKey = key.toLowerCase()
-        if (lowerKey === 'authorization' || lowerKey === 'cookie') {
-          sanitizedHeaders[key] = '[SANITIZED]'
-        } else {
-          sanitizedHeaders[key] = value
-        }
-      }
-      fullMetadata.headers = sanitizedHeaders
+      fullMetadata.headers = sanitizeHeaders(headers)
     }
 
     debug(message, fullMetadata)
@@ -354,7 +173,7 @@ export function logResponse(
   const message = `${method} ${path} - ${statusCode}`
 
   // In debug mode, include full response details
-  if (currentLogLevel === 'debug') {
+  if (getCurrentLogLevel() === 'debug') {
     const fullMetadata: Record<string, unknown> = { ...metadata }
 
     if (body !== undefined) {
@@ -389,7 +208,7 @@ export function logError(err: unknown, context?: string): void {
   if (err instanceof Error) {
     metadata.name = err.name
     metadata.message = err.message
-    if (currentLogLevel === 'debug') {
+    if (getCurrentLogLevel() === 'debug') {
       metadata.stack = err.stack
     }
   } else {
@@ -406,143 +225,14 @@ export function logError(err: unknown, context?: string): void {
  * @param environment - The environment to initialize with
  */
 export function initializeLogger(environment: Environment = 'prod'): void {
-  setLogLevel(environment)
-  info('Logger initialized', { environment, log_level: getEnvironmentConfig(environment).log_level })
+  const { getEnvironmentConfig } = require('./environment')
+  const config = getEnvironmentConfig(environment)
+  setLogLevel(environment, config.log_level)
+  info('Logger initialized', { environment, log_level: config.log_level })
 }
 
 /**
  * Set log level based on snapshot environment
- * Use this when you have a snapshot and want to configure logging accordingly
- *
- * @param snapshotEnvironment - Environment from snapshot ('production' | 'development' | 'staging')
+ * Re-exported from config for convenience
  */
-export function setLogLevelFromSnapshot(snapshotEnvironment: 'production' | 'development' | 'staging'): void {
-  let environment: Environment = 'prod'
-
-  switch (snapshotEnvironment) {
-    case 'development':
-      environment = 'dev'
-      break
-    case 'staging':
-      environment = 'staging'
-      break
-    case 'production':
-      environment = 'prod'
-      break
-  }
-
-  setLogLevel(environment)
-}
-
-/**
- * Helper function to log API request with environment-aware verbosity
- * Call this at the start of your API route handler
- *
- * @param req - Next.js request object
- * @param projectId - Optional project ID to fetch environment for
- */
-export async function logApiRequest(
-  req: Request,
-  projectId?: string
-): Promise<void> {
-  const url = new URL(req.url)
-  const method = req.method
-
-  // Clone request to read body without consuming it
-  let body: unknown = undefined
-  const contentType = req.headers.get('content-type')
-
-  if (contentType?.includes('application/json')) {
-    try {
-      const clonedReq = req.clone()
-      body = await clonedReq.json()
-    } catch {
-      // Body not readable or not JSON
-    }
-  }
-
-  // Get headers as object
-  const headers: Record<string, string> = {}
-  req.headers.forEach((value, key) => {
-    headers[key] = value
-  })
-
-  logRequest(method, url.pathname, undefined, body, headers)
-}
-
-/**
- * Helper function to log API response with environment-aware verbosity
- * Call this before returning from your API route handler
- *
- * @param req - Next.js request object
- * @param response - Response object
- * @param duration - Request duration in milliseconds
- */
-export function logApiResponse(
-  req: Request,
-  response: Response,
-  duration: number
-): void {
-  const url = new URL(req.url)
-  const method = req.method
-  const status = response.status
-
-  // Try to get response body
-  let responseBody: unknown = undefined
-  const contentType = response.headers.get('content-type')
-
-  if (currentLogLevel === 'debug' && contentType?.includes('application/json')) {
-    // Note: We can't read the response body without consuming it
-    // This is a limitation of the Response API
-    // Callers can optionally pass response body if they have it
-  }
-
-  logResponse(method, url.pathname, status, { duration }, undefined, duration)
-}
-
-/**
- * Higher-order function to wrap API route handlers with logging
- * Automatically logs request and response with environment-aware verbosity
- *
- * @param handler - The API route handler to wrap
- * @returns A wrapped handler with automatic logging
- *
- * @example
- * ```ts
- * import { withLogging } from '@/lib/logger'
- * import { NextRequest } from 'next/server'
- *
- * export const POST = withLogging(async (req: NextRequest) => {
- *   // Your handler logic here
- *   return NextResponse.json({ success: true })
- * })
- * ```
- */
-export function withLogging<T extends Request>(
-  handler: (req: T) => Promise<Response> | Response
-): (req: T) => Promise<Response> {
-  return async (req: T): Promise<Response> => {
-    const startTime = Date.now()
-
-    // Log incoming request
-    await logApiRequest(req)
-
-    try {
-      // Call the actual handler
-      const response = await handler(req)
-      const duration = Date.now() - startTime
-
-      // Log outgoing response
-      logApiResponse(req, response, duration)
-
-      return response
-    } catch (error) {
-      const duration = Date.now() - startTime
-
-      // Log error
-      logError(error, `Request failed: ${req.method} ${new URL(req.url).pathname}`)
-
-      throw error
-    }
-  }
-}
+export { setLogLevelFromSnapshot } from './logger/config'

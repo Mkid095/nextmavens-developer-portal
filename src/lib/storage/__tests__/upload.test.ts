@@ -10,7 +10,6 @@ import { MAX_FILE_SIZE, shouldUseCloudinary, type StorageBackend } from '../clie
 import { createStorageFile, getStorageUsage } from '../metadata'
 
 // Mock dependencies
-vi.mock('../client', () => ({
   uploadFile: vi.fn(),
   shouldUseCloudinary: vi.fn(),
   MAX_FILE_SIZE: {
@@ -19,7 +18,6 @@ vi.mock('../client', () => ({
   },
 }))
 
-vi.mock('../metadata', () => ({
   createStorageFile: vi.fn(),
   getStorageUsage: vi.fn().mockResolvedValue(0),
 }))
