@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
-    "@nextmavenspacks/audit-logs-database": "^1.0.1",
+    "@nextmavenspacks/audit-logs-database": "file:./packages/audit-logs-database",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.0",
     "date-fns": "^4.1.0",
