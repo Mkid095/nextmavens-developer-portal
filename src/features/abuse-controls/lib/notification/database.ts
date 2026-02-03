@@ -10,11 +10,11 @@ import type {
   NotificationPriority,
   NotificationStatus,
   NotificationChannel,
-} from '../types'
+} from '../../types'
 import {
   NotificationStatus as NotificationStatusEnum,
-} from '../types'
-import { logAuditEntry, AuditLogLevel } from '../lib/audit-logger'
+} from '../../types'
+import { logAuditEntry, AuditLogLevel } from '../audit-logger'
 
 /**
  * Create a notification record in the database

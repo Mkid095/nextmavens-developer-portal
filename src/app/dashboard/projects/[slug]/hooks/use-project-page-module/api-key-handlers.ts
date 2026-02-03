@@ -2,8 +2,8 @@
  * Project Page Hook - Module - API Key Handlers
  */
 
-import type { CreateApiKeyData } from '../types'
-import { API_ENDPOINTS } from '../constants'
+import type { CreateApiKeyData } from './types'
+import { API_ENDPOINTS } from './constants'
 
 export async function createApiKey(
   data: CreateApiKeyData,

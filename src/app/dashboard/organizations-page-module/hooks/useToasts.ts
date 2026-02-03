@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * Organizations Page - Module - Hook for Toast Notifications
  */

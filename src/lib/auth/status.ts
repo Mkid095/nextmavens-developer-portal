@@ -46,7 +46,8 @@ export async function checkProjectStatus(projectId: string): Promise<void> {
           projectId
         )
       default:
-        throw createError(errorCode, 'Project is not active', projectId)
+        // This should never be reached since all ProjectStatus values are handled above
+        throw createError(ErrorCode.NOT_FOUND, 'Project is not in an active state', projectId)
     }
   }
 }

@@ -3,9 +3,9 @@
  * Functions for sending email notifications
  */
 
-import type { NotificationDeliveryResult } from '../types'
-import { NotificationChannel as NotificationChannelEnum } from '../types'
-import { sendPlainTextEmail, type EmailSendResult } from '../lib/email-service'
+import type { NotificationDeliveryResult } from '../../types'
+import { NotificationChannel as NotificationChannelEnum } from '../../types'
+import { sendPlainTextEmail, type EmailSendResult } from '../email-service'
 
 /**
  * Send a notification via email channel using Resend

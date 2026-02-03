@@ -10,7 +10,7 @@
  * US-007: Add Correlation ID to Storage Service (prd-observability.json)
  *
  * @deprecated This file has been refactored into the upload-route-module.
- * Please import from './upload-route-module' instead.
+ * Please import from '../upload-route-module' instead.
  */
 
-export { POST, GET } from './upload-route-module/route'
+export { POST, GET } from '../upload-route-module/route'

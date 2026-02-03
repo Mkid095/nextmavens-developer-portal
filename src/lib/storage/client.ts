@@ -260,9 +260,4 @@ export async function deleteFile(fileId: string, backend: StorageBackend): Promi
  * @param backend - Storage backend type
  * @returns True if file exists
  */
-export { checkFileExists as fileExists }
-
-/**
- * Get file metadata from the appropriate backend
- */
-export { getFileInfo } from './api-metadata'
+// Note: fileExists is already re-exported from api-metadata above

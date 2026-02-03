@@ -4,7 +4,7 @@
  */
 
 import { getPool } from '@/lib/db'
-import { NotificationStatus as NotificationStatusEnum } from '../types'
+import { NotificationStatus as NotificationStatusEnum } from '../../types'
 
 /**
  * Retry failed notifications

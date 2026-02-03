@@ -4,7 +4,7 @@
 
 import { Info } from 'lucide-react'
 import type { ScopeSelectorProps } from '../types'
-import { SCOPES_BY_SERVICE, SCOPE_DESCRIPTIONS } from '../../../types'
+import { SCOPES_BY_SERVICE, SCOPE_DESCRIPTIONS } from '../types'
 
 export function ScopeSelector({ scopes, onScopeToggle, showScopeDetails }: ScopeSelectorProps) {
   return (

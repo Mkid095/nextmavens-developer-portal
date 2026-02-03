@@ -6,5 +6,5 @@
  * Get abuse dashboard summary statistics
  */
 
-export { GET } from './dashboard/handlers'
-export type { DashboardStatsResponse } from './dashboard/types'
+export { GET } from './handlers'
+export type { DashboardStatsResponse } from './types'

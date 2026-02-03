@@ -7,7 +7,7 @@
  * Migration required: 028_create_storage_files_table.sql
  */
 
-export type { StorageFile, StorageStats } from './storage/metadata/types'
+export type { StorageFile, StorageStats } from './metadata/types'
 export {
   createStorageFile,
   getStorageFile,
@@ -15,15 +15,15 @@ export {
   updateStorageFileMetadata,
   deleteStorageFile,
   deleteProjectFiles,
-} from './storage/metadata/crud'
+} from './metadata/crud'
 export {
   listStorageFiles,
   listStorageFilesByPath,
   listStorageFilesByBackend,
-} from './storage/metadata/queries'
+} from './metadata/queries'
 export {
   getStorageUsage,
   getStorageUsageByBackend,
   getStorageFileCount,
   getStorageStats,
-} from './storage/metadata/stats'
+} from './metadata/stats'

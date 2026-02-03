@@ -58,7 +58,7 @@ export async function verifyModuleFunctions(
   requiredFunctions: readonly string[]
 ): Promise<{ missing: string[]; hasAll: boolean }> {
   try {
-    const module = await import(modulePath)
+    const moduleExports = await import(modulePath)
     const missing: string[] = []
 
     for (const fn of requiredFunctions) {

@@ -3,7 +3,7 @@
  */
 
 import type { StorageUsageMetric } from '../types'
-import { validateStorageMetric, validateStorageMetrics } from '../validators'
+import { validateStorageMetric, validateStorageMetrics } from './validators'
 import { insertMetric, insertMetrics } from './db-operations'
 
 /**

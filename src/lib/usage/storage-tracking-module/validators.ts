@@ -3,7 +3,7 @@
  */
 
 import type { StorageUsageMetric } from '../types'
-import { VALID_METRIC_TYPES } from '../constants'
+import { VALID_METRIC_TYPES } from './constants'
 
 export function validateStorageMetric(metric: StorageUsageMetric): { valid: boolean; error?: string } {
   const { projectId, metricType, quantity } = metric

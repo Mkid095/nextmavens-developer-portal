@@ -4,7 +4,7 @@
 
 import type { StorageUsageStats, CurrentStorageUsage, DayBreakdown } from '../types'
 import { getAggregatedStats, getDailyBreakdown } from './db-operations'
-import { DEFAULT_DAYS_AGO } from '../constants'
+import { DEFAULT_DAYS_AGO } from './constants'
 
 /**
  * Get storage usage statistics for a project

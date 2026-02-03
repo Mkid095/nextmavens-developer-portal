@@ -8,7 +8,7 @@ import type {
   UnlockProjectResponse,
 } from '../types'
 import type { SuspensionStatus } from '@/features/abuse-controls/types'
-import { WARNINGS } from '../constants'
+import { WARNINGS } from './constants'
 
 export function buildUnlockedProjectState(
   updatedProject: any,

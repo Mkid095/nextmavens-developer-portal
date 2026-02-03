@@ -3,7 +3,7 @@
  */
 
 import type { KeyTypeSelectorProps } from '../types'
-import { KEY_TYPE_CONFIG } from '../../../types'
+import { KEY_TYPE_CONFIG } from '../types'
 
 export function KeyTypeSelector({ keyType, onKeyTypeChange }: KeyTypeSelectorProps) {
   return (

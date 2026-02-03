@@ -3,7 +3,7 @@
  */
 
 import { getPool } from '@/lib/db'
-import type { ApproachingCapsStats, ApproachingCapProject } from '../../types'
+import type { ApproachingCapsStats, ApproachingCap } from '../../types'
 import { SQL_QUERIES, ERROR_MESSAGES, EMPTY_RESULTS, DEFAULT_LIMITS } from '../constants'
 import { withErrorHandling, safeParseInt, safeParseFloat } from '../utils'
 
@@ -19,7 +19,7 @@ export async function getApproachingCapsStats(): Promise<ApproachingCapsStats> {
       const pool = getPool()
       const result = await pool.query(SQL_QUERIES.APPROACHING_CAPS(DEFAULT_LIMITS.APPROACHING_CAPS))
 
-      const projects: ApproachingCapProject[] = result.rows.map((row) => ({
+      const projects: ApproachingCap[] = result.rows.map((row) => ({
         project_id: row.project_id,
         project_name: row.project_name,
         organization: row.organization,

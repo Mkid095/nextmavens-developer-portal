@@ -3,7 +3,7 @@
  */
 
 import type { GracePeriodJobResult, ProjectNearExpiration, ProjectToHardDelete } from '../types'
-import { LOG_SEPARATOR, LOG_MESSAGES } from '../constants'
+import { LOG_SEPARATOR, LOG_MESSAGES } from './constants'
 
 export function logJobStart(startTime: Date): void {
   console.log(LOG_SEPARATOR)

@@ -4,9 +4,9 @@
  */
 
 import { getPool } from '@/lib/db'
-import type { NotificationRecipient, NotificationType } from '../types'
-import { NotificationType as NotificationTypeEnum } from '../types'
-import { shouldReceiveNotification } from '../lib/notification-preferences'
+import type { NotificationRecipient, NotificationType } from '../../types'
+import { NotificationType as NotificationTypeEnum } from '../../types'
+import { shouldReceiveNotification } from '../notification-preferences'
 
 /**
  * Get notification recipients for a project

@@ -92,7 +92,6 @@ export function SqlEditor({
   // Create query operation handlers
   const {
     handleExecute,
-    handleForceExecute,
     handleExplain,
     handleFormat,
     loadQuery,
@@ -134,7 +133,7 @@ export function SqlEditor({
     setShowWarning(false)
     if (onExecute && query.trim()) {
       // US-004: Add query to history
-      import('./QueryHistory').then(({ addQueryToHistory }) => {
+      import('../QueryHistory').then(({ addQueryToHistory }) => {
         addQueryToHistory(query.trim(), readonlyMode)
         // US-008: Pass explain mode for query plan
         onExecute(query.trim(), readonlyMode, explainMode)

@@ -2,7 +2,7 @@
  * API Key Management
  */
 
-import crypto from 'crypto'
+import * as crypto from 'crypto'
 
 export function generateApiKey(type: 'public' | 'secret' = 'public'): string {
   const key = Buffer.from(crypto.randomBytes(32)).toString('hex')

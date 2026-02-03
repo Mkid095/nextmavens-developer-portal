@@ -5,6 +5,7 @@
 import type { Developer } from './types'
 import { generateAccessToken, generateRefreshToken } from './tokens'
 import { checkProjectStatus as checkStatus } from './status'
+import { getDeveloperByEmail } from './database'
 
 export function generateSlug(name: string): string {
   return name
@@ -15,8 +16,7 @@ export function generateSlug(name: string): string {
 }
 
 export async function authenticateRequest(req: Request): Promise<{ payload: any; developer: any }> {
-  const { authenticateRequest: auth, getDeveloperByEmail } = require('./database')
-  const { verifyAccessToken } = require('./tokens')
+  const { verifyAccessToken } = await import('./tokens')
 
   const authHeader = req.headers.get('authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {

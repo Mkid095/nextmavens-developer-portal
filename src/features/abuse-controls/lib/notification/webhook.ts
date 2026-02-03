@@ -4,14 +4,14 @@
  */
 
 import { getPool } from '@/lib/db'
-import type { NotificationDeliveryResult } from '../types'
+import type { NotificationDeliveryResult } from '../../types'
 import {
   NotificationType as NotificationTypeEnum,
   NotificationPriority as NotificationPriorityEnum,
   NotificationStatus as NotificationStatusEnum,
   NotificationChannel as NotificationChannelEnum,
-} from '../types'
-import { logAuditEntry, AuditLogLevel } from '../lib/audit-logger'
+} from '../../types'
+import { logAuditEntry, AuditLogLevel } from '../audit-logger'
 import { getNotificationRecipients } from './recipients'
 import { createNotification } from './database'
 import { sendEmailNotification } from './email'

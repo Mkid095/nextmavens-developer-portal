@@ -3,7 +3,7 @@
  */
 
 import type { ProjectRecord } from '../types'
-import { JOB_QUERIES } from '../constants'
+import { JOB_QUERIES } from './constants'
 
 export async function findProjectsInGracePeriod(pool: any): Promise<ProjectRecord[]> {
   const result = await pool.query(JOB_QUERIES.FIND_PROJECTS)

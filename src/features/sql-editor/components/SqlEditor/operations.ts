@@ -2,8 +2,8 @@
  * SQL Editor Query Operations
  */
 
-import { addQueryToHistory } from './QueryHistory'
-import { saveQuery } from './SavedQueries'
+import { addQueryToHistory } from '../QueryHistory'
+import { saveQuery } from '../SavedQueries'
 import { format } from 'sql-formatter'
 import { extractSqlCommand } from './utils'
 

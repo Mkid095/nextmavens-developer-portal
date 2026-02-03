@@ -2,7 +2,7 @@
  * Unlock Project Service - Module - Validators
  */
 
-import { VALIDATION_ERRORS } from '../constants'
+import { VALIDATION_ERRORS } from './constants'
 import type { UnlockProjectParams } from '../types'
 
 export interface ValidationError {

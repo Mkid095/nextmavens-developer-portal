@@ -2,7 +2,7 @@
  * Token Management
  */
 
-import jwt from 'jsonwebtoken'
+import * as jwt from 'jsonwebtoken'
 import { getJwtSecret, getRefreshSecret } from './config'
 import type { JwtPayload } from './types'
 import type { Developer } from './types'

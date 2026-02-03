@@ -21,5 +21,3 @@ export {
   getStorageUsageStats,
   getCurrentStorageUsage,
 } from './recording'
-
-export { getStorageUsageStats, getCurrentStorageUsage } from './queries'

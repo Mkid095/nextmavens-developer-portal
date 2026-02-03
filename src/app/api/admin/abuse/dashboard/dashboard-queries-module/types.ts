@@ -58,7 +58,7 @@ export interface PatternDetectionRow {
 /**
  * Query time range parameters
  */
-export interface TimeRange {
+export interface QueryTimeRange {
   startTime: Date
   endTime: Date
 }

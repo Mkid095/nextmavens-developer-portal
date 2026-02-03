@@ -3,9 +3,9 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle, AlertCircle, Shield } from 'lucide-react'
+import { CheckCircle, AlertCircle, Shield, RefreshCw, LogOut, ToggleRight, ToggleLeft } from 'lucide-react'
 import type { FeatureFlag, Toast } from './types'
-import { getScopeBadgeColor } from '../utils'
+import { getScopeBadgeColor } from './utils'
 
 interface LoadingStateProps {
   fetching?: boolean

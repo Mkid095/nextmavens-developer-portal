@@ -2,7 +2,7 @@
  * Unlock Project Service - Module - Database Queries
  */
 
-import { QUERIES } from '../constants'
+import { QUERIES } from './constants'
 
 export async function getProject(pool: any, projectId: string) {
   const result = await pool.query(QUERIES.GET_PROJECT, [projectId])

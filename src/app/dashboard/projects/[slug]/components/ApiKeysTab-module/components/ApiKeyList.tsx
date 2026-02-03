@@ -52,7 +52,7 @@ export function ApiKeyList({
 
         return (
           <KeyCard
-            key={key.id}
+            apiKeyId={key.id}
             project={project}
             key={key}
             displayKey={displayKey}

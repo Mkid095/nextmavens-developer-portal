@@ -3,7 +3,7 @@
  * Functions for creating notification templates and formatting content
  */
 
-import type { SuspensionNotificationTemplate, SuspensionReason } from '../types'
+import type { SuspensionNotificationTemplate, SuspensionReason } from '../../types'
 
 /**
  * Create a suspension notification template

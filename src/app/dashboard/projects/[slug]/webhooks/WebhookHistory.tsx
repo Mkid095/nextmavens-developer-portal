@@ -10,11 +10,14 @@ import {
   RefreshCw,
   Clock,
   CheckCircle,
+  Loader2,
+  XCircle,
+  Globe,
 } from 'lucide-react'
 import type { EventLog } from '@/lib/types/webhook.types'
-import { getAuthToken } from '../utils'
+import { getAuthToken } from './utils'
 import { getControlPlaneClient } from '@/lib/api/control-plane-client'
-import { formatDate } from '../utils'
+import { formatDate } from './utils'
 
 interface WebhookHistoryProps {
   project: { id: string }

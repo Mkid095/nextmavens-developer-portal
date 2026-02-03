@@ -1,8 +1,44 @@
+'use client'
+
 /**
  * Changelog Page
- *
- * @deprecated This file has been refactored into the changelog-module.
- * Please import from './changelog-module' instead.
  */
 
-export { ChangelogPageView as default } from './changelog-module/ChangelogPageView'
+import { useState } from 'react'
+import { Navigation, Header, AboutSection, ChangelogEntryCard, Footer } from '@/app/docs/changelog-module/components'
+import { CHANGELOG_DATA } from '@/app/docs/changelog-module/constants'
+import { generateRSS, downloadRSS } from '@/app/docs/changelog-module/utils'
+
+export default function ChangelogPageView() {
+  const [copied, setCopied] = useState<string | null>(null)
+
+  const handleDownloadRSS = () => {
+    const rss = generateRSS(CHANGELOG_DATA)
+    downloadRSS(rss)
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F3F5F7]">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        :root { --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif; }
+        .font-jakarta { font-family: var(--font-sans); }
+      `}</style>
+
+      <Navigation />
+
+      <main className="mx-auto max-w-[1180px] px-4 py-12">
+        <Header onDownloadRSS={handleDownloadRSS} />
+        <AboutSection />
+
+        <div className="space-y-6">
+          {CHANGELOG_DATA.map((entry, index) => (
+            <ChangelogEntryCard key={entry.version} entry={entry} index={index} />
+          ))}
+        </div>
+
+        <Footer />
+      </main>
+    </div>
+  )
+}

@@ -4,7 +4,7 @@
 
 import { getPool } from '@/lib/db'
 import type { StorageUsageMetric } from '../types'
-import { SERVICE_NAME } from '../constants'
+import { SERVICE_NAME } from './constants'
 
 export async function insertMetric(metric: StorageUsageMetric): Promise<void> {
   const pool = getPool()

@@ -7,12 +7,12 @@
  * Enforces project isolation by setting search_path based on project_id.
  */
 
-export * from './middleware/schema-scope/types'
+export * from './schema-scope/types'
 export {
   withSchemaScope,
   getScopedClient,
   withSchemaScopeHandler,
   clearTenantSlugCache,
   validateQueryIsolation,
-} from './middleware/schema-scope/scope'
-export { default } from './middleware/schema-scope'
+} from './schema-scope/scope'
+export { default } from './schema-scope'

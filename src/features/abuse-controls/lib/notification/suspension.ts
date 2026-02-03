@@ -3,14 +3,14 @@
  * Functions for sending suspension-related notifications
  */
 
-import type { NotificationDeliveryResult, SuspensionReason } from '../types'
+import type { NotificationDeliveryResult, SuspensionReason } from '../../types'
 import {
   NotificationType as NotificationTypeEnum,
   NotificationPriority as NotificationPriorityEnum,
   NotificationStatus as NotificationStatusEnum,
   NotificationChannel as NotificationChannelEnum,
-} from '../types'
-import { logAuditEntry, AuditLogLevel } from '../lib/audit-logger'
+} from '../../types'
+import { logAuditEntry, AuditLogLevel } from '../audit-logger'
 import { getNotificationRecipients } from './recipients'
 import { createSuspensionNotificationTemplate, formatSuspensionNotificationEmail } from './templates'
 import { createNotification } from './database'

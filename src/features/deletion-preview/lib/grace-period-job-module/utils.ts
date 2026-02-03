@@ -3,7 +3,7 @@
  */
 
 import type { ProjectRecord, ProjectNearExpiration, ProjectToHardDelete, ProjectCategorization } from '../types'
-import { WARNING_DAYS_BEFORE } from '../constants'
+import { WARNING_DAYS_BEFORE } from './constants'
 
 export function calculateDaysUntil(now: Date, gracePeriodEnd: Date): {
   daysUntilEnd: number

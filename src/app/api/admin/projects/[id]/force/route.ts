@@ -9,5 +9,5 @@
  * US-006: Implement Force Delete Power
  */
 
-export * from './force/types'
-export { POST, GET, DELETE } from './force/handlers'
+export * from './types'
+export { POST, GET, DELETE } from './handlers'

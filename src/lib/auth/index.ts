@@ -6,27 +6,27 @@
  */
 
 // Types
-export type { Developer, JwtPayload, AuthenticatedEntity } from './auth/types'
+export type { Developer, JwtPayload, AuthenticatedEntity } from './types'
 
 // Token operations
 export {
   generateAccessToken,
   generateRefreshToken,
   verifyAccessToken,
-} from './auth/tokens'
+} from './tokens'
 
 // API keys
-export { generateApiKey, hashApiKey } from './auth/api-keys'
+export { generateApiKey, hashApiKey } from './api-keys'
 
 // Utilities
-export { generateSlug, authenticateRequest, createDeveloperSession } from './auth/utils'
+export { generateSlug, authenticateRequest, createDeveloperSession } from './utils'
 
 // Status checking
-export { checkProjectStatus } from './auth/status'
+export { checkProjectStatus } from './status'
 
 // Database operations
 export {
   getDeveloperByEmail,
   getDeveloperById,
   validateDeveloperForProject,
-} from './auth/database'
+} from './database'

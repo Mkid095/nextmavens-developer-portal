@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * Organization Detail Page - Custom Hook
  *

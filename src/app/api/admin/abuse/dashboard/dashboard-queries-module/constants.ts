@@ -2,7 +2,7 @@
  * Abuse Dashboard Queries Module - Constants
  */
 
-import type { TimeRange } from './types'
+import type { QueryTimeRange } from './types'
 
 /**
  * Default limits for query results
@@ -51,14 +51,14 @@ export const EMPTY_RESULTS = {
     by_severity: {},
     recent: [],
   },
-} as const
+}
 
 /**
  * SQL Queries
  */
 export const SQL_QUERIES = {
   // Suspensions queries
-  SUSPENSIONS_TOTAL: (range: TimeRange) => `
+  SUSPENSIONS_TOTAL: (range: QueryTimeRange) => `
     SELECT COUNT(*) as count
     FROM suspensions
     WHERE suspended_at >= $1 AND suspended_at <= $2
@@ -70,7 +70,7 @@ export const SQL_QUERIES = {
     WHERE resolved_at IS NULL
   `,
 
-  SUSPENSIONS_BY_TYPE: (range: TimeRange) => `
+  SUSPENSIONS_BY_TYPE: (range: QueryTimeRange) => `
     SELECT
       cap_exceeded,
       COUNT(*) as count
@@ -80,13 +80,13 @@ export const SQL_QUERIES = {
   `,
 
   // Rate limits queries
-  RATE_LIMITS_TOTAL: (range: TimeRange) => `
+  RATE_LIMITS_TOTAL: (range: QueryTimeRange) => `
     SELECT COUNT(*) as count
     FROM rate_limits
     WHERE created_at >= $1 AND created_at <= $2
   `,
 
-  RATE_LIMITS_BY_TYPE: (range: TimeRange) => `
+  RATE_LIMITS_BY_TYPE: (range: QueryTimeRange) => `
     SELECT
       identifier_type,
       COUNT(*) as count
@@ -96,7 +96,7 @@ export const SQL_QUERIES = {
   `,
 
   // Cap violations queries
-  CAP_VIOLATIONS: (range: TimeRange, limit: number) => `
+  CAP_VIOLATIONS: (range: QueryTimeRange, limit: number) => `
     SELECT
       s.project_id,
       p.name as project_name,
@@ -129,13 +129,13 @@ export const SQL_QUERIES = {
   `,
 
   // Pattern detections queries
-  PATTERNS_TOTAL: (range: TimeRange) => `
+  PATTERNS_TOTAL: (range: QueryTimeRange) => `
     SELECT COUNT(*) as count
     FROM pattern_detections
     WHERE detected_at >= $1 AND detected_at <= $2
   `,
 
-  PATTERNS_BY_TYPE: (range: TimeRange) => `
+  PATTERNS_BY_TYPE: (range: QueryTimeRange) => `
     SELECT
       pattern_type,
       COUNT(*) as count
@@ -144,7 +144,7 @@ export const SQL_QUERIES = {
     GROUP BY pattern_type
   `,
 
-  PATTERNS_BY_SEVERITY: (range: TimeRange) => `
+  PATTERNS_BY_SEVERITY: (range: QueryTimeRange) => `
     SELECT
       severity,
       COUNT(*) as count
@@ -153,7 +153,7 @@ export const SQL_QUERIES = {
     GROUP BY severity
   `,
 
-  PATTERNS_RECENT: (range: TimeRange, limit: number) => `
+  PATTERNS_RECENT: (range: QueryTimeRange, limit: number) => `
     SELECT
       pd.project_id,
       p.name as project_name,

@@ -1,3 +1,5 @@
+'use client'
+
 /**
  * Status Page - Module - Status Data Hook
  */

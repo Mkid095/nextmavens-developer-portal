@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useParams } from 'next/navigation'
-import { useParams } from 'next/navigation'
 import { TablesView } from '@/features/studio/components/TablesView'
 import { UserList } from '@/features/auth-users/components/UserList'
 import { UserDetail } from '@/features/auth-users/components/UserDetail'

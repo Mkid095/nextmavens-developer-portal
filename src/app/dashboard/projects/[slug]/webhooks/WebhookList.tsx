@@ -3,11 +3,11 @@
  * Displays list of project webhooks
  */
 
-import { Globe, Clock, Play, Eye, EyeOff, XCircle, Bell, Loader2, Trash2 } from 'lucide-react'
+import { Globe, Clock, Play, Eye, EyeOff, XCircle, Bell, Loader2, Trash2, Plus } from 'lucide-react'
 import { getControlPlaneClient } from '@/lib/api/control-plane-client'
 import type { Webhook } from '@/lib/types/webhook.types'
-import { getAuthToken } from '../utils'
-import { formatDate } from '../utils'
+import { getAuthToken } from './utils'
+import { formatDate } from './utils'
 
 interface WebhookListProps {
   webhooks: Webhook[]
