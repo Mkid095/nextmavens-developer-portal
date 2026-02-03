@@ -64,7 +64,7 @@ async function getOrganizationIdFromKey(keyId: string): Promise<string> {
   )
 
   if (projectResult.rows.length === 0) {
-    throw new Error('No project found for this key owner')
+    throw new Error('No project found for this key owner. Please create a project before generating API keys.')
   }
 
   return projectResult.rows[0].tenant_id
@@ -100,7 +100,7 @@ export async function GET(req: NextRequest) {
           )
 
           if (result.rows.length === 0) {
-            throw new Error('No project found')
+            throw new Error('No project found. Please create a project before generating API keys.')
           }
 
           return result.rows[0].tenant_id
