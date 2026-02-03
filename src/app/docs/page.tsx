@@ -5,5 +5,4 @@
  * Please import from './page-module' instead.
  */
 
-export { default as DocsPageView } from './page-module/DocsPageView'
-export * from './page-module'
+export { default } from './page-module/DocsPageView'

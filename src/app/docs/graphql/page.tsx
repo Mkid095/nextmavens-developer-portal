@@ -7,12 +7,6 @@
 
 'use client'
 
-// Re-export the main view component from the module for backward compatibility
-export { default as GraphQLDocsView } from './graphql-module/GraphQLDocsView'
-
-// Re-export everything from the module for backward compatibility
-export * from './graphql-module'
-
 /**
  * Default export - main GraphQL documentation page component
  */

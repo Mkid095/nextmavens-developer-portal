@@ -5,5 +5,6 @@
  * Please import from '../organizations-page-module' instead.
  */
 
-export { default } from '../organizations-page-module/OrganizationsView'
-export { OrganizationsView } from '../organizations-page-module'
+'use client'
+
+export { OrganizationsView as default } from '../organizations-page-module/OrganizationsView'

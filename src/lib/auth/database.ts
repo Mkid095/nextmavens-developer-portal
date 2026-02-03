@@ -2,7 +2,7 @@
  * Authentication Database Operations
  */
 
-import { getPool } from '../db'
+import { getPool } from '@/lib/db'
 import type { JwtPayload } from './types'
 import type { Developer } from './types'
 import { checkProjectStatus } from './status'

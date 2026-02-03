@@ -46,5 +46,15 @@
  * }
  */
 
-export * from './query-api'
-export { POST, GET } from './query-api/handlers'
+import { handleQueryPost, handleQueryGet } from './query-api/handlers'
+import { NextRequest } from 'next/server'
+import { RouteHandlerContext } from '@/types/api'
+
+// Named exports for Next.js route handlers
+export async function POST(request: NextRequest, { params }: RouteHandlerContext) {
+  return handleQueryPost(request, params.projectId)
+}
+
+export async function GET(request: NextRequest, { params }: RouteHandlerContext) {
+  return handleQueryGet()
+}

@@ -5,5 +5,6 @@
  * Please import from './status-page-module' instead.
  */
 
-export { default } from './status-page-module/StatusView'
-export { StatusView } from './status-page-module'
+'use client'
+
+export { StatusView as default } from './status-page-module/StatusView'

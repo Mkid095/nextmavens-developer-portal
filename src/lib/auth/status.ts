@@ -2,7 +2,7 @@
  * Project Status Checking
  */
 
-import { getPool } from '../db'
+import { getPool } from '@/lib/db'
 import {
   createError,
   ErrorCode,

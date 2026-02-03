@@ -7,12 +7,6 @@
 
 'use client'
 
-// Re-export the main view component from the module for backward compatibility
-export { default as DatabaseDocsView } from './database-module/DatabaseDocsView'
-
-// Re-export everything from the module for backward compatibility
-export * from './database-module'
-
 /**
  * Default export - main database documentation page component
  */

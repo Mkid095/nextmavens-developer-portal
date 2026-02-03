@@ -6,7 +6,8 @@
 import Link from 'next/link'
 import { Calendar, ExternalLink } from 'lucide-react'
 import type { RequestTrace } from '../types'
-import { formatDate, METHOD_COLORS } from '../utils'
+import { formatDate } from '../utils'
+import { METHOD_COLORS } from '../constants'
 
 interface TraceDetailsProps {
   trace: RequestTrace
