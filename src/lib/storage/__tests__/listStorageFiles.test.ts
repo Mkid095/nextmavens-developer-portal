@@ -4,16 +4,12 @@
  * Tests for listing storage files with pagination.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { listStorageFiles } from '../metadata'
 import { mockQueryResolved } from './setup'
 import { assertQueryContains, assertQueryWithLimitOffset } from './test-helpers'
 import type { StorageFile } from '../metadata'
-
-  getPool: vi.fn(() => ({
-    query: vi.fn(),
-  })),
-}))
+import { setupMockPool } from './vitest-mock'
 
 describe('listStorageFiles', () => {
   beforeEach(setupMockPool)

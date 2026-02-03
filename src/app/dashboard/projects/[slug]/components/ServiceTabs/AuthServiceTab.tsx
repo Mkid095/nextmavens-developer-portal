@@ -6,12 +6,12 @@ import LanguageSelector, { type CodeLanguage } from '@/components/LanguageSelect
 import MultiLanguageCodeBlock, { createCodeExamples } from '@/components/MultiLanguageCodeBlock'
 import type { ServiceEndpoints } from '../types'
 import type { ServiceType } from '@/lib/types/service-status.types'
+import { SERVICE_CONFIG } from './constants'
 import {
-  SERVICE_CONFIG,
   createQuickActionLink,
   createConnectionDetails,
   createSecurityInfo
-} from './constants'
+} from './service-components'
 
 export interface AuthServiceTabProps {
   project: { slug: string; id: string }

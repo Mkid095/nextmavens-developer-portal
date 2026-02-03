@@ -10,7 +10,7 @@ import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ProjectEnvironment } from '../types'
 
-export function useDashboardActions(addToast: (type: 'success' | 'error', message: string) void) {
+export function useDashboardActions(addToast: (type: 'success' | 'error', message: string) => void) {
   const router = useRouter()
 
   const fetchWithAuth = useCallback(async (url: string, options?: RequestInit) => {

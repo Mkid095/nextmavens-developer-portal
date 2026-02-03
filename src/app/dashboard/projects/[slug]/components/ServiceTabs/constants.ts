@@ -1,5 +1,4 @@
-import Link from 'next/link'
-import { Shield, HardDrive, Code2, ChevronRight } from 'lucide-react'
+import { Shield, HardDrive, Code2, LucideIcon } from 'lucide-react'
 
 export const SERVICE_CONFIG = {
   auth: {
@@ -14,7 +13,7 @@ export const SERVICE_CONFIG = {
     securityInfo: {
       title: 'Security',
       text: 'All passwords are hashed using bcrypt. JWT tokens are signed with RS256 and expire after 1 hour by default.',
-      color: 'blue'
+      color: 'blue' as const
     }
   },
   storage: {
@@ -29,7 +28,7 @@ export const SERVICE_CONFIG = {
     securityInfo: {
       title: 'CDN Enabled',
       text: 'All files are automatically served through a global CDN for fast delivery. Image transformations are cached at the edge.',
-      color: 'green'
+      color: 'green' as const
     }
   },
   graphql: {
@@ -40,7 +39,7 @@ export const SERVICE_CONFIG = {
     quickActionLink: '/studio',
     quickActionText: 'Open GraphQL Playground',
     quickActionIcon: Code2,
-    quickActionSubPath: 'graphql/playground',
+    quickActionSubPath: null,
     securityInfo: null
   },
   realtime: {
@@ -55,7 +54,7 @@ export const SERVICE_CONFIG = {
     securityInfo: {
       title: 'Change Data Capture',
       text: 'Realtime uses PostgreSQL\'s logical replication to capture row-level changes. All INSERT, UPDATE, and DELETE operations are broadcast in real-time to subscribed clients.',
-      color: 'green',
+      color: 'green' as const,
       details: [
         { label: 'Protocol', value: 'WebSocket' },
         { label: 'Latency', value: '< 100ms' }
@@ -64,59 +63,5 @@ export const SERVICE_CONFIG = {
   }
 } as const
 
-export function createQuickActionLink(projectSlug: string, subPath: string | null, text: string, Icon: any) {
-  if (!subPath) return null
-
-  return (
-    <Link
-      href={`/studio/${projectSlug}${subPath}`}
-      className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg hover:bg-emerald-100 transition font-medium"
-    >
-      <Icon className="w-4 h-4" />
-      <span>{text}</span>
-      <ChevronRight className="w-4 h-4" />
-    </Link>
-  )
-}
-
-export function createSecurityInfo(info: { title: string; text: string; color?: string; details?: { label: string; value: string }[] } | null) {
-  if (!info) return null
-
-  const colorClasses = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-800',
-    green: 'bg-green-50 border-green-200 text-green-800'
-  }
-
-  const baseClasses = 'border border-2 rounded-lg p-4'
-  const colorClass = colorClasses[info.color] || colorClasses.blue
-
-  return (
-    <div className={`bg-${info.color}-50 border border-${info.color}-200 rounded-lg p-4`}>
-      <p className="text-sm text-{info.color}-800">
-        <strong>{info.title}:</strong> {info.text}
-      </p>
-      {info.details && (
-        <div className="grid grid-cols-2 gap-4 mt-3">
-          {info.details.map((detail, idx) => (
-            <div key={idx}>
-              <p className="text-sm text-slate-600 mb-1">{detail.label}</p>
-              <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{detail.value}</code>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-export function createConnectionDetails(endpoints: { auth: string; storage: string; graphql: string; realtime: string }, serviceName: string) {
-  const endpoint = endpoints[serviceName as keyof typeof endpoints]
-  return (
-    <div className="space-y-4">
-      <div>
-        <p className="text-sm text-slate-600 mb-1">{serviceName} Endpoint</p>
-        <code className="text-sm text-slate-900 bg-white px-2 py-1 rounded border">{endpoint}</code>
-      </div>
-    </div>
-  )
-}
+export type ServiceConfig = typeof SERVICE_CONFIG
+export type ServiceKey = keyof ServiceConfig

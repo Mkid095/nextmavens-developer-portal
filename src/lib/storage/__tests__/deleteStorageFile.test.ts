@@ -4,15 +4,11 @@
  * Tests for deleting storage file records.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { deleteStorageFile } from '../metadata'
 import { mockQueryResolved } from './setup'
 import { assertQueryContains, assertQueryWithArray } from './test-helpers'
-
-  getPool: vi.fn(() => ({
-    query: vi.fn(),
-  })),
-}))
+import { setupMockPool } from './vitest-mock'
 
 describe('deleteStorageFile', () => {
   beforeEach(setupMockPool)

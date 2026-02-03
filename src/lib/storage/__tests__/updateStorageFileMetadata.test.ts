@@ -4,15 +4,12 @@
  * Tests for updating file metadata.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { updateStorageFileMetadata } from '../metadata'
 import { mockQueryResolved } from './setup'
 import { assertQueryContains, assertQueryWithArray, assertStorageFileEquals } from './test-helpers'
-
-  getPool: vi.fn(() => ({
-    query: vi.fn(),
-  })),
-}))
+import { createMockFile } from './setup'
+import { setupMockPool } from './vitest-mock'
 
 describe('updateStorageFileMetadata', () => {
   beforeEach(setupMockPool)

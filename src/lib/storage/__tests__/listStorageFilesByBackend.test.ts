@@ -4,16 +4,12 @@
  * Tests for listing files by backend type.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { listStorageFilesByBackend } from '../metadata'
 import { mockQueryResolved } from './setup'
 import { assertQueryContains } from './test-helpers'
 import type { StorageFile } from '../metadata'
-
-  getPool: vi.fn(() => ({
-    query: vi.fn(),
-  })),
-}))
+import { setupMockPool } from './vitest-mock'
 
 describe('listStorageFilesByBackend', () => {
   beforeEach(setupMockPool)

@@ -9,19 +9,6 @@ import { uploadFileWithTracking, getMaxFileSize, getMaxFileSizeForBackend, valid
 import { MAX_FILE_SIZE, shouldUseCloudinary, type StorageBackend } from '../client'
 import { createStorageFile, getStorageUsage } from '../metadata'
 
-// Mock dependencies
-  uploadFile: vi.fn(),
-  shouldUseCloudinary: vi.fn(),
-  MAX_FILE_SIZE: {
-    telegram: 1.5 * 1024 * 1024 * 1024,
-    cloudinary: 10 * 1024 * 1024,
-  },
-}))
-
-  createStorageFile: vi.fn(),
-  getStorageUsage: vi.fn().mockResolvedValue(0),
-}))
-
 describe('Storage Upload Module', () => {
   beforeEach(() => {
     vi.clearAllMocks()

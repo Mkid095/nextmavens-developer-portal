@@ -14,14 +14,6 @@ import {
   getFilesInfo,
 } from '../download'
 
-// Mock dependencies
-  downloadFile: vi.fn(),
-  fileExists: vi.fn(),
-}))
-
-  getStorageFile: vi.fn(),
-}))
-
 describe('Storage Download Module', () => {
   beforeEach(() => {
     vi.clearAllMocks()

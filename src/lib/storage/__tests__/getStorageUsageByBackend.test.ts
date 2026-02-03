@@ -4,15 +4,11 @@
  * Tests for calculating storage usage breakdown by backend.
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { getStorageUsageByBackend } from '../metadata'
 import { mockQueryResolved } from './setup'
 import { assertQueryContains } from './test-helpers'
-
-  getPool: vi.fn(() => ({
-    query: vi.fn(),
-  })),
-}))
+import { setupMockPool } from './vitest-mock'
 
 describe('getStorageUsageByBackend', () => {
   beforeEach(setupMockPool)

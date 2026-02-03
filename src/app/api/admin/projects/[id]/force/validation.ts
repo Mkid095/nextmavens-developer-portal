@@ -11,7 +11,7 @@ export function validateRequestParams(
   projectId: string,
   sessionId: string,
   adminId: string
-): { valid: boolean; errors?: Array<{ field: string; message: string }> } } {
+): { valid: boolean; errors?: Array<{ field: string; message: string }> } {
   const errors: Array<{ field: string; message: string }> = []
 
   if (!projectId || typeof projectId !== 'string') {

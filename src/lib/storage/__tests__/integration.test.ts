@@ -17,27 +17,6 @@ import {
   listFilesByBackend,
 } from '../index'
 
-// Mock all dependencies
-  uploadFile: vi.fn(),
-  downloadFile: vi.fn(),
-  fileExists: vi.fn(),
-  deleteFile: vi.fn(),
-  shouldUseCloudinary: vi.fn((contentType: string) => contentType.startsWith('image/')),
-  MAX_FILE_SIZE: {
-    telegram: 1.5 * 1024 * 1024 * 1024,
-    cloudinary: 10 * 1024 * 1024,
-  },
-}))
-
-  createStorageFile: vi.fn(),
-  getStorageFile: vi.fn(),
-  listStorageFiles: vi.fn(),
-  listStorageFilesByBackend: vi.fn(),
-  deleteStorageFile: vi.fn(),
-  getStorageUsage: vi.fn(),
-  getStorageStats: vi.fn(),
-}))
-
 describe('Storage Service Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
