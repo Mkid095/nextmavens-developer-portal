@@ -340,7 +340,7 @@ describe('incident-route-module', () => {
       await updateIncidentHandler(request, { id: 'incident-1' })
 
       const updateCall = mockPool.query.calls.find((call: any) =>
-        call[0]?.includes?.('resolved_at = NULL')
+        call[0]?.includes('resolved_at = NULL')
       )
       expect(updateCall).toBeDefined()
     })
