@@ -305,7 +305,7 @@ describe('incident-route-module', () => {
 
       // Check that the update query included resolved_at
       const updateCall = mockPool.query.calls.find((call: any) =>
-        call[0]?.includes?.('UPDATE control_plane.incidents') && call[0]?.includes?.('resolved_at = NOW()'))
+        call[0]?.includes('UPDATE control_plane.incidents') && call[0]?.includes('resolved_at = NOW()'))
       )
       expect(updateCall).toBeDefined()
     })
