@@ -12,8 +12,8 @@ importers:
         specifier: ^4.7.0
         version: 4.7.0(monaco-editor@0.55.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@nextmavenspacks/audit-logs-database':
-        specifier: file:../database
-        version: file:../database
+        specifier: ^1.0.1
+        version: 1.0.1
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -504,8 +504,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@nextmavenspacks/audit-logs-database@file:../database':
-    resolution: {directory: ../database, type: directory}
+  '@nextmavenspacks/audit-logs-database@1.0.1':
+    resolution: {integrity: sha512-jzwuHB4z2oYy15XZL9xx3iBTJeI9dLuQqv5o2ECFR8Y3cMS81ZKhBHeRn4kphvEgGcFQpOC9PCwpuEe+y9C8SQ==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3288,7 +3288,7 @@ snapshots:
   '@next/swc-win32-x64-msvc@14.2.33':
     optional: true
 
-  '@nextmavenspacks/audit-logs-database@file:../database':
+  '@nextmavenspacks/audit-logs-database@1.0.1':
     dependencies:
       pg: 8.18.0
       uuid: 13.0.0
