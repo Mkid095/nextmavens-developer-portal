@@ -22,7 +22,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { NextMiddleware } from 'next/server';
-import crypto from 'crypto';
 
 /**
  * Header name for correlation ID (standard: x-request-id)
@@ -30,12 +29,19 @@ import crypto from 'crypto';
 export const CORRELATION_HEADER = 'x-request-id';
 
 /**
- * Generate a new correlation ID using UUID v4
+ * Generate a new correlation ID using UUID v4 format
+ * Works in Edge Runtime without crypto module
  *
- * @returns A new UUID string
+ * @returns A new UUID v4 string
  */
 export function generateCorrelationId(): string {
-  return crypto.randomUUID();
+  // Generate UUID v4 format that works in Edge Runtime
+  // Format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 /**
