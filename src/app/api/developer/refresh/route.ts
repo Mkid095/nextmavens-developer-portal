@@ -2,12 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { getPool } from '@/lib/db'
 import { generateAccessToken, generateRefreshToken } from '@/lib/auth'
-
-const REFRESH_SECRET = process.env.REFRESH_SECRET
-
-if (!REFRESH_SECRET) {
-  throw new Error('REFRESH_SECRET environment variable is required')
-}
+import { getRefreshSecret } from '@/lib/auth-module/constants'
 
 /**
  * POST /api/developer/refresh
@@ -56,7 +51,7 @@ export async function POST(req: NextRequest) {
     // Verify refresh token signature and expiration
     let decoded: { id: string }
     try {
-      const payload = jwt.verify(refreshToken, REFRESH_SECRET!)
+      const payload = jwt.verify(refreshToken, getRefreshSecret())
       if (!payload || typeof payload !== 'object' || !('id' in payload)) {
         throw new Error('Invalid token payload')
       }
