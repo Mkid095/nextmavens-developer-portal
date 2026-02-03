@@ -12,6 +12,9 @@ RUN npm install -g pnpm
 COPY package.json ./
 COPY .npmrc ./
 
+# Copy local packages
+COPY packages/ ./packages/
+
 # Install dependencies
 RUN pnpm install
 
