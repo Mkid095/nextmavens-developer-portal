@@ -10,12 +10,12 @@ import { getJwtSecret, getRefreshSecret, TOKEN_EXPIRATION } from './constants'
 /**
  * Generate an access token for a developer
  * @param developer - The developer to generate a token for
- * @param projectId - The project ID to include in the token
+ * @param projectId - The project ID to include in the token (optional)
  * @returns JWT access token
  */
-export function generateAccessToken(developer: Developer, projectId: string): string {
+export function generateAccessToken(developer: Developer, projectId?: string | null): string {
   return jwt.sign(
-    { id: developer.id, email: developer.email, project_id: projectId },
+    { id: developer.id, email: developer.email, ...(projectId && { project_id: projectId }) },
     getJwtSecret(),
     { expiresIn: TOKEN_EXPIRATION.ACCESS_TOKEN }
   )
@@ -37,7 +37,7 @@ export function generateRefreshToken(developerId: string): string {
 /**
  * Verify an access token and return the payload
  * @param token - The JWT access token to verify
- * @returns The JWT payload with project_id claim
+ * @returns The JWT payload with optional project_id claim
  * @throws PlatformError with KEY_INVALID code if verification fails
  */
 export function verifyAccessToken(token: string): JwtPayload {
@@ -50,10 +50,7 @@ export function verifyAccessToken(token: string): JwtPayload {
     if (!decoded.id || !decoded.email) {
       throw createError(ErrorCode.KEY_INVALID, 'Invalid token structure')
     }
-    // US-001: Require project_id in JWT
-    if (!decoded.project_id) {
-      throw createError(ErrorCode.KEY_INVALID, 'Missing project_id claim')
-    }
+    // project_id is now optional - developer can login without specifying a project
     return decoded as unknown as JwtPayload
   } catch (error) {
     // If it's already a PlatformError, re-throw it

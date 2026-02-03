@@ -12,11 +12,11 @@ export interface AuthenticatedEntity {
 }
 
 /**
- * JWT payload with project_id claim.
- * US-001: Require project_id in JWT
+ * JWT payload with optional project_id claim.
+ * project_id is optional to support login without specifying a project.
  */
 export interface JwtPayload extends AuthenticatedEntity {
-  project_id: string
+  project_id?: string
 }
 
 /**

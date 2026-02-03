@@ -17,14 +17,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // US-001: Require project_id in JWT
-    if (!project_id) {
-      return NextResponse.json(
-        { error: 'project_id is required' },
-        { status: 400 }
-      )
-    }
-
     const pool = getPool()
 
     const result = await pool.query(
@@ -51,28 +43,33 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // US-001: Verify project exists and belongs to the developer
-    const projectResult = await pool.query(
-      'SELECT id FROM projects WHERE id = $1 AND developer_id = $2',
-      [project_id, developer.id]
-    )
-
-    if (projectResult.rows.length === 0) {
-      return NextResponse.json(
-        { error: 'Invalid project_id or access denied' },
-        { status: 403 }
+    // If project_id is provided, verify it exists and belongs to the developer
+    let finalProjectId = project_id
+    if (project_id) {
+      const projectResult = await pool.query(
+        'SELECT id FROM projects WHERE id = $1 AND developer_id = $2',
+        [project_id, developer.id]
       )
+
+      if (projectResult.rows.length === 0) {
+        return NextResponse.json(
+          { error: 'Invalid project_id or access denied' },
+          { status: 403 }
+        )
+      }
     }
 
-    // Generate tokens with project_id
-    const accessToken = generateAccessToken(developer, project_id)
+    // Generate tokens with project_id (optional)
+    const accessToken = generateAccessToken(developer, finalProjectId || null)
     const refreshToken = generateRefreshToken(developer.id)
 
     // US-005: Track auth signin (fire and forget)
     // Track against the project_id being used for this login
-    trackAuthSignin(project_id).catch(err => {
-      console.error('[Developer Portal] Failed to track signin usage:', err)
-    })
+    if (finalProjectId) {
+      trackAuthSignin(finalProjectId).catch(err => {
+        console.error('[Developer Portal] Failed to track signin usage:', err)
+      })
+    }
 
     return NextResponse.json({
       developer: {
