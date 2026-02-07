@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
-import { getPool } from '@/lib/db'
 import {
   createProjectSchema,
   listProjectsQuerySchema,
@@ -15,6 +14,7 @@ import {
   type IdempotencyResponse,
 } from '@/lib/idempotency'
 import { emitEvent } from '@/features/webhooks'
+import { controlPlaneProjectRepository } from '@/data'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -24,54 +24,10 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate project ownership/access
-// US-012: Validates that the user has access to the project:
-// - For personal projects (organization_id IS NULL): only the owner can access
-// - For org projects (organization_id IS NOT NULL): all org members can access
-async function validateProjectOwnership(
-  projectId: string,
-  developer: JwtPayload
-): Promise<{ valid: boolean; project?: any }> {
-  const pool = getPool()
-  const result = await pool.query(
-    'SELECT id, developer_id, project_name, organization_id, tenant_id, webhook_url, allowed_origins, rate_limit, status, environment, created_at FROM projects WHERE id = $1',
-    [projectId]
-  )
-
-  if (result.rows.length === 0) {
-    return { valid: false }
-  }
-
-  const project = result.rows[0]
-
-  // Personal project: check if user is the owner
-  if (!project.organization_id) {
-    if (project.developer_id !== developer.id) {
-      return { valid: false, project }
-    }
-    return { valid: true, project }
-  }
-
-  // Organization project: check if user is a member
-  const membershipCheck = await pool.query(
-    `SELECT 1 FROM control_plane.organization_members
-     WHERE org_id = $1 AND user_id = $2 AND status = 'accepted'
-     LIMIT 1`,
-    [project.organization_id, developer.id]
-  )
-
-  if (membershipCheck.rows.length === 0) {
-    return { valid: false, project }
-  }
-
-  return { valid: true, project }
-}
-
 // GET /v1/projects - List all projects (with filtering)
 export async function GET(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
 
     // Parse and validate query parameters
     const searchParams = req.nextUrl.searchParams
@@ -87,71 +43,33 @@ export async function GET(req: NextRequest) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    // Build query with filters
-    // US-012: Organization scoping - Show personal projects only to owner,
-    // and organization projects to all org members
-    const conditions: string[] = [
-      `(
-        -- Personal projects: only visible to owner
-        (p.organization_id IS NULL AND p.developer_id = $1)
-        OR
-        -- Org projects: visible to all org members
-        (p.organization_id IS NOT NULL AND EXISTS (
-          SELECT 1 FROM control_plane.organization_members om
-          WHERE om.org_id = p.organization_id
-            AND om.user_id = $1
-            AND om.status = 'accepted'
-        ))
-      )`
-    ]
-    const values: any[] = [developer.id]
-    let paramIndex = 2
-
-    if (query.status) {
-      conditions.push(`p.status = $${paramIndex++}`)
-      values.push(query.status)
-    }
-
-    if (query.environment) {
-      conditions.push(`p.environment = $${paramIndex++}`)
-      values.push(query.environment)
-    }
-
-    if (query.organization_id) {
-      conditions.push(`p.organization_id = $${paramIndex++}`)
-      values.push(query.organization_id)
-    }
-
-    const limit = query.limit || 50
-    const offset = query.offset || 0
-
-    values.push(limit, offset)
-
-    const result = await pool.query(
-      `SELECT
-        p.id, p.project_name, p.tenant_id, p.webhook_url,
-        p.allowed_origins, p.rate_limit, p.status, p.environment, p.created_at,
-        p.deleted_at, p.deletion_scheduled_at, p.grace_period_ends_at,
-        p.organization_id,
-        t.slug as tenant_slug
-      FROM projects p
-      JOIN tenants t ON p.tenant_id = t.id
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY p.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      values
+    // Use repository to fetch projects
+    const { data, total, error } = await controlPlaneProjectRepository.findByDeveloperWithOrgScoping(
+      developer.id,
+      {
+        status: query.status,
+        environment: query.environment,
+        organization_id: query.organization_id,
+        limit: query.limit,
+        offset: query.offset,
+      }
     )
+
+    if (error) {
+      console.error('Error listing projects:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to list projects', 500)
+    }
 
     return NextResponse.json({
       success: true,
-      data: result.rows.map(p => ({
+      data: data.map(p => ({
         id: p.id,
         name: p.project_name,
         slug: p.tenant_slug,
@@ -169,8 +87,8 @@ export async function GET(req: NextRequest) {
         organization_id: p.organization_id,
       })),
       meta: {
-        limit,
-        offset,
+        limit: query.limit || 50,
+        offset: query.offset || 0,
       }
     })
   } catch (error) {
@@ -199,7 +117,7 @@ export async function POST(req: NextRequest) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
@@ -218,15 +136,13 @@ export async function POST(req: NextRequest) {
     const { result, idempotencyKey: returnedKey } = await withIdempotencyWithKey(
       idempotencyKey,
       async (): Promise<IdempotencyResponse> => {
-        const pool = getPool()
-
         // Check if project with same name already exists for this developer
-        const existingProject = await pool.query(
-          'SELECT id FROM projects p JOIN tenants t ON p.tenant_id = t.id WHERE p.developer_id = $1 AND t.name = $2',
-          [developer.id, validatedData.project_name]
+        const { exists } = await controlPlaneProjectRepository.existsByNameForDeveloper(
+          validatedData.project_name,
+          developer.id
         )
 
-        if (existingProject.rows.length > 0) {
+        if (exists) {
           return {
             status: 409,
             headers: {},
@@ -237,42 +153,26 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Generate slug from project name
-        const slug = validatedData.project_name
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '')
+        // Create project with tenant using repository
+        // Convert null values to undefined for repository
+        const { data: project, error } = await controlPlaneProjectRepository.createWithTenant({
+          developerId: developer.id,
+          project_name: validatedData.project_name,
+          environment: validatedData.environment,
+          webhook_url: validatedData.webhook_url ?? undefined,
+          allowed_origins: validatedData.allowed_origins ?? undefined,
+        })
 
-        // Create tenant
-        const tenantResult = await pool.query(
-          `INSERT INTO tenants (name, slug, settings)
-           VALUES ($1, $2, $3)
-           RETURNING id`,
-          [validatedData.project_name, slug, {}]
-        )
-
-        const tenantId = tenantResult.rows[0].id
-
-        // Create project
-        const projectResult = await pool.query(
-          `INSERT INTO projects (
-             developer_id, project_name, tenant_id, environment, webhook_url, allowed_origins, rate_limit, status
-           )
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-           RETURNING id, project_name, tenant_id, environment, webhook_url, allowed_origins, rate_limit, status, created_at`,
-          [
-            developer.id,
-            validatedData.project_name,
-            tenantId,
-            validatedData.environment || 'prod',
-            validatedData.webhook_url,
-            validatedData.allowed_origins,
-            1000, // default rate limit
-            'active', // default status
-          ]
-        )
-
-        const project = projectResult.rows[0]
+        if (error || !project) {
+          return {
+            status: 500,
+            headers: {},
+            body: {
+              success: false,
+              error: { code: 'CREATE_FAILED', message: 'Failed to create project' }
+            }
+          }
+        }
 
         // US-007: Emit project.created event
         // Fire and forget - don't block the response on webhook delivery
@@ -295,7 +195,7 @@ export async function POST(req: NextRequest) {
             data: {
               id: project.id,
               name: project.project_name,
-              slug: slug,
+              slug: project.slug,
               tenant_id: project.tenant_id,
               environment: project.environment,
               webhook_url: project.webhook_url,
@@ -329,3 +229,4 @@ export async function POST(req: NextRequest) {
     return errorResponse('INTERNAL_ERROR', 'Failed to create project', 500)
   }
 }
+

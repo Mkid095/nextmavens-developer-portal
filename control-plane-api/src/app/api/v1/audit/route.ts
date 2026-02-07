@@ -2,10 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
-import {
-  listAuditQuerySchema,
-  type ListAuditQuery,
-} from '@/lib/validation'
+import { listAuditQuerySchema, type ListAuditQuery } from '@/lib/validation'
+import { listAuditLogs } from '@/features/audit'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -15,30 +13,50 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate project access
-async function validateProjectAccess(
+// Helper function to validate project ownership/access
+async function validateProjectOwnership(
   projectId: string,
   developer: JwtPayload
-): Promise<boolean> {
+): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(
-    'SELECT developer_id FROM projects WHERE id = $1',
+    'SELECT id, developer_id, organization_id FROM projects WHERE id = $1',
     [projectId]
   )
 
   if (result.rows.length === 0) {
-    return false
+    return { valid: false }
   }
 
   const project = result.rows[0]
-  return project.developer_id === developer.id
+
+  // Personal project: check if user is the owner
+  if (!project.organization_id) {
+    if (String(project.developer_id) !== String(developer.id)) {
+      return { valid: false, project }
+    }
+    return { valid: true, project }
+  }
+
+  // Organization project: check if user is a member
+  const membershipCheck = await pool.query(
+    `SELECT 1 FROM control_plane.organization_members
+     WHERE org_id = $1 AND user_id = $2 AND status = 'accepted'
+     LIMIT 1`,
+    [project.organization_id, developer.id]
+  )
+
+  if (membershipCheck.rows.length === 0) {
+    return { valid: false, project }
+  }
+
+  return { valid: true, project }
 }
 
-// GET /v1/audit - Query audit logs with filtering
+// GET /v1/audit - List audit logs with filters
 export async function GET(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
 
     // Parse and validate query parameters
     const searchParams = req.nextUrl.searchParams
@@ -47,149 +65,69 @@ export async function GET(req: NextRequest) {
       queryParams[key] = value
     })
 
-    let query: ListAuditQuery = {}
+    let query: ListAuditQuery = {
+      limit: 100,
+      offset: 0,
+    }
     try {
       query = listAuditQuerySchema.parse(queryParams)
     } catch (error) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    // Build query with filters
-    const conditions: string[] = []
-    const values: any[] = []
-    let paramIndex = 1
-
-    // If project_id is provided, validate access and filter by it
+    // Validate project ownership if project_id is provided
     if (query.project_id) {
-      const hasAccess = await validateProjectAccess(query.project_id, developer)
-      if (!hasAccess) {
-        return errorResponse('PERMISSION_DENIED', 'You do not have access to this project', 403)
+      const validation = await validateProjectOwnership(query.project_id, developer)
+      if (!validation.valid) {
+        return errorResponse('NOT_FOUND', 'Project not found', 404)
       }
-      conditions.push(`al.project_id = $${paramIndex++}`)
-      values.push(query.project_id)
     }
 
-    // Filter by actor_id
-    if (query.actor_id) {
-      conditions.push(`al.actor_id = $${paramIndex++}`)
-      values.push(query.actor_id)
+    // Parse date filters
+    const filters: any = {
+      actor_id: query.actor_id,
+      actor_type: query.actor_type,
+      action: query.action,
+      target_type: query.target_type,
+      target_id: query.target_id,
+      project_id: query.project_id,
+      request_id: query.request_id,
+      severity: query.severity,
+      limit: query.limit,
+      offset: query.offset,
     }
 
-    // Filter by actor_type
-    if (query.actor_type) {
-      conditions.push(`al.actor_type = $${paramIndex++}`)
-      values.push(query.actor_type)
-    }
-
-    // Filter by action
-    if (query.action) {
-      conditions.push(`al.action = $${paramIndex++}`)
-      values.push(query.action)
-    }
-
-    // Filter by target_type
-    if (query.target_type) {
-      conditions.push(`al.target_type = $${paramIndex++}`)
-      values.push(query.target_type)
-    }
-
-    // Filter by target_id
-    if (query.target_id) {
-      conditions.push(`al.target_id = $${paramIndex++}`)
-      values.push(query.target_id)
-    }
-
-    // Filter by request_id
-    if (query.request_id) {
-      conditions.push(`al.request_id = $${paramIndex++}`)
-      values.push(query.request_id)
-    }
-
-    // Filter by date range
     if (query.start_date) {
-      conditions.push(`al.created_at >= $${paramIndex++}`)
-      values.push(query.start_date)
+      filters.start_date = new Date(query.start_date)
     }
 
     if (query.end_date) {
-      conditions.push(`al.created_at <= $${paramIndex++}`)
-      values.push(query.end_date)
+      filters.end_date = new Date(query.end_date)
     }
 
-    // If no project filter and no actor_id filter, only show logs for user's projects
-    if (!query.project_id && !query.actor_id) {
-      conditions.push(`p.developer_id = $${paramIndex++}`)
-      values.push(developer.id)
+    // List audit logs with filters
+    const { success, auditLogs, total, error } = await listAuditLogs(filters)
+
+    if (!success) {
+      console.error('[Audit API] Error listing audit logs:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to fetch audit logs', 500)
     }
-
-    const limit = query.limit
-    const offset = query.offset
-
-    values.push(limit, offset)
-
-    // Get total count for pagination
-    const countResult = await pool.query(
-      `SELECT COUNT(*) as total
-       FROM control_plane.audit_logs al
-       LEFT JOIN projects p ON al.project_id = p.id
-       ${conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : ''}`,
-      values.slice(0, -2) // Exclude limit and offset
-    )
-
-    const total = parseInt(countResult.rows[0].total, 10)
-
-    // Query audit logs with actor details
-    const result = await pool.query(
-      `SELECT
-        al.id, al.actor_id, al.actor_type, al.action,
-        al.target_type, al.target_id, al.metadata,
-        al.ip_address, al.user_agent, al.request_id,
-        al.project_id, al.created_at,
-        p.project_name,
-        d.name as actor_name, d.email as actor_email
-      FROM control_plane.audit_logs al
-      LEFT JOIN projects p ON al.project_id = p.id
-      LEFT JOIN developers d ON al.actor_id = d.id AND al.actor_type = 'user'
-      ${conditions.length > 0 ? 'WHERE ' + conditions.join(' AND ') : ''}
-      ORDER BY al.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      values
-    )
 
     return NextResponse.json({
       success: true,
-      data: result.rows.map(row => ({
-        id: row.id,
-        actor_id: row.actor_id,
-        actor_type: row.actor_type,
-        action: row.action,
-        target_type: row.target_type,
-        target_id: row.target_id,
-        metadata: row.metadata,
-        ip_address: row.ip_address,
-        user_agent: row.user_agent,
-        request_id: row.request_id,
-        project_id: row.project_id,
-        created_at: row.created_at,
-        actor_details: row.actor_type === 'user' ? {
-          name: row.actor_name,
-          email: row.actor_email,
-        } : null,
-        project_name: row.project_name,
-      })),
-      pagination: {
-        total,
-        limit,
-        offset,
-        has_more: offset + limit < total,
-      }
+      data: {
+        audit_logs: auditLogs || [],
+        total: total || 0,
+        limit: query.limit || 100,
+        offset: query.offset || 0,
+      },
     })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
@@ -198,7 +136,7 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error listing audit logs:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to list audit logs', 500)
+    console.error('[Audit API] Error:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to fetch audit logs', 500)
   }
 }

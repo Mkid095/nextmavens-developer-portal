@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
-import { updateWebhookSchema } from '@/lib/validation'
+import { updateWebhookSchema, type UpdateWebhookInput } from '@/lib/validation'
+import { getWebhook, updateWebhook, deleteWebhook } from '@/features/webhooks'
+import { createAuditLog } from '@/features/audit'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -12,75 +14,86 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate project ownership
-async function validateProjectOwnership(
-  projectId: string,
+// Helper function to validate webhook ownership
+async function validateWebhookOwnership(
+  webhookId: string,
   developer: JwtPayload
-): Promise<boolean> {
+): Promise<{ valid: boolean; webhook?: any; project?: any }> {
   const pool = getPool()
-  const result = await pool.query(
-    'SELECT developer_id FROM projects WHERE id = $1',
-    [projectId]
+
+  const webhookResult = await pool.query(
+    'SELECT * FROM control_plane.webhooks WHERE id = $1',
+    [webhookId]
   )
 
-  if (result.rows.length === 0) {
-    return false
+  if (webhookResult.rows.length === 0) {
+    return { valid: false }
   }
 
-  const project = result.rows[0]
-  return project.developer_id === developer.id
+  const webhook = webhookResult.rows[0]
+
+  // Validate project ownership
+  const projectResult = await pool.query(
+    'SELECT id, developer_id, organization_id FROM projects WHERE id = $1',
+    [webhook.project_id]
+  )
+
+  if (projectResult.rows.length === 0) {
+    return { valid: false }
+  }
+
+  const project = projectResult.rows[0]
+
+  // Personal project: check if user is the owner
+  if (!project.organization_id) {
+    if (String(project.developer_id) !== String(developer.id)) {
+      return { valid: false, project }
+    }
+    return { valid: true, webhook, project }
+  }
+
+  // Organization project: check if user is a member
+  const membershipCheck = await pool.query(
+    `SELECT 1 FROM control_plane.organization_members
+     WHERE org_id = $1 AND user_id = $2 AND status = 'accepted'
+     LIMIT 1`,
+    [project.organization_id, developer.id]
+  )
+
+  if (membershipCheck.rows.length === 0) {
+    return { valid: false, project }
+  }
+
+  return { valid: true, webhook, project }
 }
 
-// GET /v1/webhooks/:id - Get webhook details
+// GET /v1/webhooks/:id - Get a specific webhook by ID
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
     const webhookId = params.id
 
-    // Validate webhook ID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(webhookId)) {
-      return errorResponse('VALIDATION_ERROR', 'Invalid webhook ID format', 400)
-    }
-
-    // Query webhook with project ownership check
-    const result = await pool.query(
-      `SELECT
-        w.id, w.project_id, w.event, w.target_url, w.enabled, w.created_at,
-        p.developer_id, p.project_name
-      FROM control_plane.webhooks w
-      LEFT JOIN projects p ON w.project_id = p.id
-      WHERE w.id = $1`,
-      [webhookId]
-    )
-
-    if (result.rows.length === 0) {
+    // Validate webhook ownership
+    const validation = await validateWebhookOwnership(webhookId, developer)
+    if (!validation.valid) {
       return errorResponse('NOT_FOUND', 'Webhook not found', 404)
-    }
-
-    const webhook = result.rows[0]
-
-    // Check ownership
-    if (webhook.developer_id !== developer.id) {
-      return errorResponse('PERMISSION_DENIED', 'You do not have access to this webhook', 403)
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        id: webhook.id,
-        project_id: webhook.project_id,
-        project_name: webhook.project_name,
-        event: webhook.event,
-        target_url: webhook.target_url,
-        enabled: webhook.enabled,
-        created_at: webhook.created_at,
-        // Never return the secret in GET responses
-      }
+        id: validation.webhook.id,
+        project_id: validation.webhook.project_id,
+        event: validation.webhook.event,
+        target_url: validation.webhook.target_url,
+        // Secret is not returned in GET requests for security
+        enabled: validation.webhook.enabled,
+        created_at: validation.webhook.created_at,
+        updated_at: validation.webhook.updated_at,
+      },
     })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
@@ -89,119 +102,71 @@ export async function GET(
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error getting webhook details:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to get webhook details', 500)
+    console.error('[Webhooks API] Error:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to fetch webhook', 500)
   }
 }
 
-// PUT /v1/webhooks/:id - Update webhook
+// PUT /v1/webhooks/:id - Update a webhook
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
     const webhookId = params.id
-
-    // Validate webhook ID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(webhookId)) {
-      return errorResponse('VALIDATION_ERROR', 'Invalid webhook ID format', 400)
-    }
-
-    // Parse and validate request body
     const body = await req.json()
 
-    let validatedBody
+    // Validate request body
+    let validatedData: UpdateWebhookInput
     try {
-      validatedBody = updateWebhookSchema.parse(body)
+      validatedData = updateWebhookSchema.parse(body)
     } catch (error) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    // Query webhook with project ownership check
-    const webhookResult = await pool.query(
-      `SELECT
-        w.id, w.project_id, w.event, w.target_url, w.enabled,
-        p.developer_id
-      FROM control_plane.webhooks w
-      LEFT JOIN projects p ON w.project_id = p.id
-      WHERE w.id = $1`,
-      [webhookId]
-    )
-
-    if (webhookResult.rows.length === 0) {
+    // Validate webhook ownership
+    const validation = await validateWebhookOwnership(webhookId, developer)
+    if (!validation.valid) {
       return errorResponse('NOT_FOUND', 'Webhook not found', 404)
     }
 
-    const webhook = webhookResult.rows[0]
-
-    // Check ownership
-    if (webhook.developer_id !== developer.id) {
-      return errorResponse('PERMISSION_DENIED', 'You do not have access to this webhook', 403)
-    }
-
-    // Build update query dynamically based on provided fields
-    const updateFields: string[] = []
-    const updateValues: any[] = []
-    let paramIndex = 1
-
-    if (validatedBody.event !== undefined) {
-      updateFields.push(`event = $${paramIndex++}`)
-      updateValues.push(validatedBody.event)
-    }
-
-    if (validatedBody.target_url !== undefined) {
-      updateFields.push(`target_url = $${paramIndex++}`)
-      updateValues.push(validatedBody.target_url)
-    }
-
-    if (validatedBody.secret !== undefined) {
-      updateFields.push(`secret = $${paramIndex++}`)
-      updateValues.push(validatedBody.secret)
-    }
-
-    if (validatedBody.enabled !== undefined) {
-      updateFields.push(`enabled = $${paramIndex++}`)
-      updateValues.push(validatedBody.enabled)
-    }
-
-    if (updateFields.length === 0) {
-      return errorResponse('VALIDATION_ERROR', 'No fields to update', 400)
-    }
-
-    updateValues.push(webhookId)
-
     // Update webhook
-    const result = await pool.query(
-      `UPDATE control_plane.webhooks
-       SET ${updateFields.join(', ')}
-       WHERE id = $${paramIndex}
-       RETURNING id, project_id, event, target_url, enabled, created_at`,
-      updateValues
-    )
+    const { success, webhook, error } = await updateWebhook(webhookId, validatedData)
 
-    const updatedWebhook = result.rows[0]
+    if (!success) {
+      console.error('[Webhooks API] Error updating webhook:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to update webhook', 500)
+    }
+
+    // Create audit log
+    await createAuditLog({
+      actor_id: developer.id,
+      actor_type: 'user',
+      action: 'webhook.updated',
+      target_type: 'webhook',
+      target_id: webhookId,
+      project_id: validation.project.id,
+      metadata: validatedData,
+    })
 
     return NextResponse.json({
       success: true,
       data: {
-        id: updatedWebhook.id,
-        project_id: updatedWebhook.project_id,
-        event: updatedWebhook.event,
-        target_url: updatedWebhook.target_url,
-        enabled: updatedWebhook.enabled,
-        created_at: updatedWebhook.created_at,
-        // Don't return secret in update response
-      }
+        id: webhook.id,
+        project_id: webhook.project_id,
+        event: webhook.event,
+        target_url: webhook.target_url,
+        enabled: webhook.enabled,
+        updated_at: webhook.updated_at,
+      },
     })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
@@ -210,55 +175,50 @@ export async function PUT(
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error updating webhook:', error)
+    console.error('[Webhooks API] Error:', error)
     return errorResponse('INTERNAL_ERROR', 'Failed to update webhook', 500)
   }
 }
 
-// DELETE /v1/webhooks/:id - Remove webhook
+// DELETE /v1/webhooks/:id - Delete a webhook
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
     const webhookId = params.id
 
-    // Validate webhook ID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (!uuidRegex.test(webhookId)) {
-      return errorResponse('VALIDATION_ERROR', 'Invalid webhook ID format', 400)
-    }
-
-    // Query webhook with project ownership check
-    const webhookResult = await pool.query(
-      `SELECT
-        w.id, w.project_id,
-        p.developer_id
-      FROM control_plane.webhooks w
-      LEFT JOIN projects p ON w.project_id = p.id
-      WHERE w.id = $1`,
-      [webhookId]
-    )
-
-    if (webhookResult.rows.length === 0) {
+    // Validate webhook ownership
+    const validation = await validateWebhookOwnership(webhookId, developer)
+    if (!validation.valid) {
       return errorResponse('NOT_FOUND', 'Webhook not found', 404)
     }
 
-    const webhook = webhookResult.rows[0]
+    // Delete webhook
+    const { success, error } = await deleteWebhook(webhookId)
 
-    // Check ownership
-    if (webhook.developer_id !== developer.id) {
-      return errorResponse('PERMISSION_DENIED', 'You do not have access to this webhook', 403)
+    if (!success) {
+      console.error('[Webhooks API] Error deleting webhook:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to delete webhook', 500)
     }
 
-    // Delete webhook
-    await pool.query('DELETE FROM control_plane.webhooks WHERE id = $1', [webhookId])
+    // Create audit log
+    await createAuditLog({
+      actor_id: developer.id,
+      actor_type: 'user',
+      action: 'webhook.deleted',
+      target_type: 'webhook',
+      target_id: webhookId,
+      project_id: validation.project.id,
+    })
 
     return NextResponse.json({
       success: true,
-      message: 'Webhook deleted successfully'
+      data: {
+        id: webhookId,
+        deleted: true,
+      },
     })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
@@ -267,7 +227,7 @@ export async function DELETE(
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error deleting webhook:', error)
+    console.error('[Webhooks API] Error:', error)
     return errorResponse('INTERNAL_ERROR', 'Failed to delete webhook', 500)
   }
 }

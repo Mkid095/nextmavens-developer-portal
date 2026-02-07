@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload, generateApiKey, hashApiKey, getKeyPrefix, DEFAULT_API_KEY_SCOPES, mapProjectEnvironmentToKeyEnvironment, getMcpDefaultScopes } from '@/lib/auth'
-import { getPool } from '@/lib/db'
 import {
   createApiKeySchema,
   listApiKeysQuerySchema,
   type CreateApiKeyInput,
   type ListApiKeysQuery,
 } from '@/lib/validation'
+import { controlPlaneApiKeyRepository, controlPlaneProjectRepository } from '@/data'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -17,34 +17,10 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate project ownership and return project details
-async function validateProjectOwnership(
-  projectId: string,
-  developer: JwtPayload
-): Promise<{ valid: boolean; project?: any }> {
-  const pool = getPool()
-  const result = await pool.query(
-    'SELECT id, developer_id, project_name, tenant_id, status, environment FROM projects WHERE id = $1',
-    [projectId]
-  )
-
-  if (result.rows.length === 0) {
-    return { valid: false }
-  }
-
-  const project = result.rows[0]
-  if (project.developer_id !== developer.id) {
-    return { valid: false, project }
-  }
-
-  return { valid: true, project }
-}
-
 // GET /v1/keys - List API keys
 export async function GET(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
 
     // Parse and validate query parameters
     const searchParams = req.nextUrl.searchParams
@@ -60,57 +36,32 @@ export async function GET(req: NextRequest) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    // Build query with filters
-    const conditions: string[] = ['p.developer_id = $1']
-    const values: any[] = [developer.id]
-    let paramIndex = 2
+    // Use repository to fetch API keys
+    // Convert project_id to string if it's a number
+    const projectId = query.project_id ? String(query.project_id) : undefined
+    const { data, error } = await controlPlaneApiKeyRepository.findByDeveloper(developer.id, {
+      project_id: projectId,
+      key_type: query.key_type,
+      environment: query.environment,
+      limit: query.limit,
+      offset: query.offset,
+    })
 
-    if (query.project_id) {
-      conditions.push(`ak.project_id = $${paramIndex++}`)
-      values.push(query.project_id)
+    if (error) {
+      console.error('Error listing API keys:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to list API keys', 500)
     }
-
-    if (query.key_type) {
-      conditions.push(`ak.key_type = $${paramIndex++}`)
-      values.push(query.key_type)
-    }
-
-    if (query.environment) {
-      conditions.push(`ak.environment = $${paramIndex++}`)
-      values.push(query.environment)
-    }
-
-    // Filter out revoked/expired keys by default
-    conditions.push(`(ak.status IS NULL OR ak.status = 'active')`)
-
-    const limit = query.limit || 50
-    const offset = query.offset || 0
-
-    values.push(limit, offset)
-
-    const result = await pool.query(
-      `SELECT
-        ak.id, ak.key_type, ak.key_prefix, ak.scopes, ak.environment,
-        ak.name, ak.status, ak.usage_count, ak.last_used, ak.created_at,
-        p.id as project_id, p.project_name
-      FROM api_keys ak
-      JOIN projects p ON ak.project_id = p.id
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY ak.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      values
-    )
 
     return NextResponse.json({
       success: true,
-      data: result.rows.map(k => ({
+      data: data.map(k => ({
         id: k.id,
         name: k.name || `${k.key_type} key`,
         key_type: k.key_type,
@@ -125,8 +76,8 @@ export async function GET(req: NextRequest) {
         created_at: k.created_at,
       })),
       meta: {
-        limit,
-        offset,
+        limit: query.limit || 50,
+        offset: query.offset || 0,
       }
     })
   } catch (error) {
@@ -155,37 +106,41 @@ export async function POST(req: NextRequest) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    const pool = getPool()
-
     // Determine project ID
-    let projectId = validatedData.project_id
+    let projectId = validatedData.project_id ? String(validatedData.project_id) : undefined
     if (!projectId) {
       // Get or create a default project for the developer
-      const projectResult = await pool.query(
-        'SELECT id FROM projects WHERE developer_id = $1 LIMIT 1',
-        [developer.id]
-      )
+      const { data: defaultProject } = await controlPlaneProjectRepository.findFirstByDeveloper(developer.id)
 
-      if (projectResult.rows.length === 0) {
+      if (!defaultProject) {
         return errorResponse(
           'PROJECT_REQUIRED',
           'No project found. Please specify a project_id or create a project first.',
           400
         )
       }
-      projectId = projectResult.rows[0].id
+      projectId = String(defaultProject.id)
     }
 
     // Validate project ownership and get project details
-    const ownershipCheck = await validateProjectOwnership(projectId, developer)
-    if (!ownershipCheck.valid) {
+    const { valid, project, error: ownershipError } = await controlPlaneApiKeyRepository.validateProjectOwnership(
+      projectId,
+      developer.id
+    )
+
+    if (ownershipError) {
+      console.error('Error validating project ownership:', ownershipError)
+      return errorResponse('INTERNAL_ERROR', 'Failed to validate project ownership', 500)
+    }
+
+    if (!valid || !project) {
       return errorResponse('FORBIDDEN', 'You do not have access to this project', 403)
     }
 
@@ -201,12 +156,12 @@ export async function POST(req: NextRequest) {
       scopes = validatedData.scopes || Array.from(getMcpDefaultScopes(mcpAccessLevel))
     } else {
       // For non-MCP keys, use provided scopes or default for key type
-      scopes = validatedData.scopes || DEFAULT_API_KEY_SCOPES[validatedData.key_type]
+      scopes = validatedData.scopes || [...DEFAULT_API_KEY_SCOPES[validatedData.key_type]]
     }
 
     // US-010: Generate key prefix based on type and PROJECT environment
     // The key prefix is determined by the project's environment, not the requested key environment
-    const projectEnvironment = ownershipCheck.project.environment || 'prod'
+    const projectEnvironment = project.environment || 'prod'
     const keyPrefix = getKeyPrefix(validatedData.key_type, projectEnvironment, mcpAccessLevel)
     const keyEnvironment = mapProjectEnvironmentToKeyEnvironment(projectEnvironment)
 
@@ -218,26 +173,21 @@ export async function POST(req: NextRequest) {
     const secretKey = `${keyPrefix}${secretKeySuffix}`
     const hashedSecretKey = hashApiKey(secretKey)
 
-    // Ensure columns exist
-    try {
-      await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS name VARCHAR(255)`)
-      await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS environment api_key_environment DEFAULT 'live'`)
-      await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'`)
-      await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0`)
-      await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS last_used TIMESTAMPTZ`)
-    } catch {
-      // Columns might already exist, ignore errors
+    // Create the API key using repository
+    const { data: apiKey, error } = await controlPlaneApiKeyRepository.createWithColumns({
+      project_id: projectId,
+      key_type: validatedData.key_type,
+      key_prefix: keyPrefix,
+      key_hash: hashedSecretKey,
+      name: validatedData.name,
+      scopes,
+      environment: keyEnvironment,
+    })
+
+    if (error || !apiKey) {
+      console.error('Error creating API key:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to create API key', 500)
     }
-
-    // Create the API key
-    const dbResult = await pool.query(
-      `INSERT INTO api_keys (project_id, key_type, key_prefix, key_hash, name, scopes, environment)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, key_type, key_prefix, scopes, environment, name, created_at`,
-      [projectId, validatedData.key_type, keyPrefix, hashedSecretKey, validatedData.name, JSON.stringify(scopes), keyEnvironment]
-    )
-
-    const apiKey = dbResult.rows[0]
 
     // Add warning based on key type
     let warning: string | undefined
@@ -285,3 +235,4 @@ export async function POST(req: NextRequest) {
     return errorResponse('INTERNAL_ERROR', 'Failed to create API key', 500)
   }
 }
+

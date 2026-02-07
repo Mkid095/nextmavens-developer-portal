@@ -20,7 +20,7 @@ async function validateProjectOwnership(
   }
 
   const project = result.rows[0]
-  if (project.developer_id !== developer.id) {
+  if (String(project.developer_id) !== String(developer.id)) {
     return { valid: false, error: 'FORBIDDEN' }
   }
 
@@ -98,3 +98,4 @@ export async function POST(
     return toErrorNextResponse(error, params.id)
   }
 }
+

@@ -1,0 +1,35 @@
+services:
+  control-plane-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
+        - JWT_SECRET=${JWT_SECRET}
+        - REFRESH_SECRET=${REFRESH_SECRET}
+        - NODE_ENV=${NODE_ENV:-production}
+    container_name: nextmavens-control-plane-api
+    env_file:
+      - .env
+    environment:
+      - PORT=${PORT:-3000}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_SECRET=${REFRESH_SECRET}
+      - NODE_ENV=${NODE_ENV:-production}
+    ports:
+      - "3007:3000"
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.control-plane-api.rule=Host(`cp-api.nextmavens.cloud`)
+      - traefik.http.routers.control-plane-api.entrypoints=websecure
+      - traefik.http.routers.control-plane-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.control-plane-api.service=control-plane-api-service
+      - traefik.http.services.control-plane-api-service.loadbalancer.server.port=3000
+
+networks:
+  dokploy-network:
+    external: true

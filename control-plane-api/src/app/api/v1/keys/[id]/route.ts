@@ -75,3 +75,4 @@ export async function GET(req: NextRequest, context: RouteContext) {
     return errorResponse('INTERNAL_ERROR', 'Failed to get API key', 500)
   }
 }
+

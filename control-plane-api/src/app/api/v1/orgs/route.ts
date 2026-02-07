@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
-import { getPool } from '@/lib/db'
 import {
   createOrganizationSchema,
-  updateOrganizationSchema,
   listOrganizationsQuerySchema,
   type CreateOrganizationInput,
   type ListOrganizationsQuery,
 } from '@/lib/validation'
+import {
+  getIdempotencyKey,
+  getIdempotencyKeySuffix,
+  withIdempotencyWithKey,
+  type IdempotencyResponse,
+} from '@/lib/idempotency'
+import { controlPlaneOrganizationRepository } from '@/data'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -18,43 +23,10 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate organization ownership
-async function validateOrganizationOwnership(
-  orgId: string,
-  developer: JwtPayload
-): Promise<{ valid: boolean; organization?: any; membership?: any }> {
-  const pool = getPool()
-  const result = await pool.query(
-    `SELECT o.id, o.name, o.slug, o.owner_id, o.created_at,
-            om.role, om.user_id
-     FROM control_plane.organizations o
-     LEFT JOIN control_plane.organization_members om ON om.org_id = o.id AND om.user_id = $2
-     WHERE o.id = $1`,
-    [orgId, developer.id]
-  )
-
-  if (result.rows.length === 0) {
-    return { valid: false }
-  }
-
-  const organization = result.rows[0]
-
-  // Check if user is owner or has admin role
-  const isOwner = organization.owner_id === developer.id
-  const isAdmin = organization.role === 'admin' || organization.role === 'owner'
-
-  if (!isOwner && !isAdmin) {
-    return { valid: false, organization, membership: organization }
-  }
-
-  return { valid: true, organization, membership: organization }
-}
-
-// GET /v1/orgs - List organizations
+// GET /v1/orgs - List organizations (user's organizations)
 export async function GET(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
 
     // Parse and validate query parameters
     const searchParams = req.nextUrl.searchParams
@@ -70,41 +42,39 @@ export async function GET(req: NextRequest) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    const limit = query.limit || 50
-    const offset = query.offset || 0
+    // Use repository to fetch organizations
+    const { data, total, error } = await controlPlaneOrganizationRepository.findByDeveloper(developer.id, {
+      limit: query.limit,
+      offset: query.offset,
+    })
 
-    // Get organizations where user is owner or member
-    const result = await pool.query(
-      `SELECT DISTINCT o.id, o.name, o.slug, o.owner_id, o.created_at,
-       CASE WHEN o.owner_id = $1 THEN 'owner' ELSE om.role END as user_role
-       FROM control_plane.organizations o
-       LEFT JOIN control_plane.organization_members om ON om.org_id = o.id AND om.user_id = $1
-       WHERE o.owner_id = $1 OR om.user_id = $1
-       ORDER BY o.created_at DESC
-       LIMIT $2 OFFSET $3`,
-      [developer.id, limit, offset]
-    )
+    if (error) {
+      console.error('Error listing organizations:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to list organizations', 500)
+    }
 
     return NextResponse.json({
       success: true,
-      data: result.rows.map(o => ({
+      data: data.map(o => ({
         id: o.id,
         name: o.name,
         slug: o.slug,
         owner_id: o.owner_id,
-        user_role: o.user_role,
+        member_count: o.member_count,
         created_at: o.created_at,
+        updated_at: o.updated_at,
       })),
       meta: {
-        limit,
-        offset,
+        limit: query.limit || 50,
+        offset: query.offset || 0,
+        total: total,
       }
     })
   } catch (error) {
@@ -119,7 +89,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /v1/orgs - Create organization
+// POST /v1/orgs - Create new organization
 export async function POST(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
@@ -133,72 +103,86 @@ export async function POST(req: NextRequest) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    const pool = getPool()
+    // Generate slug from organization name if not provided
+    const slug = validatedData.slug || validatedData.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
 
-    // Generate or use provided slug
-    let slug = validatedData.slug
-    if (!slug) {
-      // Generate slug from organization name
-      slug = validatedData.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-    }
+    // Generate idempotency key: create_org:{slug}
+    const idempotencyKey = getIdempotencyKey('create_org', req.headers, slug)
 
-    // Ensure slug is unique - append number if duplicate exists
-    let finalSlug = slug
-    let counter = 1
-    while (true) {
-      const existingOrg = await pool.query(
-        'SELECT id FROM control_plane.organizations WHERE slug = $1',
-        [finalSlug]
-      )
+    // Execute with idempotency (TTL: 1 hour = 3600 seconds)
+    const { result, idempotencyKey: returnedKey } = await withIdempotencyWithKey(
+      idempotencyKey,
+      async (): Promise<IdempotencyResponse> => {
+        // Check if organization with same slug already exists
+        const { exists } = await controlPlaneOrganizationRepository.existsBySlug(slug)
 
-      if (existingOrg.rows.length === 0) {
-        break
-      }
+        if (exists) {
+          return {
+            status: 409,
+            headers: {},
+            body: {
+              success: false,
+              error: { code: 'DUPLICATE_ORGANIZATION', message: 'An organization with this slug already exists' }
+            }
+          }
+        }
 
-      // If user provided a specific slug and it exists, return error
-      if (validatedData.slug && counter === 1) {
-        return errorResponse(
-          'DUPLICATE_ORGANIZATION',
-          'An organization with this slug already exists',
-          409
-        )
-      }
+        // Create organization with owner using repository
+        const { data: organization, error } = await controlPlaneOrganizationRepository.createWithOwner({
+          name: validatedData.name,
+          slug,
+          ownerId: developer.id,
+        })
 
-      // Generate unique slug by appending counter
-      finalSlug = `${slug}-${counter}`
-      counter++
-    }
+        if (error || !organization) {
+          return {
+            status: 500,
+            headers: {},
+            body: {
+              success: false,
+              error: { code: 'CREATE_FAILED', message: 'Failed to create organization' }
+            }
+          }
+        }
 
-    // Create organization
-    const result = await pool.query(
-      `INSERT INTO control_plane.organizations (name, slug, owner_id)
-       VALUES ($1, $2, $3)
-       RETURNING id, name, slug, owner_id, created_at`,
-      [validatedData.name, finalSlug, developer.id]
+        return {
+          status: 201,
+          headers: {},
+          body: {
+            success: true,
+            data: {
+              id: organization.id,
+              name: organization.name,
+              slug: organization.slug,
+              owner_id: organization.owner_id,
+              settings: organization.settings,
+              created_at: organization.created_at,
+              updated_at: organization.updated_at,
+            }
+          }
+        }
+      },
+      { ttl: 3600 } // 1 hour TTL
     )
 
-    const organization = result.rows[0]
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: organization.id,
-        name: organization.name,
-        slug: organization.slug,
-        owner_id: organization.owner_id,
-        created_at: organization.created_at,
-      }
-    }, { status: 201 })
+    // Return the response with the appropriate status code and idempotency key header
+    return NextResponse.json(result.body, {
+      status: result.status,
+      headers: {
+        'Idempotency-Key': getIdempotencyKeySuffix(returnedKey),
+        ...result.headers,
+      },
+    })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
       return errorResponse('UNAUTHORIZED', 'Authentication required', 401)

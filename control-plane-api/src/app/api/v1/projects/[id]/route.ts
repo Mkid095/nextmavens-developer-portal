@@ -22,7 +22,7 @@ async function validateProjectOwnership(
   }
 
   const project = result.rows[0]
-  if (project.developer_id !== developer.id) {
+  if (String(project.developer_id) !== String(developer.id)) {
     return { valid: false, error: 'FORBIDDEN' }
   }
 
@@ -102,7 +102,7 @@ export async function PUT(
     } catch (error) {
       if (error instanceof ZodError) {
         return toErrorNextResponse(
-          { code: ErrorCode.VALIDATION_ERROR, message: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ') }
+          { code: ErrorCode.VALIDATION_ERROR, message: error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ') }
         )
       }
       throw error
@@ -263,3 +263,4 @@ export async function DELETE(
     return toErrorNextResponse(error, params.id)
   }
 }
+

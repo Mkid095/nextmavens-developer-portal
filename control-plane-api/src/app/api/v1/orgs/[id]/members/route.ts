@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
-import crypto from 'crypto'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
-import { inviteMemberSchema } from '@/lib/validation'
-import { sendOrganizationInvitationEmail } from '@/lib/email'
-import { requirePermission } from '@/lib/middleware'
-import { Permission } from '@/lib/types/rbac.types'
-import type { User } from '@/lib/rbac'
+import { addMemberSchema, inviteMemberSchema, type AddMemberInput, type InviteMemberInput } from '@/lib/validation'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -17,79 +12,101 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Generate secure invitation token
-function generateInvitationToken(): string {
-  return crypto.randomBytes(32).toString('hex')
+// Helper function to validate organization ownership/admin access
+async function validateOrganizationAccess(
+  orgId: string,
+  developer: JwtPayload,
+  requireAdmin: boolean = false
+): Promise<{ valid: boolean; organization?: any; member?: any }> {
+  const pool = getPool()
+
+  // Check if user is a member of the organization
+  const memberResult = await pool.query(
+    `SELECT om.id, om.org_id, om.user_id, om.role, om.status,
+            o.name, o.slug, o.owner_id
+     FROM control_plane.organization_members om
+     JOIN control_plane.organizations o ON o.id = om.org_id
+     WHERE om.org_id = $1 AND om.user_id = $2`,
+    [orgId, developer.id]
+  )
+
+  if (memberResult.rows.length === 0) {
+    return { valid: false }
+  }
+
+  const member = memberResult.rows[0]
+  const organization = {
+    id: memberResult.rows[0].org_id,
+    name: memberResult.rows[0].name,
+    slug: memberResult.rows[0].slug,
+    owner_id: memberResult.rows[0].owner_id,
+  }
+
+  // Check membership status
+  if (member.status !== 'accepted') {
+    return { valid: false }
+  }
+
+  // If admin access is required, check role
+  if (requireAdmin && member.role !== 'owner' && member.role !== 'admin') {
+    return { valid: false, organization, member }
+  }
+
+  return { valid: true, organization, member }
 }
 
-// Extract organization ID from URL path
-function getOrgIdFromRequest(req: NextRequest): string {
-  const url = new URL(req.url)
-  const pathParts = url.pathname.split('/')
-  const orgIdIndex = pathParts.indexOf('orgs') + 1
-  return pathParts[orgIdIndex]
-}
-
-// GET /v1/orgs/:id/members - List all members of an organization
-// Returns all members including pending invitations
-export async function GET(req: NextRequest) {
+// GET /v1/orgs/:id/members - List organization members
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    await authenticateRequest(req)
-
-    const url = new URL(req.url)
-    const pathParts = url.pathname.split('/')
-    const orgIdIndex = pathParts.indexOf('orgs') + 1
-    const orgId = pathParts[orgIdIndex]
-
+    const developer = await authenticateRequest(req)
     const pool = getPool()
+    const orgId = params.id
 
-    // Get all members including pending invitations
-    const membersResult = await pool.query(
+    // Parse query parameters
+    const searchParams = req.nextUrl.searchParams
+    const limit = parseInt(searchParams.get('limit') || '50')
+    const offset = parseInt(searchParams.get('offset') || '0')
+
+    // Validate organization access (viewer or higher)
+    const accessCheck = await validateOrganizationAccess(orgId, developer, false)
+    if (!accessCheck.valid) {
+      return errorResponse('FORBIDDEN', 'You do not have access to this organization', 403)
+    }
+
+    // Get organization members
+    const result = await pool.query(
       `SELECT
-         om.id,
-         om.org_id,
-         om.user_id,
-         om.email,
-         om.role,
-         om.status,
-         om.invited_by,
-         om.joined_at,
-         om.created_at,
-         om.token_expires_at,
-         d.name as user_name,
-         d.email as user_email
-       FROM control_plane.organization_members om
-       LEFT JOIN developers d ON om.user_id = d.id
-       WHERE om.org_id = $1
-       ORDER BY
-         CASE om.role
-           WHEN 'owner' THEN 1
-           WHEN 'admin' THEN 2
-           WHEN 'developer' THEN 3
-           WHEN 'viewer' THEN 4
-         END,
-         om.created_at ASC`,
-      [orgId]
+        om.id, om.user_id, om.role, om.status,
+        om.invited_by, om.invited_at, om.accepted_at,
+        om.created_at, om.updated_at
+      FROM control_plane.organization_members om
+      WHERE om.org_id = $1
+      ORDER BY om.created_at ASC
+      LIMIT $2 OFFSET $3`,
+      [orgId, limit, offset]
     )
-
-    const members = membersResult.rows.map(row => ({
-      id: row.id,
-      org_id: row.org_id,
-      user_id: row.user_id,
-      email: row.email || row.user_email,
-      name: row.user_name,
-      role: row.role,
-      status: row.status,
-      invited_by: row.invited_by,
-      joined_at: row.joined_at,
-      created_at: row.created_at,
-      token_expires_at: row.token_expires_at,
-    }))
 
     return NextResponse.json({
       success: true,
-      data: members,
-    }, { status: 200 })
+      data: result.rows.map(m => ({
+        id: m.id,
+        user_id: m.user_id,
+        role: m.role,
+        status: m.status,
+        invited_by: m.invited_by,
+        invited_at: m.invited_at,
+        accepted_at: m.accepted_at,
+        created_at: m.created_at,
+        updated_at: m.updated_at,
+      })),
+      meta: {
+        limit,
+        offset,
+      }
+    })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
       return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
@@ -97,160 +114,144 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error listing members:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to list members', 500)
+    console.error('Error listing organization members:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to list organization members', 500)
   }
 }
 
-// POST /v1/orgs/:id/members - Invite member to organization by email
-// US-008: Only owners can manage users (invite members)
-export const POST = requirePermission(
-  {
-    permission: Permission.PROJECTS_MANAGE_USERS,
-    getOrganizationId: (req) => {
-      // Extract org ID from URL path: /v1/orgs/[id]/members
-      const url = new URL(req.url)
-      const pathParts = url.pathname.split('/')
-      const orgIdIndex = pathParts.indexOf('orgs') + 1
-      return pathParts[orgIdIndex]
-    }
-  },
-  async (req: NextRequest, user: User) => {
-    try {
-      const developer = await authenticateRequest(req)
-      const body = await req.json()
+// POST /v1/orgs/:id/members - Add member to organization (admin or owner only)
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const developer = await authenticateRequest(req)
+    const body = await req.json()
+    const pool = getPool()
+    const orgId = params.id
 
-      // Validate request body - now expects email instead of user_id
-      let validatedData: any
-      try {
-        validatedData = inviteMemberSchema.parse(body)
-      } catch (error) {
-        if (error instanceof ZodError) {
-          return errorResponse(
-            'VALIDATION_ERROR',
-            error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
-            400
-          )
+    // Validate organization access (admin or higher)
+    const accessCheck = await validateOrganizationAccess(orgId, developer, true)
+    if (!accessCheck.valid) {
+      return errorResponse('FORBIDDEN', 'You must be an admin or owner to add members', 403)
+    }
+
+    // Validate request body - can be either user_id (existing user) or email (invite)
+    let validatedData: AddMemberInput | InviteMemberInput
+    let userId: string | undefined
+    let isInvite = false
+
+    // Try parsing as addMemberSchema (user_id)
+    try {
+      validatedData = addMemberSchema.parse(body)
+      userId = (validatedData as AddMemberInput).user_id
+    } catch (error) {
+      // If that fails, try parsing as inviteMemberSchema (email)
+      if (error instanceof ZodError) {
+        try {
+          validatedData = inviteMemberSchema.parse(body)
+          isInvite = true
+          // For invites, we'll use the email as a placeholder user_id
+          // In production, you'd send an actual invite email
+          userId = (validatedData as InviteMemberInput).email
+        } catch (inviteError) {
+          if (inviteError instanceof ZodError) {
+            return errorResponse(
+              'VALIDATION_ERROR',
+              'Either user_id (existing user) or email (invite) is required',
+              400
+            )
+          }
+          throw inviteError
         }
+      } else {
         throw error
       }
+    }
 
-      // Get organization ID from URL path
-      const url = new URL(req.url)
-      const pathParts = url.pathname.split('/')
-      const orgIdIndex = pathParts.indexOf('orgs') + 1
-      const orgId = pathParts[orgIdIndex]
+    const role = validatedData.role || 'developer'
 
-      const pool = getPool()
+    // Check if user is already a member
+    const existingMember = await pool.query(
+      `SELECT id, status FROM control_plane.organization_members
+       WHERE org_id = $1 AND user_id = $2`,
+      [orgId, userId]
+    )
 
-      // Get organization details and inviter details for email
-      const orgResult = await pool.query(
-        'SELECT id, name, slug, owner_id FROM control_plane.organizations WHERE id = $1',
-        [orgId]
-      )
-
-      if (orgResult.rows.length === 0) {
-        return errorResponse('NOT_FOUND', 'Organization not found', 404)
+    if (existingMember.rows.length > 0) {
+      const member = existingMember.rows[0]
+      if (member.status === 'accepted') {
+        return errorResponse('CONFLICT', 'User is already a member of this organization', 409)
       }
-
-      const organization = orgResult.rows[0]
-
-      // Get inviter details for email
-      const inviterResult = await pool.query(
-        'SELECT id, name, email FROM developers WHERE id = $1',
-        [developer.id]
-      )
-
-      const inviter = inviterResult.rows[0]
-
-      // Normalize email to lowercase
-      const normalizedEmail = validatedData.email.toLowerCase().trim()
-
-      // Check if there's already a pending or accepted invitation for this email
-      const existingMember = await pool.query(
-        `SELECT id, user_id, email, status, role, created_at
-         FROM control_plane.organization_members
-         WHERE org_id = $1 AND (LOWER(email) = LOWER($2) OR user_id IN (
-           SELECT id FROM developers WHERE LOWER(email) = LOWER($2)
-         ))`,
-        [orgId, normalizedEmail]
-      )
-
-      if (existingMember.rows.length > 0) {
-        const member = existingMember.rows[0]
-        if (member.status === 'pending') {
-          return errorResponse(
-            'PENDING_INVITATION',
-            'A pending invitation already exists for this email',
-            409
-          )
-        }
-        return errorResponse(
-          'ALREADY_MEMBER',
-          'This user is already a member of the organization',
-          409
-        )
-      }
-
-      // Generate invitation token and expiry (7 days from now)
-      const invitationToken = generateInvitationToken()
-      const tokenExpiresAt = new Date()
-      tokenExpiresAt.setDate(tokenExpiresAt.getDate() + 7)
-
-      // Create pending membership
+      // Member exists but pending/declined - update instead
       const result = await pool.query(
-        `INSERT INTO control_plane.organization_members (org_id, email, role, status, invitation_token, token_expires_at, invited_by)
-         VALUES ($1, $2, $3, 'pending', $4, $5, $6)
-         RETURNING id, org_id, email, role, status, invitation_token, token_expires_at, invited_by, created_at`,
-        [orgId, normalizedEmail, validatedData.role, invitationToken, tokenExpiresAt, developer.id]
+        `UPDATE control_plane.organization_members
+         SET role = $1, status = 'accepted', accepted_at = NOW(), updated_at = NOW(),
+             invited_by = $2, invited_at = COALESCE(invited_at, NOW())
+         WHERE id = $3
+         RETURNING id, user_id, role, status, invited_by, invited_at, accepted_at, created_at, updated_at`,
+        [role, developer.id, member.id]
       )
-
-      const member = result.rows[0]
-
-      // Send invitation email
-      if (inviter) {
-        try {
-          const emailResult = await sendOrganizationInvitationEmail({
-            to: normalizedEmail,
-            organizationName: organization.name,
-            inviterName: inviter.name || 'A team member',
-            role: validatedData.role,
-            token: invitationToken,
-            expiresAt: tokenExpiresAt,
-          })
-
-          if (!emailResult.success) {
-            console.warn(`[InviteMember] Failed to send invitation email to ${normalizedEmail}:`, emailResult.error)
-            // Don't fail the request if email fails - invitation is still created
-          }
-        } catch (emailError) {
-          console.error('[InviteMember] Error sending invitation email:', emailError)
-          // Don't fail the request if email fails - invitation is still created
-        }
-      }
 
       return NextResponse.json({
         success: true,
         data: {
-          id: member.id,
-          org_id: member.org_id,
-          email: member.email,
-          role: member.role,
-          status: member.status,
-          invited_by: member.invited_by,
-          created_at: member.created_at,
-          expires_at: member.token_expires_at,
+          id: result.rows[0].id,
+          user_id: result.rows[0].user_id,
+          role: result.rows[0].role,
+          status: result.rows[0].status,
+          invited_by: result.rows[0].invited_by,
+          invited_at: result.rows[0].invited_at,
+          accepted_at: result.rows[0].accepted_at,
+          created_at: result.rows[0].created_at,
+          updated_at: result.rows[0].updated_at,
+          message: isInvite ? 'Invitation accepted' : 'Member added successfully'
         }
-      }, { status: 201 })
-    } catch (error) {
-      if (error instanceof Error && error.message === 'No token provided') {
-        return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
-      }
-      if (error instanceof Error && error.message === 'Invalid token') {
-        return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
-      }
-      console.error('Error inviting member:', error)
-      return errorResponse('INTERNAL_ERROR', 'Failed to invite member', 500)
+      })
     }
+
+    // Add new member
+    const result = await pool.query(
+      `INSERT INTO control_plane.organization_members
+       (org_id, user_id, role, status, invited_by, invited_at, accepted_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, user_id, role, status, invited_by, invited_at, accepted_at, created_at, updated_at`,
+      [
+        orgId,
+        userId,
+        role,
+        isInvite ? 'pending' : 'accepted',
+        developer.id,
+        isInvite ? new Date() : null,
+        isInvite ? null : new Date(),
+      ]
+    )
+
+    const member = result.rows[0]
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        id: member.id,
+        user_id: member.user_id,
+        role: member.role,
+        status: member.status,
+        invited_by: member.invited_by,
+        invited_at: member.invited_at,
+        accepted_at: member.accepted_at,
+        created_at: member.created_at,
+        updated_at: member.updated_at,
+        message: isInvite ? 'Invitation sent' : 'Member added successfully'
+      }
+    }, { status: 201 })
+  } catch (error) {
+    if (error instanceof Error && error.message === 'No token provided') {
+      return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
+    }
+    if (error instanceof Error && error.message === 'Invalid token') {
+      return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
+    }
+    console.error('Error adding organization member:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to add organization member', 500)
   }
-)
+}

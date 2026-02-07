@@ -2,14 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
-import {
-  listUsageQuerySchema,
-  usageCheckSchema,
-  type ListUsageQuery,
-  type UsageCheckInput,
-  serviceEnum,
-} from '@/lib/validation'
-import { quotaExceededError, validationError } from '@/lib/errors'
+import { getUsageQuerySchema, type GetUsageQuery } from '@/lib/validation'
+import { getCurrentUsage, getAggregatedUsage } from '@/features/usage-tracking'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -19,27 +13,50 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate project ownership
+// Helper function to validate project ownership/access
 async function validateProjectOwnership(
   projectId: string,
   developer: JwtPayload
-): Promise<boolean> {
+): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(
-    'SELECT developer_id FROM projects WHERE id = $1',
+    'SELECT id, developer_id, organization_id FROM projects WHERE id = $1',
     [projectId]
   )
+
   if (result.rows.length === 0) {
-    return false
+    return { valid: false }
   }
-  return result.rows[0].developer_id === developer.id
+
+  const project = result.rows[0]
+
+  // Personal project: check if user is the owner
+  if (!project.organization_id) {
+    if (String(project.developer_id) !== String(developer.id)) {
+      return { valid: false, project }
+    }
+    return { valid: true, project }
+  }
+
+  // Organization project: check if user is a member
+  const membershipCheck = await pool.query(
+    `SELECT 1 FROM control_plane.organization_members
+     WHERE org_id = $1 AND user_id = $2 AND status = 'accepted'
+     LIMIT 1`,
+    [project.organization_id, developer.id]
+  )
+
+  if (membershipCheck.rows.length === 0) {
+    return { valid: false, project }
+  }
+
+  return { valid: true, project }
 }
 
-// GET /v1/usage - List usage metrics with filtering
+// GET /v1/usage - Get usage metrics for a project
 export async function GET(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
 
     // Parse and validate query parameters
     const searchParams = req.nextUrl.searchParams
@@ -48,169 +65,69 @@ export async function GET(req: NextRequest) {
       queryParams[key] = value
     })
 
-    let query: ListUsageQuery = {}
+    let query: GetUsageQuery | undefined = undefined
     try {
-      query = listUsageQuerySchema.parse(queryParams)
+      query = getUsageQuerySchema.parse(queryParams) as GetUsageQuery
     } catch (error) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    // Build query with filters
-    const conditions: string[] = []
-    const values: any[] = []
-    let paramIndex = 1
-
-    // Filter by project_id (user's own projects)
-    if (query.project_id) {
-      // Verify ownership
-      const hasAccess = await validateProjectOwnership(query.project_id, developer)
-      if (!hasAccess) {
-        return errorResponse('FORBIDDEN', 'You do not have permission to view usage for this project', 403)
-      }
-      conditions.push(`u.project_id = $${paramIndex++}`)
-      values.push(query.project_id)
-    } else {
-      // If no project_id specified, get all user's projects
-      conditions.push(`p.developer_id = $${paramIndex++}`)
-      values.push(developer.id)
+    // Validate project ownership
+    const validation = await validateProjectOwnership(query.project_id, developer)
+    if (!validation.valid) {
+      return errorResponse('NOT_FOUND', 'Project not found', 404)
     }
 
-    // Filter by service
-    if (query.service) {
-      conditions.push(`u.service = $${paramIndex++}`)
-      values.push(query.service)
-    }
+    // Determine time range based on period
+    const now = new Date()
+    let startTime: Date
 
-    // Filter by metric
-    if (query.metric) {
-      conditions.push(`u.metric = $${paramIndex++}`)
-      values.push(query.metric)
-    }
-
-    // Time period filter
-    let timeInterval = '1 day'
     switch (query.period) {
       case 'hour':
-        timeInterval = '1 hour'
+        startTime = new Date(now.getTime() - 60 * 60 * 1000)
         break
       case 'day':
-        timeInterval = '1 day'
+        startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000)
         break
       case 'week':
-        timeInterval = '7 days'
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
         break
       case 'month':
-        timeInterval = '30 days'
+      default:
+        startTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
         break
     }
 
-    conditions.push(`u.occurred_at >= NOW() - INTERVAL '${timeInterval}'`)
+    // Get current usage (aggregated total)
+    const { success, data, error } = await getCurrentUsage(
+      query.project_id,
+      startTime,
+      query.service,
+      query.metric_type
+    )
 
-    const limit = query.limit || 50
-    const offset = query.offset || 0
-
-    values.push(limit, offset)
-
-    // Build the query
-    const baseQuery = `
-      FROM usage_stats u
-      ${query.project_id ? '' : 'JOIN projects p ON u.project_id = p.id'}
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY u.occurred_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `
-
-    // Try to get usage data (table may not exist yet)
-    let usageData: any[] = []
-    let total = 0
-
-    try {
-      // Get paginated results
-      const result = await pool.query(
-        `SELECT u.project_id, u.service, u.metric, u.amount, u.occurred_at,
-                p.project_name, p.tenant_id
-         ${baseQuery}`,
-        values
-      )
-      usageData = result.rows
-
-      // Get total count
-      const countResult = await pool.query(
-        `SELECT COUNT(*) as count ${baseQuery.replace(`LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`, '')}`,
-        values.slice(0, -2)
-      )
-      total = parseInt(countResult.rows[0].count) || 0
-    } catch (dbError: any) {
-      // Table may not exist, return empty results
-      if (dbError.code === '42P01') {
-        // Table doesn't exist, return empty results
-        return NextResponse.json({
-          success: true,
-          data: [],
-          warnings: ['Usage tracking is not enabled. No usage data available.'],
-          meta: {
-            limit,
-            offset,
-            total: 0,
-          }
-        })
-      }
-      throw dbError
+    if (!success) {
+      console.error('[Usage API] Error getting current usage:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to fetch usage metrics', 500)
     }
 
-    // Aggregate usage by service and metric
-    const aggregated: Record<string, any> = {}
-    for (const row of usageData) {
-      const key = `${row.service}.${row.metric}`
-      if (!aggregated[key]) {
-        aggregated[key] = {
-          service: row.service,
-          metric: row.metric,
-          total_amount: 0,
-          count: 0,
-          project_ids: new Set<string>(),
-        }
-      }
-      aggregated[key].total_amount += row.amount || 0
-      aggregated[key].count += 1
-      if (row.project_id) {
-        aggregated[key].project_ids.add(row.project_id)
-      }
-    }
-
-    const aggregatedData = Object.values(aggregated).map((item: any) => ({
-      service: item.service,
-      metric: item.metric,
-      total_amount: item.total_amount,
-      request_count: item.count,
-      unique_projects: item.project_ids.size,
-    }))
-
+    // Return usage metrics
     return NextResponse.json({
       success: true,
-      data: usageData.map((row: any) => ({
-        project_id: row.project_id,
-        project_name: row.project_name,
-        tenant_id: row.tenant_id,
-        service: row.service,
-        metric: row.metric,
-        amount: row.amount,
-        occurred_at: row.occurred_at,
-      })),
-      aggregated: aggregatedData,
-      meta: {
-        limit,
-        offset,
-        total,
+      data: {
+        project_id: query.project_id,
         period: query.period,
-      }
+        start_time: startTime.toISOString(),
+        end_time: now.toISOString(),
+        metrics: data || [],
+      },
     })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
@@ -219,154 +136,94 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error listing usage:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to list usage', 500)
+    console.error('[Usage API] Error:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to fetch usage metrics', 500)
   }
 }
 
-// POST /v1/usage/check - Check if operation is within quota
+// GET /v1/usage/aggregated - Get time-series aggregated usage data
 export async function POST(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
     const body = await req.json()
 
     // Validate request body
-    let validatedData: UsageCheckInput
-    try {
-      validatedData = usageCheckSchema.parse(body)
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return errorResponse(
-          'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
-          400
-        )
-      }
-      throw error
+    const query = getUsageQuerySchema.safeParse(body)
+    if (!query.success) {
+      return errorResponse(
+        'VALIDATION_ERROR',
+        query.error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+        400
+      )
     }
 
-    // Verify project ownership
-    const hasAccess = await validateProjectOwnership(validatedData.project_id, developer)
-    if (!hasAccess) {
-      return errorResponse('FORBIDDEN', 'You do not have permission to check usage for this project', 403)
+    const validatedQuery = query.data
+
+    // Validate project ownership
+    const validation = await validateProjectOwnership(validatedQuery.project_id, developer)
+    if (!validation.valid) {
+      return errorResponse('NOT_FOUND', 'Project not found', 404)
     }
 
-    const pool = getPool()
+    // Determine time range based on period
+    const now = new Date()
+    let startTime: Date
+    let aggregation: 'day' | 'week' | 'month' | undefined
 
-    // Get quota limits for the project
-    const quotaResult = await pool.query(
-      `SELECT db_queries_per_day, realtime_connections, storage_uploads_per_day, function_invocations_per_day
-       FROM quotas
-       WHERE project_id = $1`,
-      [validatedData.project_id]
+    switch (validatedQuery.period) {
+      case 'hour':
+        startTime = new Date(now.getTime() - 60 * 60 * 1000)
+        break
+      case 'day':
+        startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        aggregation = 'day'
+        break
+      case 'week':
+        startTime = new Date(now.getTime() - 4 * 7 * 24 * 60 * 60 * 1000)
+        aggregation = 'week'
+        break
+      case 'month':
+      default:
+        startTime = new Date(now.getTime() - 12 * 30 * 24 * 60 * 60 * 1000)
+        aggregation = 'month'
+        break
+    }
+
+    // Get aggregated usage
+    const { success, data, error } = await getAggregatedUsage(
+      validatedQuery.project_id,
+      startTime,
+      now,
+      validatedQuery.service,
+      validatedQuery.metric_type,
+      aggregation
     )
 
-    let quotas: any = {
-      db_queries_per_day: 10000,
-      realtime_connections: 100,
-      storage_uploads_per_day: 1000,
-      function_invocations_per_day: 5000,
+    if (!success) {
+      console.error('[Usage API] Error getting aggregated usage:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to fetch aggregated usage metrics', 500)
     }
 
-    if (quotaResult.rows.length > 0) {
-      quotas = { ...quotas, ...quotaResult.rows[0] }
-    }
-
-    // Map metric to quota field
-    const metricToQuota: Record<string, { quota: string; limit: number }> = {
-      db_query: { quota: 'db_queries_per_day', limit: quotas.db_queries_per_day },
-      realtime_message: { quota: 'realtime_connections', limit: quotas.realtime_connections },
-      storage_upload: { quota: 'storage_uploads_per_day', limit: quotas.storage_uploads_per_day },
-      function_invocation: { quota: 'function_invocations_per_day', limit: quotas.function_invocations_per_day },
-    }
-
-    const metricConfig = metricToQuota[validatedData.metric]
-    if (!metricConfig) {
-      return errorResponse('VALIDATION_ERROR', 'Invalid metric type for quota check', 400)
-    }
-
-    // Get current usage for the metric (today)
-    let currentUsage = 0
-    try {
-      const usageResult = await pool.query(
-        `SELECT COALESCE(SUM(amount), 0) as total
-         FROM usage_stats
-         WHERE project_id = $1
-           AND metric = $2
-           AND occurred_at >= DATE(NOW())`,
-        [validatedData.project_id, validatedData.metric]
-      )
-      currentUsage = parseInt(usageResult.rows[0].total) || 0
-    } catch (error: any) {
-      // Table may not exist yet, usage is 0
-      if (error.code !== '42P01') {
-        throw error
-      }
-    }
-
-    const newUsage = currentUsage + validatedData.amount
-    const percentage = (newUsage / metricConfig.limit) * 100
-
-    // Build response with warnings
-    const warnings: string[] = []
-    if (percentage >= 100) {
-      if (validatedData.operation === 'increment') {
-        const err = quotaExceededError(
-          `Quota exceeded for ${validatedData.metric}. Current: ${currentUsage}, Limit: ${metricConfig.limit}`,
-          validatedData.project_id,
-          {
-            metric: validatedData.metric,
-            current_usage: currentUsage,
-            limit: metricConfig.limit,
-            percentage: Math.round(percentage),
-          }
-        )
-        return err.toNextResponse()
-      }
-    } else if (percentage >= 90) {
-      warnings.push(`Warning: Quota usage at ${Math.round(percentage)}% for ${validatedData.metric}`)
-    } else if (percentage >= 80) {
-      warnings.push(`Notice: Quota usage at ${Math.round(percentage)}% for ${validatedData.metric}`)
-    }
-
-    // If operation is 'increment', record the usage
-    if (validatedData.operation === 'increment') {
-      try {
-        await pool.query(
-          `INSERT INTO usage_stats (project_id, service, metric, amount, occurred_at)
-           VALUES ($1, $2, $3, $4, NOW())`,
-          [validatedData.project_id, validatedData.service, validatedData.metric, validatedData.amount]
-        )
-      } catch (error: any) {
-        // Table may not exist, log warning
-        if (error.code !== '42P01') {
-          console.error('Error recording usage:', error)
-        }
-      }
-    }
-
+    // Return aggregated usage metrics
     return NextResponse.json({
       success: true,
       data: {
-        project_id: validatedData.project_id,
-        service: validatedData.service,
-        metric: validatedData.metric,
-        current_usage: currentUsage,
-        new_usage: newUsage,
-        limit: metricConfig.limit,
-        percentage: Math.round(percentage),
-        within_quota: newUsage <= metricConfig.limit,
-        warnings: warnings.length > 0 ? warnings : undefined,
-      }
+        project_id: validatedQuery.project_id,
+        period: validatedQuery.period,
+        aggregation,
+        start_time: startTime.toISOString(),
+        end_time: now.toISOString(),
+        time_series: data || [],
+      },
     })
-  } catch (error: any) {
+  } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
       return errorResponse('UNAUTHORIZED', 'Authentication required', 401)
     }
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error checking usage:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to check usage', 500)
+    console.error('[Usage API] Error:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to fetch aggregated usage metrics', 500)
   }
 }

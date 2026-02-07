@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+export const dynamic = 'force-dynamic'
+
 // Version information interface
 interface ApiVersion {
   version: string
@@ -33,3 +35,4 @@ export async function GET() {
     },
   })
 }
+

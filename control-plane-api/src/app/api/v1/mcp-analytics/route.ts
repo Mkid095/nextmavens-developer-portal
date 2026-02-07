@@ -71,14 +71,17 @@ export async function GET(req: NextRequest) {
       queryParams[key] = value
     })
 
-    let query: McpAnalyticsQuery = {}
+    let query: McpAnalyticsQuery = {
+      limit: 50,
+      offset: 0,
+    }
     try {
       query = mcpAnalyticsQuerySchema.parse(queryParams)
     } catch (error) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
@@ -265,3 +268,4 @@ export async function GET(req: NextRequest) {
     return errorResponse('INTERNAL_ERROR', 'Failed to fetch MCP analytics', 500)
   }
 }
+

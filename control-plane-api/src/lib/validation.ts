@@ -2,27 +2,22 @@ import { z } from 'zod'
 
 // Environment enum
 export const environmentEnum = z.enum(['prod', 'dev', 'staging'], {
-  errorMap: () => ({ message: 'Environment must be one of: prod, dev, staging' }),
 })
 
 // Organization role enum
 export const organizationRoleEnum = z.enum(['owner', 'admin', 'developer', 'viewer'], {
-  errorMap: () => ({ message: 'Role must be one of: owner, admin, developer, viewer' }),
 })
 
 // API key type enum
 export const apiKeyTypeEnum = z.enum(['public', 'secret', 'service_role', 'mcp'], {
-  errorMap: () => ({ message: 'Key type must be one of: public, secret, service_role, mcp' }),
 })
 
 // MCP access level enum
 export const mcpAccessLevelEnum = z.enum(['ro', 'rw', 'admin'], {
-  errorMap: () => ({ message: 'MCP access level must be one of: ro (read-only), rw (read-write), admin' }),
 })
 
 // API key environment enum
 export const apiKeyEnvironmentEnum = z.enum(['live', 'test', 'dev'], {
-  errorMap: () => ({ message: 'Key environment must be one of: live, test, dev' }),
 })
 
 // API key scope enum (common scopes)
@@ -94,7 +89,6 @@ export const inviteMemberSchema = z.object({
 
 // Organization member status enum
 export const memberStatusEnum = z.enum(['pending', 'accepted', 'declined'], {
-  errorMap: () => ({ message: 'Status must be one of: pending, accepted, declined' }),
 })
 
 // Update member role schema
@@ -123,7 +117,7 @@ export type MemberStatus = z.infer<typeof memberStatusEnum>
 // Create API key schema
 export const createApiKeySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(255, 'Name must be at most 255 characters'),
-  project_id: z.string().uuid('Invalid project ID format').optional(),
+  project_id: z.union([z.string().regex(/^\d+$/, 'Invalid project ID format'), z.number().int().positive()]).optional(),
   key_type: apiKeyTypeEnum.default('public'),
   environment: apiKeyEnvironmentEnum.default('live'),
   scopes: z.array(apiKeyScopeEnum).optional(),
@@ -133,7 +127,7 @@ export const createApiKeySchema = z.object({
 
 // Query parameters for listing API keys
 export const listApiKeysQuerySchema = z.object({
-  project_id: z.string().uuid('Invalid project ID format').optional(),
+  project_id: z.union([z.string().regex(/^\d+$/, 'Invalid project ID format'), z.number().int().positive()]).optional(),
   key_type: apiKeyTypeEnum.optional(),
   environment: apiKeyEnvironmentEnum.optional(),
   limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').optional(),
@@ -149,7 +143,6 @@ export type McpAccessLevel = z.infer<typeof mcpAccessLevelEnum>
 
 // Service enum for usage and quotas
 export const serviceEnum = z.enum(['database', 'realtime', 'storage', 'auth', 'functions'], {
-  errorMap: () => ({ message: 'Service must be one of: database, realtime, storage, auth, functions' }),
 })
 
 // Metric type enum for usage tracking
@@ -169,7 +162,6 @@ export const metricTypeEnum = z.enum([
 
 // Time period enum for usage queries
 export const timePeriodEnum = z.enum(['hour', 'day', 'week', 'month'], {
-  errorMap: () => ({ message: 'Time period must be one of: hour, day生活费, week, month' }),
 })
 
 // Get current usage metrics query schema
@@ -178,8 +170,8 @@ export const getUsageQuerySchema = z.object({
   service: serviceEnum.optional(),
   metric_type: metricTypeEnum.optional(),
   period: timePeriodEnum.default('day'),
-  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default('100'),
-  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default(100),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default(0),
 })
 
 // Check quota schema
@@ -212,12 +204,10 @@ export const jobTypeEnum = z.enum([
   'check_usage_limits',
   'auto_suspend',
 ], {
-  errorMap: () => ({ message: 'Job type must be one of: provision_project, rotate_key, deliver_webhook, export_backup, check_usage_limits, auto_suspend' }),
 })
 
 // Job status enum
 export const jobStatusEnum = z.enum(['pending', 'running', 'failed', 'completed'], {
-  errorMap: () => ({ message: 'Job status must be one of: pending, running, failed, completed' }),
 })
 
 // Query parameters for listing jobs
@@ -225,8 +215,8 @@ export const listJobsQuerySchema = z.object({
   project_id: z.string().uuid('Invalid project ID format').optional(),
   type: jobTypeEnum.optional(),
   status: jobStatusEnum.optional(),
-  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').default('50'),
-  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').default(50),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default(0),
 })
 
 export type JobType = z.infer<typeof jobTypeEnum>
@@ -243,12 +233,10 @@ export const auditLogTypeEnum = z.enum([
   'background_job',
   'manual_intervention',
 ], {
-  errorMap: () => ({ message: 'Audit log type must be one of: suspension, unsuspension, auth_failure, rate_limit_exceeded, validation_failure, background_job, manual_intervention' }),
 })
 
 // Audit log severity enum
 export const auditLogSeverityEnum = z.enum(['info', 'warning', 'error', 'critical'], {
-  errorMap: () => ({ message: 'Severity must be one of: info, warning, error, critical' }),
 })
 
 // Query parameters for listing audit logs
@@ -260,8 +248,8 @@ export const listAuditLogsQuerySchema = z.object({
   project_id: z.string().uuid('Invalid project ID format').optional(),
   start_date: z.string().datetime('Invalid start date format').optional(),
   end_date: z.string().datetime('Invalid end date format').optional(),
-  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default('100'),
-  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default(100),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default(0),
 })
 
 export type AuditLogType = z.infer<typeof auditLogTypeEnum>
@@ -270,7 +258,6 @@ export type ListAuditLogsQuery = z.infer<typeof listAuditLogsQuerySchema>
 
 // Actor type enum for audit logs (control_plane schema)
 export const actorTypeEnum = z.enum(['user', 'system', 'api_key', 'project'], {
-  errorMap: () => ({ message: 'Actor type must be one of: user, system, api_key, project' }),
 })
 
 // Target type enum for audit logs
@@ -283,7 +270,6 @@ export const targetTypeEnum = z.enum([
   'team',
   'webhook',
 ], {
-  errorMap: () => ({ message: 'Target type must be one of: project, api_key, user, secret, organization, team, webhook' }),
 })
 
 // Audit action enum (common actions)
@@ -319,7 +305,6 @@ export const auditActionEnum = z.enum([
   'suspension.created',
   'suspension.removed',
 ], {
-  errorMap: () => ({ message: 'Invalid audit action' }),
 })
 
 // Query parameters for listing audit logs (control_plane schema)
@@ -331,10 +316,11 @@ export const listAuditQuerySchema = z.object({
   target_id: z.string().uuid('Invalid target ID format').optional(),
   project_id: z.string().uuid('Invalid project ID format').optional(),
   request_id: z.string().uuid('Invalid request ID format').optional(),
+  severity: auditLogSeverityEnum.optional(),
   start_date: z.string().datetime('Invalid start date format').optional(),
   end_date: z.string().datetime('Invalid end date format').optional(),
-  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default('100'),
-  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default(100),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default(0),
 })
 
 export type ActorType = z.infer<typeof actorTypeEnum>
@@ -358,7 +344,6 @@ export const webhookEventEnum = z.enum([
   'webhook.delivered',
   'webhook.failed',
 ], {
-  errorMap: () => ({ message: 'Invalid webhook event type' }),
 })
 
 // Create webhook schema
@@ -383,8 +368,8 @@ export const listWebhooksQuerySchema = z.object({
   project_id: z.string().uuid('Invalid project ID format').optional(),
   event: webhookEventEnum.optional(),
   enabled: z.coerce.boolean().optional(),
-  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').default('50'),
-  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 100, 'Limit must be between 1 and 100').default(50),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default(0),
 })
 
 export type WebhookEvent = z.infer<typeof webhookEventEnum>
@@ -394,7 +379,6 @@ export type ListWebhooksQuery = z.infer<typeof listWebhooksQuerySchema>
 
 // Event log status enum
 export const eventLogStatusEnum = z.enum(['pending', 'delivered', 'failed'], {
-  errorMap: () => ({ message: 'Status must be one of: pending, delivered, failed' }),
 })
 
 // Query parameters for listing event logs (webhook history)
@@ -403,8 +387,8 @@ export const listEventLogsQuerySchema = z.object({
   webhook_id: z.string().uuid('Invalid webhook ID format').optional(),
   event_type: z.string().min(1).optional(),
   status: eventLogStatusEnum.optional(),
-  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default('100'),
-  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default('0'),
+  limit: z.string().transform(Number).refine(n => n > 0 && n <= 1000, 'Limit must be between 1 and 1000').default(100),
+  offset: z.string().transform(Number).refine(n => n >= 0, 'Offset must be non-negative').default(0),
 })
 
 export type EventLogStatus = z.infer<typeof eventLogStatusEnum>

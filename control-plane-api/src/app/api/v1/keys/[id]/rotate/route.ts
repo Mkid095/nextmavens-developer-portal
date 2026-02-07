@@ -70,7 +70,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
     const hashedSecretKey = hashApiKey(secretKey)
 
     // Get default scopes for the key type
-    const scopes = existingKey.scopes || DEFAULT_API_KEY_SCOPES[keyType]
+    const validKeyType = keyType as keyof typeof DEFAULT_API_KEY_SCOPES
+    const scopes = existingKey.scopes || DEFAULT_API_KEY_SCOPES[validKeyType]
 
     // Create new key version
     const newKeyResult = await pool.query(
@@ -136,3 +137,4 @@ export async function POST(req: NextRequest, context: RouteContext) {
     return errorResponse('INTERNAL_ERROR', 'Failed to rotate API key', 500)
   }
 }
+

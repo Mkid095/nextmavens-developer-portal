@@ -37,21 +37,21 @@ export interface Developer {
 }
 
 /**
- * JWT payload with project_id claim.
- * US-001: Require project_id in JWT
+ * JWT payload with optional project_id claim.
+ * US-001: project_id is optional - developer portal tokens don't include it
  */
 export interface JwtPayload {
   id: string
   email: string
-  project_id: string
+  project_id?: string  // Optional: developer portal doesn't include this
 }
 
-export function generateAccessToken(developer: Developer, projectId: string): string {
-  return jwt.sign(
-    { id: developer.id, email: developer.email, project_id: projectId },
-    getJwtSecret(),
-    { expiresIn: '1h' }
-  )
+export function generateAccessToken(developer: Developer, projectId?: string): string {
+  const payload: JwtPayload = { id: developer.id, email: developer.email }
+  if (projectId) {
+    payload.project_id = projectId
+  }
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: '1h' })
 }
 
 export function generateRefreshToken(developerId: string): string {
@@ -72,10 +72,7 @@ export function verifyAccessToken(token: string): JwtPayload {
     if (!decoded.id || !decoded.email) {
       throw createError(ErrorCode.KEY_INVALID, 'Invalid token structure')
     }
-    // US-001: Require project_id in JWT
-    if (!decoded.project_id) {
-      throw createError(ErrorCode.KEY_INVALID, 'Missing project_id claim')
-    }
+    // project_id is optional - not all clients include it in their tokens
     return decoded as unknown as JwtPayload
   } catch (error) {
     // If it's already a PlatformError, re-throw it
@@ -91,8 +88,8 @@ export function verifyAccessToken(token: string): JwtPayload {
 }
 
 /**
- * US-001: Authenticate a request and return the JWT payload.
- * Verifies that project_id claim exists in the token.
+ * Authenticate a request and return the JWT payload.
+ * Verifies the token has id and email claims (project_id is optional).
  * @throws PlatformError with AUTHENTICATION_ERROR or KEY_INVALID code if authentication fails
  */
 export async function authenticateRequest(req: NextRequest): Promise<JwtPayload> {

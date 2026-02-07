@@ -3,6 +3,9 @@ import { getPool } from '@/lib/db'
 import { addApiVersionHeaders } from '@/lib/api-versioning'
 import packageJson from '../../../../../package.json'
 
+// Force dynamic rendering for API routes
+export const dynamic = 'force-dynamic'
+
 interface DependencyHealth {
   status: 'healthy' | 'unhealthy' | 'unknown'
   latency_ms?: number
@@ -187,3 +190,4 @@ function determineOverallStatus(
   // Otherwise unknown
   return 'unknown'
 }
+

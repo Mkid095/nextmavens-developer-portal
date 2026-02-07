@@ -2,15 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { authenticateRequest, type JwtPayload } from '@/lib/auth'
 import { getPool } from '@/lib/db'
-import {
-  listJobsQuerySchema,
-  type ListJobsQuery,
-} from '@/lib/validation'
-import {
-  toErrorNextResponse,
-  createError,
-  ErrorCode,
-} from '@/lib/errors'
+import { listJobsQuerySchema, type ListJobsQuery, jobTypeEnum, jobStatusEnum } from '@/lib/validation'
+import { getJob, listJobs } from '@/features/jobs'
+import { createAuditLog } from '@/features/audit'
 
 // Helper function for standard error responses
 function errorResponse(code: string, message: string, status: number) {
@@ -20,30 +14,50 @@ function errorResponse(code: string, message: string, status: number) {
   )
 }
 
-// Helper function to validate project ownership
+// Helper function to validate project ownership/access
 async function validateProjectOwnership(
   projectId: string,
   developer: JwtPayload
-): Promise<boolean> {
+): Promise<{ valid: boolean; project?: any }> {
   const pool = getPool()
   const result = await pool.query(
-    'SELECT developer_id FROM projects WHERE id = $1',
+    'SELECT id, developer_id, organization_id FROM projects WHERE id = $1',
     [projectId]
   )
 
   if (result.rows.length === 0) {
-    return false
+    return { valid: false }
   }
 
   const project = result.rows[0]
-  return project.developer_id === developer.id
+
+  // Personal project: check if user is the owner
+  if (!project.organization_id) {
+    if (String(project.developer_id) !== String(developer.id)) {
+      return { valid: false, project }
+    }
+    return { valid: true, project }
+  }
+
+  // Organization project: check if user is a member
+  const membershipCheck = await pool.query(
+    `SELECT 1 FROM control_plane.organization_members
+     WHERE org_id = $1 AND user_id = $2 AND status = 'accepted'
+     LIMIT 1`,
+    [project.organization_id, developer.id]
+  )
+
+  if (membershipCheck.rows.length === 0) {
+    return { valid: false, project }
+  }
+
+  return { valid: true, project }
 }
 
-// GET /v1/jobs - List jobs with filtering
+// GET /v1/jobs - List background jobs with filters
 export async function GET(req: NextRequest) {
   try {
     const developer = await authenticateRequest(req)
-    const pool = getPool()
 
     // Parse and validate query parameters
     const searchParams = req.nextUrl.searchParams
@@ -52,87 +66,53 @@ export async function GET(req: NextRequest) {
       queryParams[key] = value
     })
 
-    let query: ListJobsQuery = {}
+    let query: ListJobsQuery = {
+      limit: 50,
+      offset: 0,
+    }
     try {
       query = listJobsQuerySchema.parse(queryParams)
     } catch (error) {
       if (error instanceof ZodError) {
         return errorResponse(
           'VALIDATION_ERROR',
-          error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
           400
         )
       }
       throw error
     }
 
-    // Build query with filters
-    const conditions: string[] = []
-    const values: any[] = []
-    let paramIndex = 1
-
-    // If project_id is provided, validate ownership and filter by it
+    // Validate project ownership if project_id is provided
     if (query.project_id) {
-      const hasAccess = await validateProjectOwnership(query.project_id, developer)
-      if (!hasAccess) {
-        return errorResponse('PERMISSION_DENIED', 'You do not have access to this project', 403)
+      const validation = await validateProjectOwnership(query.project_id, developer)
+      if (!validation.valid) {
+        return errorResponse('NOT_FOUND', 'Project not found', 404)
       }
-      conditions.push(`j.project_id = $${paramIndex++}`)
-      values.push(query.project_id)
-    } else {
-      // If no project_id filter, only show jobs for user's projects
-      conditions.push(`p.developer_id = $${paramIndex++}`)
-      values.push(developer.id)
     }
 
-    if (query.type) {
-      conditions.push(`j.type = $${paramIndex++}`)
-      values.push(query.type)
+    // List jobs with filters
+    const { success, jobs, total, error } = await listJobs({
+      project_id: query.project_id,
+      type: query.type,
+      status: query.status,
+      limit: query.limit,
+      offset: query.offset,
+    })
+
+    if (!success) {
+      console.error('[Jobs API] Error listing jobs:', error)
+      return errorResponse('INTERNAL_ERROR', 'Failed to fetch jobs', 500)
     }
-
-    if (query.status) {
-      conditions.push(`j.status = $${paramIndex++}`)
-      values.push(query.status)
-    }
-
-    const limit = query.limit
-    const offset = query.offset
-
-    values.push(limit, offset)
-
-    const result = await pool.query(
-      `SELECT
-        j.id, j.type, j.status, j.attempts, j.max_attempts,
-        j.last_error, j.scheduled_at, j.started_at, j.completed_at, j.created_at,
-        j.project_id, p.project_name
-      FROM jobs j
-      LEFT JOIN projects p ON j.project_id = p.id
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY j.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      values
-    )
 
     return NextResponse.json({
       success: true,
-      data: result.rows.map(j => ({
-        id: j.id,
-        type: j.type,
-        status: j.status,
-        attempts: j.attempts,
-        max_attempts: j.max_attempts,
-        last_error: j.last_error,
-        scheduled_at: j.scheduled_at,
-        started_at: j.started_at,
-        completed_at: j.completed_at,
-        created_at: j.created_at,
-        project_id: j.project_id,
-        project_name: j.project_name,
-      })),
-      meta: {
-        limit,
-        offset,
-      }
+      data: {
+        jobs: jobs || [],
+        total: total || 0,
+        limit: query.limit || 50,
+        offset: query.offset || 0,
+      },
     })
   } catch (error) {
     if (error instanceof Error && error.message === 'No token provided') {
@@ -141,7 +121,7 @@ export async function GET(req: NextRequest) {
     if (error instanceof Error && error.message === 'Invalid token') {
       return errorResponse('INVALID_TOKEN', 'Invalid or expired token', 401)
     }
-    console.error('Error listing jobs:', error)
-    return errorResponse('INTERNAL_ERROR', 'Failed to list jobs', 500)
+    console.error('[Jobs API] Error:', error)
+    return errorResponse('INTERNAL_ERROR', 'Failed to fetch jobs', 500)
   }
 }
